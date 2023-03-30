@@ -7,7 +7,7 @@ class Rect {
   h = 0
 }
 
-abstract class BaseResource {
+export abstract class BaseSprite {
   rect = new Rect()
 
   visible = true
@@ -21,7 +21,7 @@ abstract class BaseResource {
   abstract destory (ctx: CanvasRenderingContext2D): void
 }
 
-export class VideoResource extends BaseResource {
+export class VideoSprite extends BaseSprite {
   #videoEl: HTMLVideoElement | null = null
 
   constructor (name: string, source: MediaStream) {
@@ -48,16 +48,16 @@ export class VideoResource extends BaseResource {
   }
 }
 
-export class ResourceManager {
-  #resList: BaseResource[] = []
+export class SpriteManager {
+  #sprites: BaseSprite[] = []
 
-  addResource<R extends BaseResource>(res: R): void {
-    this.#resList.push(res)
-    this.#resList = this.#resList.sort((a, b) => a.zIndex - b.zIndex)
+  addSprite<R extends BaseSprite>(res: R): void {
+    this.#sprites.push(res)
+    this.#sprites = this.#sprites.sort((a, b) => a.zIndex - b.zIndex)
     // todo: 动态适配宽高
   }
 
-  getResourceList (): BaseResource[] {
-    return this.#resList
+  getSprites (): BaseSprite[] {
+    return this.#sprites
   }
 }

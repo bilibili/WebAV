@@ -1,4 +1,4 @@
-import { ResourceManager } from './resource'
+import { SpriteManager } from './sprites'
 import { IResolution } from './types'
 
 function createEl (tagName: string): HTMLElement {
@@ -22,7 +22,7 @@ export class AVCanvas {
   #container: HTMLElement
   #cvsEl: HTMLCanvasElement
 
-  resourceManager: ResourceManager
+  spriteManager: SpriteManager
   #cvsCtx: CanvasRenderingContext2D
   #destroyed = false
 
@@ -37,7 +37,7 @@ export class AVCanvas {
     this.#cvsCtx = ctx
     container.appendChild(this.#cvsEl)
 
-    this.resourceManager = new ResourceManager()
+    this.spriteManager = new SpriteManager()
 
     const loop = (): void => {
       if (this.#destroyed) return
@@ -56,7 +56,7 @@ export class AVCanvas {
   }
 
   #render (): void {
-    const list = this.resourceManager.getResourceList()
+    const list = this.spriteManager.getSprites()
     list.forEach(r => r.render(this.#cvsCtx))
     // console.log(22222, list)
   }

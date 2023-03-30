@@ -1,5 +1,5 @@
 import { AVCanvas } from '../src/av-canvas'
-import { VideoResource } from '../src/resource'
+import { VideoSprite } from '../src/sprites'
 
 const avCvs = new AVCanvas(document.querySelector('#app') as HTMLElement, {
   bgColor: '#333',
@@ -15,6 +15,6 @@ console.log({ avCvs })
   const mediaStream = await navigator.mediaDevices.getUserMedia({
     video: true
   })
-  const vRes = new VideoResource('camera', mediaStream)
-  avCvs.resourceManager.addResource(vRes)
+  const vRes = new VideoSprite('camera', mediaStream)
+  avCvs.spriteManager.addSprite(vRes)
 })().catch(console.error)
