@@ -1,42 +1,63 @@
+import { mediaStream2Video } from '../utils'
 
-interface IPoint { x: number; y: number }
+class Rect {
+  x = 0
+  y = 0
+  w = 0
+  h = 0
+}
 
-class BaseResource {
-  #pos: IPoint = { x: 0, y: 0 }
+abstract class BaseResource {
+  rect = new Rect()
 
-  get pos(): IPoint { return this.#pos }
-  set pos(pos: IPoint) { this.#pos = pos }
+  visible = true
 
-  #visible = true
-  get visible(): boolean { return this.#visible }
-  set visible(visible: boolean) { this.#visible = visible }
+  zIndex = 0
 
-  #canMove = true
-  get canMove(): boolean { return this.#canMove }
-  set canMove(canMove: boolean) { this.#canMove = canMove }
+  constructor (public name: string) {}
 
-  #zIndex= 0
-  get zIndex(): number { return this.#zIndex}
-  set zIndex(zIndex: number) { this.#zIndex= zIndex}
+  abstract render (ctx: CanvasRenderingContext2D): void
 
-  constructor(public name: string) {}
+  abstract destory (ctx: CanvasRenderingContext2D): void
 }
 
 export class VideoResource extends BaseResource {
-  constructor(name: string) {
+  #videoEl: HTMLVideoElement | null = null
+
+  constructor (name: string, source: MediaStream) {
     super(name)
+    this.init(source).catch(console.error)
+  }
+
+  async init (ms: MediaStream): Promise<void> {
+    this.#videoEl = await mediaStream2Video(ms)
+    this.rect.w = this.#videoEl.videoWidth
+    this.rect.h = this.#videoEl.videoHeight
+  }
+
+  render (ctx: CanvasRenderingContext2D): void {
+    if (this.#videoEl == null) return
+    // todo: rect and clip
+    const { x, y, w, h } = this.rect
+    ctx.drawImage(this.#videoEl, x, y, w, h)
+  }
+
+  destory (): void {
+    this.#videoEl?.remove()
+    this.#videoEl = null
   }
 }
 
 export class ResourceManager {
-  #resList: Array<BaseResource> = []
+  #resList: BaseResource[] = []
 
   addResource<R extends BaseResource>(res: R): void {
     this.#resList.push(res)
     this.#resList = this.#resList.sort((a, b) => a.zIndex - b.zIndex)
+    // todo: 动态适配宽高
   }
 
-  getResourceList(): Array<BaseResource> {
+  getResourceList (): BaseResource[] {
     return this.#resList
   }
 }
