@@ -1,23 +1,47 @@
-import { describe, expect, test } from 'vitest'
-import { SpriteManager, VideoSprite } from '..'
+import { describe, expect, test, vi } from 'vitest'
+import { Rect, SpriteManager, VideoSprite } from '..'
 
 test('1 + 1', () => {
   expect(1 + 1).toBe(2)
-  console.error(111222)
 })
 
 describe('Sprite Manager', () => {
-  const resMng = new SpriteManager()
+  const sprMng = new SpriteManager()
   test('addSprite', () => {
-    const res1 = new VideoSprite('res1', new MediaStream())
-    res1.zIndex = 10
-    const res2 = new VideoSprite('res2', new MediaStream())
-    res1.zIndex = 1
+    const vs1 = new VideoSprite('vs1', new MediaStream())
+    vs1.zIndex = 10
+    const vs2 = new VideoSprite('vs2', new MediaStream())
+    vs1.zIndex = 1
 
-    resMng.addSprite(res1)
-    resMng.addSprite(res2)
+    sprMng.addSprite(vs1)
+    sprMng.addSprite(vs2)
 
-    expect(resMng.getSprites().map(it => it.name))
-      .toEqual(['res2', 'res1'])
+    expect(sprMng.getSprites().map(it => it.name))
+      .toEqual(['vs2', 'vs1'])
+  })
+})
+
+describe('Sprite', () => {
+  Object.assign(global, { MediaStream: vi.fn() })
+  test('checkHit sprite', () => {
+    expect(2).toBe(2)
+    const vs = new VideoSprite('vs', new MediaStream())
+    vs.rect = new Rect()
+    vs.rect.x = 100
+    vs.rect.y = 100
+    vs.rect.w = 100
+    vs.rect.h = 100
+    // 边界检查
+    expect(vs.checkHit(99, 99)).toBe(false)
+    expect(vs.checkHit(100, 100)).toBe(true)
+    expect(vs.checkHit(200, 200)).toBe(true)
+    expect(vs.checkHit(201, 201)).toBe(false)
+
+    expect(vs.checkHit(150, 90)).toBe(false)
+    vs.rect.angle = Math.PI / 4
+    // 原位置（左上角顶点）不在 pos（正方形）旋转 45° 之后的范围内
+    expect(vs.checkHit(100, 100)).toBe(false)
+    // 旋转后正上方外移一点点的位置被覆盖进来了
+    expect(vs.checkHit(150, 90)).toBe(true)
   })
 })
