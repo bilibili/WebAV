@@ -1,13 +1,34 @@
-import { describe, expect, test, vi } from 'vitest'
+import { beforeEach, describe, expect, test, vi } from 'vitest'
 import { VideoSprite } from '..'
 import { createEl } from '../../utils'
 import { draggabelSprite } from '../sprite-op'
 
 Object.assign(global, { MediaStream: vi.fn() })
 
+function crtMouseEvt4Offset (evtName: string, offsetX: number, offsetY: number): MouseEvent {
+  const evt = new MouseEvent(evtName)
+  vi.spyOn(evt, 'offsetX', 'get').mockImplementation(() => offsetX)
+  vi.spyOn(evt, 'offsetY', 'get').mockImplementation(() => offsetY)
+  return evt
+}
+
 describe('draggabelSprite', () => {
+  let cvsEl = createEl('canvas') as HTMLCanvasElement
+  const cvsRatio = {
+    w: 1,
+    h: 1
+  }
+  beforeEach(() => {
+    cvsEl = createEl('canvas') as HTMLCanvasElement
+    vi.spyOn(cvsEl, 'clientWidth', 'get').mockImplementation(() => 900)
+    vi.spyOn(cvsEl, 'clientHeight', 'get').mockImplementation(() => 500)
+    cvsEl.width = 1920
+    cvsEl.height = 1080
+    cvsRatio.w = 900 / 1920
+    cvsRatio.h = 500 / 1080
+  })
+
   test('canvas on mousedown', () => {
-    const cvsEl = createEl('canvas') as HTMLCanvasElement
     const spyAEL = vi.spyOn(cvsEl, 'addEventListener')
     const spyREL = vi.spyOn(cvsEl, 'removeEventListener')
 
@@ -20,10 +41,11 @@ describe('draggabelSprite', () => {
   })
 
   test('window on mouse event', () => {
-    const cvsEl = createEl('canvas') as HTMLCanvasElement
     const spyAEL = vi.spyOn(window, 'addEventListener')
     const spyREL = vi.spyOn(window, 'removeEventListener')
-    const clear = draggabelSprite(cvsEl, [])
+    const vs = new VideoSprite('vs', new MediaStream())
+    vi.spyOn(vs, 'checkHit').mockReturnValue(true)
+    const clear = draggabelSprite(cvsEl, [vs])
     cvsEl.dispatchEvent(new MouseEvent('mousedown'))
 
     expect(spyAEL).toBeCalledTimes(2)
@@ -36,22 +58,30 @@ describe('draggabelSprite', () => {
   })
 
   test('sprite check hit', () => {
-    const cvsEl = createEl('canvas') as HTMLCanvasElement
-    vi.spyOn(cvsEl, 'clientWidth', 'get').mockImplementation(() => 900)
-    vi.spyOn(cvsEl, 'clientHeight', 'get').mockImplementation(() => 500)
-    cvsEl.width = 1920
-    cvsEl.height = 1080
-
     const vs = new VideoSprite('vs', new MediaStream())
     vi.spyOn(vs, 'checkHit')
 
     const clear = draggabelSprite(cvsEl, [vs])
-    const evt = new MouseEvent('mousedown')
-    vi.spyOn(evt, 'offsetX', 'get').mockImplementation(() => 100)
-    vi.spyOn(evt, 'offsetY', 'get').mockImplementation(() => 100)
-    cvsEl.dispatchEvent(evt)
+    cvsEl.dispatchEvent(crtMouseEvt4Offset('mousedown', 100, 100))
     // 点击事件是页面坐标，需要按比例映射成 canvas 内部坐标
-    expect(vs.checkHit).toBeCalledWith(100 / (900 / 1920), 100 / (500 / 1080))
+    expect(vs.checkHit).toBeCalledWith(100 / cvsRatio.w, 100 / cvsRatio.h)
+
+    clear()
+  })
+
+  test('move sprite', () => {
+    const vs = new VideoSprite('vs', new MediaStream())
+    vs.rect.w = 100
+    vs.rect.h = 100
+
+    const clear = draggabelSprite(cvsEl, [vs])
+    cvsEl.dispatchEvent(crtMouseEvt4Offset('mousedown', 0, 0))
+    window.dispatchEvent(new MouseEvent('mousemove', {
+      clientX: 100,
+      clientY: 100
+    }))
+    expect(vs.rect.x).toBe(100 / cvsRatio.w)
+    expect(vs.rect.y).toBe(100 / cvsRatio.h)
 
     clear()
   })

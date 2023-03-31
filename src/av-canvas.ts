@@ -1,4 +1,5 @@
 import { SpriteManager } from './sprites'
+import { draggabelSprite } from './sprites/sprite-op'
 import { IResolution } from './types'
 import { createEl } from './utils'
 
@@ -20,8 +21,12 @@ export class AVCanvas {
   #cvsEl: HTMLCanvasElement
 
   spriteManager: SpriteManager
+
   #cvsCtx: CanvasRenderingContext2D
+
   #destroyed = false
+
+  #clears: Array<() => void> = []
 
   constructor (container: HTMLElement, opts: {
     resolution: IResolution
@@ -35,6 +40,11 @@ export class AVCanvas {
     container.appendChild(this.#cvsEl)
 
     this.spriteManager = new SpriteManager()
+
+    // todo: add sprite 场景
+    this.#clears.push(
+      draggabelSprite(this.#cvsEl, this.spriteManager.getSprites())
+    )
 
     const loop = (): void => {
       if (this.#destroyed) return
@@ -50,6 +60,7 @@ export class AVCanvas {
   destory (): void {
     this.#destroyed = true
     this.#cvsEl.remove()
+    this.#clears.forEach(fn => fn())
   }
 
   #render (): void {

@@ -12,6 +12,15 @@ export class Rect {
     const { x, y, w, h } = this
     return { x: x + w / 2, y: y + h / 2 }
   }
+
+  clone (): Rect {
+    const r = new Rect()
+    r.x = this.x
+    r.y = this.y
+    r.w = this.w
+    r.h = this.h
+    return r
+  }
 }
 
 export abstract class BaseSprite {
