@@ -1,9 +1,6 @@
 import { SpriteManager } from './sprites'
 import { IResolution } from './types'
-
-function createEl (tagName: string): HTMLElement {
-  return document.createElement(tagName)
-}
+import { createEl } from './utils'
 
 function createInitCvsEl (resolution: IResolution): HTMLCanvasElement {
   const cvsEl = createEl('canvas') as HTMLCanvasElement

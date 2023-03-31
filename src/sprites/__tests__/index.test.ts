@@ -5,6 +5,8 @@ test('1 + 1', () => {
   expect(1 + 1).toBe(2)
 })
 
+Object.assign(global, { MediaStream: vi.fn() })
+
 describe('Sprite Manager', () => {
   const sprMng = new SpriteManager()
   test('addSprite', () => {
@@ -22,7 +24,6 @@ describe('Sprite Manager', () => {
 })
 
 describe('Sprite', () => {
-  Object.assign(global, { MediaStream: vi.fn() })
   test('checkHit sprite', () => {
     expect(2).toBe(2)
     const vs = new VideoSprite('vs', new MediaStream())

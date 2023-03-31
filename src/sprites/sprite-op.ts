@@ -1,4 +1,4 @@
-import { BaseSprite } from './sprites'
+import { BaseSprite } from '.'
 
 export function draggabelSprite (
   cvsEl: HTMLCanvasElement,
@@ -10,6 +10,7 @@ export function draggabelSprite (
     w: cvsEl.clientWidth / cvsEl.width,
     h: cvsEl.clientHeight / cvsEl.height
   }
+
   // 排在后面的层级更高
   const sprList = spriteList.reverse()
   let startX = 0
@@ -26,7 +27,6 @@ export function draggabelSprite (
       offsetX / ratio.w,
       offsetY / ratio.h
     ))
-    // rect = getHitRect(offsetX, offsetY)
     if (hitSpr == null) return
     // todo: 保留 10px，避免移出边界，无法拖回来
     // limit = {

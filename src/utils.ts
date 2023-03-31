@@ -22,3 +22,7 @@ export async function mediaStream2Video (
     }, 2000)
   })
 }
+
+export function createEl (tagName: string): HTMLElement {
+  return document.createElement(tagName)
+}
