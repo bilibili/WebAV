@@ -8,9 +8,41 @@ export class Rect {
   h = 0
   angle = 0
 
+  constructor (x?: number, y?: number, w?: number, h?: number) {
+    this.x = x ?? 0
+    this.y = y ?? 0
+    this.w = w ?? 0
+    this.h = h ?? 0
+  }
+
   get center (): IPoint {
     const { x, y, w, h } = this
     return { x: x + w / 2, y: y + h / 2 }
+  }
+
+  // 上下左右+四个角+旋转控制点
+  get ctrls (): Record<'t' | 'b' | 'l' | 'r' | 'lt' | 'lb' | 'rt' | 'rb' | 'rotate', Rect> {
+    const { w, h } = this
+    // todo：控制点在高分辨率下看起来太小
+    // 控制点元素大小, 以 分辨率 为基准
+    const sz = 8
+    const hfSz = sz / 2
+    const hfW = w / 2
+    const hfH = h / 2
+    const rtSz = sz * 3
+    const hfRtSz = rtSz / 2
+    // 相对于中心点的位置
+    return {
+      t: new Rect(-hfSz, -hfH - hfSz, sz, sz),
+      b: new Rect(-hfSz, hfH - hfSz, sz, sz),
+      l: new Rect(-hfW - hfSz, -hfSz, sz, sz),
+      r: new Rect(hfW - hfSz, -hfSz, sz, sz),
+      lt: new Rect(-hfW - hfSz, -hfH - hfSz, sz, sz),
+      lb: new Rect(-hfW - hfSz, hfH - hfSz, sz, sz),
+      rt: new Rect(hfW - hfSz, -hfH - hfSz, sz, sz),
+      rb: new Rect(hfW - hfSz, hfH - hfSz, sz, sz),
+      rotate: new Rect(-hfRtSz, -hfH - sz * 3 - hfRtSz, rtSz, rtSz)
+    }
   }
 
   clone (): Rect {
@@ -32,7 +64,16 @@ export abstract class BaseSprite {
 
   constructor (public name: string) {}
 
-  abstract render (ctx: CanvasRenderingContext2D): void
+  render (ctx: CanvasRenderingContext2D): void {
+    const { rect: { center, ctrls } } = this
+    // 绘制 ctrls
+    ctx.transform(1, 0, 0, 1, center.x, center.y)
+    ctx.fillStyle = '#ffffff'
+    Object.values(ctrls).forEach(({ x, y, w, h }) => {
+      ctx.fillRect(x, y, w, h)
+    })
+    ctx.resetTransform()
+  }
 
   abstract destory (ctx: CanvasRenderingContext2D): void
 
@@ -80,6 +121,8 @@ export class VideoSprite extends BaseSprite {
     // todo: rect and clip
     const { x, y, w, h } = this.rect
     ctx.drawImage(this.#videoEl, x, y, w, h)
+    // todo: 使用dom替代canvas绘制控制点
+    super.render(ctx)
   }
 
   destory (): void {

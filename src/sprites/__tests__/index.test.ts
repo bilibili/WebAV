@@ -25,7 +25,6 @@ describe('Sprite Manager', () => {
 
 describe('Sprite', () => {
   test('checkHit sprite', () => {
-    expect(2).toBe(2)
     const vs = new VideoSprite('vs', new MediaStream())
     vs.rect = new Rect()
     vs.rect.x = 100
@@ -44,5 +43,22 @@ describe('Sprite', () => {
     expect(vs.checkHit(100, 100)).toBe(false)
     // 旋转后正上方外移一点点的位置被覆盖进来了
     expect(vs.checkHit(150, 90)).toBe(true)
+  })
+})
+
+describe('Rect', () => {
+  test('center', () => {
+    const rect = new Rect(0, 0, 100, 100)
+    expect(rect.center).toEqual({ x: 50, y: 50 })
+  })
+
+  test('ctrls', () => {
+    const rect = new Rect(0, 0, 100, 100)
+    expect(rect.ctrls).toMatchSnapshot()
+  })
+
+  test('clone', () => {
+    const { x, y, w, h } = new Rect(0, 0, 100, 100).clone()
+    expect([x, y, w, h]).toEqual([0, 0, 100, 100])
   })
 })

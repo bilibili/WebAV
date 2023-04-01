@@ -1,0 +1,69 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`Rect > ctrls 1`] = `
+{
+  "b": Rect {
+    "angle": 0,
+    "h": 8,
+    "w": 8,
+    "x": -4,
+    "y": 46,
+  },
+  "l": Rect {
+    "angle": 0,
+    "h": 8,
+    "w": 8,
+    "x": -54,
+    "y": -4,
+  },
+  "lb": Rect {
+    "angle": 0,
+    "h": 8,
+    "w": 8,
+    "x": -54,
+    "y": 46,
+  },
+  "lt": Rect {
+    "angle": 0,
+    "h": 8,
+    "w": 8,
+    "x": -54,
+    "y": -54,
+  },
+  "r": Rect {
+    "angle": 0,
+    "h": 8,
+    "w": 8,
+    "x": 46,
+    "y": -4,
+  },
+  "rb": Rect {
+    "angle": 0,
+    "h": 8,
+    "w": 8,
+    "x": 46,
+    "y": 46,
+  },
+  "rotate": Rect {
+    "angle": 0,
+    "h": 24,
+    "w": 24,
+    "x": -12,
+    "y": -86,
+  },
+  "rt": Rect {
+    "angle": 0,
+    "h": 8,
+    "w": 8,
+    "x": 46,
+    "y": -54,
+  },
+  "t": Rect {
+    "angle": 0,
+    "h": 8,
+    "w": 8,
+    "x": -4,
+    "y": -54,
+  },
+}
+`;
