@@ -1,7 +1,8 @@
-import { BaseSprite, Rect } from '.'
+import { BaseSprite } from '.'
+import { Rect, TCtrlKey } from './rect'
 
 /**
- * 让canvas中的sprite可以被拖拽
+ * 让canvas中的sprite可以被拖拽移动
  */
 export function draggabelSprite (
   cvsEl: HTMLCanvasElement,
@@ -25,7 +26,7 @@ export function draggabelSprite (
     // 鼠标左键才能拖拽移动
     if (evt.button !== 0) return
     const { offsetX, offsetY, clientX, clientY } = evt
-    hitSpr = sprList.find(s => s.checkHit(
+    hitSpr = sprList.find(s => s.rect.checkHit(
       offsetX / cvsRatio.w,
       offsetY / cvsRatio.h
     )) ?? null
@@ -66,6 +67,69 @@ export function draggabelSprite (
   }
 
   return (): void => {
+    clearWindowEvt()
+    cvsEl.removeEventListener('mousedown', onCvsMouseDown)
+  }
+}
+
+/**
+ * 让sprite可缩放
+ */
+export function scalableSprite (
+  cvsEl: HTMLCanvasElement,
+  s: BaseSprite
+): () => void {
+  const cvsRatio = {
+    w: cvsEl.clientWidth / cvsEl.width,
+    h: cvsEl.clientHeight / cvsEl.height
+  }
+  const { ctrls } = s.rect
+
+  let startX = 0
+  let startY = 0
+  // 点击事件命中的控制点名字
+  let ctrlKey: TCtrlKey | null = null
+  let ctrlRect: Rect | null = null
+  const onCvsMouseDown = (evt: MouseEvent): void => {
+    // 鼠标左键才能拖拽移动
+    if (evt.button !== 0) return
+    const { offsetX, offsetY, clientX, clientY } = evt
+    // 将鼠标点击偏移坐标映射成 canvas 坐标，然后映射成相对 sprite 的中心坐标
+    // 因为 ctrls 是相对 sprite 中心点定位的
+    const ofx = offsetX / cvsRatio.w - s.rect.center.x
+    const ofy = offsetY / cvsRatio.h - s.rect.center.y
+    const it = Object.entries(ctrls)
+      .find(([, rect]) => rect.checkHit(ofx, ofy))
+    if (it == null) return
+    ctrlKey = it[0] as TCtrlKey
+    ctrlRect = it[1]
+
+    startX = clientX
+    startY = clientY
+    window.addEventListener('mousemove', onMouseMove)
+    window.addEventListener('mouseup', clearWindowEvt)
+  }
+  cvsEl.addEventListener('mousedown', onCvsMouseDown)
+
+  const onMouseMove = (evt: MouseEvent): void => {
+    if (ctrlRect == null) return
+    const { clientX, clientY } = evt
+    const deltaX = (clientX - startX) / cvsRatio.w
+    const deltaY = (clientY - startY) / cvsRatio.h
+    switch (ctrlKey) {
+      // t 控制点随着鼠标移动，改变 sprite 的高度 和 y 坐标
+      case 't':
+        s.rect.y += deltaY
+        s.rect.h += -deltaY
+    }
+  }
+
+  const clearWindowEvt = (): void => {
+    window.removeEventListener('mousemove', onMouseMove)
+    window.removeEventListener('mouseup', clearWindowEvt)
+  }
+
+  return () => {
     clearWindowEvt()
     cvsEl.removeEventListener('mousedown', onCvsMouseDown)
   }

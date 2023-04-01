@@ -44,7 +44,7 @@ describe('draggabelSprite', () => {
     const spyAEL = vi.spyOn(window, 'addEventListener')
     const spyREL = vi.spyOn(window, 'removeEventListener')
     const vs = new VideoSprite('vs', new MediaStream())
-    vi.spyOn(vs, 'checkHit').mockReturnValue(true)
+    vi.spyOn(vs.rect, 'checkHit').mockReturnValue(true)
     const clear = draggabelSprite(cvsEl, [vs])
     cvsEl.dispatchEvent(new MouseEvent('mousedown'))
 
@@ -59,12 +59,12 @@ describe('draggabelSprite', () => {
 
   test('sprite check hit', () => {
     const vs = new VideoSprite('vs', new MediaStream())
-    vi.spyOn(vs, 'checkHit')
+    vi.spyOn(vs.rect, 'checkHit')
 
     const clear = draggabelSprite(cvsEl, [vs])
     cvsEl.dispatchEvent(crtMouseEvt4Offset('mousedown', 100, 100))
     // 点击事件是页面坐标，需要按比例映射成 canvas 内部坐标
-    expect(vs.checkHit).toBeCalledWith(100 / cvsRatio.w, 100 / cvsRatio.h)
+    expect(vs.rect.checkHit).toBeCalledWith(100 / cvsRatio.w, 100 / cvsRatio.h)
 
     clear()
   })
