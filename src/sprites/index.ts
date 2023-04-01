@@ -1,3 +1,4 @@
+import { EventTool } from '../event-tool'
 import { mediaStream2Video } from '../utils'
 import { Rect } from './rect'
 
@@ -21,7 +22,7 @@ export abstract class BaseSprite {
     ctx.resetTransform()
   }
 
-  abstract destory (ctx: CanvasRenderingContext2D): void
+  abstract destory (): void
 }
 
 export class VideoSprite extends BaseSprite {
@@ -56,13 +57,33 @@ export class VideoSprite extends BaseSprite {
 export class SpriteManager {
   #sprites: BaseSprite[] = []
 
-  addSprite<R extends BaseSprite>(res: R): void {
-    this.#sprites.push(res)
+  #activeSprite: BaseSprite | null = null
+
+  #evtTool = new EventTool<{
+    add: (s: BaseSprite) => void
+  }>()
+
+  on = this.#evtTool.on
+
+  get activeSprite (): BaseSprite | null { return this.#activeSprite }
+  set activeSprite (s: BaseSprite | null) {
+    if (s === this.#activeSprite) return
+    this.#activeSprite = s
+  }
+
+  addSprite<S extends BaseSprite>(s: S): void {
+    this.#sprites.push(s)
     this.#sprites = this.#sprites.sort((a, b) => a.zIndex - b.zIndex)
-    // todo: 动态适配宽高
+    this.#evtTool.emit('add', s)
+    // todo: 动态适配canvas宽高
   }
 
   getSprites (): BaseSprite[] {
-    return this.#sprites
+    return [...this.#sprites]
+  }
+
+  clear (): void {
+    this.#sprites.forEach(s => s.destory())
+    this.#sprites = []
   }
 }
