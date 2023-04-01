@@ -43,7 +43,10 @@ export class AVCanvas {
 
     // todo: add sprite 场景
     this.#clears.push(
-      draggabelSprite(this.#cvsEl, this.spriteManager.getSprites())
+      draggabelSprite(
+        this.#cvsEl,
+        this.spriteManager
+      )
     )
 
     const loop = (): void => {

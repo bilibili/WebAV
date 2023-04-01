@@ -26,7 +26,7 @@ export class Rect {
     const { w, h } = this
     // todo：控制点在高分辨率下看起来太小
     // 控制点元素大小, 以 分辨率 为基准
-    const sz = 8
+    const sz = 16
     const hfSz = sz / 2
     const hfW = w / 2
     const hfH = h / 2

@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, test, vi } from 'vitest'
-import { VideoSprite } from '..'
+import { SpriteManager, VideoSprite } from '..'
 import { createEl } from '../../utils'
 import { draggabelSprite } from '../sprite-op'
 
@@ -18,7 +18,9 @@ describe('draggabelSprite', () => {
     w: 1,
     h: 1
   }
+  let sprMng = new SpriteManager()
   beforeEach(() => {
+    sprMng = new SpriteManager()
     cvsEl = createEl('canvas') as HTMLCanvasElement
     vi.spyOn(cvsEl, 'clientWidth', 'get').mockImplementation(() => 900)
     vi.spyOn(cvsEl, 'clientHeight', 'get').mockImplementation(() => 500)
@@ -32,7 +34,7 @@ describe('draggabelSprite', () => {
     const spyAEL = vi.spyOn(cvsEl, 'addEventListener')
     const spyREL = vi.spyOn(cvsEl, 'removeEventListener')
 
-    const clear = draggabelSprite(cvsEl, [])
+    const clear = draggabelSprite(cvsEl, sprMng)
     expect(spyAEL).toBeCalledWith('mousedown', expect.any(Function))
     expect(clear).toBeInstanceOf(Function)
 
@@ -45,7 +47,8 @@ describe('draggabelSprite', () => {
     const spyREL = vi.spyOn(window, 'removeEventListener')
     const vs = new VideoSprite('vs', new MediaStream())
     vi.spyOn(vs.rect, 'checkHit').mockReturnValue(true)
-    const clear = draggabelSprite(cvsEl, [vs])
+    sprMng.addSprite(vs)
+    const clear = draggabelSprite(cvsEl, sprMng)
     cvsEl.dispatchEvent(new MouseEvent('mousedown'))
 
     expect(spyAEL).toBeCalledTimes(2)
@@ -61,7 +64,8 @@ describe('draggabelSprite', () => {
     const vs = new VideoSprite('vs', new MediaStream())
     vi.spyOn(vs.rect, 'checkHit')
 
-    const clear = draggabelSprite(cvsEl, [vs])
+    sprMng.addSprite(vs)
+    const clear = draggabelSprite(cvsEl, sprMng)
     cvsEl.dispatchEvent(crtMouseEvt4Offset('mousedown', 100, 100))
     // 点击事件是页面坐标，需要按比例映射成 canvas 内部坐标
     expect(vs.rect.checkHit).toBeCalledWith(100 / cvsRatio.w, 100 / cvsRatio.h)
@@ -74,7 +78,8 @@ describe('draggabelSprite', () => {
     vs.rect.w = 100
     vs.rect.h = 100
 
-    const clear = draggabelSprite(cvsEl, [vs])
+    sprMng.addSprite(vs)
+    const clear = draggabelSprite(cvsEl, sprMng)
     cvsEl.dispatchEvent(crtMouseEvt4Offset('mousedown', 0, 0))
     window.dispatchEvent(new MouseEvent('mousemove', {
       clientX: 100,

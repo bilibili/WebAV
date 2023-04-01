@@ -81,9 +81,4 @@ export class SpriteManager {
   getSprites (): BaseSprite[] {
     return [...this.#sprites]
   }
-
-  clear (): void {
-    this.#sprites.forEach(s => s.destory())
-    this.#sprites = []
-  }
 }
