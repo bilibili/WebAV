@@ -83,6 +83,15 @@ describe('draggabelSprite', () => {
     expect(vs.rect.x).toBe(100 / cvsRatio.w)
     expect(vs.rect.y).toBe(100 / cvsRatio.h)
 
+    // 鼠标移动超出边界
+    window.dispatchEvent(new MouseEvent('mousemove', {
+      clientX: 10000,
+      clientY: 10000
+    }))
+    // sprite 至少保留10px在可视区域内
+    expect(vs.rect.x).toBe(cvsEl.width - 10)
+    expect(vs.rect.y).toBe(cvsEl.height - 10)
+
     clear()
   })
 })

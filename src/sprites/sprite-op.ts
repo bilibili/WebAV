@@ -18,6 +18,7 @@ export function draggabelSprite (
   let startY = 0
   let hitSpr: BaseSprite | null = null
   let rect: Rect | null = null
+  let limit: Record<'xl' | 'xr' | 'yt' | 'yb', number> | null = null
 
   // 按下cvs，寻找选中的 sprite，监听移动事件
   const onCvsMouseDown = (evt: MouseEvent): void => {
@@ -30,13 +31,13 @@ export function draggabelSprite (
     )) ?? null
     if (hitSpr == null) return
     rect = hitSpr.rect.clone()
-    // todo: 保留 10px，避免移出边界，无法拖回来
-    // limit = {
-    //   xl: -rect.w + 10,
-    //   xr: view.width - 10,
-    //   yt: -rect.h + 10,
-    //   yb: view.height - 10
-    // }
+    // 保留 10px，避免移出边界，无法拖回来
+    limit = {
+      xl: -rect.w + 10,
+      xr: cvsEl.width - 10,
+      yt: -rect.h + 10,
+      yb: cvsEl.height - 10
+    }
 
     startX = clientX
     startY = clientY
@@ -45,10 +46,14 @@ export function draggabelSprite (
   }
 
   const onMouseMove = (evt: MouseEvent): void => {
-    if (hitSpr == null || rect == null) return
+    if (hitSpr == null || rect == null || limit == null) return
     const { clientX, clientY } = evt
-    const newX = rect.x + (clientX - startX) / cvsRatio.w
-    const newY = rect.y + (clientY - startY) / cvsRatio.h
+    let newX = rect.x + (clientX - startX) / cvsRatio.w
+    let newY = rect.y + (clientY - startY) / cvsRatio.h
+
+    // 限制不能完全拖拽出容器边界
+    newX = newX <= limit.xl ? limit.xl : newX >= limit.xr ? limit.xr : newX
+    newY = newY <= limit.yt ? limit.yt : newY >= limit.yb ? limit.yb : newY
     hitSpr.rect.x = newX
     hitSpr.rect.y = newY
   }
