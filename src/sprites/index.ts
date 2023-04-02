@@ -9,9 +9,12 @@ export abstract class BaseSprite {
 
   zIndex = 0
 
+  actived = false
+
   constructor (public name: string) {}
 
   render (ctx: CanvasRenderingContext2D): void {
+    if (!this.actived) return
     const { rect: { center, ctrls } } = this
     // 绘制 ctrls
     ctx.transform(1, 0, 0, 1, center.x, center.y)
@@ -68,6 +71,11 @@ export class SpriteManager {
   get activeSprite (): BaseSprite | null { return this.#activeSprite }
   set activeSprite (s: BaseSprite | null) {
     if (s === this.#activeSprite) return
+    if (s == null) {
+      if (this.#activeSprite != null) this.#activeSprite.actived = false
+    } else {
+      s.actived = true
+    }
     this.#activeSprite = s
   }
 
