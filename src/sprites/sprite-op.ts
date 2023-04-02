@@ -140,15 +140,18 @@ export function scalableSprite (
     const deltaY = (clientY - startY) / cvsRatio.h
 
     // 对角线上的点是等比例缩放，key 的长度为 2
-    // const hanler = ctrlKey.length === 1
-    //   ? stretchScale
-    //   : fixedRatioScale
+    const scaler = ctrlKey.length === 1
+      ? stretchScale
+      : fixedRatioScale
     const { x, y, w, h } = startRect
-    const { incW, incH, incS, rotateAngle } = stretchScale({
+    // rect 对角线角度
+    const diagonalAngle = Math.atan2(h, w)
+    const { incW, incH, incS, rotateAngle } = scaler({
       deltaX,
       deltaY,
       angle: s.rect.angle,
-      ctrlKey
+      ctrlKey,
+      diagonalAngle
     })
 
     // 最小缩放限定
@@ -215,21 +218,25 @@ function stretchScale ({
  * 等比例缩放
  */
 function fixedRatioScale ({
-  ox, oy, angle, ctrlKey, rect
-}: { ox: number, oy: number, angle: number, ctrlKey: TCtrlKey, rect: Rect }): {
+  deltaX, deltaY, angle, ctrlKey, diagonalAngle
+}: {
+  deltaX: number
+  deltaY: number
+  angle: number
+  ctrlKey: TCtrlKey
+  diagonalAngle: number
+}): {
     incW: number
     incH: number
     incS: number
     rotateAngle: number
   } {
-  // 对角线角度
-  const diagonalAngle = Math.atan2(rect.h, rect.w)
   // 坐标系旋转角度， lb->rt的对角线的初始角度为负数，所以需要乘以-1
   const rotateAngle = (
     ctrlKey === 'lt' || ctrlKey === 'rb' ? 1 : -1
   ) * diagonalAngle + angle
   // 旋转坐标系让x轴与对角线重合，鼠标位置在x轴的投影（x值）即为增加的长度
-  const incS = ox * Math.cos(rotateAngle) + oy * Math.sin(rotateAngle)
+  const incS = deltaX * Math.cos(rotateAngle) + deltaY * Math.sin(rotateAngle)
   // lb lt 缩放值是反向
   const coefficient = ctrlKey === 'lt' || ctrlKey === 'lb' ? -1 : 1
   // 等比例缩放，增加宽高等于长度乘以对应的角度函数

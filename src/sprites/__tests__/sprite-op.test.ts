@@ -108,7 +108,7 @@ describe('draggabelSprite', () => {
   })
 })
 
-describe('stretchScale sprite', () => {
+describe('scale sprite', () => {
   test('drag right ctrl', () => {
     const vs = new VideoSprite('vs', new MediaStream())
     vs.rect.w = 100
@@ -133,6 +133,33 @@ describe('stretchScale sprite', () => {
     }))
     // 拖拽 right ctrl 缩放 rect 的宽度
     expect(vs.rect.w).toBe(100 + 100 / cvsRatio.w)
+
+    clear()
+  })
+
+  test('drag rb(bottom right) ctrl', () => {
+    const vs = new VideoSprite('vs', new MediaStream())
+    vs.rect.w = 100
+    vs.rect.h = 100
+    sprMng.addSprite(vs)
+
+    // 激活 sprite
+    const clear = draggabelSprite(cvsEl, sprMng)
+    cvsEl.dispatchEvent(crtMSEvt4Offset('mousedown', 0, 0))
+    expect(sprMng.activeSprite).toBe(vs)
+
+    window.dispatchEvent(new MouseEvent('mouseup'))
+    // 命中 right ctrl
+    cvsEl.dispatchEvent(crtMSEvt4Offset(
+      'mousedown',
+      100 * cvsRatio.w,
+      100 * cvsRatio.h
+    ))
+    window.dispatchEvent(new MouseEvent('mousemove', {
+      clientX: 100,
+      clientY: 100
+    }))
+    expect(vs.rect).toMatchSnapshot()
 
     clear()
   })
