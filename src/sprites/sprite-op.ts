@@ -108,6 +108,8 @@ export function scalableSprite (
   // 点击事件命中的控制点名字
   let ctrlKey: TCtrlKey | null = null
   let ctrlRect: Rect | null = null
+  let startRect = s.rect.clone()
+
   const onCvsMouseDown = (evt: MouseEvent): void => {
     // 鼠标左键才能拖拽移动
     if (evt.button !== 0) return
@@ -116,20 +118,21 @@ export function scalableSprite (
     // 因为 ctrls 是相对 sprite 中心点定位的
     const ofx = offsetX / cvsRatio.w - s.rect.center.x
     const ofy = offsetY / cvsRatio.h - s.rect.center.y
-    const it = Object.entries(ctrls)
-      .find(([, rect]) => rect.checkHit(ofx, ofy))
-    if (it == null) return
+    const [k, r] = Object.entries(ctrls)
+      .find(([, rect]) => rect.checkHit(ofx, ofy)) ?? []
+    if (k == null || r == null) return
 
-    ctrlKey = it[0] as TCtrlKey
-    ctrlRect = it[1]
+    ctrlKey = k as TCtrlKey
+    ctrlRect = r
     startX = clientX
     startY = clientY
+    startRect = s.rect.clone()
+
     window.addEventListener('mousemove', onMouseMove)
     window.addEventListener('mouseup', clearWindowEvt)
   }
   cvsEl.addEventListener('mousedown', onCvsMouseDown)
 
-  const startRect = s.rect.clone()
   const onMouseMove = (evt: MouseEvent): void => {
     if (ctrlKey == null || ctrlRect == null) return
     const { clientX, clientY } = evt
@@ -179,7 +182,7 @@ export function scalableSprite (
 }
 
 /**
- * 拉伸缩放
+ * 拉伸缩放, 上t 下b 左l 右r
  */
 function stretchScale ({
   deltaX, deltaY, angle, ctrlKey
