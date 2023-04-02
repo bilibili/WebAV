@@ -1,4 +1,5 @@
 import { BaseSprite, SpriteManager } from '.'
+import { ICvsRatio } from '../types'
 import { Rect, TCtrlKey } from './rect'
 
 /**
@@ -18,59 +19,66 @@ export function draggabelSprite (
   const offAddSpr = sprMng.on('add', () => {
     sprList = sprMng.getSprites().reverse()
   })
-  let offScale = (): void => {}
 
   let startX = 0
   let startY = 0
   let hitSpr: BaseSprite | null = null
-  let rect: Rect | null = null
-  let limit: Record<'xl' | 'xr' | 'yt' | 'yb', number> | null = null
+  let startRect: Rect | null = null
+  let mvLimit: Record<'xl' | 'xr' | 'yt' | 'yb', number> | null = null
 
-  // 按下cvs，寻找选中的 sprite，监听移动事件
+  // 寻找选中的 sprite，监听移动事件
   const onCvsMouseDown = (evt: MouseEvent): void => {
     // 鼠标左键才能拖拽移动
     if (evt.button !== 0) return
     const { offsetX, offsetY, clientX, clientY } = evt
+    // 如果已有激活 sprite，先判定是否命中其 ctrls
+    if (
+      sprMng.activeSprite != null &&
+      hitRectCtrls({
+        rect: sprMng.activeSprite.rect,
+        offsetX,
+        offsetY,
+        clientX,
+        clientY,
+        cvsRatio
+      })
+    ) {
+      // 命中 ctrl 是缩放 sprite，略过后续移动 sprite 逻辑
+      return
+    }
+
     hitSpr = sprList.find(s => s.rect.checkHit(
       offsetX / cvsRatio.w,
       offsetY / cvsRatio.h
     )) ?? null
-    if (hitSpr == null) {
-      sprMng.activeSprite = null
-      return
-    }
     sprMng.activeSprite = hitSpr
+    if (hitSpr == null) return
 
-    rect = hitSpr.rect.clone()
+    startRect = hitSpr.rect.clone()
     // 保留 10px，避免移出边界，无法拖回来
-    limit = {
-      xl: -rect.w + 10,
+    mvLimit = {
+      xl: -startRect.w + 10,
       xr: cvsEl.width - 10,
-      yt: -rect.h + 10,
+      yt: -startRect.h + 10,
       yb: cvsEl.height - 10
     }
 
     startX = clientX
     startY = clientY
     window.addEventListener('mousemove', onMouseMove)
-    window.addEventListener('mouseup', () => {
-      clearWindowEvt()
-      if (sprMng.activeSprite != null) {
-        offScale()
-        offScale = scalableSprite(cvsEl, sprMng.activeSprite)
-      }
-    })
+    window.addEventListener('mouseup', clearWindowEvt)
   }
 
   const onMouseMove = (evt: MouseEvent): void => {
-    if (hitSpr == null || rect == null || limit == null) return
+    if (hitSpr == null || startRect == null || mvLimit == null) return
+
     const { clientX, clientY } = evt
-    let newX = rect.x + (clientX - startX) / cvsRatio.w
-    let newY = rect.y + (clientY - startY) / cvsRatio.h
+    let newX = startRect.x + (clientX - startX) / cvsRatio.w
+    let newY = startRect.y + (clientY - startY) / cvsRatio.h
 
     // 限制不能完全拖拽出容器边界
-    newX = newX <= limit.xl ? limit.xl : newX >= limit.xr ? limit.xr : newX
-    newY = newY <= limit.yt ? limit.yt : newY >= limit.yb ? limit.yb : newY
+    newX = newX <= mvLimit.xl ? mvLimit.xl : newX >= mvLimit.xr ? mvLimit.xr : newX
+    newY = newY <= mvLimit.yt ? mvLimit.yt : newY >= mvLimit.yb ? mvLimit.yb : newY
     hitSpr.rect.x = newX
     hitSpr.rect.y = newY
   }
@@ -82,59 +90,28 @@ export function draggabelSprite (
     window.removeEventListener('mouseup', clearWindowEvt)
   }
 
-  return (): void => {
+  return () => {
     clearWindowEvt()
     offAddSpr()
-    offScale()
     cvsEl.removeEventListener('mousedown', onCvsMouseDown)
   }
 }
 
 /**
- * 让sprite可缩放
+ * 缩放 sprite
  */
-export function scalableSprite (
-  cvsEl: HTMLCanvasElement,
-  s: BaseSprite
-): () => void {
-  const cvsRatio = {
-    w: cvsEl.clientWidth / cvsEl.width,
-    h: cvsEl.clientHeight / cvsEl.height
-  }
-  const { ctrls } = s.rect
-
-  let startX = 0
-  let startY = 0
-  // 点击事件命中的控制点名字
-  let ctrlKey: TCtrlKey | null = null
-  let ctrlRect: Rect | null = null
-  let startRect = s.rect.clone()
-
-  const onCvsMouseDown = (evt: MouseEvent): void => {
-    // 鼠标左键才能拖拽移动
-    if (evt.button !== 0) return
-    const { offsetX, offsetY, clientX, clientY } = evt
-    // 将鼠标点击偏移坐标映射成 canvas 坐标，然后映射成相对 sprite 的中心坐标
-    // 因为 ctrls 是相对 sprite 中心点定位的
-    const ofx = offsetX / cvsRatio.w - s.rect.center.x
-    const ofy = offsetY / cvsRatio.h - s.rect.center.y
-    const [k, r] = Object.entries(ctrls)
-      .find(([, rect]) => rect.checkHit(ofx, ofy)) ?? []
-    if (k == null || r == null) return
-
-    ctrlKey = k as TCtrlKey
-    ctrlRect = r
-    startX = clientX
-    startY = clientY
-    startRect = s.rect.clone()
-
-    window.addEventListener('mousemove', onMouseMove)
-    window.addEventListener('mouseup', clearWindowEvt)
-  }
-  cvsEl.addEventListener('mousedown', onCvsMouseDown)
+function scaleSprite ({
+  sprRect, startX, startY, ctrlKey, cvsRatio
+}: {
+  sprRect: Rect
+  startX: number
+  startY: number
+  ctrlKey: TCtrlKey
+  cvsRatio: ICvsRatio
+}): () => void {
+  const startRect = sprRect.clone()
 
   const onMouseMove = (evt: MouseEvent): void => {
-    if (ctrlKey == null || ctrlRect == null) return
     const { clientX, clientY } = evt
     const deltaX = (clientX - startX) / cvsRatio.w
     const deltaY = (clientY - startY) / cvsRatio.h
@@ -149,7 +126,7 @@ export function scalableSprite (
     const { incW, incH, incS, rotateAngle } = scaler({
       deltaX,
       deltaY,
-      angle: s.rect.angle,
+      angle: sprRect.angle,
       ctrlKey,
       diagonalAngle
     })
@@ -167,21 +144,20 @@ export function scalableSprite (
     const newX = newCntX - newW / 2
     const newY = newCntY - newH / 2
 
-    s.rect.x = newX
-    s.rect.y = newY
-    s.rect.w = newW
-    s.rect.h = newH
+    sprRect.x = newX
+    sprRect.y = newY
+    sprRect.w = newW
+    sprRect.h = newH
   }
 
   const clearWindowEvt = (): void => {
     window.removeEventListener('mousemove', onMouseMove)
     window.removeEventListener('mouseup', clearWindowEvt)
   }
+  window.addEventListener('mousemove', onMouseMove)
+  window.addEventListener('mouseup', clearWindowEvt)
 
-  return () => {
-    clearWindowEvt()
-    cvsEl.removeEventListener('mousedown', onCvsMouseDown)
-  }
+  return clearWindowEvt
 }
 
 /**
@@ -245,4 +221,33 @@ function fixedRatioScale ({
   const incH = incS * Math.sin(diagonalAngle) * coefficient
 
   return { incW, incH, incS, rotateAngle }
+}
+
+function hitRectCtrls ({
+  rect, cvsRatio, offsetX, offsetY, clientX, clientY
+}: {
+  rect: Rect
+  cvsRatio: ICvsRatio
+  offsetX: number
+  offsetY: number
+  clientX: number
+  clientY: number
+}): boolean {
+  // 将鼠标点击偏移坐标映射成 canvas 坐标，然后映射成相对 sprite 的中心坐标
+  // 因为 ctrls 是相对 sprite 中心点定位的
+  const ofx = offsetX / cvsRatio.w - rect.center.x
+  const ofy = offsetY / cvsRatio.h - rect.center.y
+  const [k] = Object.entries(rect.ctrls)
+    .find(([, rect]) => rect.checkHit(ofx, ofy)) as [TCtrlKey, Rect] ?? []
+
+  if (k == null) return false
+  scaleSprite({
+    sprRect: rect,
+    ctrlKey: k,
+    startX: clientX,
+    startY: clientY,
+    cvsRatio
+  })
+  // 命中 ctrl 后续是缩放 sprite，略过移动 sprite 逻辑
+  return true
 }
