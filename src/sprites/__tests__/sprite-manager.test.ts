@@ -1,5 +1,6 @@
 import { describe, expect, test, vi } from 'vitest'
-import { SpriteManager, VideoSprite } from '..'
+import { SpriteManager } from '../sprite-manager'
+import { VideoSprite } from '../video-sprite'
 
 test('1 + 1', () => {
   expect(1 + 1).toBe(2)

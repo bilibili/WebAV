@@ -1,5 +1,5 @@
 import { AVCanvas } from '../src/av-canvas'
-import { VideoSprite } from '../src/sprites'
+import { VideoSprite } from '../src/sprites/video-sprite'
 
 const avCvs = new AVCanvas(document.querySelector('#app') as HTMLElement, {
   bgColor: '#333',

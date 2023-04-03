@@ -1,4 +1,4 @@
-import { SpriteManager } from './sprites'
+import { SpriteManager } from './sprites/sprite-manager'
 import { draggabelSprite } from './sprites/sprite-op'
 import { IResolution } from './types'
 import { createEl } from './utils'

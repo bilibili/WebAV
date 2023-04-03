@@ -1,7 +1,8 @@
 import { beforeEach, describe, expect, test, vi } from 'vitest'
-import { SpriteManager, VideoSprite } from '..'
+import { SpriteManager } from '../sprite-manager'
 import { createEl } from '../../utils'
 import { draggabelSprite } from '../sprite-op'
+import { VideoSprite } from '../video-sprite'
 
 Object.assign(global, { MediaStream: vi.fn() })
 
