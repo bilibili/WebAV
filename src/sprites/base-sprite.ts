@@ -14,6 +14,8 @@ export abstract class BaseSprite {
   constructor (public name: string) {}
 
   render (ctx: CanvasRenderingContext2D): void {
+    // todo: clip
+    // todo: 使用dom替代canvas绘制控制点
     const { rect: { center, ctrls, angle } } = this
     ctx.setTransform(
       // 水平 缩放、倾斜

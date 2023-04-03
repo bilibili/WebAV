@@ -17,9 +17,7 @@ export class VideoSprite extends BaseSprite {
 
   render (ctx: CanvasRenderingContext2D): void {
     if (this.#videoEl == null) return
-    // todo: 使用dom替代canvas绘制控制点
     super.render(ctx)
-    // todo: rect and clip
     const { w, h } = this.rect
     ctx.drawImage(this.#videoEl, -w / 2, -h / 2, w, h)
     ctx.resetTransform()

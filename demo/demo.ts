@@ -1,4 +1,5 @@
 import { AVCanvas } from '../src/av-canvas'
+import { ImgSprite } from '../src/sprites/img-sprite'
 import { VideoSprite } from '../src/sprites/video-sprite'
 
 const avCvs = new AVCanvas(document.querySelector('#app') as HTMLElement, {
@@ -15,6 +16,21 @@ console.log({ avCvs })
   const mediaStream = await navigator.mediaDevices.getUserMedia({
     video: true
   })
-  const vRes = new VideoSprite('camera', mediaStream)
-  avCvs.spriteManager.addSprite(vRes)
+  const vs = new VideoSprite('camera', mediaStream)
+  avCvs.spriteManager.addSprite(vs)
+
+  document.querySelector('#addImg')?.addEventListener('click', () => {
+    ;(async () => {
+      const [imgFH] = await (window as any).showOpenFilePicker({
+        types: [{
+          description: 'Images',
+          accept: {
+            'image/*': ['.png', '.gif', '.jpeg', '.jpg']
+          }
+        }]
+      })
+      const is = new ImgSprite('img', await imgFH.getFile())
+      avCvs.spriteManager.addSprite(is)
+    })().catch(console.error)
+  })
 })().catch(console.error)
