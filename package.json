@@ -10,6 +10,7 @@
     "preview": "vite preview"
   },
   "devDependencies": {
+    "@vitest/coverage-istanbul": "^0.29.8",
     "jsdom": "^21.1.1",
     "ts-standard": "^12.0.2",
     "typescript": "^4.9.3",
