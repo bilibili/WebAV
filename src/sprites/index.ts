@@ -11,18 +11,29 @@ export abstract class BaseSprite {
 
   actived = false
 
+  flip: 'horizontal' | 'vertical' | null = null
+
   constructor (public name: string) {}
 
   render (ctx: CanvasRenderingContext2D): void {
-    if (!this.actived) return
-    const { rect: { center, ctrls } } = this
+    const { rect: { center, ctrls, angle } } = this
+    ctx.setTransform(
+      // 水平 缩放、倾斜
+      this.flip === 'horizontal' ? -1 : 1, 0,
+      // 垂直 倾斜、缩放
+      0, this.flip === 'vertical' ? -1 : 1,
+      // 坐标原点偏移 x y
+      center.x, center.y
+    )
+    // 任意方向翻转，旋转角度转为负值，才能与控制点同步
+    ctx.rotate((this.flip == null ? 1 : -1) * angle)
+
     // 绘制 ctrls
-    ctx.transform(1, 0, 0, 1, center.x, center.y)
+    if (!this.actived) return
     ctx.fillStyle = '#ffffff'
     Object.values(ctrls).forEach(({ x, y, w, h }) => {
       ctx.fillRect(x, y, w, h)
     })
-    ctx.resetTransform()
   }
 
   abstract destory (): void
@@ -44,11 +55,12 @@ export class VideoSprite extends BaseSprite {
 
   render (ctx: CanvasRenderingContext2D): void {
     if (this.#videoEl == null) return
-    // todo: rect and clip
-    const { x, y, w, h } = this.rect
-    ctx.drawImage(this.#videoEl, x, y, w, h)
     // todo: 使用dom替代canvas绘制控制点
     super.render(ctx)
+    // todo: rect and clip
+    const { w, h } = this.rect
+    ctx.drawImage(this.#videoEl, -w / 2, -h / 2, w, h)
+    ctx.resetTransform()
   }
 
   destory (): void {

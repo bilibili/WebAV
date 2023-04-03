@@ -9,11 +9,17 @@ export class Rect {
   h = 0
   angle = 0
 
-  constructor (x?: number, y?: number, w?: number, h?: number) {
+  /**
+   * ctrl.master is sprite rect
+   */
+  master: Rect | null = null
+
+  constructor (x?: number, y?: number, w?: number, h?: number, master?: Rect | null) {
     this.x = x ?? 0
     this.y = y ?? 0
     this.w = w ?? 0
     this.h = h ?? 0
+    this.master = master ?? null
   }
 
   get center (): IPoint {
@@ -32,46 +38,49 @@ export class Rect {
     const hfH = h / 2
     const rtSz = sz * 3
     const hfRtSz = rtSz / 2
-    // 相对于中心点的位置
+    // ctrl 坐标是相对于 sprite 中心点
     return {
-      t: new Rect(-hfSz, -hfH - hfSz, sz, sz),
-      b: new Rect(-hfSz, hfH - hfSz, sz, sz),
-      l: new Rect(-hfW - hfSz, -hfSz, sz, sz),
-      r: new Rect(hfW - hfSz, -hfSz, sz, sz),
-      lt: new Rect(-hfW - hfSz, -hfH - hfSz, sz, sz),
-      lb: new Rect(-hfW - hfSz, hfH - hfSz, sz, sz),
-      rt: new Rect(hfW - hfSz, -hfH - hfSz, sz, sz),
-      rb: new Rect(hfW - hfSz, hfH - hfSz, sz, sz),
-      rotate: new Rect(-hfRtSz, -hfH - sz * 3 - hfRtSz, rtSz, rtSz)
+      t: new Rect(-hfSz, -hfH - hfSz, sz, sz, this),
+      b: new Rect(-hfSz, hfH - hfSz, sz, sz, this),
+      l: new Rect(-hfW - hfSz, -hfSz, sz, sz, this),
+      r: new Rect(hfW - hfSz, -hfSz, sz, sz, this),
+      lt: new Rect(-hfW - hfSz, -hfH - hfSz, sz, sz, this),
+      lb: new Rect(-hfW - hfSz, hfH - hfSz, sz, sz, this),
+      rt: new Rect(hfW - hfSz, -hfH - hfSz, sz, sz, this),
+      rb: new Rect(hfW - hfSz, hfH - hfSz, sz, sz, this),
+      rotate: new Rect(-hfRtSz, -hfH - sz * 3 - hfRtSz, rtSz, rtSz, this)
     }
   }
 
   clone (): Rect {
-    const r = new Rect()
-    r.x = this.x
-    r.y = this.y
-    r.w = this.w
-    r.h = this.h
-    return r
+    const { x, y, w, h, master } = this
+    return new Rect(x, y, w, h, master)
   }
 
   /**
    * 检测点击是否命中
    */
   checkHit (tx: number, ty: number): boolean {
-    let { angle, center, x, y, w, h } = this
-    // 鼠标点击坐标映射成 canvas坐标, 然后转换为以中点为原点的坐标
-    const tOX = tx - center.x
-    const tOY = ty - center.y
-    x = x - center.x
-    y = y - center.y
+    let { angle, center, x, y, w, h, master } = this
+    // ctrls 的中心点、旋转角度都去自于 master （sprite）
+    const cnt = master?.center ?? center
+    const agl = master?.angle ?? angle
+    // ctrl 初始化时其坐标就是相对于 master 的，参见 get ctrls()
+    // 所以此处不用转换
+    if (master == null) {
+      x = x - cnt.x
+      y = y - cnt.y
+    }
+    // 鼠标点击坐标映射成以中点为原点的坐标
+    const tOX = tx - cnt.x
+    const tOY = ty - cnt.y
     // 如果有旋转，映射成相对 sprite 原点，旋转前的坐标
     let mx = tOX
     let my = tOY
-    if (angle !== 0) {
-    // 推导公式 https://github.com/hughfenghen/hughfenghen.github.io/issues/96
-      mx = tOX * Math.cos(angle) + tOY * Math.sin(angle)
-      my = tOY * Math.cos(angle) - tOX * Math.sin(angle)
+    if (agl !== 0) {
+      // 推导公式 https://github.com/hughfenghen/hughfenghen.github.io/issues/96
+      mx = tOX * Math.cos(agl) + tOY * Math.sin(agl)
+      my = tOY * Math.cos(agl) - tOX * Math.sin(agl)
     }
 
     if (mx < x || mx > x + w || my < y || my > y + h) return false

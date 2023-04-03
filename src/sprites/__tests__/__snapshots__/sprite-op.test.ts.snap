@@ -4,6 +4,7 @@ exports[`scale sprite > drag rb(bottom right) ctrl 1`] = `
 Rect {
   "angle": 0,
   "h": 314.66666666666663,
+  "master": null,
   "w": 314.6666666666667,
   "x": 0,
   "y": 0,

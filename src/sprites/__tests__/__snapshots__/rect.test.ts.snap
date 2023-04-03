@@ -5,6 +5,14 @@ exports[`Rect > ctrls 1`] = `
   "b": Rect {
     "angle": 0,
     "h": 16,
+    "master": Rect {
+      "angle": 0,
+      "h": 100,
+      "master": null,
+      "w": 100,
+      "x": 0,
+      "y": 0,
+    },
     "w": 16,
     "x": -8,
     "y": 42,
@@ -12,6 +20,14 @@ exports[`Rect > ctrls 1`] = `
   "l": Rect {
     "angle": 0,
     "h": 16,
+    "master": Rect {
+      "angle": 0,
+      "h": 100,
+      "master": null,
+      "w": 100,
+      "x": 0,
+      "y": 0,
+    },
     "w": 16,
     "x": -58,
     "y": -8,
@@ -19,6 +35,14 @@ exports[`Rect > ctrls 1`] = `
   "lb": Rect {
     "angle": 0,
     "h": 16,
+    "master": Rect {
+      "angle": 0,
+      "h": 100,
+      "master": null,
+      "w": 100,
+      "x": 0,
+      "y": 0,
+    },
     "w": 16,
     "x": -58,
     "y": 42,
@@ -26,6 +50,14 @@ exports[`Rect > ctrls 1`] = `
   "lt": Rect {
     "angle": 0,
     "h": 16,
+    "master": Rect {
+      "angle": 0,
+      "h": 100,
+      "master": null,
+      "w": 100,
+      "x": 0,
+      "y": 0,
+    },
     "w": 16,
     "x": -58,
     "y": -58,
@@ -33,6 +65,14 @@ exports[`Rect > ctrls 1`] = `
   "r": Rect {
     "angle": 0,
     "h": 16,
+    "master": Rect {
+      "angle": 0,
+      "h": 100,
+      "master": null,
+      "w": 100,
+      "x": 0,
+      "y": 0,
+    },
     "w": 16,
     "x": 42,
     "y": -8,
@@ -40,6 +80,14 @@ exports[`Rect > ctrls 1`] = `
   "rb": Rect {
     "angle": 0,
     "h": 16,
+    "master": Rect {
+      "angle": 0,
+      "h": 100,
+      "master": null,
+      "w": 100,
+      "x": 0,
+      "y": 0,
+    },
     "w": 16,
     "x": 42,
     "y": 42,
@@ -47,6 +95,14 @@ exports[`Rect > ctrls 1`] = `
   "rotate": Rect {
     "angle": 0,
     "h": 48,
+    "master": Rect {
+      "angle": 0,
+      "h": 100,
+      "master": null,
+      "w": 100,
+      "x": 0,
+      "y": 0,
+    },
     "w": 48,
     "x": -24,
     "y": -122,
@@ -54,6 +110,14 @@ exports[`Rect > ctrls 1`] = `
   "rt": Rect {
     "angle": 0,
     "h": 16,
+    "master": Rect {
+      "angle": 0,
+      "h": 100,
+      "master": null,
+      "w": 100,
+      "x": 0,
+      "y": 0,
+    },
     "w": 16,
     "x": 42,
     "y": -58,
@@ -61,6 +125,14 @@ exports[`Rect > ctrls 1`] = `
   "t": Rect {
     "angle": 0,
     "h": 16,
+    "master": Rect {
+      "angle": 0,
+      "h": 100,
+      "master": null,
+      "w": 100,
+      "x": 0,
+      "y": 0,
+    },
     "w": 16,
     "x": -8,
     "y": -58,

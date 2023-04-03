@@ -1,5 +1,5 @@
 import { BaseSprite, SpriteManager } from '.'
-import { ICvsRatio } from '../types'
+import { ICvsRatio, IPoint } from '../types'
 import { Rect, TCtrlKey } from './rect'
 
 /**
@@ -40,7 +40,8 @@ export function draggabelSprite (
         offsetY,
         clientX,
         clientY,
-        cvsRatio
+        cvsRatio,
+        cvsEl
       })
     ) {
       // 命中 ctrl 是缩放 sprite，略过后续移动 sprite 逻辑
@@ -100,7 +101,7 @@ export function draggabelSprite (
 /**
  * 缩放 sprite
  */
-function scaleSprite ({
+function scaleRect ({
   sprRect, startX, startY, ctrlKey, cvsRatio
 }: {
   sprRect: Rect
@@ -108,7 +109,7 @@ function scaleSprite ({
   startY: number
   ctrlKey: TCtrlKey
   cvsRatio: ICvsRatio
-}): () => void {
+}): void {
   const startRect = sprRect.clone()
 
   const onMouseMove = (evt: MouseEvent): void => {
@@ -156,8 +157,6 @@ function scaleSprite ({
   }
   window.addEventListener('mousemove', onMouseMove)
   window.addEventListener('mouseup', clearWindowEvt)
-
-  return clearWindowEvt
 }
 
 /**
@@ -224,7 +223,7 @@ function fixedRatioScale ({
 }
 
 function hitRectCtrls ({
-  rect, cvsRatio, offsetX, offsetY, clientX, clientY
+  rect, cvsRatio, offsetX, offsetY, clientX, clientY, cvsEl
 }: {
   rect: Rect
   cvsRatio: ICvsRatio
@@ -232,22 +231,65 @@ function hitRectCtrls ({
   offsetY: number
   clientX: number
   clientY: number
+  cvsEl: HTMLCanvasElement
 }): boolean {
-  // 将鼠标点击偏移坐标映射成 canvas 坐标，然后映射成相对 sprite 的中心坐标
-  // 因为 ctrls 是相对 sprite 中心点定位的
-  const ofx = offsetX / cvsRatio.w - rect.center.x
-  const ofy = offsetY / cvsRatio.h - rect.center.y
+  // 将鼠标点击偏移坐标映射成 canvas 坐，
+  const ofx = offsetX / cvsRatio.w
+  const ofy = offsetY / cvsRatio.h
   const [k] = Object.entries(rect.ctrls)
     .find(([, rect]) => rect.checkHit(ofx, ofy)) as [TCtrlKey, Rect] ?? []
 
   if (k == null) return false
-  scaleSprite({
-    sprRect: rect,
-    ctrlKey: k,
-    startX: clientX,
-    startY: clientY,
-    cvsRatio
-  })
+  if (k === 'rotate') {
+    rotateRect(rect, cntMap2Outer(rect.center, cvsRatio, cvsEl))
+  } else {
+    scaleRect({
+      sprRect: rect,
+      ctrlKey: k,
+      startX: clientX,
+      startY: clientY,
+      cvsRatio
+    })
+  }
   // 命中 ctrl 后续是缩放 sprite，略过移动 sprite 逻辑
   return true
+}
+
+/**
+ * 监听拖拽事件，将鼠标坐标转换为旋转角度
+ * 旋转时，rect的坐标不变
+ */
+function rotateRect (rect: Rect, outCnt: IPoint): void {
+  const onMove = ({ clientX, clientY }: MouseEvent): void => {
+    // 映射为 中心点坐标系
+    const x = clientX - outCnt.x
+    const y = clientY - outCnt.y
+    // 旋转控制点在正上方，与 x 轴是 -90°， 所以需要加上 Math.PI / 2
+    const angle = Math.atan2(y, x) + Math.PI / 2
+    rect.angle = angle
+  }
+  const clear = (): void => {
+    window.removeEventListener('mousemove', onMove)
+    window.removeEventListener('mouseup', clear)
+  }
+  window.addEventListener('mousemove', onMove)
+  window.addEventListener('mouseup', clear)
+}
+
+/**
+ * canvas 内部（resolution）坐标映射成外部（DOM）坐标
+ */
+function cntMap2Outer (
+  cnt: IPoint,
+  cvsRatio: ICvsRatio,
+  cvsEl: HTMLElement
+): IPoint {
+  const x = cnt.x * cvsRatio.w
+  const y = cnt.y * cvsRatio.h
+
+  const { left, top } = cvsEl.getBoundingClientRect()
+  return {
+    x: x + left,
+    y: y + top
+  }
 }
