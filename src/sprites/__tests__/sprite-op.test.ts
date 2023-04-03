@@ -164,3 +164,39 @@ describe('scale sprite', () => {
     clear()
   })
 })
+
+describe('rotate sprite', () => {
+  test('rotate sprite', () => {
+    const vs = new VideoSprite('vs', new MediaStream())
+    vs.rect.w = 100
+    vs.rect.h = 100
+    sprMng.addSprite(vs)
+
+    // 激活 sprite
+    const clear = draggabelSprite(cvsEl, sprMng)
+    cvsEl.dispatchEvent(crtMSEvt4Offset('mousedown', 0, 0))
+    expect(sprMng.activeSprite).toBe(vs)
+
+    window.dispatchEvent(new MouseEvent('mouseup'))
+    // 命中 rotate ctrl
+    cvsEl.dispatchEvent(crtMSEvt4Offset(
+      'mousedown',
+      50 * cvsRatio.w,
+      // rotate ctrl 在 top ctrl 正上方一点点
+      -8 * 3 * cvsRatio.h
+    ))
+    window.dispatchEvent(new MouseEvent('mousemove', {
+      clientX: 100,
+      clientY: 100
+    }))
+    expect(vs.rect.angle).toMatchSnapshot()
+
+    window.dispatchEvent(new MouseEvent('mousemove', {
+      clientX: 100,
+      clientY: 200
+    }))
+    expect(vs.rect.angle).toMatchSnapshot()
+
+    clear()
+  })
+})

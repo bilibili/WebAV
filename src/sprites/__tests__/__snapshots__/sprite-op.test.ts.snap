@@ -1,5 +1,9 @@
 // Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
+exports[`rotate sprite > rotate sprite 1`] = `2.3580805686801525`;
+
+exports[`rotate sprite > rotate sprite 2`] = `2.7330338359124564`;
+
 exports[`scale sprite > drag rb(bottom right) ctrl 1`] = `
 Rect {
   "angle": 0,

@@ -33,9 +33,11 @@ export class Rect {
     // todo：控制点在高分辨率下看起来太小
     // 控制点元素大小, 以 分辨率 为基准
     const sz = 16
+    // half size
     const hfSz = sz / 2
     const hfW = w / 2
     const hfH = h / 2
+    // rotate size
     const rtSz = sz * 3
     const hfRtSz = rtSz / 2
     // ctrl 坐标是相对于 sprite 中心点
