@@ -3,9 +3,11 @@ import { BaseSprite } from './base-sprite'
 export class ImgSprite extends BaseSprite {
   #img: HTMLImageElement = new Image()
 
-  constructor (name: string, source: File) {
+  constructor (name: string, source: File | string) {
     super(name)
+
     if (
+      source instanceof File &&
       !['image/png', 'image/jpg', 'image/jpeg', 'image/bmp', 'image/gif']
         .includes(source.type)
     ) throw Error('Unsupported image format')
@@ -13,12 +15,14 @@ export class ImgSprite extends BaseSprite {
     this.#init(source).catch(console.error)
   }
 
-  async #init (file: File): Promise<void> {
+  async #init (source: File | string): Promise<void> {
     this.#img.onload = () => {
       this.rect.w = this.#img.width
       this.rect.h = this.#img.height
     }
-    this.#img.src = await file2B64(file)
+    this.#img.src = source instanceof File
+      ? await file2B64(source)
+      : source
   }
 
   render (ctx: CanvasRenderingContext2D): void {
