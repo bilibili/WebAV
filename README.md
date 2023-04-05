@@ -3,7 +3,8 @@
 ## TODO
 [] Audio & Video files  
 [] Font  
-[] dom ctrls  
+[] DOM ctrls  
+[] Magnetic effect  
 [] -- clip sprite
 [] -- Sprite contextmenu  
 

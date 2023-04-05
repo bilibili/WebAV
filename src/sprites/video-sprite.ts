@@ -1,3 +1,4 @@
+import { createEl } from '../utils'
 import { BaseSprite } from './base-sprite'
 
 interface IVideoSpriteOpts {
@@ -7,30 +8,63 @@ interface IVideoSpriteOpts {
 export class VideoSprite extends BaseSprite {
   #videoEl: HTMLVideoElement | null = null
 
-  constructor (name: string, source: MediaStream, opts: IVideoSpriteOpts = {}) {
+  constructor (name: string, source: MediaStream | File, opts: IVideoSpriteOpts = {}) {
     super(name)
-    this.initReady = this.#init(source, opts)
+    this.initReady = (source instanceof MediaStream
+      ? this.#init4MS(source, opts)
+      : this.#init4File(source, opts)
+    ).then(({ videoEl, audioSource }) => {
+      videoEl.loop = true
+      this.rect.w = videoEl.videoWidth
+      this.rect.h = videoEl.videoHeight
+      this.#videoEl = videoEl
+
+      if (audioSource != null && opts.audioCtx != null) {
+        this.audioNode = opts.audioCtx.createGain()
+        audioSource.connect(this.audioNode)
+      }
+    })
   }
 
-  async #init (ms: MediaStream, opts: IVideoSpriteOpts): Promise<void> {
+  async #init4MS (ms: MediaStream, opts: IVideoSpriteOpts): Promise<{
+    videoEl: HTMLVideoElement
+    audioSource: AudioNode | null
+  }> {
     const audioMS = new MediaStream()
     ms.getAudioTracks().forEach((track) => {
-      // 给视频消音
+      // 给视频消音，否则会从扬声器重新播放出来，跟背景音重叠
       ms.removeTrack(track)
       audioMS.addTrack(track)
     })
 
-    this.#videoEl = await mediaStream2Video(ms)
-    await this.#videoEl.play()
+    const videoEl = await mediaStream2Video(ms)
+    await videoEl.play()
 
-    this.rect.w = this.#videoEl.videoWidth
-    this.rect.h = this.#videoEl.videoHeight
-
+    let audioSource = null
     if (opts.audioCtx != null && audioMS.getAudioTracks().length > 0) {
-      const audioSource = opts.audioCtx.createMediaStreamSource(audioMS)
-      this.audioNode = opts.audioCtx.createGain()
-      audioSource.connect(this.audioNode)
+      audioSource = opts.audioCtx.createMediaStreamSource(audioMS)
     }
+
+    return { videoEl, audioSource }
+  }
+
+  async #init4File (videoFile: File, opts: IVideoSpriteOpts): Promise<{
+    videoEl: HTMLVideoElement
+    audioSource: AudioNode | null
+  }> {
+    if (
+      !['video/mp4', 'video/webm'].includes(videoFile.type)
+    ) throw Error('Unsupport video format')
+    const videoEl = createEl('video') as HTMLVideoElement
+    videoEl.src = URL.createObjectURL(videoFile)
+    await videoEl.play()
+
+    let audioSource = null
+    if (opts.audioCtx != null) {
+      audioSource = opts.audioCtx.createMediaElementSource(videoEl)
+    }
+
+    return { videoEl, audioSource }
   }
 
   render (ctx: CanvasRenderingContext2D): void {
@@ -52,6 +86,7 @@ export class VideoSprite extends BaseSprite {
 
   destory (): void {
     this.#videoEl?.remove()
+    if (this.#videoEl?.src != null) URL.revokeObjectURL(this.#videoEl.src)
     this.#videoEl = null
   }
 }

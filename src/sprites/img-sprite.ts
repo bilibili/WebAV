@@ -10,7 +10,7 @@ export class ImgSprite extends BaseSprite {
       source instanceof File &&
       !['image/png', 'image/jpg', 'image/jpeg', 'image/bmp', 'image/gif']
         .includes(source.type)
-    ) throw Error('Unsupported image format')
+    ) throw Error('Unsupport image format')
 
     this.#init(source).catch(console.error)
   }

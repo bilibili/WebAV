@@ -42,7 +42,7 @@ document.querySelector('#display')?.addEventListener('click', () => {
   })().catch(console.error)
 })
 
-document.querySelector('#addImg')?.addEventListener('click', () => {
+document.querySelector('#localImg')?.addEventListener('click', () => {
   ;(async () => {
     const [imgFH] = await (window as any).showOpenFilePicker({
       types: [{
@@ -54,6 +54,21 @@ document.querySelector('#addImg')?.addEventListener('click', () => {
     })
     const is = new ImgSprite('img', await imgFH.getFile())
     await avCvs.spriteManager.addSprite(is)
+  })().catch(console.error)
+})
+
+document.querySelector('#localVideo')?.addEventListener('click', () => {
+  ;(async () => {
+    const [imgFH] = await (window as any).showOpenFilePicker({
+      types: [{
+        description: 'Video',
+        accept: {
+          'video/*': ['.webm', '.mp4']
+        }
+      }]
+    })
+    const vs = new VideoSprite('vs', await imgFH.getFile())
+    await avCvs.spriteManager.addSprite(vs)
   })().catch(console.error)
 })
 
