@@ -8,7 +8,10 @@ export const MediaStreamMock = {
 
 Object.assign(global, {
   MediaStream: vi.fn().mockImplementation(() => {
-    return MediaStreamMock
+    return Object.assign(
+      Object.create(MediaStream.prototype),
+      MediaStreamMock
+    )
   })
 })
 
@@ -24,7 +27,10 @@ export const AudioContextMock = {
 
 Object.assign(global, {
   AudioContext: vi.fn().mockImplementation(() => {
-    return AudioContextMock
+    return Object.assign(
+      Object.create(AudioContext.prototype),
+      AudioContextMock
+    )
   })
 })
 
@@ -37,3 +43,5 @@ vi.spyOn(HTMLVideoElement.prototype, 'play')
   .mockImplementation(async () => {
     return await Promise.resolve()
   })
+
+URL.revokeObjectURL = vi.fn
