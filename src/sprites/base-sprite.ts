@@ -11,7 +11,7 @@ export abstract class BaseSprite {
 
   flip: 'horizontal' | 'vertical' | null = null
 
-  audioNode: AudioNode | null = null
+  audioNode: GainNode | null = null
 
   initReady = Promise.resolve()
 

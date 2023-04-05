@@ -1,4 +1,4 @@
-import { createEl, mediaStream2Video } from '../utils'
+import { mediaStream2Video } from '../utils'
 import { BaseSprite } from './base-sprite'
 
 interface IVideoSpriteOpts {
@@ -7,7 +7,6 @@ interface IVideoSpriteOpts {
 
 export class VideoSprite extends BaseSprite {
   #videoEl: HTMLVideoElement | null = null
-  #audioEl: HTMLAudioElement | null = null
 
   constructor (name: string, source: MediaStream, opts: IVideoSpriteOpts = {}) {
     super(name)
@@ -29,11 +28,9 @@ export class VideoSprite extends BaseSprite {
     this.rect.h = this.#videoEl.videoHeight
 
     if (opts.audioCtx != null && audioMS.getAudioTracks().length > 0) {
-      const audioEl = createEl('audio') as HTMLAudioElement
-      audioEl.srcObject = audioMS
-      await audioEl.play()
-      this.#audioEl = audioEl
-      this.audioNode = opts.audioCtx.createMediaElementSource(audioEl)
+      const audioSource = opts.audioCtx.createMediaStreamSource(audioMS)
+      this.audioNode = opts.audioCtx.createGain()
+      audioSource.connect(this.audioNode)
     }
   }
 
@@ -45,29 +42,17 @@ export class VideoSprite extends BaseSprite {
     ctx.resetTransform()
   }
 
-  pause (): void {
-    this.#videoEl?.pause()
-    this.#audioEl?.pause()
-  }
-
-  async play (): Promise<void> {
-    await this.#videoEl?.play()
-    await this.#audioEl?.play()
-  }
-
   get volume (): number {
-    return this.#audioEl?.volume ?? 0
+    return this.audioNode?.gain.value ?? 0
   }
 
   set volume (v: number) {
-    if (this.#audioEl == null) return
-    this.#audioEl.volume = v
+    if (this.audioNode == null) return
+    this.audioNode.gain.value = v
   }
 
   destory (): void {
     this.#videoEl?.remove()
     this.#videoEl = null
-    this.#audioEl?.remove()
-    this.#audioEl = null
   }
 }
