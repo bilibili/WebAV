@@ -1,12 +1,11 @@
 # WebAV
 
 ## TODO
-[] Share Screen  
 [] Audio & Video files  
 [] Font  
 [] dom ctrls  
-[] clip sprite  
-[] Sprite contextmenu  
+[] -- clip sprite
+[] -- Sprite contextmenu  
 
 ## App
 [] face detect  
