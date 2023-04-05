@@ -12,9 +12,7 @@ export async function mediaStream2Video (
     video.addEventListener('loadedmetadata', () => {
       if (failed) return
       clearTimeout(timer)
-      video.play()
-        .then(() => resolve(video))
-        .catch(reject)
+      resolve(video)
     })
     timer = window.setTimeout(() => {
       failed = true

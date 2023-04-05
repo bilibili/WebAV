@@ -13,13 +13,17 @@ const avCvs = new AVCanvas(document.querySelector('#app') as HTMLElement, {
 console.log({ avCvs })
 
 ;(async (): Promise<void> => {
-  // const mediaStream = await navigator.mediaDevices.getUserMedia({
-  //   video: true
-  // })
-  // const vs = new VideoSprite('camera', mediaStream)
-  // avCvs.spriteManager.addSprite(vs)
+  const mediaStream = await navigator.mediaDevices.getUserMedia({
+    video: true,
+    audio: true
+  })
+  const vs = new VideoSprite('camera', mediaStream, {
+    audioCtx: avCvs.spriteManager.audioCtx
+  })
+
+  await avCvs.spriteManager.addSprite(vs)
   const is = new ImgSprite('img', 'https://neo-pages.bilibili.com/bbfe/neo/assets/img/neo-pages-overview.48f7bb81.png')
-  avCvs.spriteManager.addSprite(is)
+  await avCvs.spriteManager.addSprite(is)
 
   document.querySelector('#addImg')?.addEventListener('click', () => {
     ;(async () => {
@@ -32,7 +36,7 @@ console.log({ avCvs })
         }]
       })
       const is = new ImgSprite('img', await imgFH.getFile())
-      avCvs.spriteManager.addSprite(is)
+      await avCvs.spriteManager.addSprite(is)
     })().catch(console.error)
   })
 })().catch(console.error)

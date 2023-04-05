@@ -10,6 +10,10 @@ export class SpriteManager {
     add: (s: BaseSprite) => void
   }>()
 
+  audioCtx = new AudioContext()
+
+  audioMSDest = this.audioCtx.createMediaStreamDestination()
+
   on = this.#evtTool.on
 
   get activeSprite (): BaseSprite | null { return this.#activeSprite }
@@ -23,9 +27,13 @@ export class SpriteManager {
     this.#activeSprite = s
   }
 
-  addSprite<S extends BaseSprite>(s: S): void {
+  async addSprite<S extends BaseSprite>(s: S): Promise<void> {
+    await s.initReady
     this.#sprites.push(s)
     this.#sprites = this.#sprites.sort((a, b) => a.zIndex - b.zIndex)
+    s.audioNode?.connect(this.audioMSDest)
+
+    // todo: event enum
     this.#evtTool.emit('add', s)
     // todo: 动态适配canvas宽高
   }

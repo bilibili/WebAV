@@ -1,17 +1,16 @@
 # WebAV
 
 ## TODO
-[ ] Image  
-[ ] Share Screen  
-[ ] Audio  
-[ ] Font  
-[ ] dom ctrls  
-[ ] clip sprite  
-[ ] Sprite contextmenu  
+[] Share Screen  
+[] Audio & Video files  
+[] Font  
+[] dom ctrls  
+[] clip sprite  
+[] Sprite contextmenu  
 
 ## App
-[ ] face detect  
-[ ] adapter media server  
-[ ] MediaRecoder & Export  
-[ ] Timeline   
+[] face detect  
+[] adapter media server  
+[] MediaRecoder & Export  
+[] Timeline   
 

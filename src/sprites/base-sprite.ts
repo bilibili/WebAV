@@ -11,6 +11,10 @@ export abstract class BaseSprite {
 
   flip: 'horizontal' | 'vertical' | null = null
 
+  audioNode: AudioNode | null = null
+
+  initReady = Promise.resolve()
+
   constructor (public name: string) {}
 
   render (ctx: CanvasRenderingContext2D): void {
