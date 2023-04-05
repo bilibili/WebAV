@@ -1,18 +1,30 @@
 import { vi } from 'vitest'
 
+export const MediaStreamMock = {
+  getAudioTracks: vi.fn().mockReturnValue([]),
+  removeTrack: vi.fn(),
+  addTrack: vi.fn()
+}
+
 Object.assign(global, {
   MediaStream: vi.fn().mockImplementation(() => {
-    return {
-      getAudioTracks: () => []
-    }
+    return MediaStreamMock
   })
 })
 
+export const AudioContextMock = {
+  createGain: vi.fn().mockImplementation(() => {
+    return { gain: vi.fn() }
+  }),
+  createMediaStreamSource: vi.fn().mockImplementation(() => {
+    return { connect: vi.fn() }
+  }),
+  createMediaStreamDestination: vi.fn()
+}
+
 Object.assign(global, {
   AudioContext: vi.fn().mockImplementation(() => {
-    return {
-      createMediaStreamDestination: vi.fn()
-    }
+    return AudioContextMock
   })
 })
 

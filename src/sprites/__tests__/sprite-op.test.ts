@@ -88,6 +88,8 @@ describe('draggabelSprite', () => {
     await sprMng.addSprite(vs)
     const clear = draggabelSprite(cvsEl, sprMng)
     cvsEl.dispatchEvent(crtMSEvt4Offset('mousedown', 0, 0))
+    expect(sprMng.activeSprite).toBe(vs)
+
     window.dispatchEvent(new MouseEvent('mousemove', {
       clientX: 100,
       clientY: 100

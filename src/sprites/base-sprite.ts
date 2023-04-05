@@ -7,6 +7,7 @@ export abstract class BaseSprite {
 
   zIndex = 0
 
+  // todo: 移除 该属性
   actived = false
 
   flip: 'horizontal' | 'vertical' | null = null
