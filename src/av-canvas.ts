@@ -66,9 +66,18 @@ export class AVCanvas {
     this.#clears.forEach(fn => fn())
   }
 
+  captureStream (): MediaStream {
+    const ms = new MediaStream()
+    this.#cvsEl.captureStream().getTracks().concat(
+      this.spriteManager.audioMSDest.stream.getTracks()
+    ).forEach((t) => {
+      ms.addTrack(t)
+    })
+    return ms
+  }
+
   #render (): void {
     const list = this.spriteManager.getSprites()
     list.forEach(r => r.render(this.#cvsCtx))
-    // console.log(22222, list)
   }
 }

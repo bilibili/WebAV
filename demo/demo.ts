@@ -22,8 +22,8 @@ console.log({ avCvs })
   })
 
   await avCvs.spriteManager.addSprite(vs)
-  const is = new ImgSprite('img', 'https://neo-pages.bilibili.com/bbfe/neo/assets/img/neo-pages-overview.48f7bb81.png')
-  await avCvs.spriteManager.addSprite(is)
+  // const is = new ImgSprite('img', 'https://neo-pages.bilibili.com/bbfe/neo/assets/img/neo-pages-overview.48f7bb81.png')
+  // await avCvs.spriteManager.addSprite(is)
 
   document.querySelector('#addImg')?.addEventListener('click', () => {
     ;(async () => {
@@ -40,3 +40,43 @@ console.log({ avCvs })
     })().catch(console.error)
   })
 })().catch(console.error)
+
+let stopRecod = (): void => {}
+document.querySelector('#startRecod')?.addEventListener('click', () => {
+  ;(async () => {
+    const fileHandle = await (window as any).showSaveFilePicker({
+      suggestedName: `webav-recod-${Date.now()}.webm`,
+      startIn: 'downloads'
+    })
+    stopRecod()
+    stopRecod = startRecod(
+      avCvs,
+      await fileHandle.createWritable()
+    )
+  })().catch(console.error)
+})
+document.querySelector('#stopRecod')?.addEventListener('click', () => {
+  stopRecod()
+})
+
+interface IWriter {
+  write: (blob: Blob) => void
+  close: () => void
+}
+
+function startRecod (avCvs: AVCanvas, writer: IWriter): () => void {
+  const recoder = new MediaRecorder(avCvs.captureStream(), {
+    mimeType: 'video/webm;codecs=avc1.64001f,opus'
+  })
+  let stoped = false
+  recoder.addEventListener('dataavailable', (evt) => {
+    if (stoped) return
+    writer.write(evt.data)
+  })
+  recoder.start(1000)
+  return () => {
+    stoped = true
+    recoder.stop()
+    writer.close()
+  }
+}
