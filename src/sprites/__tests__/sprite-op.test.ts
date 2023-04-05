@@ -1,10 +1,9 @@
 import { beforeEach, describe, expect, test, vi } from 'vitest'
+import './mock'
 import { SpriteManager } from '../sprite-manager'
 import { createEl } from '../../utils'
 import { draggabelSprite } from '../sprite-op'
 import { VideoSprite } from '../video-sprite'
-
-Object.assign(global, { MediaStream: vi.fn() })
 
 /**
  * Mock 鼠标事件，初始化 offsetXY 值
@@ -50,12 +49,12 @@ describe('draggabelSprite', () => {
     expect(spyREL).toBeCalledWith('mousedown', expect.any(Function))
   })
 
-  test('window on mouse event', () => {
+  test('window on mouse event', async () => {
     const spyAEL = vi.spyOn(window, 'addEventListener')
     const spyREL = vi.spyOn(window, 'removeEventListener')
     const vs = new VideoSprite('vs', new MediaStream())
     vi.spyOn(vs.rect, 'checkHit').mockReturnValue(true)
-    sprMng.addSprite(vs)
+    await sprMng.addSprite(vs)
     const clear = draggabelSprite(cvsEl, sprMng)
     cvsEl.dispatchEvent(new MouseEvent('mousedown'))
 
@@ -68,11 +67,11 @@ describe('draggabelSprite', () => {
     expect(spyREL).toHaveBeenNthCalledWith(2, 'mouseup', expect.any(Function))
   })
 
-  test('sprite check hit', () => {
+  test('sprite check hit', async () => {
     const vs = new VideoSprite('vs', new MediaStream())
     vi.spyOn(vs.rect, 'checkHit')
 
-    sprMng.addSprite(vs)
+    await sprMng.addSprite(vs)
     const clear = draggabelSprite(cvsEl, sprMng)
     cvsEl.dispatchEvent(crtMSEvt4Offset('mousedown', 100, 100))
     // 点击事件是页面坐标，需要按比例映射成 canvas 内部坐标
@@ -81,12 +80,12 @@ describe('draggabelSprite', () => {
     clear()
   })
 
-  test('move sprite', () => {
+  test('move sprite', async () => {
     const vs = new VideoSprite('vs', new MediaStream())
     vs.rect.w = 100
     vs.rect.h = 100
 
-    sprMng.addSprite(vs)
+    await sprMng.addSprite(vs)
     const clear = draggabelSprite(cvsEl, sprMng)
     cvsEl.dispatchEvent(crtMSEvt4Offset('mousedown', 0, 0))
     window.dispatchEvent(new MouseEvent('mousemove', {
@@ -110,11 +109,11 @@ describe('draggabelSprite', () => {
 })
 
 describe('scale sprite', () => {
-  test('drag right ctrl', () => {
+  test('drag right ctrl', async () => {
     const vs = new VideoSprite('vs', new MediaStream())
+    await sprMng.addSprite(vs)
     vs.rect.w = 100
     vs.rect.h = 100
-    sprMng.addSprite(vs)
 
     // 激活 sprite
     const clear = draggabelSprite(cvsEl, sprMng)
@@ -138,11 +137,11 @@ describe('scale sprite', () => {
     clear()
   })
 
-  test('drag rb(bottom right) ctrl', () => {
+  test('drag rb(bottom right) ctrl', async () => {
     const vs = new VideoSprite('vs', new MediaStream())
+    await sprMng.addSprite(vs)
     vs.rect.w = 100
     vs.rect.h = 100
-    sprMng.addSprite(vs)
 
     // 激活 sprite
     const clear = draggabelSprite(cvsEl, sprMng)
@@ -167,11 +166,11 @@ describe('scale sprite', () => {
 })
 
 describe('rotate sprite', () => {
-  test('rotate sprite', () => {
+  test('rotate sprite', async () => {
     const vs = new VideoSprite('vs', new MediaStream())
+    await sprMng.addSprite(vs)
     vs.rect.w = 100
     vs.rect.h = 100
-    sprMng.addSprite(vs)
 
     // 激活 sprite
     const clear = draggabelSprite(cvsEl, sprMng)
