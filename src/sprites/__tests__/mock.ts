@@ -44,4 +44,7 @@ vi.spyOn(HTMLVideoElement.prototype, 'play')
     return await Promise.resolve()
   })
 
-URL.revokeObjectURL = vi.fn
+export const getBoundingClientRectMock = vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect')
+
+URL.createObjectURL = vi.fn()
+URL.revokeObjectURL = vi.fn()
