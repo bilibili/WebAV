@@ -7,9 +7,6 @@ export abstract class BaseSprite {
 
   zIndex = 0
 
-  // todo: 移除 该属性
-  actived = false
-
   flip: 'horizontal' | 'vertical' | null = null
 
   audioNode: GainNode | null = null
@@ -20,8 +17,7 @@ export abstract class BaseSprite {
 
   render (ctx: CanvasRenderingContext2D): void {
     // todo: clip
-    // todo: 使用dom替代canvas绘制控制点
-    const { rect: { center, ctrls, angle } } = this
+    const { rect: { center, angle } } = this
     ctx.setTransform(
       // 水平 缩放、倾斜
       this.flip === 'horizontal' ? -1 : 1, 0,
@@ -32,13 +28,6 @@ export abstract class BaseSprite {
     )
     // 任意方向翻转，旋转角度转为负值，才能与控制点同步
     ctx.rotate((this.flip == null ? 1 : -1) * angle)
-
-    // 绘制 ctrls
-    if (!this.actived) return
-    ctx.fillStyle = '#ffffff'
-    Object.values(ctrls).forEach(({ x, y, w, h }) => {
-      ctx.fillRect(x, y, w, h)
-    })
   }
 
   abstract destory (): void

@@ -19,8 +19,6 @@ export class SpriteManager {
   get activeSprite (): BaseSprite | null { return this.#activeSprite }
   set activeSprite (s: BaseSprite | null) {
     if (s === this.#activeSprite) return
-    if (this.#activeSprite != null) this.#activeSprite.actived = false
-    if (s != null) s.actived = true
     this.#activeSprite = s
   }
 

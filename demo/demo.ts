@@ -1,4 +1,5 @@
 import { AVCanvas } from '../src/av-canvas'
+import { FontSprite } from '../src/sprites/font-sprite'
 import { ImgSprite } from '../src/sprites/img-sprite'
 import { VideoSprite } from '../src/sprites/video-sprite'
 
@@ -69,6 +70,13 @@ document.querySelector('#localVideo')?.addEventListener('click', () => {
     })
     const vs = new VideoSprite('vs', await imgFH.getFile())
     await avCvs.spriteManager.addSprite(vs)
+  })().catch(console.error)
+})
+
+document.querySelector('#fontExamp')?.addEventListener('click', () => {
+  ;(async () => {
+    const fs = new FontSprite('font', '示例文字')
+    await avCvs.spriteManager.addSprite(fs)
   })().catch(console.error)
 })
 
