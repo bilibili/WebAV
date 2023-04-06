@@ -72,7 +72,6 @@ export class VideoSprite extends BaseSprite {
     super.render(ctx)
     const { w, h } = this.rect
     ctx.drawImage(this.#videoEl, -w / 2, -h / 2, w, h)
-    ctx.resetTransform()
   }
 
   get volume (): number {

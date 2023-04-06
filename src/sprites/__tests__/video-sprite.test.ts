@@ -17,10 +17,8 @@ test('VideoSprite render', async () => {
   vs.rect.h = 100
   const mockCtx = {
     drawImage: vi.fn(),
-    fillRect: vi.fn(),
     rotate: vi.fn(),
-    setTransform: vi.fn(),
-    resetTransform: vi.fn()
+    setTransform: vi.fn()
   }
   vs.render(mockCtx as unknown as CanvasRenderingContext2D)
 
@@ -30,7 +28,6 @@ test('VideoSprite render', async () => {
   )
   expect(mockCtx.rotate).toBeCalledWith(0)
   expect(mockCtx.setTransform).toBeCalledWith(1, 0, 0, 1, 50, 50)
-  expect(mockCtx.resetTransform).toBeCalledTimes(1)
 })
 
 test('VideoSprite destory', async () => {

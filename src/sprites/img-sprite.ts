@@ -29,7 +29,6 @@ export class ImgSprite extends BaseSprite {
     super.render(ctx)
     const { w, h } = this.rect
     ctx.drawImage(this.#img, -w / 2, -h / 2, w, h)
-    ctx.resetTransform()
   }
 
   destory (): void {
