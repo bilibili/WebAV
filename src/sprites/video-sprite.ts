@@ -87,6 +87,8 @@ export class VideoSprite extends BaseSprite {
     this.#videoEl?.remove()
     if (this.#videoEl?.src != null) URL.revokeObjectURL(this.#videoEl.src)
     this.#videoEl = null
+    this.audioNode?.disconnect()
+    this.audioNode = null
   }
 }
 

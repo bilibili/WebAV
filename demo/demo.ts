@@ -1,5 +1,6 @@
 import fixWebmDur from 'fix-webm-duration'
 import { AVCanvas } from '../src/av-canvas'
+import { AudioSprite } from '../src/sprites/audio-sprite'
 import { FontSprite } from '../src/sprites/font-sprite'
 import { ImgSprite } from '../src/sprites/img-sprite'
 import { VideoSprite } from '../src/sprites/video-sprite'
@@ -71,6 +72,21 @@ document.querySelector('#localVideo')?.addEventListener('click', () => {
     })
     const vs = new VideoSprite('vs', await imgFH.getFile())
     await avCvs.spriteManager.addSprite(vs)
+  })().catch(console.error)
+})
+
+document.querySelector('#localAudio')?.addEventListener('click', () => {
+  ;(async () => {
+    const [imgFH] = await (window as any).showOpenFilePicker({
+      types: [{
+        description: 'Audio',
+        accept: {
+          'audio/*': ['.mp3', '.wav', '.ogg']
+        }
+      }]
+    })
+    const as = new AudioSprite('vs', await imgFH.getFile())
+    await avCvs.spriteManager.addSprite(as)
   })().catch(console.error)
 })
 
