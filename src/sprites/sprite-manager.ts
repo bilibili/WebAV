@@ -22,6 +22,10 @@ export class SpriteManager {
     this.#activeSprite = s
   }
 
+  constructor () {
+    this.#bgAudio()
+  }
+
   async addSprite<S extends BaseSprite>(s: S): Promise<void> {
     await s.initReady
     this.#sprites.push(s)
@@ -35,5 +39,18 @@ export class SpriteManager {
 
   getSprites (): BaseSprite[] {
     return [...this.#sprites]
+  }
+
+  // 添加背景音，如果没有音频，录制的webm不正常
+  #bgAudio (): void {
+    const oscillator = this.audioCtx.createOscillator()
+    const wave = this.audioCtx.createPeriodicWave(
+      new Float32Array([0, 0]),
+      new Float32Array([0, 0]),
+      { disableNormalization: true }
+    )
+    oscillator.setPeriodicWave(wave)
+    oscillator.connect(this.audioMSDest)
+    oscillator.start()
   }
 }
