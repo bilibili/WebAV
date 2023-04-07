@@ -34,7 +34,11 @@ export class SpriteManager {
 
     // todo: event enum
     this.#evtTool.emit('add', s)
-    // todo: 动态适配canvas宽高
+  }
+
+  removeSprite (spr: BaseSprite): void {
+    this.#sprites = this.#sprites.filter(s => s !== spr)
+    spr.destory()
   }
 
   getSprites (): BaseSprite[] {
