@@ -8,7 +8,7 @@ beforeEach(() => {
 })
 
 test('create AudioSprite', () => {
-  createObjectURLMock.mockReturnValue('mock-audio-src')
+  createObjectURLMock.mockReturnValueOnce('mock-audio-src')
   const as = new AudioSprite(
     'as',
     { type: 'audio/mpeg' } as unknown as File,

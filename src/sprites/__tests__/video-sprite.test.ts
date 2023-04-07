@@ -1,6 +1,6 @@
 import { vi, test, expect, beforeAll, afterAll } from 'vitest'
 import { VideoSprite } from '../video-sprite'
-import { MediaStreamMock } from './mock'
+import { createObjectURLMock, MediaStreamMock, revokeObjectURLMock } from './mock'
 
 beforeAll(() => {
   MediaStreamMock.getAudioTracks.mockReturnValue([vi.fn()])
@@ -56,4 +56,21 @@ test('VideoSprite audio ctrl', async () => {
   expect(vs.volume).toBe(0)
   vs.volume = 1
   expect(vs.volume).toBe(1)
+})
+
+test('create VideoSprite with file', async () => {
+  createObjectURLMock.mockReturnValueOnce('mock-video-src')
+  const vs = new VideoSprite(
+    'vs-file',
+    { type: 'video/mp4' } as unknown as File,
+    { audioCtx: new AudioContext() }
+  )
+  await vs.initReady
+
+  expect(createObjectURLMock).toBeCalledTimes(1)
+  vs.destory()
+  expect(vs.audioNode?.disconnect).toBeCalledTimes(1)
+  expect(revokeObjectURLMock).toBeCalledWith(
+    expect.stringMatching(/mock-video-src$/)
+  )
 })
