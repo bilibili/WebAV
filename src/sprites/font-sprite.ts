@@ -21,18 +21,15 @@ function renderTxt2Img (txt: string, cssText: string): HTMLImageElement {
   const img = new Image()
   img.width = width
   img.height = height
-  const svg = `
+  const svgStr = `
     <svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}">
     <foreignObject width="100%" height="100%">
         <div xmlns="http://www.w3.org/1999/xhtml">${div.outerHTML}</div>
     </foreignObject>
     </svg>
-  `
+  `.replace(/\n/g, '').replace(/\t/g, '').replace(/#/g, '%23')
 
-  const svgBlob = new Blob([svg], { type: 'image/svg+xml;charset=utf-8' })
-  const svgObjectUrl = URL.createObjectURL(svgBlob)
-
-  img.src = svgObjectUrl
+  img.src = `data:image/svg+xml;charset=utf-8,${svgStr}`
   return img
 }
 
@@ -66,7 +63,5 @@ export class FontSprite extends BaseSprite {
     ctx.drawImage(this.#img, -w / 2, -h / 2, w, h)
   }
 
-  destory (): void {
-    URL.revokeObjectURL(this.#img.src)
-  }
+  destory (): void {}
 }

@@ -58,6 +58,8 @@ export class AVCanvas {
       requestAnimationFrame(loop)
     }
     loop()
+
+    // ;(window as any).cvsEl = this.#cvsEl
   }
 
   destory (): void {

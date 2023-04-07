@@ -29,7 +29,4 @@ test('font-sprite', () => {
   )
   expect(mockCtx.rotate).toBeCalledTimes(1)
   expect(mockCtx.setTransform).toBeCalledTimes(1)
-
-  fs.destory()
-  expect(URL.revokeObjectURL).toBeCalledTimes(1)
 })
