@@ -8,6 +8,9 @@ interface IAudioSpriteOpts {
 export class AudioSprite extends BaseSprite {
   #audioEl = createEl('audio') as HTMLAudioElement
 
+  // 音频节点没有可视内容
+  readonly visible = false
+
   constructor (name: string, source: File, opts: IAudioSpriteOpts = {}) {
     super(name)
     if (
