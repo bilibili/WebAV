@@ -1,3 +1,4 @@
+import fixWebmDur from 'fix-webm-duration'
 import { AVCanvas } from '../src/av-canvas'
 import { FontSprite } from '../src/sprites/font-sprite'
 import { ImgSprite } from '../src/sprites/img-sprite'
@@ -99,6 +100,7 @@ document.querySelector('#stopRecod')?.addEventListener('click', () => {
 })
 
 interface IWriter {
+  seek: (pos: number) => void
   write: (blob: Blob) => void
   close: () => void
 }
@@ -107,15 +109,25 @@ function startRecod (avCvs: AVCanvas, writer: IWriter): () => void {
   const recoder = new MediaRecorder(avCvs.captureStream(), {
     mimeType: 'video/webm;codecs=avc1.64001f,opus'
   })
-  let stoped = false
-  recoder.addEventListener('dataavailable', (evt) => {
-    if (stoped) return
+  let firstBlob: Blob | null = null
+  recoder.ondataavailable = (evt) => {
+    if (firstBlob == null) firstBlob = evt.data
+    console.log(44444, firstBlob.size)
     writer.write(evt.data)
-  })
+  }
+  const startTime = performance.now()
+  recoder.onstop = async () => {
+    if (firstBlob != null) {
+      const duration = performance.now() - startTime
+      const fixedBlob = await fixWebmDur(firstBlob, duration)
+      console.log(3333, JSON.stringify({ duration, s1: firstBlob.size, s2: fixedBlob.size }))
+      writer.seek(0)
+      writer.write(fixedBlob)
+    }
+    writer.close()
+  }
   recoder.start(1000)
   return () => {
-    stoped = true
     recoder.stop()
-    writer.close()
   }
 }
