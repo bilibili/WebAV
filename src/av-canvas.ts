@@ -53,7 +53,14 @@ export class AVCanvas {
         this.#cvsEl,
         this.spriteManager
       ),
-      renderCtrls(container, this.#cvsEl, this.spriteManager)
+      renderCtrls(container, this.#cvsEl, this.spriteManager),
+      this.spriteManager.on(ESpriteManagerEvt.AddSprite, (s) => {
+        const { rect } = s
+        if (rect.x === 0 && rect.y === 0) {
+          rect.x = (this.#cvsEl.width - rect.w) / 2
+          rect.y = (this.#cvsEl.height - rect.h) / 2
+        }
+      })
     )
 
     const loop = (): void => {
