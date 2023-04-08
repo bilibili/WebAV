@@ -1,4 +1,5 @@
 import { Rect, TCtrlKey } from './sprites/rect'
+import { renderCtrls } from './sprites/render-ctrl'
 import { ESpriteManagerEvt, SpriteManager } from './sprites/sprite-manager'
 import { draggabelSprite } from './sprites/sprite-op'
 import { IResolution } from './types'
@@ -50,7 +51,8 @@ export class AVCanvas {
       draggabelSprite(
         this.#cvsEl,
         this.spriteManager
-      )
+      ),
+      renderCtrls(container, this.#cvsEl, this.spriteManager)
     )
 
     const loop = (): void => {
@@ -88,24 +90,6 @@ export class AVCanvas {
     const list = this.spriteManager.getSprites()
     list.forEach(r => r.render(cvsCtx))
 
-    // todo: 使用dom替代canvas绘制控制点
-    // 绘制 ctrls
-    const actSpr = this.spriteManager.activeSprite
-    if (actSpr == null) return
-    cvsCtx.fillStyle = '#ffffff'
-    const { center, ctrls, angle } = actSpr.rect
-    cvsCtx.setTransform(
-      // 水平 缩放、倾斜
-      1, 0,
-      // 垂直 倾斜、缩放
-      0, 1,
-      // 坐标原点偏移 x y
-      center.x, center.y
-    )
-    cvsCtx.rotate(angle)
-    Object.values(ctrls).forEach(({ x, y, w, h }) => {
-      cvsCtx.fillRect(x, y, w, h)
-    })
     cvsCtx.resetTransform()
   }
 }
