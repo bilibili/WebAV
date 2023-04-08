@@ -73,6 +73,7 @@ function createRectAndCtrlEl (
     position: absolute;
     pointer-events: none;
     border: 1px solid #eee;
+    box-sizing: border-box;
     display: none;
   `
   const ctrlsEl = Object.fromEntries(CTRL_KEYS.map((k) => {
@@ -121,7 +122,7 @@ function syncCtrlElPos (
         width: `${w * cvsRatio.w}px`,
         height: `${h * cvsRatio.h}px`,
         // border 1px, 所以要 -1
-        transform: `translate(${x * cvsRatio.w - 1}px, ${y * cvsRatio.h - 1}px)`
+        transform: `translate(${x * cvsRatio.w}px, ${y * cvsRatio.h}px)`
       })
     })
 }

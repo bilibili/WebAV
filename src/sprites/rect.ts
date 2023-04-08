@@ -5,6 +5,11 @@ export type TCtrlKey = 't' | 'b' | 'l' | 'r' | 'lt' | 'lb' | 'rt' | 'rb' | 'rota
 export const CTRL_KEYS = ['t', 'b', 'l', 'r', 'lt', 'lb', 'rt', 'rb', 'rotate']
 
 export class Rect {
+  /**
+   * ctrl 节点的边长
+   */
+  static CTRL_SIZE = 16
+
   x = 0
   y = 0
   w = 0
@@ -34,7 +39,7 @@ export class Rect {
     const { w, h } = this
     // todo：控制点在高分辨率下看起来太小
     // 控制点元素大小, 以 分辨率 为基准
-    const sz = 16
+    const sz = Rect.CTRL_SIZE
     // half size
     const hfSz = sz / 2
     const hfW = w / 2
