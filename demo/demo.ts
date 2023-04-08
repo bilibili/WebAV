@@ -128,7 +128,6 @@ function startRecod (avCvs: AVCanvas, writer: IWriter): () => void {
   let firstBlob: Blob | null = null
   recoder.ondataavailable = (evt) => {
     if (firstBlob == null) firstBlob = evt.data
-    console.log(44444, firstBlob.size)
     writer.write(evt.data)
   }
   const startTime = performance.now()
@@ -136,7 +135,6 @@ function startRecod (avCvs: AVCanvas, writer: IWriter): () => void {
     if (firstBlob != null) {
       const duration = performance.now() - startTime
       const fixedBlob = await fixWebmDur(firstBlob, duration)
-      console.log(3333, JSON.stringify({ duration, s1: firstBlob.size, s2: fixedBlob.size }))
       writer.seek(0)
       writer.write(fixedBlob)
     }
