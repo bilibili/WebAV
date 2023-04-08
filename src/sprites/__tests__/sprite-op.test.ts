@@ -187,11 +187,11 @@ describe('rotate sprite', () => {
 
     window.dispatchEvent(new MouseEvent('mouseup'))
     // 命中 rotate ctrl
+    const { center, ctrls: { rotate } } = vs.rect
     cvsEl.dispatchEvent(crtMSEvt4Offset(
       'mousedown',
-      50 * cvsRatio.w,
-      // rotate ctrl 在 top ctrl 正上方一点点
-      -8 * 3 * cvsRatio.h
+      (rotate.x + center.x) * cvsRatio.w,
+      (rotate.y + center.y) * cvsRatio.h
     ))
     window.dispatchEvent(new MouseEvent('mousemove', {
       clientX: 100,

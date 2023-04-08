@@ -2,6 +2,8 @@ import { IPoint } from '../types'
 
 export type TCtrlKey = 't' | 'b' | 'l' | 'r' | 'lt' | 'lb' | 'rt' | 'rb' | 'rotate'
 
+export const CTRL_KEYS = ['t', 'b', 'l', 'r', 'lt', 'lb', 'rt', 'rb', 'rotate']
+
 export class Rect {
   x = 0
   y = 0
@@ -38,7 +40,7 @@ export class Rect {
     const hfW = w / 2
     const hfH = h / 2
     // rotate size
-    const rtSz = sz * 3
+    const rtSz = sz * 2
     const hfRtSz = rtSz / 2
     // ctrl 坐标是相对于 sprite 中心点
     return {
