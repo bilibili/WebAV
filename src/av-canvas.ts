@@ -147,10 +147,12 @@ function dynamicCusor (
     h: cvsEl.clientHeight / cvsEl.height
   }
 
+  const cvsStyle = cvsEl.style
+
   let actSpr = sprMng.activeSprite
   sprMng.on(ESpriteManagerEvt.ActiveSpriteChange, (s) => {
     actSpr = s
-    if (s == null) cvsEl.style.cursor = ''
+    if (s == null) cvsStyle.cursor = ''
   })
   // 鼠标按下时，在操作过程中，不需要变换鼠标样式
   let isMSDown = false
@@ -160,11 +162,14 @@ function dynamicCusor (
     const ofx = offsetX / cvsRatio.w
     const ofy = offsetY / cvsRatio.h
     // 直接选中 sprite 时，需要改变鼠标样式为 move
-    if (actSpr?.rect.checkHit(ofx, ofy) === true) {
-      cvsEl.style.cursor = 'move'
+    if (
+      actSpr?.rect.checkHit(ofx, ofy) === true &&
+      cvsStyle.cursor === ''
+    ) {
+      cvsStyle.cursor = 'move'
     }
   }
-  const onUp = (): void => {
+  const onWindowUp = (): void => {
     isMSDown = false
   }
 
@@ -183,7 +188,7 @@ function dynamicCusor (
 
     if (ctrlKey != null) {
       if (ctrlKey === 'rotate') {
-        cvsEl.style.cursor = 'crosshair'
+        cvsStyle.cursor = 'crosshair'
         return
       }
       // 旋转后，控制点的箭头指向也需要修正
@@ -192,24 +197,24 @@ function dynamicCusor (
       // 每个控制点的初始样式（idx） + 旋转角度导致的偏移，即为新鼠标样式
       // 每旋转45°，偏移+1，以此在curStyles中循环
       const idx = (curInitIdx[ctrlKey] + Math.floor((oa + Math.PI / 8) / (Math.PI / 4))) % 8
-      cvsEl.style.cursor = curStyles[idx]
+      cvsStyle.cursor = curStyles[idx]
       return
     }
     if (actSpr.rect.checkHit(ofx, ofy)) {
-      cvsEl.style.cursor = 'move'
+      cvsStyle.cursor = 'move'
       return
     }
     // 未命中 ctrls、sprite，重置为默认鼠标样式
-    cvsEl.style.cursor = ''
+    cvsStyle.cursor = ''
   }
 
   cvsEl.addEventListener('mousemove', onMove)
   cvsEl.addEventListener('mousedown', onDown)
-  window.addEventListener('mouseup', onUp)
+  window.addEventListener('mouseup', onWindowUp)
 
   return () => {
     cvsEl.removeEventListener('mousemove', onMove)
     cvsEl.removeEventListener('mousedown', onDown)
-    window.removeEventListener('mouseup', onUp)
+    window.removeEventListener('mouseup', onWindowUp)
   }
 }
