@@ -15,28 +15,22 @@ export function draggabelSprite (
     h: cvsEl.clientHeight / cvsEl.height
   }
 
-  // 排在后面的层级更高
-  let sprList = sprMng.getSprites().reverse()
-  const offAddSpr = sprMng.on('add', () => {
-    sprList = sprMng.getSprites().reverse()
-  })
-
   let startX = 0
   let startY = 0
-  let hitSpr: BaseSprite | null = null
   let startRect: Rect | null = null
   let mvLimit: Record<'xl' | 'xr' | 'yt' | 'yb', number> | null = null
 
-  // 寻找选中的 sprite，监听移动事件
+  let hitSpr: BaseSprite | null = null
+  // sprMng.activeSprite 在 av-canvas.ts -> activeSprite 中被赋值
   const onCvsMouseDown = (evt: MouseEvent): void => {
     // 鼠标左键才能拖拽移动
-    if (evt.button !== 0) return
+    if (evt.button !== 0 || sprMng.activeSprite == null) return
+    hitSpr = sprMng.activeSprite
     const { offsetX, offsetY, clientX, clientY } = evt
     // 如果已有激活 sprite，先判定是否命中其 ctrls
     if (
-      sprMng.activeSprite != null &&
       hitRectCtrls({
-        rect: sprMng.activeSprite.rect,
+        rect: hitSpr.rect,
         offsetX,
         offsetY,
         clientX,
@@ -48,13 +42,6 @@ export function draggabelSprite (
       // 命中 ctrl 是缩放 sprite，略过后续移动 sprite 逻辑
       return
     }
-
-    hitSpr = sprList.find(s => s.rect.checkHit(
-      offsetX / cvsRatio.w,
-      offsetY / cvsRatio.h
-    )) ?? null
-    sprMng.activeSprite = hitSpr
-    if (hitSpr == null) return
 
     startRect = hitSpr.rect.clone()
     // 保留 10px，避免移出边界，无法拖回来
@@ -94,7 +81,6 @@ export function draggabelSprite (
 
   return () => {
     clearWindowEvt()
-    offAddSpr()
     cvsEl.removeEventListener('mousedown', onCvsMouseDown)
   }
 }

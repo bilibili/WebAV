@@ -1,13 +1,19 @@
 import { EventTool } from '../event-tool'
 import { BaseSprite } from './base-sprite'
 
+export enum ESpriteManagerEvt {
+  ActiveSpriteChange = 'activeSpriteChange',
+  AddSprite = 'addSprite'
+}
+
 export class SpriteManager {
   #sprites: BaseSprite[] = []
 
   #activeSprite: BaseSprite | null = null
 
   #evtTool = new EventTool<{
-    add: (s: BaseSprite) => void
+    [ESpriteManagerEvt.AddSprite]: (s: BaseSprite) => void
+    [ESpriteManagerEvt.ActiveSpriteChange]: (s: BaseSprite | null) => void
   }>()
 
   audioCtx = new AudioContext()
@@ -20,6 +26,7 @@ export class SpriteManager {
   set activeSprite (s: BaseSprite | null) {
     if (s === this.#activeSprite) return
     this.#activeSprite = s
+    this.#evtTool.emit(ESpriteManagerEvt.ActiveSpriteChange, s)
   }
 
   constructor () {
@@ -33,7 +40,7 @@ export class SpriteManager {
     s.audioNode?.connect(this.audioMSDest)
 
     // todo: event enum
-    this.#evtTool.emit('add', s)
+    this.#evtTool.emit(ESpriteManagerEvt.AddSprite, s)
   }
 
   removeSprite (spr: BaseSprite): void {
