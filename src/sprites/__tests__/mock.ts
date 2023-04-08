@@ -66,6 +66,15 @@ vi.spyOn(HTMLAudioElement.prototype, 'play')
     return await Promise.resolve()
   })
 
+vi.spyOn(HTMLCanvasElement.prototype, 'getContext')
+  .mockImplementation(() => {
+    return {
+      fillRect: vi.fn(),
+      setTransform: vi.fn(),
+      resetTransform: vi.fn()
+    } as unknown as CanvasRenderingContext2D
+  })
+
 export const getBoundingClientRectMock = vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect')
 
 export const createObjectURLMock = URL.createObjectURL = vi.fn()
