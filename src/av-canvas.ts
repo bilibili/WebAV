@@ -70,6 +70,7 @@ export class AVCanvas {
     this.#destroyed = true
     this.#cvsEl.remove()
     this.#clears.forEach(fn => fn())
+    this.spriteManager.destroy()
   }
 
   captureStream (): MediaStream {

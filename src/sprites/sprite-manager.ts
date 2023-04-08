@@ -39,7 +39,6 @@ export class SpriteManager {
     this.#sprites = this.#sprites.sort((a, b) => a.zIndex - b.zIndex)
     s.audioNode?.connect(this.audioMSDest)
 
-    // todo: event enum
     this.#evtTool.emit(ESpriteManagerEvt.AddSprite, s)
   }
 
@@ -50,6 +49,14 @@ export class SpriteManager {
 
   getSprites (): BaseSprite[] {
     return [...this.#sprites]
+  }
+
+  destroy (): void {
+    this.#evtTool.destroy()
+    this.#sprites.forEach(s => s.destory())
+    this.#sprites = []
+    this.audioMSDest.disconnect()
+    this.audioCtx.close().catch(console.error)
   }
 
   // 添加背景音，如果没有音频，录制的webm不正常
