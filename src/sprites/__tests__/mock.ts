@@ -28,7 +28,9 @@ export const AudioContextMock = {
   createMediaStreamSource: vi.fn().mockImplementation(() => {
     return { connect: vi.fn() }
   }),
-  createMediaStreamDestination: vi.fn(),
+  createMediaStreamDestination: vi.fn().mockImplementation(() => {
+    return { disconnect: vi.fn() }
+  }),
   createOscillator: vi.fn().mockImplementation(() => {
     return {
       start: vi.fn(),
@@ -36,7 +38,8 @@ export const AudioContextMock = {
       connect: vi.fn()
     }
   }),
-  createPeriodicWave: vi.fn()
+  createPeriodicWave: vi.fn(),
+  close: vi.fn().mockImplementation(async () => await Promise.resolve())
 }
 
 Object.assign(global, {
