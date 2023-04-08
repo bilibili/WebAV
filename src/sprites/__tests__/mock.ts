@@ -1,6 +1,7 @@
 import { vi } from 'vitest'
 
 export const MediaStreamMock = {
+  getTracks: vi.fn().mockReturnValue([]),
   getAudioTracks: vi.fn().mockReturnValue([]),
   removeTrack: vi.fn(),
   addTrack: vi.fn()
@@ -29,7 +30,10 @@ export const AudioContextMock = {
     return { connect: vi.fn() }
   }),
   createMediaStreamDestination: vi.fn().mockImplementation(() => {
-    return { disconnect: vi.fn() }
+    return {
+      disconnect: vi.fn(),
+      stream: new MediaStream()
+    }
   }),
   createOscillator: vi.fn().mockImplementation(() => {
     return {
@@ -69,13 +73,41 @@ vi.spyOn(HTMLAudioElement.prototype, 'play')
 vi.spyOn(HTMLCanvasElement.prototype, 'getContext')
   .mockImplementation(() => {
     return {
+      drawImage: vi.fn(),
       fillRect: vi.fn(),
+      rotate: vi.fn(),
       setTransform: vi.fn(),
       resetTransform: vi.fn()
     } as unknown as CanvasRenderingContext2D
   })
 
+export const CvsElementMock = {
+  clientWidth: vi.spyOn(HTMLCanvasElement.prototype, 'clientWidth', 'get')
+    .mockImplementation(() => 0),
+  clientHeight: vi.spyOn(HTMLCanvasElement.prototype, 'clientHeight', 'get')
+    .mockImplementation(() => 0)
+}
+
+export const cvsCaptureStreamMock = vi.fn().mockReturnValue(new MediaStream())
+Object.assign(HTMLCanvasElement.prototype, {
+  captureStream: cvsCaptureStreamMock
+})
+
 export const getBoundingClientRectMock = vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect')
 
 export const createObjectURLMock = URL.createObjectURL = vi.fn()
 export const revokeObjectURLMock = URL.revokeObjectURL = vi.fn()
+
+/**
+ * Mock 鼠标事件，初始化 offsetXY 值
+ * @param evtName
+ * @param offsetX
+ * @param offsetY
+ * @returns
+ */
+export function crtMSEvt4Offset (evtName: string, offsetX: number, offsetY: number): MouseEvent {
+  const evt = new MouseEvent(evtName)
+  vi.spyOn(evt, 'offsetX', 'get').mockImplementation(() => offsetX)
+  vi.spyOn(evt, 'offsetY', 'get').mockImplementation(() => offsetY)
+  return evt
+}
