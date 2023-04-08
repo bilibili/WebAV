@@ -24,20 +24,20 @@ test('removeSprite', async () => {
   const vs1 = new VideoSprite('vs1', new MediaStream())
   await sprMng.addSprite(vs1)
 
-  const spyDestory = vi.spyOn(vs1, 'destory')
+  const spyDestroy = vi.spyOn(vs1, 'destroy')
   sprMng.removeSprite(vs1)
-  expect(spyDestory).toBeCalled()
+  expect(spyDestroy).toBeCalled()
 })
 
-test('spriteManager destory', async () => {
+test('spriteManager destroy', async () => {
   const sprMng = new SpriteManager()
 
   const vs1 = new VideoSprite('vs1', new MediaStream())
-  const spyDestory = vi.spyOn(vs1, 'destory')
+  const spyDestroy = vi.spyOn(vs1, 'destroy')
   await sprMng.addSprite(vs1)
 
   sprMng.destroy()
-  expect(spyDestory).toBeCalled()
+  expect(spyDestroy).toBeCalled()
   expect(sprMng.audioMSDest.disconnect).toBeCalled()
   expect(sprMng.audioCtx.close).toBeCalled()
 })

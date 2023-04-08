@@ -28,7 +28,7 @@ export class AudioSprite extends BaseSprite {
     this.#audioEl.play().catch(console.error)
   }
 
-  destory (): void {
+  destroy (): void {
     this.#audioEl.remove()
     this.audioNode?.disconnect()
     URL.revokeObjectURL(this.#audioEl.src)

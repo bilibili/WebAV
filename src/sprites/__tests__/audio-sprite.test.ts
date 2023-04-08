@@ -18,7 +18,7 @@ test('create AudioSprite', () => {
 
   expect(createObjectURLMock).toBeCalledTimes(1)
 
-  as.destory()
+  as.destroy()
   expect(as.audioNode?.disconnect).toBeCalledTimes(1)
   expect(revokeObjectURLMock).toBeCalledWith(
     expect.stringMatching(/mock-audio-src$/)

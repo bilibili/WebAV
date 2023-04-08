@@ -30,11 +30,11 @@ test('VideoSprite render', async () => {
   expect(mockCtx.setTransform).toBeCalledWith(1, 0, 0, 1, 50, 50)
 })
 
-test('VideoSprite destory', async () => {
+test('VideoSprite destroy', async () => {
   const vs = new VideoSprite('vs', new MediaStream())
   await vs.initReady
   const spyRM = vi.spyOn(HTMLVideoElement.prototype, 'remove')
-  vs.destory()
+  vs.destroy()
   expect(spyRM).toBeCalledTimes(1)
 })
 
@@ -68,7 +68,7 @@ test('create VideoSprite with file', async () => {
   await vs.initReady
 
   expect(createObjectURLMock).toBeCalledTimes(1)
-  vs.destory()
+  vs.destroy()
   expect(vs.audioNode?.disconnect).toBeCalledTimes(1)
   expect(revokeObjectURLMock).toBeCalledWith(
     expect.stringMatching(/mock-video-src$/)

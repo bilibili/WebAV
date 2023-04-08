@@ -38,7 +38,7 @@ export class ImgSprite extends BaseSprite {
     ctx.drawImage(this.#img, -w / 2, -h / 2, w, h)
   }
 
-  destory (): void {
+  destroy (): void {
     this.#img.remove()
   }
 }

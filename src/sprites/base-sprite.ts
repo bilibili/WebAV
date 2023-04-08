@@ -30,5 +30,5 @@ export abstract class BaseSprite {
     ctx.rotate((this.flip == null ? 1 : -1) * angle)
   }
 
-  abstract destory (): void
+  abstract destroy (): void
 }

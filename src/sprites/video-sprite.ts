@@ -83,7 +83,7 @@ export class VideoSprite extends BaseSprite {
     this.audioNode.gain.value = v
   }
 
-  destory (): void {
+  destroy (): void {
     this.#videoEl?.remove()
     if (this.#videoEl?.src != null) URL.revokeObjectURL(this.#videoEl.src)
     this.#videoEl = null

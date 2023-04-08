@@ -3,7 +3,7 @@ import '../sprites/__tests__/mock'
 import { AVCanvas } from '../av-canvas'
 import { createEl } from '../utils'
 
-test('av-canvas create & destory', () => {
+test('av-canvas create & destroy', () => {
   const container = createEl('dev')
 
   const avCvs = new AVCanvas(container, {
@@ -12,6 +12,6 @@ test('av-canvas create & destory', () => {
   })
 
   const spyMngDestroy = vi.spyOn(avCvs.spriteManager, 'destroy')
-  avCvs.destory()
+  avCvs.destroy()
   expect(spyMngDestroy).toBeCalled()
 })

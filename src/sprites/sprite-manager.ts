@@ -44,7 +44,7 @@ export class SpriteManager {
 
   removeSprite (spr: BaseSprite): void {
     this.#sprites = this.#sprites.filter(s => s !== spr)
-    spr.destory()
+    spr.destroy()
   }
 
   getSprites (): BaseSprite[] {
@@ -53,7 +53,7 @@ export class SpriteManager {
 
   destroy (): void {
     this.#evtTool.destroy()
-    this.#sprites.forEach(s => s.destory())
+    this.#sprites.forEach(s => s.destroy())
     this.#sprites = []
     this.audioMSDest.disconnect()
     this.audioCtx.close().catch(console.error)

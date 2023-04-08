@@ -76,7 +76,7 @@ export class AVCanvas {
     // ;(window as any).cvsEl = this.#cvsEl
   }
 
-  destory (): void {
+  destroy (): void {
     this.#destroyed = true
     this.#cvsEl.remove()
     this.#clears.forEach(fn => fn())
