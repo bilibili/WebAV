@@ -12,17 +12,24 @@ export class ImgSprite extends BaseSprite {
         .includes(source.type)
     ) throw Error('Unsupport image format')
 
-    this.#init(source).catch(console.error)
+    this.initReady = this.#init(source).catch(console.error)
   }
 
   async #init (source: File | string): Promise<void> {
-    this.#img.onload = () => {
-      this.rect.w = this.#img.width
-      this.rect.h = this.#img.height
-    }
+    const imgLoad = new Promise<void>((resolve, reject) => {
+      this.#img.onload = () => {
+        this.rect.w = this.#img.width
+        this.rect.h = this.#img.height
+        resolve()
+      }
+      this.#img.onerror = reject
+    })
+
     this.#img.src = source instanceof File
       ? await file2B64(source)
       : source
+
+    await imgLoad
   }
 
   render (ctx: CanvasRenderingContext2D): void {
