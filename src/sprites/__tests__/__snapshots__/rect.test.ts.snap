@@ -94,7 +94,7 @@ exports[`Rect > ctrls 1`] = `
   },
   "rotate": Rect {
     "angle": 0,
-    "h": 32,
+    "h": 24,
     "master": Rect {
       "angle": 0,
       "h": 100,
@@ -103,9 +103,9 @@ exports[`Rect > ctrls 1`] = `
       "x": 0,
       "y": 0,
     },
-    "w": 32,
-    "x": -16,
-    "y": -114,
+    "w": 24,
+    "x": -12,
+    "y": -94,
   },
   "rt": Rect {
     "angle": 0,
