@@ -45,7 +45,7 @@ export class Rect {
     const hfW = w / 2
     const hfH = h / 2
     // rotate size
-    const rtSz = sz * 2
+    const rtSz = sz * 1.5
     const hfRtSz = rtSz / 2
     // ctrl 坐标是相对于 sprite 中心点
     return {
@@ -57,7 +57,7 @@ export class Rect {
       lb: new Rect(-hfW - hfSz, hfH - hfSz, sz, sz, this),
       rt: new Rect(hfW - hfSz, -hfH - hfSz, sz, sz, this),
       rb: new Rect(hfW - hfSz, hfH - hfSz, sz, sz, this),
-      rotate: new Rect(-hfRtSz, -hfH - sz * 3 - hfRtSz, rtSz, rtSz, this)
+      rotate: new Rect(-hfRtSz, -hfH - sz * 2 - hfRtSz, rtSz, rtSz, this)
     }
   }
 
