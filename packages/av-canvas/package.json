@@ -1,0 +1,22 @@
+{
+  "name": "@webav/av-canvas",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite demo",
+    "test": "vitest",
+    "test:coverage": "vitest run --coverage",
+    "build": "tsc && vite build",
+    "preview": "vite preview"
+  },
+  "devDependencies": {
+    "@vitest/coverage-istanbul": "^0.29.8",
+    "fix-webm-duration": "^1.0.5",
+    "jsdom": "^21.1.1",
+    "ts-standard": "^12.0.2",
+    "typescript": "^4.9.3",
+    "vite": "^4.2.0",
+    "vitest": "^0.29.7"
+  }
+}
