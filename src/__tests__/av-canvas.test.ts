@@ -23,6 +23,7 @@ let { avCvs, container } = createAVCanvas()
 beforeEach(() => {
   container.remove()
 
+  // cvsRatio = { w: 1, h: 1 }
   CvsElementMock.clientHeight.mockImplementation(() => 100)
   CvsElementMock.clientWidth.mockImplementation(() => 100)
 
@@ -74,4 +75,39 @@ test('activeSprite', async () => {
 
   cvsEl.dispatchEvent(crtMSEvt4Offset('mousedown', 0, 0))
   expect(avCvs.spriteManager.activeSprite).toBeNull()
+})
+
+test('dynamicCusor', async () => {
+  const vs = new VideoSprite('vs', new MediaStream())
+  await vs.initReady
+  vs.rect.w = 80
+  vs.rect.h = 80
+  await avCvs.spriteManager.addSprite(vs)
+  const cvsEl = container.querySelector('canvas') as HTMLCanvasElement
+  cvsEl.dispatchEvent(crtMSEvt4Offset('mousedown', 20, 20))
+  window.dispatchEvent(crtMSEvt4Offset('mouseup', 20, 20))
+
+  expect(avCvs.spriteManager.activeSprite).toBe(vs)
+  expect(cvsEl.style.cursor).toBe('move')
+
+  const { center, ctrls: { lt, rotate } } = vs.rect
+  cvsEl.dispatchEvent(crtMSEvt4Offset(
+    'mousemove',
+    lt.x + center.x,
+    lt.y + center.y
+  ))
+  expect(cvsEl.style.cursor).toBe('nwse-resize')
+
+  cvsEl.dispatchEvent(crtMSEvt4Offset(
+    'mousemove',
+    rotate.x + center.x,
+    rotate.y + center.y
+  ))
+  expect(cvsEl.style.cursor).toBe('crosshair')
+
+  cvsEl.dispatchEvent(crtMSEvt4Offset('mousemove', 0, 0))
+  expect(cvsEl.style.cursor).toBe('')
+
+  cvsEl.dispatchEvent(crtMSEvt4Offset('mousemove', 20, 20))
+  expect(cvsEl.style.cursor).toBe('move')
 })
