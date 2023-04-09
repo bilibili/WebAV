@@ -3,13 +3,19 @@
   "private": true,
   "version": "0.1.0",
   "type": "module",
+  "types": "npm-dist/av-canvas.d.ts",
+  "module": "npm-dist/av-canvas.js",
   "scripts": {
     "dev": "vite demo",
     "test": "vitest",
     "test:coverage": "vitest run --coverage",
-    "build": "tsc && vite build",
+    "build": "rm -rf npm-dist && tsc -p build.tsconfig.json --outDir npm-dist",
+    "prepublishOnly": "yarn build",
     "preview": "vite preview"
   },
+  "files": [
+    "npm-dist"
+  ],
   "devDependencies": {
     "@vitest/coverage-istanbul": "^0.29.8",
     "fix-webm-duration": "^1.0.5",
