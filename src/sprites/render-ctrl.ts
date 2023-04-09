@@ -1,4 +1,4 @@
-import { ICvsRatio, IPoint } from '../types'
+import { ICvsRatio } from '../types'
 import { createEl } from '../utils'
 import { BaseSprite } from './base-sprite'
 import { CTRL_KEYS, TCtrlKey } from './rect'
@@ -9,7 +9,6 @@ export function renderCtrls (
   cvsEl: HTMLCanvasElement,
   sprMng: SpriteManager
 ): () => void {
-  const { x: ctnX, y: ctnY } = container.getBoundingClientRect()
   const cvsRatio = {
     w: cvsEl.clientWidth / cvsEl.width,
     h: cvsEl.clientHeight / cvsEl.height
@@ -25,7 +24,6 @@ export function renderCtrls (
       s,
       rectEl,
       ctrlsEl,
-      { x: ctnX, y: ctnY },
       cvsRatio
     )
     rectEl.style.display = ''
@@ -44,21 +42,20 @@ export function renderCtrls (
       sprMng.activeSprite,
       rectEl,
       ctrlsEl,
-      { x: ctnX, y: ctnY },
       cvsRatio
     )
   }
 
   cvsEl.addEventListener('mousedown', onDown)
   window.addEventListener('mouseup', onWinowUp)
-  cvsEl.addEventListener('mousemove', onMove)
+  window.addEventListener('mousemove', onMove)
 
   return () => {
     offSprChange()
     rectEl.remove()
     cvsEl.removeEventListener('mousedown', onDown)
     window.removeEventListener('mouseup', onWinowUp)
-    cvsEl.removeEventListener('mousemove', onMove)
+    window.removeEventListener('mousemove', onMove)
   }
 }
 
@@ -101,14 +98,12 @@ function syncCtrlElPos (
   s: BaseSprite,
   rectEl: HTMLElement,
   ctrlsEl: Record<TCtrlKey, HTMLElement>,
-  // 容器偏移
-  ctnOffset: IPoint,
   cvsRatio: ICvsRatio
 ): void {
   const { x, y, w, h, angle, ctrls } = s.rect
   Object.assign(rectEl.style, {
-    left: `${ctnOffset.x + x * cvsRatio.w}px`,
-    top: `${ctnOffset.y + y * cvsRatio.h}px`,
+    left: `${x * cvsRatio.w}px`,
+    top: `${y * cvsRatio.h}px`,
     width: `${w * cvsRatio.w}px`,
     height: `${h * cvsRatio.h}px`,
     rotate: `${angle}rad`

@@ -186,7 +186,7 @@ function dynamicCusor (
   const curInitIdx = { t: 0, rt: 1, r: 2, rb: 3, b: 4, lb: 5, l: 6, lt: 7 }
 
   const onMove = (evt: MouseEvent): void => {
-    // 按下之后，不在变化，因为可能是在拖拽控制点
+    // 按下之后，不再变化，因为可能是在拖拽控制点
     if (actSpr == null || isMSDown) return
     const { offsetX, offsetY } = evt
     const ofx = offsetX / cvsRatio.w
