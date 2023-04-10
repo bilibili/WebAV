@@ -18,7 +18,6 @@
   ],
   "devDependencies": {
     "@vitest/coverage-istanbul": "^0.29.8",
-    "fix-webm-duration": "^1.0.5",
     "jsdom": "^21.1.1",
     "ts-standard": "^12.0.2",
     "typescript": "^4.9.3",
@@ -26,6 +25,7 @@
     "vitest": "^0.29.7"
   },
   "dependencies": {
+    "fix-webm-duration": "^1.0.5",
     "@webav/av-canvas": "^0.1.0"
   }
 }
