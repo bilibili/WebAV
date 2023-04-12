@@ -63,14 +63,14 @@ function createDecoder (conf: VideoDecoderConfig, tsOffset = 0): VideoDecoder {
   })
   const decoder = new VideoDecoder({
     output (frame) {
-      // // @ts-expect-error
-      // ctx?.drawImage(frame, 0, 0, 1280, 720)
+      // @ts-expect-error
+      ctx?.drawImage(frame, 0, 0, 1280, 720)
       const ts = frame.timestamp
       // console.log(44444444, ts, tsOffset)
 
       // @ts-expect-error
-      // const newFr = new VideoFrame(cvs, {
-      const newFr = new VideoFrame(frame, {
+      const newFr = new VideoFrame(cvs, {
+      // const newFr = new VideoFrame(frame, {
         timestamp: ts + tsOffset,
         duration: frame.duration,
         alpha: 'discard'
