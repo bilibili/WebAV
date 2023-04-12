@@ -45,3 +45,8 @@
   - 视频裁剪、合成
   - 视频消音
 
+
+## 示例
+
+### 导出 WebM
+<video src="https://raw.githubusercontent.com/hughfenghen/WebAV/main/doc-assets/recod-webm-example.mp4">
