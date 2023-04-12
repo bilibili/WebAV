@@ -8,7 +8,7 @@ interface IWriter {
 
 async function createFileWriter (): Promise<IWriter> {
   const fileHandle = await (window as any).showSaveFilePicker({
-    suggestedName: 'webav-export-{Date.now()}.webm',
+    suggestedName: `WebAv-export-${Date.now()}.webm`,
     startIn: 'downloads'
   })
   return await fileHandle.createWritable() as IWriter

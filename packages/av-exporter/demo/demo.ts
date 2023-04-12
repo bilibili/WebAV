@@ -1,8 +1,5 @@
-import { AVCanvas } from '../src/av-canvas'
-import { AudioSprite } from '../src/sprites/audio-sprite'
-import { FontSprite } from '../src/sprites/font-sprite'
-import { ImgSprite } from '../src/sprites/img-sprite'
-import { VideoSprite } from '../src/sprites/video-sprite'
+import { AVCanvas, AudioSprite, FontSprite, ImgSprite, VideoSprite } from '@webav/av-canvas'
+import { exportWebM } from '../src/av-exporter'
 
 const avCvs = new AVCanvas(document.querySelector('#app') as HTMLElement, {
   bgColor: '#333',
@@ -95,3 +92,17 @@ document.querySelector('#fontExamp')?.addEventListener('click', () => {
     await avCvs.spriteManager.addSprite(fs)
   })().catch(console.error)
 })
+
+let stopRecod = (): void => {}
+document.querySelector('#startRecod')?.addEventListener('click', () => {
+  ;(async () => {
+    stopRecod()
+    stopRecod = await exportWebM(avCvs.captureStream())
+  })().catch(console.error)
+})
+document.querySelector('#stopRecod')?.addEventListener('click', () => {
+  stopRecod()
+  alert('已完成')
+})
+
+export {}
