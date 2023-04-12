@@ -93,15 +93,16 @@ document.querySelector('#fontExamp')?.addEventListener('click', () => {
   })().catch(console.error)
 })
 
-let stopRecod = (): void => {}
+let stopRecod: (() => void) | null = null
 document.querySelector('#startRecod')?.addEventListener('click', () => {
   ;(async () => {
-    stopRecod()
+    stopRecod?.()
     stopRecod = await exportWebM(avCvs.captureStream())
   })().catch(console.error)
 })
 document.querySelector('#stopRecod')?.addEventListener('click', () => {
-  stopRecod()
+  stopRecod?.()
+  stopRecod = null
   alert('已完成')
 })
 
