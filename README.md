@@ -49,4 +49,6 @@
 ## 示例
 
 ### 导出 WebM
-<video src="https://raw.githubusercontent.com/hughfenghen/WebAV/main/doc-assets/recod-webm-example.mp4">
+
+https://user-images.githubusercontent.com/3307051/231461352-9856b380-ac2e-4f14-b0b6-36a418efd1a0.mp4
+
