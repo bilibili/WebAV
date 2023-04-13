@@ -97,7 +97,10 @@ let stopRecod: (() => void) | null = null
 document.querySelector('#startRecod')?.addEventListener('click', () => {
   ;(async () => {
     stopRecod?.()
-    stopRecod = await exportWebM(avCvs.captureStream())
+    stopRecod = await exportWebM(
+      avCvs.captureStream(),
+      await createFileWriter()
+    )
   })().catch(console.error)
 })
 document.querySelector('#stopRecod')?.addEventListener('click', () => {
@@ -105,5 +108,12 @@ document.querySelector('#stopRecod')?.addEventListener('click', () => {
   stopRecod = null
   alert('已完成')
 })
+
+async function createFileWriter (): Promise<FileSystemWritableFileStream> {
+  const fileHandle = await window.showSaveFilePicker({
+    suggestedName: `WebAv-export-${Date.now()}.webm`
+  })
+  return await fileHandle.createWritable() as FileSystemWritableFileStream
+}
 
 export {}
