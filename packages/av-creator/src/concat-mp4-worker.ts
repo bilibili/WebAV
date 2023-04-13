@@ -1,4 +1,4 @@
-import mp4box, { MP4File } from 'mp4box'
+import mp4box from 'mp4box'
 import { MP4Demuxer } from './mp4-demuxer.js'
 
 const cvs = new OffscreenCanvas(1280, 720)
@@ -63,7 +63,6 @@ function createDecoder (conf: VideoDecoderConfig, tsOffset = 0): VideoDecoder {
   })
   const decoder = new VideoDecoder({
     output (frame) {
-      // @ts-expect-error
       ctx?.drawImage(frame, 0, 0, 1280, 720)
       const ts = frame.timestamp
       // console.log(44444444, ts, tsOffset)
