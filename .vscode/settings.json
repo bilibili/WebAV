@@ -1,0 +1,26 @@
+{
+  "javascript.validate.enable": false,
+  "standard.engine": "standard",
+  "standard.validate": [
+    "javascript",
+    "javascriptreact",
+    "typescript",
+    "typescriptreact"
+  ],
+  "standard.autoFixOnSave": true,
+  "typescript.tsdk": "node_modules/typescript/lib",
+  "typescript.format.enable": false,
+  "javascript.format.enable": false,
+  "prettier.disableLanguages": [
+    "javascript",
+    "typescript",
+    "javascriptreact",
+    "typescriptreact",
+    "svelte"
+  ],
+  "files.trimTrailingWhitespace": true,
+  "editor.formatOnSave": true,
+  "standard.options": {
+    "ignore": "**/*.min.js",
+  }
+}
