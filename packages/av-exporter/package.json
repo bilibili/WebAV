@@ -1,6 +1,5 @@
 {
   "name": "@webav/av-exporter",
-  "private": true,
   "version": "0.1.0",
   "type": "module",
   "types": "npm-dist/av-exporter.d.ts",

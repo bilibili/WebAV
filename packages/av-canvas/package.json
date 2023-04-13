@@ -1,6 +1,5 @@
 {
   "name": "@webav/av-canvas",
-  "private": true,
   "version": "0.1.0",
   "type": "module",
   "types": "npm-dist/index.d.ts",

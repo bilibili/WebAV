@@ -1,6 +1,5 @@
 {
   "name": "@webav/av-creator",
-  "private": true,
   "version": "0.1.0",
   "type": "module",
   "types": "npm-dist/av-creator.d.ts",
