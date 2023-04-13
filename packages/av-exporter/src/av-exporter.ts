@@ -46,20 +46,34 @@ export function exportMP4 (
   onData: (stream: ReadableStream) => void
 ): () => void {
   const worker = new MuxMP4Worker()
-  const tracks = ms.getVideoTracks()
-  const trackProcessor = new MediaStreamTrackProcessor({
-    track: tracks[0]
-  })
-  const videoFrameStream = trackProcessor.readable
+  const streams: IEncoderConf['streams'] = {}
+  const videoTrack = ms.getVideoTracks()[0]
+  if (videoTrack != null) {
+    streams.video = new MediaStreamTrackProcessor({
+      track: videoTrack
+    }).readable
+  }
+
+  const audioTrack = ms.getAudioTracks()[0]
+  if (audioTrack != null) {
+    streams.audio = new MediaStreamTrackProcessor({
+      track: audioTrack
+    }).readable
+  }
+
+  if (streams.audio == null && streams.video == null) {
+    throw new Error('No Track available in MediaStream')
+  }
+
   worker.postMessage({
     type: 'start',
     data: {
       fps: opts.fps ?? 30,
       width: opts.width,
       height: opts.height,
-      videoFrameStream
+      streams
     }
-  }, [videoFrameStream])
+  }, Object.values(streams))
 
   worker.onmessage = async (evt: MessageEvent) => {
     const { type, data } = evt.data

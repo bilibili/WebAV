@@ -1,5 +1,5 @@
 import mp4box, { MP4File } from 'mp4box'
-import { IEncoderConf } from './types'
+import { IEncoderConf, TClearFn } from './types'
 
 enum State {
   Preparing = 'preparing',
@@ -9,8 +9,8 @@ enum State {
 
 let STATE = State.Preparing
 
-let clear: (() => void) | null = null
-self.onmessage = (evt: MessageEvent) => {
+let clear: TClearFn
+self.onmessage = async (evt: MessageEvent) => {
   const { type, data } = evt.data
 
   switch (type) {
@@ -24,7 +24,7 @@ self.onmessage = (evt: MessageEvent) => {
       break
     case 'stop':
       STATE = State.Stopped
-      clear?.()
+      await clear?.()
       break
   }
 }
@@ -32,38 +32,15 @@ self.onmessage = (evt: MessageEvent) => {
 function init (
   opts: IEncoderConf,
   onEnded: () => void
-): () => void {
-  const outHandler = createOutHandler(opts)
-  const encoder = new VideoEncoder({
-    error: (err) => {
-      console.error('VideoEncoder error : ', err)
-    },
-    output: outHandler.handler
-  })
-
-  encoder.configure({
-    codec: 'avc1.42E01F',
-    framerate: opts.fps,
-    hardwareAcceleration: 'prefer-hardware',
-    // 码率
-    bitrate: opts.bitrate ?? 3_000_000,
-    width: opts.width,
-    height: opts.height,
-    alpha: 'discard',
-    // macos 自带播放器只支持avc
-    avc: { format: 'avc' }
-    // mp4box.js 无法解析 annexb 的 mimeCodec ，只会显示 avc1
-    // avc: { format: 'annexb' }
-  })
-
-  const stopEncode = encodeFrame(
-    encoder,
-    opts.videoFrameStream,
-    onEnded
-  )
+): TClearFn {
+  const mp4File = mp4box.createFile()
+  let stopEncodeVideo: TClearFn
+  if (opts.streams.video != null) {
+    stopEncodeVideo = encodeVideoTrack(opts, mp4File, onEnded)
+  }
 
   const { stream, stop: stopStream } = convertFile2Stream(
-    outHandler.outputFile,
+    mp4File,
     onEnded
   )
   self.postMessage({
@@ -71,18 +48,17 @@ function init (
     data: stream
   }, [stream])
 
-  return () => {
-    stopEncode()
-    stopStream()
-    encoder.close()
+  return async () => {
+    await stopEncodeVideo?.()
+    await stopStream?.()
   }
 }
 
-const createOutHandler: (opts: IEncoderConf) => {
-  handler: EncodedVideoChunkOutputCallback
-  outputFile: MP4File
-} = (opts) => {
-  const outputFile = mp4box.createFile()
+function encodeVideoTrack (
+  opts: IEncoderConf,
+  mp4File: MP4File,
+  onEnded: () => void
+): TClearFn {
   const timescale = 1_000_000
   const videoEncodingTrackOptions = {
     // 微秒
@@ -94,37 +70,72 @@ const createOutHandler: (opts: IEncoderConf) => {
   }
 
   let vTrackId: number
-
-  return {
-    outputFile,
-    handler: (chunk, meta) => {
-      if (vTrackId == null) {
-        videoEncodingTrackOptions.avcDecoderConfigRecord = meta.decoderConfig?.description
-        vTrackId = outputFile.addTrack(videoEncodingTrackOptions)
-      }
-      const buf = new ArrayBuffer(chunk.byteLength)
-      chunk.copyTo(buf)
-      const dts = chunk.timestamp
-
-      outputFile.addSample(
-        vTrackId,
-        buf,
-        {
-          duration: chunk.duration ?? 0,
-          dts,
-          cts: dts,
-          is_sync: chunk.type === 'key'
-        }
-      )
+  const encoder = createVideoEncoder(opts, (chunk, meta) => {
+    if (vTrackId == null) {
+      videoEncodingTrackOptions.avcDecoderConfigRecord = meta.decoderConfig?.description
+      vTrackId = mp4File.addTrack(videoEncodingTrackOptions)
     }
+    const buf = new ArrayBuffer(chunk.byteLength)
+    chunk.copyTo(buf)
+    const dts = chunk.timestamp
+
+    mp4File.addSample(
+      vTrackId,
+      buf,
+      {
+        duration: chunk.duration ?? 0,
+        dts,
+        cts: dts,
+        is_sync: chunk.type === 'key'
+      }
+    )
+  })
+
+  const stopEncode = encodeVideoFrame(
+    encoder,
+    opts.streams.video as ReadableStream,
+    onEnded
+  )
+
+  return async () => {
+    stopEncode()
+    await encoder.flush()
+    encoder.close()
   }
 }
 
-const encodeFrame = (
+function createVideoEncoder (
+  opts: IEncoderConf,
+  outHandler: EncodedVideoChunkOutputCallback
+): VideoEncoder {
+  const encoder = new VideoEncoder({
+    error: console.error,
+    output: outHandler
+  })
+
+  encoder.configure({
+    codec: 'avc1.42E01F',
+    framerate: opts.fps,
+    hardwareAcceleration: 'prefer-hardware',
+    // 码率
+    bitrate: opts.bitrate ?? 3_000_000,
+    width: opts.width,
+    height: opts.height,
+    // H264 不支持背景透明度
+    alpha: 'discard',
+    // macos 自带播放器只支持avc
+    avc: { format: 'avc' }
+    // mp4box.js 无法解析 annexb 的 mimeCodec ，只会显示 avc1
+    // avc: { format: 'annexb' }
+  })
+  return encoder
+}
+
+function encodeVideoFrame (
   encoder: VideoEncoder,
   stream: ReadableStream<VideoFrame>,
   onEnded: () => void
-): () => void => {
+): () => void {
   let frameCount = 0
   const startTime = performance.now()
   let lastTime = startTime
@@ -180,7 +191,7 @@ function convertFile2Stream (
   onCancel: () => void
 ): {
     stream: ReadableStream<ArrayBuffer>
-    stop: () => void
+    stop: TClearFn
   } {
   let timerId = 0
 
