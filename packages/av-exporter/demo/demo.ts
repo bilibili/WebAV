@@ -113,7 +113,7 @@ async function createFileWriter (): Promise<FileSystemWritableFileStream> {
   const fileHandle = await window.showSaveFilePicker({
     suggestedName: `WebAv-export-${Date.now()}.webm`
   })
-  return await fileHandle.createWritable() as FileSystemWritableFileStream
+  return await fileHandle.createWritable()
 }
 
 export {}

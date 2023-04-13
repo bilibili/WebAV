@@ -18,19 +18,19 @@ export async function exportWebM (
     mimeType: 'video/webm;codecs=avc1.64001f,opus'
   })
   let firstBlob: Blob | null = null
-  recoder.ondataavailable = (evt) => {
+  recoder.ondataavailable = async (evt) => {
     if (firstBlob == null) firstBlob = evt.data
-    outputWriter.write(evt.data)
+    await outputWriter.write(evt.data)
   }
   const startTime = performance.now()
   recoder.onstop = async () => {
     if (firstBlob != null) {
       const duration = performance.now() - startTime
       const fixedBlob = await fixWebmDur(firstBlob, duration)
-      outputWriter.seek(0)
-      outputWriter.write(fixedBlob)
+      await outputWriter.seek(0)
+      await outputWriter.write(fixedBlob)
     }
-    outputWriter.close()
+    await outputWriter.close()
   }
   recoder.start(1000)
   return () => {
