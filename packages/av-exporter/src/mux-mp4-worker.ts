@@ -4,38 +4,39 @@ import { IEncoderConf } from './types'
 enum State {
   Preparing = 'preparing',
   Running = 'running',
-  Paused = 'paused',
   Stopped = 'stopped'
 }
 
 let STATE = State.Preparing
-let encoder: VideoEncoder
 
+let clear: (() => void) | null = null
 self.onmessage = (evt: MessageEvent) => {
   const { type, data } = evt.data
 
   switch (type) {
     case 'start':
-      if (STATE === State.Preparing) init(data)
+      if (STATE === State.Preparing) {
+        STATE = State.Running
+        clear = init(data, () => {
+          STATE = State.Stopped
+        })
+      }
       break
-    // todo
-    case 'pause':
     case 'stop':
       STATE = State.Stopped
-      encoder.close()
+      clear?.()
       break
   }
 }
 
-function init (opts: IEncoderConf): void {
-  STATE = State.Running
-
-  const getImgTimerId = 0
+function init (
+  opts: IEncoderConf,
+  onEnded: () => void
+): () => void {
   const outHandler = createOutHandler(opts)
-  encoder = new VideoEncoder({
+  const encoder = new VideoEncoder({
     error: (err) => {
       console.error('VideoEncoder error : ', err)
-      clearInterval(getImgTimerId)
     },
     output: outHandler.handler
   })
@@ -55,13 +56,26 @@ function init (opts: IEncoderConf): void {
     // avc: { format: 'annexb' }
   })
 
-  encodeFrame(encoder, opts.videoFrameStream)
+  const stopEncode = encodeFrame(
+    encoder,
+    opts.videoFrameStream,
+    onEnded
+  )
 
-  const stream = convertFile2Stream(outHandler.outputFile)
+  const { stream, stop: stopStream } = convertFile2Stream(
+    outHandler.outputFile,
+    onEnded
+  )
   self.postMessage({
     type: 'outputStream',
     data: stream
   }, [stream])
+
+  return () => {
+    stopEncode()
+    stopStream()
+    encoder.close()
+  }
 }
 
 const createOutHandler: (opts: IEncoderConf) => {
@@ -108,24 +122,28 @@ const createOutHandler: (opts: IEncoderConf) => {
 
 const encodeFrame = (
   encoder: VideoEncoder,
-  stream: ReadableStream<VideoFrame>
-): void => {
+  stream: ReadableStream<VideoFrame>,
+  onEnded: () => void
+): () => void => {
   let frameCount = 0
   const startTime = performance.now()
   let lastTime = startTime
 
   const reader = stream.getReader()
 
-  run()
-    .catch(console.error)
-
+  let stoped = false
   async function run (): Promise<void> {
     const { done, value: srouceFrame } = await reader.read()
-    if (done || encoder.state === 'closed') return
+    if (done) {
+      onEnded()
+      return
+    }
+
     if (srouceFrame == null) {
       await run()
       return
     }
+
     const now = performance.now()
     const timestamp = (now - startTime) * 1000
     const duration = (now - lastTime) * 1000
@@ -136,7 +154,12 @@ const encodeFrame = (
     })
     lastTime = now
 
-    // todo：关键帧间隔可配置
+    if (stoped) {
+      srouceFrame.close()
+      vf.close()
+      return
+    }
+
     encoder.encode(vf, { keyFrame: frameCount % 150 === 0 })
     vf.close()
     srouceFrame.close()
@@ -144,10 +167,23 @@ const encodeFrame = (
 
     await run()
   }
+
+  run().catch(console.error)
+
+  return () => {
+    stoped = true
+  }
 }
 
-function convertFile2Stream (file: MP4File): ReadableStream<ArrayBuffer> {
+function convertFile2Stream (
+  file: MP4File,
+  onCancel: () => void
+): {
+    stream: ReadableStream<ArrayBuffer>
+    stop: () => void
+  } {
   let timerId = 0
+
   let sendedBoxIdx = 0
   const boxes = file.boxes
   const deltaBuf = (): ArrayBuffer => {
@@ -159,21 +195,36 @@ function convertFile2Stream (file: MP4File): ReadableStream<ArrayBuffer> {
     sendedBoxIdx = boxes.length
     return ds.buffer
   }
-  return new ReadableStream({
+
+  let stoped = false
+  let exit: (() => void) | null = null
+  const stream = new ReadableStream({
     start (ctrl) {
       timerId = self.setInterval(() => {
-        if (STATE === State.Stopped) {
-          clearInterval(timerId)
-          file.flush()
-          ctrl.enqueue(deltaBuf())
-          ctrl.close()
-        } else {
-          ctrl.enqueue(deltaBuf())
-        }
+        ctrl.enqueue(deltaBuf())
       }, 500)
+
+      exit = () => {
+        clearInterval(timerId)
+        file.flush()
+        ctrl.enqueue(deltaBuf())
+        ctrl.close()
+      }
+
+      // 安全起见，检测如果start触发时已经 stoped
+      if (stoped) exit()
     },
     cancel () {
       clearInterval(timerId)
+      onCancel()
     }
   })
+
+  return {
+    stream,
+    stop: () => {
+      stoped = true
+      exit?.()
+    }
+  }
 }
