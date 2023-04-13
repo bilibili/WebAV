@@ -76,37 +76,27 @@ const createOutHandler: (opts: IEncoderConf) => {
     width: opts.width,
     height: opts.height,
     brands: ['isom', 'iso2', 'avc1', 'mp41'],
-    // brands: ['avc1'],
     avcDecoderConfigRecord: null as AllowSharedBufferSource | undefined | null
   }
 
   let vTrackId: number
-  const startTime = performance.now()
-  let lastTime = startTime
 
   return {
     outputFile,
     handler: (chunk, meta) => {
       if (vTrackId == null) {
-        console.log(4444, meta)
         videoEncodingTrackOptions.avcDecoderConfigRecord = meta.decoderConfig?.description
         vTrackId = outputFile.addTrack(videoEncodingTrackOptions)
       }
       const buf = new ArrayBuffer(chunk.byteLength)
       chunk.copyTo(buf)
+      const dts = chunk.timestamp
 
-      const now = performance.now()
-      const dts = (now - startTime) * 1000
-      const duration = (now - lastTime) * 1000
-      // console.log(44444, 'chunk', { dts, duration })
-      lastTime = now
-      // todo: insert sei
       outputFile.addSample(
         vTrackId,
         buf,
         {
-          // 每帧时长，单位微秒
-          duration,
+          duration: chunk.duration ?? 0,
           dts,
           cts: dts,
           is_sync: chunk.type === 'key'
