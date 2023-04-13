@@ -1,5 +1,5 @@
 import { AVCanvas, AudioSprite, FontSprite, ImgSprite, VideoSprite } from '@webav/av-canvas'
-import { exportWebM } from '../src/av-exporter'
+import { exportMP4, exportWebM } from '../src/av-exporter'
 
 const avCvs = new AVCanvas(document.querySelector('#app') as HTMLElement, {
   bgColor: '#333',
@@ -97,10 +97,23 @@ let stopRecod: (() => void) | null = null
 document.querySelector('#startRecod')?.addEventListener('click', () => {
   ;(async () => {
     stopRecod?.()
-    stopRecod = await exportWebM(
-      avCvs.captureStream(),
-      await createFileWriter()
-    )
+    const el = document.querySelector('input[name=export-format]:checked') as HTMLInputElement
+    const formatType = el.value
+    const writer = await createFileWriter(formatType)
+    if (formatType === 'webm') {
+      stopRecod = await exportWebM(
+        avCvs.captureStream(),
+        writer
+      )
+    } else if (formatType === 'mp4') {
+      stopRecod = await exportMP4(
+        avCvs.captureStream(),
+        { width: 1280, height: 720 },
+        (stream) => {
+          stream.pipeTo(writer).catch(console.error)
+        }
+      )
+    }
   })().catch(console.error)
 })
 document.querySelector('#stopRecod')?.addEventListener('click', () => {
@@ -109,9 +122,9 @@ document.querySelector('#stopRecod')?.addEventListener('click', () => {
   alert('已完成')
 })
 
-async function createFileWriter (): Promise<FileSystemWritableFileStream> {
+async function createFileWriter (extName: string): Promise<FileSystemWritableFileStream> {
   const fileHandle = await window.showSaveFilePicker({
-    suggestedName: `WebAv-export-${Date.now()}.webm`
+    suggestedName: `WebAv-export-${Date.now()}.${extName}`
   })
   return await fileHandle.createWritable()
 }

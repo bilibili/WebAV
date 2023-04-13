@@ -27,7 +27,12 @@
   <button id="localAudio">本地音频</button>
   <button id="fontExamp">示例文字</button>
   <hr />
-  <button id="startRecod">startRecod</button>
+  <input type="radio" value="webm" name="export-format" id="webm-format">
+  <label for="webm-format">WebM</label>
+  <input type="radio" value="mp4" name="export-format" id="mp4-format" checked>
+  <label for="mp4-format">MP4</label>
+  &nbsp;|&nbsp;
+  <button id="startRecod">startRecod</button>&nbsp;
   <button id="stopRecod">stopRecod</button>
   <script type="module" src="demo.ts"></script>
 </body>

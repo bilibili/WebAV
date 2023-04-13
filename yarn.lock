@@ -1316,7 +1316,14 @@
   resolved "https://registry.npmmirror.com/@types/chai/-/chai-4.3.4.tgz"
   integrity sha512-KnRanxnpfpjUTqTCXslZSEdLfXExwgNxYPdiO2WGUj8+HDjFi8R3k5RVKPeSCzLjCcshCAtVO2QBbVuAV4kTnw==
 
-"@types/dom-webcodecs@^0.1.7":
+"@types/dom-mediacapture-transform@^0.1.5":
+  version "0.1.5"
+  resolved "https://registry.npmmirror.com/@types/dom-mediacapture-transform/-/dom-mediacapture-transform-0.1.5.tgz#66e0bc919c4c18542644c6658d4e4dc1abd49740"
+  integrity sha512-Mgu6H5LVJPgJuAumx0xFEdZvn9whHy+J3gEJbJz5xdWrUJ8ZwZ/JTvWwYOQPkCGzGWykPN7ufQn94iil+VCWGw==
+  dependencies:
+    "@types/dom-webcodecs" "*"
+
+"@types/dom-webcodecs@*", "@types/dom-webcodecs@^0.1.7":
   version "0.1.7"
   resolved "https://registry.npmmirror.com/@types/dom-webcodecs/-/dom-webcodecs-0.1.7.tgz#29d3e7d4e0b9902676c599d74c1b6c15eafce714"
   integrity sha512-1euwRyJ7rQrddOa24d5ZcoDRMp68xEIwyb7PKb3Wpc2OullUxHQ4a63WPa5V8R+KtCWISKjgS+f83HCUVhXS/w==

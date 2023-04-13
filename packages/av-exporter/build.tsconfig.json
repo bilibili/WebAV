@@ -6,7 +6,8 @@
     "module": "ESNext",
     "lib": [
       "ESNext",
-      "DOM"
+      "DOM",
+      "webworker"
     ],
     "moduleResolution": "Node",
     "strict": true,

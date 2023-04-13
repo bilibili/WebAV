@@ -1,4 +1,6 @@
 import fixWebmDur from 'fix-webm-duration'
+import MuxMP4Worker from './mux-mp4-worker?worker&inline'
+import { IEncoderConf } from './types'
 
 /**
  * 导出 WebM 格式的视频，
@@ -35,5 +37,44 @@ export async function exportWebM (
   recoder.start(1000)
   return () => {
     recoder.stop()
+  }
+}
+
+export function exportMP4 (
+  ms: MediaStream,
+  opts: Omit<IEncoderConf, 'videoFrameStream'>,
+  onData: (stream: ReadableStream) => void
+): () => void {
+  const worker = new MuxMP4Worker()
+  const tracks = ms.getVideoTracks()
+  const trackProcessor = new MediaStreamTrackProcessor({
+    track: tracks[0]
+  })
+  const videoFrameStream = trackProcessor.readable
+  worker.postMessage({
+    type: 'start',
+    data: {
+      fps: opts.fps ?? 30,
+      width: opts.width,
+      height: opts.height,
+      videoFrameStream
+    }
+  }, [videoFrameStream])
+
+  worker.onmessage = async (evt: MessageEvent) => {
+    const { type, data } = evt.data
+    switch (type) {
+      case 'outputStream':
+        onData(data)
+        break
+    }
+  }
+  return () => {
+    worker.postMessage({
+      type: 'stop'
+    })
+    setTimeout(() => {
+      worker.terminate()
+    }, 1000)
   }
 }
