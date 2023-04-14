@@ -1,5 +1,5 @@
 import mp4box, { MP4File } from 'mp4box'
-import { IEncoderConf, TClearFn } from './types'
+import { IEncoderConf, TAsyncClearFn, TClearFn } from './types'
 
 enum State {
   Preparing = 'preparing',
@@ -9,7 +9,7 @@ enum State {
 
 let STATE = State.Preparing
 
-let clear: TClearFn
+let clear: TAsyncClearFn | null = null
 self.onmessage = async (evt: MessageEvent) => {
   const { type, data } = evt.data
 
@@ -32,11 +32,15 @@ self.onmessage = async (evt: MessageEvent) => {
 function init (
   opts: IEncoderConf,
   onEnded: () => void
-): TClearFn {
+): TAsyncClearFn {
   const mp4File = mp4box.createFile()
-  let stopEncodeVideo: TClearFn
+  let stopEncodeVideo: TAsyncClearFn | null = null
   if (opts.streams.video != null) {
     stopEncodeVideo = encodeVideoTrack(opts, mp4File, onEnded)
+  }
+  let stopEncodeAudio: TAsyncClearFn | null = null
+  if (opts.streams.audio != null) {
+    stopEncodeAudio = encodeAudioTrack(opts, mp4File, onEnded)
   }
 
   const { stream, stop: stopStream } = convertFile2Stream(
@@ -50,7 +54,8 @@ function init (
 
   return async () => {
     await stopEncodeVideo?.()
-    await stopStream?.()
+    await stopEncodeAudio?.()
+    stopStream()
   }
 }
 
@@ -58,11 +63,10 @@ function encodeVideoTrack (
   opts: IEncoderConf,
   mp4File: MP4File,
   onEnded: () => void
-): TClearFn {
-  const timescale = 1_000_000
+): TAsyncClearFn {
   const videoEncodingTrackOptions = {
     // 微秒
-    timescale,
+    timescale: 1e6,
     width: opts.width,
     height: opts.height,
     brands: ['isom', 'iso2', 'avc1', 'mp41'],
@@ -181,6 +185,144 @@ function encodeVideoFrame (
 
   run().catch(console.error)
 
+  return () => {
+    stoped = true
+  }
+}
+
+function encodeAudioTrack (
+  opts: IEncoderConf,
+  mp4File: MP4File,
+  onEnded: TClearFn
+): TAsyncClearFn {
+  const sampleRate = 48000
+  const audioEncodingTrackOptions = {
+    timescale: 1e6,
+    media_duration: 0,
+    duration: 0,
+    nb_samples: 0,
+    samplerate: sampleRate,
+    channel_count: 2,
+    width: 0,
+    height: 0,
+    hdlr: 'soun',
+    name: 'SoundHandler',
+    type: 'mp4a'
+  }
+
+  let trackId: number | null = null
+  const encoder = createAudioEncoder((chunk) => {
+    if (trackId == null) {
+      trackId = mp4File.addTrack(audioEncodingTrackOptions)
+    }
+    const buf = new ArrayBuffer(chunk.byteLength)
+    chunk.copyTo(buf)
+    const dts = chunk.timestamp
+    mp4File.addSample(trackId, buf, {
+      duration: chunk.duration ?? 0,
+      dts,
+      cts: dts,
+      is_sync: chunk.type === 'key'
+    })
+    // console.log(1111, chunk, meta)
+  })
+
+  const stopEncode = encodeAudioData(
+    encoder,
+    opts.streams.audio as ReadableStream<AudioData>,
+    onEnded
+  )
+
+  return async () => {
+    stopEncode()
+    await encoder.flush()
+    encoder.close()
+  }
+}
+
+function createAudioEncoder (
+  outHandler: EncodedAudioChunkOutputCallback
+): AudioEncoder {
+  const audioEncoder = new AudioEncoder({
+    error: console.error,
+    output: outHandler
+  })
+  audioEncoder.configure({
+    // codec: 'opus',
+    // sampleRate: 44100,
+    codec: 'mp4a.40.2',
+    sampleRate: 48000,
+    numberOfChannels: 2,
+    bitrate: 128_000
+  })
+  return audioEncoder
+}
+
+function encodeAudioData (
+  encoder: AudioEncoder,
+  stream: ReadableStream<AudioData>,
+  onEnded: TClearFn
+): TClearFn {
+  const reader = stream.getReader()
+  let stoped = false
+
+  async function run (): Promise<void> {
+    while (true) {
+      const { done, value: audioData } = await reader.read()
+      // console.log(2222, { done, srouceData })
+      if (done) {
+        // console.log(99999999, 'audio done')
+        onEnded()
+        return
+      }
+
+      if (audioData == null || audioData.duration === 0) continue
+
+      if (stoped) {
+        audioData.close()
+        return
+      }
+
+      encoder.encode(audioData)
+      audioData.close()
+
+      // reset audioData.timestamp
+      // const now = performance.now()
+      // const timestamp = (now - startTime) * 1000
+
+      // const bufs = []
+      // for (let i = 0; i < audioData.numberOfChannels; i += 1) {
+      //   const ab = new ArrayBuffer(audioData.allocationSize({
+      //     planeIndex: i
+      //   }))
+      //   audioData.copyTo(ab, { planeIndex: i })
+      //   bufs.push(ab)
+      // }
+
+      // const ad = new AudioData({
+      //   timestamp,
+      //   data: bufs.reduce(concatArrBuf),
+      //   format: audioData.format,
+      //   sampleRate: 48000,
+      //   numberOfFrames: audioData.numberOfFrames,
+      //   numberOfChannels: audioData.numberOfChannels
+      // })
+      // console.log(3333, ad.timestamp, ad.duration)
+
+      // encoder.encode(ad)
+      // audioData.close()
+      // ad.close()
+
+      // function concatArrBuf (buf1: ArrayBuffer, buf2: ArrayBuffer): ArrayBuffer {
+      //   const tmp = new Uint8Array(buf1.byteLength + buf2.byteLength)
+      //   tmp.set(new Uint8Array(buf1), 0)
+      //   tmp.set(new Uint8Array(buf2), buf1.byteLength)
+      //   return tmp.buffer
+      // }
+    }
+  }
+
+  run().catch(console.error)
   return () => {
     stoped = true
   }
