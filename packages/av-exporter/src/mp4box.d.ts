@@ -71,12 +71,23 @@ declare module 'mp4box' {
     endianness: unknown
   }
 
-  interface TrackOpts {
+  interface VideoTrackOpts {
     timescale: number
     width: number
     height: number
     brands: string[]
     avcDecoderConfigRecord: AllowSharedBufferSource | undefined | null
+  }
+
+  interface AudioTrackOpts {
+    timescale: number
+    media_duration: number
+    duration: number
+    nb_samples: number
+    samplerate: number
+    hdlr: string
+    name: string
+    type: string
   }
 
   interface SampleOpts {
@@ -89,7 +100,7 @@ declare module 'mp4box' {
   export interface MP4File {
     boxes: MP4Box[]
 
-    addTrack: (opts: TrackOpts) => number
+    addTrack: (opts: VideoTrackOpts | AudioTrackOpts) => number
     addSample: (trackId: number, buf: ArrayBuffer, sample: SampleOpts) => void
 
     onMoovStart?: () => void
