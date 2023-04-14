@@ -31,7 +31,7 @@ self.onmessage = async (evt: MessageEvent) => {
 
 function init (
   opts: IEncoderConf,
-  onEnded: () => void
+  onEnded: TClearFn
 ): TAsyncClearFn {
   const mp4File = mp4box.createFile()
   let stopEncodeVideo: TAsyncClearFn | null = null
@@ -62,9 +62,9 @@ function init (
 function encodeVideoTrack (
   opts: IEncoderConf,
   mp4File: MP4File,
-  onEnded: () => void
+  onEnded: TClearFn
 ): TAsyncClearFn {
-  const videoEncodingTrackOptions = {
+  const videoTrackOpts = {
     // 微秒
     timescale: 1e6,
     width: opts.width,
@@ -76,8 +76,8 @@ function encodeVideoTrack (
   let vTrackId: number
   const encoder = createVideoEncoder(opts, (chunk, meta) => {
     if (vTrackId == null) {
-      videoEncodingTrackOptions.avcDecoderConfigRecord = meta.decoderConfig?.description
-      vTrackId = mp4File.addTrack(videoEncodingTrackOptions)
+      videoTrackOpts.avcDecoderConfigRecord = meta.decoderConfig?.description
+      vTrackId = mp4File.addTrack(videoTrackOpts)
     }
     const buf = new ArrayBuffer(chunk.byteLength)
     chunk.copyTo(buf)
@@ -138,8 +138,8 @@ function createVideoEncoder (
 function encodeVideoFrame (
   encoder: VideoEncoder,
   stream: ReadableStream<VideoFrame>,
-  onEnded: () => void
-): () => void {
+  onEnded: TClearFn
+): TClearFn {
   let frameCount = 0
   const startTime = performance.now()
   let lastTime = startTime
@@ -148,13 +148,13 @@ function encodeVideoFrame (
 
   let stoped = false
   async function run (): Promise<void> {
-    const { done, value: srouceFrame } = await reader.read()
+    const { done, value: frame } = await reader.read()
     if (done) {
       onEnded()
       return
     }
 
-    if (srouceFrame == null) {
+    if (frame == null) {
       await run()
       return
     }
@@ -163,21 +163,21 @@ function encodeVideoFrame (
     const timestamp = (now - startTime) * 1000
     const duration = (now - lastTime) * 1000
     // @ts-expect-error
-    const vf = new VideoFrame(srouceFrame, {
+    const vf = new VideoFrame(frame, {
       timestamp,
       duration
     })
     lastTime = now
 
     if (stoped) {
-      srouceFrame.close()
+      frame.close()
       vf.close()
       return
     }
 
     encoder.encode(vf, { keyFrame: frameCount % 150 === 0 })
     vf.close()
-    srouceFrame.close()
+    frame.close()
     frameCount += 1
 
     await run()
@@ -196,7 +196,7 @@ function encodeAudioTrack (
   onEnded: TClearFn
 ): TAsyncClearFn {
   const sampleRate = 48000
-  const audioEncodingTrackOptions = {
+  const audioTrackOpts = {
     timescale: 1e6,
     media_duration: 0,
     duration: 0,
@@ -214,7 +214,7 @@ function encodeAudioTrack (
   let trackId: number | null = null
   const encoder = createAudioEncoder((chunk) => {
     if (trackId == null) {
-      trackId = mp4File.addTrack(audioEncodingTrackOptions)
+      trackId = mp4File.addTrack(audioTrackOpts)
     }
     const buf = new ArrayBuffer(chunk.byteLength)
     chunk.copyTo(buf)
@@ -225,7 +225,6 @@ function encodeAudioTrack (
       cts: dts,
       is_sync: chunk.type === 'key'
     })
-    // console.log(1111, chunk, meta)
   })
 
   const stopEncode = encodeAudioData(
@@ -249,8 +248,6 @@ function createAudioEncoder (
     output: outHandler
   })
   audioEncoder.configure({
-    // codec: 'opus',
-    // sampleRate: 44100,
     // codec: 'mp4a.40.2',
     codec: 'opus',
     sampleRate: 48000,
@@ -271,14 +268,12 @@ function encodeAudioData (
   async function run (): Promise<void> {
     while (true) {
       const { done, value: audioData } = await reader.read()
-      // console.log(2222, { done, srouceData })
       if (done) {
-        // console.log(99999999, 'audio done')
         onEnded()
         return
       }
 
-      if (audioData == null || audioData.duration === 0) continue
+      if (audioData == null) continue
 
       if (stoped) {
         audioData.close()
@@ -332,7 +327,7 @@ function encodeAudioData (
 
 function convertFile2Stream (
   file: MP4File,
-  onCancel: () => void
+  onCancel: TClearFn
 ): {
     stream: ReadableStream<ArrayBuffer>
     stop: TClearFn
@@ -352,7 +347,7 @@ function convertFile2Stream (
   }
 
   let stoped = false
-  let exit: (() => void) | null = null
+  let exit: (TClearFn) | null = null
   const stream = new ReadableStream({
     start (ctrl) {
       timerId = self.setInterval(() => {
