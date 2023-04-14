@@ -148,39 +148,33 @@ function encodeVideoFrame (
 
   let stoped = false
   async function run (): Promise<void> {
-    const { done, value: frame } = await reader.read()
-    if (done) {
-      onEnded()
-      return
-    }
+    while (true) {
+      const { done, value: frame } = await reader.read()
+      if (done) {
+        onEnded()
+        return
+      }
+      if (frame == null) continue
+      if (stoped) {
+        frame.close()
+        return
+      }
 
-    if (frame == null) {
-      await run()
-      return
-    }
+      const now = performance.now()
+      const timestamp = (now - startTime) * 1000
+      const duration = (now - lastTime) * 1000
+      // @ts-expect-error
+      const vf = new VideoFrame(frame, {
+        timestamp,
+        duration
+      })
+      lastTime = now
 
-    const now = performance.now()
-    const timestamp = (now - startTime) * 1000
-    const duration = (now - lastTime) * 1000
-    // @ts-expect-error
-    const vf = new VideoFrame(frame, {
-      timestamp,
-      duration
-    })
-    lastTime = now
-
-    if (stoped) {
-      frame.close()
+      encoder.encode(vf, { keyFrame: frameCount % 150 === 0 })
       vf.close()
-      return
+      frame.close()
+      frameCount += 1
     }
-
-    encoder.encode(vf, { keyFrame: frameCount % 150 === 0 })
-    vf.close()
-    frame.close()
-    frameCount += 1
-
-    await run()
   }
 
   run().catch(console.error)
