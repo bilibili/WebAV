@@ -207,7 +207,8 @@ function encodeAudioTrack (
     height: 0,
     hdlr: 'soun',
     name: 'SoundHandler',
-    type: 'mp4a'
+    // type: 'mp4a'
+    type: 'Opus'
   }
 
   let trackId: number | null = null
@@ -250,7 +251,8 @@ function createAudioEncoder (
   audioEncoder.configure({
     // codec: 'opus',
     // sampleRate: 44100,
-    codec: 'mp4a.40.2',
+    // codec: 'mp4a.40.2',
+    codec: 'opus',
     sampleRate: 48000,
     numberOfChannels: 2,
     bitrate: 128_000
