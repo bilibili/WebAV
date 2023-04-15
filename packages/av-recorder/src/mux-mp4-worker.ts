@@ -41,12 +41,22 @@ function init (
 ): TAsyncClearFn {
   const mp4File = mp4box.createFile()
   let stopEncodeVideo: TAsyncClearFn | null = null
-  if (opts.streams.video != null) {
-    stopEncodeVideo = encodeVideoTrack(opts, mp4File, onEnded)
-  }
   let stopEncodeAudio: TAsyncClearFn | null = null
-  if (opts.streams.audio != null) {
-    stopEncodeAudio = encodeAudioTrack(opts, mp4File, onEnded)
+
+  // video 必须先于 audio
+  function onVideoTrackReady (): void {
+    if (opts.streams.audio != null) {
+      stopEncodeAudio = encodeAudioTrack(opts, mp4File, onEnded)
+    }
+  }
+
+  if (opts.streams.video != null) {
+    stopEncodeVideo = encodeVideoTrack(
+      opts,
+      mp4File,
+      onVideoTrackReady,
+      onEnded
+    )
   }
 
   const { stream, stop: stopStream } = convertFile2Stream(
@@ -69,6 +79,7 @@ function init (
 function encodeVideoTrack (
   opts: TWorkerOpts,
   mp4File: MP4File,
+  onTrackReady: () => void,
   onEnded: TClearFn
 ): TAsyncClearFn {
   const videoTrackOpts = {
@@ -85,6 +96,8 @@ function encodeVideoTrack (
     if (vTrackId == null) {
       videoTrackOpts.avcDecoderConfigRecord = meta.decoderConfig?.description
       vTrackId = mp4File.addTrack(videoTrackOpts)
+      // 通知 encodeAudioTrack
+      onTrackReady()
     }
     const buf = new ArrayBuffer(chunk.byteLength)
     chunk.copyTo(buf)
