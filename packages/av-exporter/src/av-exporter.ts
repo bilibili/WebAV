@@ -68,7 +68,7 @@ export function exportMP4 (
   worker.postMessage({
     type: 'start',
     data: {
-      fps: opts.fps ?? 30,
+      fps: opts.expectFPS ?? 30,
       width: opts.width,
       height: opts.height,
       streams

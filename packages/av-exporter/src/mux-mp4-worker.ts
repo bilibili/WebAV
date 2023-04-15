@@ -104,7 +104,7 @@ function encodeVideoTrack (
 
   const stopEncode = encodeVideoFrame(
     encoder,
-    opts.fps,
+    opts.expectFPS,
     opts.streams.video as ReadableStream,
     onEnded
   )
@@ -127,7 +127,7 @@ function createVideoEncoder (
 
   encoder.configure({
     codec: 'avc1.42E01F',
-    framerate: opts.fps,
+    framerate: opts.expectFPS,
     hardwareAcceleration: 'prefer-hardware',
     // 码率
     bitrate: opts.bitrate,
@@ -216,7 +216,6 @@ function encodeAudioTrack (
     height: 0,
     hdlr: 'soun',
     name: 'SoundHandler',
-    // type: 'mp4a'
     type: opts.audioCodec === 'aac' ? 'mp4a' : 'Opus'
   }
 
