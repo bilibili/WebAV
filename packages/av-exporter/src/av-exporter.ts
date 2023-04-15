@@ -1,6 +1,6 @@
 import fixWebmDur from 'fix-webm-duration'
 import MuxMP4Worker from './mux-mp4-worker?worker&inline'
-import { IEncoderConf } from './types'
+import { IRecorderConf, IStream } from './types'
 
 /**
  * 导出 WebM 格式的视频，
@@ -42,11 +42,11 @@ export async function exportWebM (
 
 export function exportMP4 (
   ms: MediaStream,
-  opts: Omit<IEncoderConf, 'streams'>,
+  opts: Omit<IRecorderConf, 'streams'>,
   onData: (stream: ReadableStream) => void
 ): () => void {
   const worker = new MuxMP4Worker()
-  const streams: IEncoderConf['streams'] = {}
+  const streams: IStream = {}
   const videoTrack = ms.getVideoTracks()[0]
   if (videoTrack != null) {
     streams.video = new MediaStreamTrackProcessor({
@@ -62,7 +62,7 @@ export function exportMP4 (
   }
 
   if (streams.audio == null && streams.video == null) {
-    throw new Error('No Track available in MediaStream')
+    throw new Error('No available tracks in MediaStream')
   }
 
   worker.postMessage({

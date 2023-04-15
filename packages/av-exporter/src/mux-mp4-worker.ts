@@ -1,5 +1,7 @@
 import mp4box, { MP4File } from 'mp4box'
-import { IEncoderConf, TAsyncClearFn, TClearFn } from './types'
+import { IRecorderConf, TAsyncClearFn, TClearFn, IStream, EWorkerMsg } from './types'
+
+type TWorkerOpts = Required<IRecorderConf> & { streams: IStream }
 
 enum State {
   Preparing = 'preparing',
@@ -14,7 +16,7 @@ self.onmessage = async (evt: MessageEvent) => {
   const { type, data } = evt.data
 
   switch (type) {
-    case 'start':
+    case EWorkerMsg.Start:
       if (STATE === State.Preparing) {
         STATE = State.Running
         clear = init(data, () => {
@@ -22,15 +24,16 @@ self.onmessage = async (evt: MessageEvent) => {
         })
       }
       break
-    case 'stop':
+    case EWorkerMsg.Stop:
       STATE = State.Stopped
       await clear?.()
+      self.postMessage({ type: EWorkerMsg.SafeExit })
       break
   }
 }
 
 function init (
-  opts: IEncoderConf,
+  opts: TWorkerOpts,
   onEnded: TClearFn
 ): TAsyncClearFn {
   const mp4File = mp4box.createFile()
@@ -48,7 +51,7 @@ function init (
     onEnded
   )
   self.postMessage({
-    type: 'outputStream',
+    type: EWorkerMsg.OutputStream,
     data: stream
   }, [stream])
 
@@ -60,7 +63,7 @@ function init (
 }
 
 function encodeVideoTrack (
-  opts: IEncoderConf,
+  opts: TWorkerOpts,
   mp4File: MP4File,
   onEnded: TClearFn
 ): TAsyncClearFn {
@@ -109,7 +112,7 @@ function encodeVideoTrack (
 }
 
 function createVideoEncoder (
-  opts: IEncoderConf,
+  opts: TWorkerOpts,
   outHandler: EncodedVideoChunkOutputCallback
 ): VideoEncoder {
   const encoder = new VideoEncoder({
@@ -185,7 +188,7 @@ function encodeVideoFrame (
 }
 
 function encodeAudioTrack (
-  opts: IEncoderConf,
+  opts: TWorkerOpts,
   mp4File: MP4File,
   onEnded: TClearFn
 ): TAsyncClearFn {

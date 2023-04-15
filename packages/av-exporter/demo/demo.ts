@@ -1,5 +1,6 @@
 import { AVCanvas, AudioSprite, FontSprite, ImgSprite, VideoSprite } from '@webav/av-canvas'
-import { exportMP4, exportWebM } from '../src/av-exporter'
+import { exportWebM } from '../src/av-exporter'
+import { AVRecorder } from '../src/av-recorder'
 
 const avCvs = new AVCanvas(document.querySelector('#app') as HTMLElement, {
   bgColor: '#333',
@@ -94,6 +95,7 @@ document.querySelector('#fontExamp')?.addEventListener('click', () => {
 })
 
 let stopRecod: (() => void) | null = null
+let recorder: AVRecorder | null = null
 document.querySelector('#startRecod')?.addEventListener('click', () => {
   ;(async () => {
     stopRecod?.()
@@ -106,20 +108,20 @@ document.querySelector('#startRecod')?.addEventListener('click', () => {
         writer
       )
     } else if (formatType === 'mp4') {
-      stopRecod = exportMP4(
-        avCvs.captureStream(),
-        { width: 1280, height: 720 },
-        (stream) => {
-          stream.pipeTo(writer).catch(console.error)
-        }
-      )
+      recorder = new AVRecorder(avCvs.captureStream(), {
+        width: 1280,
+        height: 720
+      })
+      await recorder.start()
+      recorder.outputStream?.pipeTo(writer).catch(console.error)
     }
   })().catch(console.error)
 })
 document.querySelector('#stopRecod')?.addEventListener('click', () => {
-  stopRecod?.()
-  stopRecod = null
-  alert('已完成')
+  ;(async () => {
+    await recorder?.stop()
+    alert('已完成')
+  })().catch(console.error)
 })
 
 async function createFileWriter (extName: string): Promise<FileSystemWritableFileStream> {
