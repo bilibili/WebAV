@@ -220,58 +220,49 @@ function encodeAudioTrack (
   }
 
   let trackId: number | null = null
-  const encoder = createAudioEncoder(opts, (chunk) => {
-    if (trackId == null) {
-      trackId = mp4File.addTrack(audioTrackOpts)
+  const encoder = new AudioEncoder({
+    error: console.error,
+    output: (chunk) => {
+      if (trackId == null) {
+        trackId = mp4File.addTrack(audioTrackOpts)
+      }
+      const buf = new ArrayBuffer(chunk.byteLength)
+      chunk.copyTo(buf)
+      const dts = chunk.timestamp
+      mp4File.addSample(trackId, buf, {
+        duration: chunk.duration ?? 0,
+        dts,
+        cts: dts,
+        is_sync: chunk.type === 'key'
+      })
     }
-    const buf = new ArrayBuffer(chunk.byteLength)
-    chunk.copyTo(buf)
-    const dts = chunk.timestamp
-    mp4File.addSample(trackId, buf, {
-      duration: chunk.duration ?? 0,
-      dts,
-      cts: dts,
-      is_sync: chunk.type === 'key'
-    })
   })
 
-  const stopEncode = encodeAudioData(
-    encoder,
-    opts.streams.audio as ReadableStream<AudioData>,
-    onEnded
-  )
+  const stopEncode = encodeAudioData(encoder, opts, onEnded)
 
   return async () => {
     stopEncode()
-    await encoder.flush()
+    if (encoder.state === 'configured') await encoder.flush()
     encoder.close()
   }
 }
 
-function createAudioEncoder (
-  opts: TWorkerOpts,
-  outHandler: EncodedAudioChunkOutputCallback
-): AudioEncoder {
-  const audioEncoder = new AudioEncoder({
-    error: console.error,
-    output: outHandler
-  })
-  audioEncoder.configure({
-    codec: opts.audioCodec === 'aac' ? 'mp4a.40.2' : 'opus',
-    sampleRate: 48000,
-    numberOfChannels: 2,
-    bitrate: 128_000
-  })
-  return audioEncoder
-}
-
 function encodeAudioData (
   encoder: AudioEncoder,
-  stream: ReadableStream<AudioData>,
+  opts: TWorkerOpts,
   onEnded: TClearFn
 ): TClearFn {
-  const reader = stream.getReader()
+  const reader = opts.streams.audio?.getReader() as ReadableStreamDefaultReader<AudioData>
   let stoped = false
+
+  function initEncoder (numberOfChannels: number, sampleRate: number): void {
+    encoder.configure({
+      codec: opts.audioCodec === 'aac' ? 'mp4a.40.2' : 'opus',
+      sampleRate,
+      numberOfChannels,
+      bitrate: 128_000
+    })
+  }
 
   async function run (): Promise<void> {
     while (true) {
@@ -286,6 +277,10 @@ function encodeAudioData (
       if (stoped) {
         audioData.close()
         return
+      }
+
+      if (encoder.state === 'unconfigured') {
+        initEncoder(audioData.numberOfChannels, audioData.sampleRate)
       }
 
       encoder.encode(audioData)
