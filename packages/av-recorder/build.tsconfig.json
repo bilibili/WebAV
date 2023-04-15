@@ -1,6 +1,5 @@
 {
   "compilerOptions": {
-    "outDir": "npm-dist",
     "target": "ESNext",
     "useDefineForClassFields": true,
     "module": "ESNext",
@@ -17,7 +16,10 @@
     "noUnusedLocals": true,
     "noUnusedParameters": true,
     "noImplicitReturns": true,
-    "declaration": true
+    "declaration": true,
+    "emitDeclarationOnly": true,
+    "declarationDir": "dist",
+    "skipLibCheck": true
   },
   "include": [
     "src/**/*"
