@@ -8,6 +8,7 @@ Record camera & microphone, save data to mp4 file.
 ```ts
 import { AVRecorder } from '@webav/av-recorder'
 
+// mediaStream from: getUserMedia, displayMedia, VideoHTMLElement.captureStream, VideoCanvasElement.captureStream etc...
 const mediaStream = await navigator.mediaDevices.getUserMedia({
   video: true,
   audio: true
@@ -31,3 +32,7 @@ recorder.outputStream
 
 // await recorder.stop()
 ```
+
+## Demo
+[Record camera & microphone](https://hughfenghen.github.io/WebAV/demo/record-usermedia.html)  
+[Demo code](https://github.com/hughfenghen/WebAV/blob/main/packages/av-recorder/demo/record-usermedia.ts#L4)  
