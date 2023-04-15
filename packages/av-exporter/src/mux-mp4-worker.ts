@@ -1,7 +1,10 @@
 import mp4box, { MP4File } from 'mp4box'
 import { IRecorderConf, TAsyncClearFn, TClearFn, IStream, EWorkerMsg } from './types'
 
-type TWorkerOpts = Required<IRecorderConf> & { streams: IStream }
+type TWorkerOpts = Required<IRecorderConf> & {
+  streams: IStream
+  timeSlice: number
+}
 
 enum State {
   Preparing = 'preparing',
@@ -48,6 +51,7 @@ function init (
 
   const { stream, stop: stopStream } = convertFile2Stream(
     mp4File,
+    opts.timeSlice,
     onEnded
   )
   self.postMessage({
@@ -125,7 +129,7 @@ function createVideoEncoder (
     framerate: opts.fps,
     hardwareAcceleration: 'prefer-hardware',
     // 码率
-    bitrate: opts.bitrate ?? 3_000_000,
+    bitrate: opts.bitrate,
     width: opts.width,
     height: opts.height,
     // H264 不支持背景透明度
@@ -324,6 +328,7 @@ function encodeAudioData (
 
 function convertFile2Stream (
   file: MP4File,
+  timeSlice: number,
   onCancel: TClearFn
 ): {
     stream: ReadableStream<ArrayBuffer>
@@ -349,7 +354,7 @@ function convertFile2Stream (
     start (ctrl) {
       timerId = self.setInterval(() => {
         ctrl.enqueue(deltaBuf())
-      }, 500)
+      }, timeSlice)
 
       exit = () => {
         clearInterval(timerId)

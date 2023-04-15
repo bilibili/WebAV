@@ -120,7 +120,7 @@ document.querySelector('#startRecod')?.addEventListener('click', () => {
 document.querySelector('#stopRecod')?.addEventListener('click', () => {
   ;(async () => {
     await recorder?.stop()
-    alert('已完成')
+    alert('save done')
   })().catch(console.error)
 })
 
