@@ -1,6 +1,8 @@
 {
   "name": "@webav/av-recorder",
   "version": "0.1.0",
+  "private": false,
+  "repository": "https://github.com/hughfenghen/WebAV",
   "type": "module",
   "types": "dist/av-recorder.d.ts",
   "module": "dist/av-recorder.js",

@@ -10,10 +10,7 @@
   - 媒体来源：摄像头、麦克风、分享屏幕
   - 本地文件：视频、音频、图片
   - 其他：文字
-- 导出
-  - WebM（包含视频、音频轨道）
-
-*目前能添加各种素材，录制&导出带音频的WebM文件。*
+- [AVRecorder](packages/av-recorder/README.md)
 
 ## 开发中
 
@@ -44,11 +41,4 @@
   - 动画：转场、元素动效
   - 视频裁剪、合成
   - 视频消音
-
-
-## 示例
-
-### 导出 WebM
-
-https://user-images.githubusercontent.com/3307051/231461352-9856b380-ac2e-4f14-b0b6-36a418efd1a0.mp4
 

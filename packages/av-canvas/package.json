@@ -1,6 +1,8 @@
 {
   "name": "@webav/av-canvas",
   "version": "0.1.0",
+  "private": false,
+  "repository": "https://github.com/hughfenghen/WebAV",
   "type": "module",
   "types": "npm-dist/index.d.ts",
   "module": "npm-dist/index.js",
