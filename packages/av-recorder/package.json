@@ -1,5 +1,5 @@
 {
-  "name": "@webav/av-exporter",
+  "name": "@webav/av-recorder",
   "version": "0.1.0",
   "type": "module",
   "types": "npm-dist/av-exporter.d.ts",
