@@ -4,7 +4,7 @@
   ],
   "npmClient": "yarn",
   "useWorkspaces": true,
-  "version": "0.1.0",
+  "version": "0.1.1",
   "command": {
     "version": {
       "message": "version: %s",
