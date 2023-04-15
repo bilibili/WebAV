@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AVCanvas</title>
+
+  <style>
+    #app {
+      width: 900px;
+      height: 500px;
+      margin: 50px 50px;
+      overflow: hidden;
+      position: relative;
+    }
+
+    video {
+      width: 100%;
+      height: 100%;
+    }
+  </style>
+</head>
+
+<body>
+  <div id="app">
+    <video></video>
+  </div>
+  <button id="startRecod">start</button>&nbsp;
+  <button id="stopRecod">stop</button>
+  <script type="module" src="record-usermedia.ts"></script>
+</body>
+
+</html>
