@@ -23,8 +23,15 @@ jobs:
       - name: Build
         run: yarn build:demo  # 或者使用 yarn: yarn build
 
-      - name: Deploy to GitHub Pages
-        uses: peaceiris/actions-gh-pages@v3
+      - name: Setup Pages
+        uses: actions/configure-pages@v3
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v1
         with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./packages/av-recorder/demo-dist  # 或者您的构建输出目录
+          # Upload entire repository
+          path: ./packages/av-recorder/demo-dist  # 或者您的构建输出目录
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v2
