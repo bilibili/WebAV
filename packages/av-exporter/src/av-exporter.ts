@@ -42,7 +42,7 @@ export async function exportWebM (
 
 export function exportMP4 (
   ms: MediaStream,
-  opts: Omit<IEncoderConf, 'videoFrameStream'>,
+  opts: Omit<IEncoderConf, 'streams'>,
   onData: (stream: ReadableStream) => void
 ): () => void {
   const worker = new MuxMP4Worker()

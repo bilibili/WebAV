@@ -10,5 +10,5 @@ export interface IEncoderConf {
   }
 }
 
-export type TClearFn = (() => void)
-export type TAsyncClearFn = (() => Promise<void>)
+export type TClearFn = () => void
+export type TAsyncClearFn = () => Promise<void>

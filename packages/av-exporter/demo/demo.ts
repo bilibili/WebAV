@@ -106,7 +106,7 @@ document.querySelector('#startRecod')?.addEventListener('click', () => {
         writer
       )
     } else if (formatType === 'mp4') {
-      stopRecod = await exportMP4(
+      stopRecod = exportMP4(
         avCvs.captureStream(),
         { width: 1280, height: 720 },
         (stream) => {
