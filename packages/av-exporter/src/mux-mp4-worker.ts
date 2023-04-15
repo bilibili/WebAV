@@ -104,6 +104,7 @@ function encodeVideoTrack (
 
   const stopEncode = encodeVideoFrame(
     encoder,
+    opts.fps,
     opts.streams.video as ReadableStream,
     onEnded
   )
@@ -144,6 +145,7 @@ function createVideoEncoder (
 
 function encodeVideoFrame (
   encoder: VideoEncoder,
+  expectFPS: number,
   stream: ReadableStream<VideoFrame>,
   onEnded: TClearFn
 ): TClearFn {
@@ -153,7 +155,9 @@ function encodeVideoFrame (
 
   const reader = stream.getReader()
 
+  const maxFPS = expectFPS * 1.1
   let stoped = false
+  let frameCnt = 0
   async function run (): Promise<void> {
     while (true) {
       const { done, value: frame } = await reader.read()
@@ -168,16 +172,20 @@ function encodeVideoFrame (
       }
 
       const now = performance.now()
-      const timestamp = (now - startTime) * 1000
-      const duration = (now - lastTime) * 1000
+      const offsetTime = now - startTime
+      // 避免帧率超出期望太高
+      if (frameCnt / offsetTime * 1000 > maxFPS) continue
+
       // @ts-expect-error
       const vf = new VideoFrame(frame, {
-        timestamp,
-        duration
+        // timestamp 单位 微妙
+        timestamp: offsetTime * 1000,
+        duration: (now - lastTime) * 1000
       })
       lastTime = now
 
       encoder.encode(vf, { keyFrame: frameCount % 150 === 0 })
+      frameCnt += 1
       vf.close()
       frame.close()
       frameCount += 1
