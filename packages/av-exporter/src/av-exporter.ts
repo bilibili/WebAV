@@ -28,6 +28,7 @@ export async function exportWebM (
       const duration = performance.now() - startTime
       const fixedBlob = await fixWebmDur(firstBlob, duration)
       await outputWriter.seek(0)
+      // fixme: fixedBlob.size not equal firstBlob.size
       await outputWriter.write(fixedBlob)
     }
     await outputWriter.close()
