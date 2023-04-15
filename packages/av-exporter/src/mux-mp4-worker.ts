@@ -290,40 +290,6 @@ function encodeAudioData (
 
       encoder.encode(audioData)
       audioData.close()
-
-      // reset audioData.timestamp
-      // const now = performance.now()
-      // const timestamp = (now - startTime) * 1000
-
-      // const bufs = []
-      // for (let i = 0; i < audioData.numberOfChannels; i += 1) {
-      //   const ab = new ArrayBuffer(audioData.allocationSize({
-      //     planeIndex: i
-      //   }))
-      //   audioData.copyTo(ab, { planeIndex: i })
-      //   bufs.push(ab)
-      // }
-
-      // const ad = new AudioData({
-      //   timestamp,
-      //   data: bufs.reduce(concatArrBuf),
-      //   format: audioData.format,
-      //   sampleRate: 48000,
-      //   numberOfFrames: audioData.numberOfFrames,
-      //   numberOfChannels: audioData.numberOfChannels
-      // })
-      // console.log(3333, ad.timestamp, ad.duration)
-
-      // encoder.encode(ad)
-      // audioData.close()
-      // ad.close()
-
-      // function concatArrBuf (buf1: ArrayBuffer, buf2: ArrayBuffer): ArrayBuffer {
-      //   const tmp = new Uint8Array(buf1.byteLength + buf2.byteLength)
-      //   tmp.set(new Uint8Array(buf1), 0)
-      //   tmp.set(new Uint8Array(buf2), buf1.byteLength)
-      //   return tmp.buffer
-      // }
     }
   }
 
