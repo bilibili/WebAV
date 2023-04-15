@@ -6,9 +6,11 @@
     "ts-standard": "^12.0.2"
   },
   "scripts": {
-    "build:demo": "lerna run build:demo"
+    "build:demo": "lerna run build:demo",
+    "version": "lerna version"
   },
   "workspaces": [
     "packages/*"
-  ]
+  ],
+  "version": "0.1.1"
 }
