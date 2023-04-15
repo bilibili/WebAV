@@ -217,11 +217,11 @@ function encodeAudioTrack (
     hdlr: 'soun',
     name: 'SoundHandler',
     // type: 'mp4a'
-    type: 'Opus'
+    type: opts.audioCodec === 'aac' ? 'mp4a' : 'Opus'
   }
 
   let trackId: number | null = null
-  const encoder = createAudioEncoder((chunk) => {
+  const encoder = createAudioEncoder(opts, (chunk) => {
     if (trackId == null) {
       trackId = mp4File.addTrack(audioTrackOpts)
     }
@@ -250,6 +250,7 @@ function encodeAudioTrack (
 }
 
 function createAudioEncoder (
+  opts: TWorkerOpts,
   outHandler: EncodedAudioChunkOutputCallback
 ): AudioEncoder {
   const audioEncoder = new AudioEncoder({
@@ -257,8 +258,7 @@ function createAudioEncoder (
     output: outHandler
   })
   audioEncoder.configure({
-    // codec: 'mp4a.40.2',
-    codec: 'opus',
+    codec: opts.audioCodec === 'aac' ? 'mp4a.40.2' : 'opus',
     sampleRate: 48000,
     numberOfChannels: 2,
     bitrate: 128_000

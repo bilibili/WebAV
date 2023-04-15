@@ -110,7 +110,8 @@ document.querySelector('#startRecod')?.addEventListener('click', () => {
     } else if (formatType === 'mp4') {
       recorder = new AVRecorder(avCvs.captureStream(), {
         width: 1280,
-        height: 720
+        height: 720,
+        audioCodec: 'aac'
       })
       await recorder.start()
       recorder.outputStream?.pipeTo(writer).catch(console.error)

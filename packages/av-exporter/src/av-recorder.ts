@@ -22,6 +22,7 @@ export class AVRecorder {
       height: 720,
       bitrate: 1_500_000,
       fps: 30,
+      audioCodec: conf.audioCodec ?? 'opus',
       ...conf
     }
   }
