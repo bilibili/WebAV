@@ -1,6 +1,6 @@
 {
   "name": "@webav/av-recorder",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "private": false,
   "repository": "https://github.com/hughfenghen/WebAV",
   "type": "module",
@@ -30,7 +30,7 @@
     "vitest": "^0.29.7"
   },
   "dependencies": {
-    "@webav/av-canvas": "^0.1.2",
+    "@webav/av-canvas": "^0.1.3",
     "fix-webm-duration": "^1.0.5"
   }
 }
