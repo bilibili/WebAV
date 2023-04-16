@@ -1,6 +1,10 @@
 import mp4box, { MP4File } from 'mp4box'
 import { TAsyncClearFn, TClearFn, EWorkerMsg, IWorkerOpts } from './types'
 
+if (import.meta.env.DEV) {
+  mp4box.Log.setLogLevel(mp4box.Log.debug)
+}
+
 enum State {
   Preparing = 'preparing',
   Running = 'running',

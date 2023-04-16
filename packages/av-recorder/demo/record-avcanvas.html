@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AVCanvas</title>
+
+  <style>
+    #app {
+      width: 900px;
+      height: 500px;
+      margin: 50px 50px;
+      overflow: hidden;
+      position: relative;
+    }
+  </style>
+</head>
+
+<body>
+  <div id="app"></div>
+  Add Resource：
+  <button id="userMedia">Camera & Micphone</button>
+  <button id="display">Share screen</button>
+  <button id="localImg">Image</button>
+  <button id="localVideo">Video</button>
+  <button id="localAudio">Audio</button>
+  <button id="fontExamp">Font</button>
+  <hr />
+  <button id="startRecod">Start Recod</button>&nbsp;
+  <button id="stopRecod">Stop Recod</button>
+  <script type="module" src="record-avcanvas.ts"></script>
+</body>
+
+</html>

@@ -120,6 +120,10 @@ declare module 'mp4box' {
     MP4File: MP4File
     createFile: () => MP4File
     DataStream: typeof DataStream
+    Log: {
+      debug: () => void
+      setLogLevel: (fn: () => void) => void
+    }
   }
 
   export default DefExp
