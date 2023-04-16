@@ -7,6 +7,23 @@ export interface IRecorderConf {
   bitrate?: number
 }
 
+export interface IWorkerOpts {
+  video: {
+    width: number
+    height: number
+    expectFPS: number
+  }
+  audio: {
+    codec: 'opus' | 'aac'
+    sampleRate: number
+    sampleSize: number
+    channelCount: number
+  } | null
+  bitrate: number
+  streams: IStream
+  timeSlice: number
+}
+
 export interface IStream {
   video?: ReadableStream<VideoFrame>
   audio?: ReadableStream<AudioData>

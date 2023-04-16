@@ -1,10 +1,5 @@
 import mp4box, { MP4File } from 'mp4box'
-import { IRecorderConf, TAsyncClearFn, TClearFn, IStream, EWorkerMsg } from './types'
-
-type TWorkerOpts = Required<IRecorderConf> & {
-  streams: IStream
-  timeSlice: number
-}
+import { TAsyncClearFn, TClearFn, EWorkerMsg, IWorkerOpts } from './types'
 
 enum State {
   Preparing = 'preparing',
@@ -36,7 +31,7 @@ self.onmessage = async (evt: MessageEvent) => {
 }
 
 function init (
-  opts: TWorkerOpts,
+  opts: IWorkerOpts,
   onEnded: TClearFn
 ): TAsyncClearFn {
   const mp4File = mp4box.createFile()
@@ -77,7 +72,7 @@ function init (
 }
 
 function encodeVideoTrack (
-  opts: TWorkerOpts,
+  opts: IWorkerOpts,
   mp4File: MP4File,
   onTrackReady: () => void,
   onEnded: TClearFn
@@ -85,8 +80,8 @@ function encodeVideoTrack (
   const videoTrackOpts = {
     // 微秒
     timescale: 1e6,
-    width: opts.width,
-    height: opts.height,
+    width: opts.video.width,
+    height: opts.video.height,
     brands: ['isom', 'iso2', 'avc1', 'mp41'],
     avcDecoderConfigRecord: null as AllowSharedBufferSource | undefined | null
   }
@@ -96,7 +91,8 @@ function encodeVideoTrack (
     if (vTrackId == null) {
       videoTrackOpts.avcDecoderConfigRecord = meta.decoderConfig?.description
       vTrackId = mp4File.addTrack(videoTrackOpts)
-      // 通知 encodeAudioTrack
+
+      // start encodeAudioTrack
       onTrackReady()
     }
     const buf = new ArrayBuffer(chunk.byteLength)
@@ -117,7 +113,7 @@ function encodeVideoTrack (
 
   const stopEncode = encodeVideoFrame(
     encoder,
-    opts.expectFPS,
+    opts.video.expectFPS,
     opts.streams.video as ReadableStream,
     onEnded
   )
@@ -130,7 +126,7 @@ function encodeVideoTrack (
 }
 
 function createVideoEncoder (
-  opts: TWorkerOpts,
+  opts: IWorkerOpts,
   outHandler: EncodedVideoChunkOutputCallback
 ): VideoEncoder {
   const encoder = new VideoEncoder({
@@ -138,14 +134,15 @@ function createVideoEncoder (
     output: outHandler
   })
 
+  const videoOpts = opts.video
   encoder.configure({
     codec: 'avc1.42E01F',
-    framerate: opts.expectFPS,
+    framerate: videoOpts.expectFPS,
     hardwareAcceleration: 'prefer-hardware',
     // 码率
     bitrate: opts.bitrate,
-    width: opts.width,
-    height: opts.height,
+    width: videoOpts.width,
+    height: videoOpts.height,
     // H264 不支持背景透明度
     alpha: 'discard',
     // macos 自带播放器只支持avc
@@ -213,32 +210,32 @@ function encodeVideoFrame (
 }
 
 function encodeAudioTrack (
-  opts: TWorkerOpts,
+  opts: IWorkerOpts,
   mp4File: MP4File,
   onEnded: TClearFn
 ): TAsyncClearFn {
-  const sampleRate = 48000
+  const audioOpts = opts.audio
+  if (audioOpts == null) return async () => {}
+
   const audioTrackOpts = {
     timescale: 1e6,
     media_duration: 0,
     duration: 0,
     nb_samples: 0,
-    samplerate: sampleRate,
-    channel_count: 2,
+    samplerate: audioOpts.sampleRate,
+    channel_count: audioOpts.channelCount,
+    samplesize: audioOpts.sampleSize,
     width: 0,
     height: 0,
     hdlr: 'soun',
     name: 'SoundHandler',
-    type: opts.audioCodec === 'aac' ? 'mp4a' : 'Opus'
+    type: audioOpts.codec === 'aac' ? 'mp4a' : 'Opus'
   }
 
-  let trackId: number | null = null
+  const trackId = mp4File.addTrack(audioTrackOpts)
   const encoder = new AudioEncoder({
     error: console.error,
     output: (chunk) => {
-      if (trackId == null) {
-        trackId = mp4File.addTrack(audioTrackOpts)
-      }
       const buf = new ArrayBuffer(chunk.byteLength)
       chunk.copyTo(buf)
       const dts = chunk.timestamp
@@ -249,6 +246,12 @@ function encodeAudioTrack (
         is_sync: chunk.type === 'key'
       })
     }
+  })
+  encoder.configure({
+    codec: audioOpts.codec === 'aac' ? 'mp4a.40.2' : 'opus',
+    sampleRate: audioOpts.sampleRate,
+    numberOfChannels: audioOpts.channelCount,
+    bitrate: 128_000
   })
 
   const stopEncode = encodeAudioData(encoder, opts, onEnded)
@@ -262,20 +265,11 @@ function encodeAudioTrack (
 
 function encodeAudioData (
   encoder: AudioEncoder,
-  opts: TWorkerOpts,
+  opts: IWorkerOpts,
   onEnded: TClearFn
 ): TClearFn {
   const reader = opts.streams.audio?.getReader() as ReadableStreamDefaultReader<AudioData>
   let stoped = false
-
-  function initEncoder (numberOfChannels: number, sampleRate: number): void {
-    encoder.configure({
-      codec: opts.audioCodec === 'aac' ? 'mp4a.40.2' : 'opus',
-      sampleRate,
-      numberOfChannels,
-      bitrate: 128_000
-    })
-  }
 
   async function run (): Promise<void> {
     while (true) {
@@ -291,11 +285,6 @@ function encodeAudioData (
         audioData.close()
         return
       }
-
-      if (encoder.state === 'unconfigured') {
-        initEncoder(audioData.numberOfChannels, audioData.sampleRate)
-      }
-
       encoder.encode(audioData)
       audioData.close()
     }

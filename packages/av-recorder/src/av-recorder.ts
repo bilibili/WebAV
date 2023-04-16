@@ -1,5 +1,5 @@
 import MuxMP4Worker from './mux-mp4-worker?worker&inline'
-import { EWorkerMsg, IRecorderConf, IStream } from './types'
+import { EWorkerMsg, IRecorderConf, IStream, IWorkerOpts } from './types'
 
 type TState = 'inactive' | 'recording' | 'paused'
 export class AVRecorder {
@@ -22,7 +22,7 @@ export class AVRecorder {
       height: 720,
       bitrate: 1_500_000,
       expectFPS: 30,
-      audioCodec: conf.audioCodec ?? 'opus',
+      audioCodec: 'opus',
       ...conf
     }
   }
@@ -40,7 +40,15 @@ export class AVRecorder {
     }
 
     const audioTrack = this.#ms.getAudioTracks()[0]
+    let audioConf: IWorkerOpts['audio'] | null = null
     if (audioTrack != null) {
+      const setting = audioTrack.getSettings()
+      audioConf = {
+        codec: this.#conf.audioCodec,
+        sampleRate: setting.sampleRate ?? 0,
+        sampleSize: setting.sampleSize ?? 0,
+        channelCount: setting.channelCount ?? 0
+      }
       streams.audio = new MediaStreamTrackProcessor({
         track: audioTrack
       }).readable
@@ -50,13 +58,21 @@ export class AVRecorder {
       throw new Error('No available tracks in MediaStream')
     }
 
+    const workerOpts: IWorkerOpts = {
+      video: {
+        width: this.#conf.width,
+        height: this.#conf.height,
+        expectFPS: this.#conf.expectFPS
+      },
+      audio: audioConf,
+      bitrate: this.#conf.bitrate,
+      timeSlice,
+      streams
+    }
+
     worker.postMessage({
       type: EWorkerMsg.Start,
-      data: {
-        ...this.#conf,
-        timeSlice,
-        streams
-      }
+      data: workerOpts
     }, Object.values(streams))
 
     return await new Promise<void>((resolve) => {
