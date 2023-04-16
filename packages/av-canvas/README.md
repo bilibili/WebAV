@@ -60,4 +60,5 @@ recorder.stop()
 ```
 
 ## Demo
-[Demo code](demo/demo.ts)  
+[Record AVCanvas](https://hughfenghen.github.io/WebAV/demo/record-avcanvas.html)  
+[Demo code](demo/record-avcanvas.ts)  
