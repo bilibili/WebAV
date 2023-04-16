@@ -1,44 +1,17 @@
 # WebAV
-基于 Canvas + Webcodecs，提供纯 Web端音视频制作、录制、剪辑能力。
 
-## 已完成
+Audio and video tools built using pure web technology, which is planned to include creation, editing, and export features, which can be applied to live streaming, recorded tutorials, video clips, etc.  
+使用纯Web技术构建的音视频工具，计划包含创建、编辑、导出功能，可应用于直播、教程录制、视频剪辑等产品中。  
 
-- 画布素材交互
-  - 移动、旋转、翻转
-  - 等比缩放、变形
-- 画布支持添加的素材
-  - 媒体来源：摄像头、麦克风、分享屏幕
-  - 本地文件：视频、音频、图片
-  - 其他：文字
-- [AVRecorder](packages/av-recorder/README.md)
+## Motivation
+Chrome version 94 supports the WebCodecs API, meaning that JS can also have the ability to process audio and video.  
+Chrome 94 开放了 WebCodecs API，意味着 JS 也能处理音视频了。  
 
-## 开发中
+This is an experimental project that tries to provide an easy-to-use API for processing audio and video data in the browser.  
+这是一个实验性项目，尝试提供简单易用的 API 在浏览器中处理音视频数据。  
 
-### 基础能力 
-- 素材拖动的磁吸效果  
-  - 水平、垂直中线、四周边界
-  - 素材对齐
-  - 鼠标移动速度检测
-  - 旋转角度 pi/4, pi/2, pi...
-- 视频操作
-  - 视频合并、消音、水印
-  - 调整分辨率、播放速度
-  - 画面裁剪、时间裁剪
-- 操作菜单
-
-### 应用场景
-- 直播
-  - 素材管理
-  - 推流到服务器  
-  - 背景替换
-  - 面部特效：贴纸、眼镜等等
-  - 美颜
-- 视频教程制作
-  - 导出：MP4、GIF
-- 视频制作
-  - Timeline
-  - 滤镜
-  - 动画：转场、元素动效
-  - 视频裁剪、合成
-  - 视频消音
-
+## Packages
+- [AVCanvas](packages/av-canvas/README.md)  
+  Combine Text, Image, Video, Audio, UserMedia, DisplayMedia to generate MediaStream.  
+- [AVRecorder](packages/av-recorder/README.md)  
+  Record MediaStream, export MP4 stream.  
