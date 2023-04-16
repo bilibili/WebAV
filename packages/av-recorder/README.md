@@ -37,4 +37,4 @@ recorder.outputStream
 
 ## Demo
 [Record camera & microphone](https://hughfenghen.github.io/WebAV/demo/record-usermedia.html)  
-[Demo code](https://github.com/hughfenghen/WebAV/blob/main/packages/av-recorder/demo/record-usermedia.ts#L4)  
+[Demo code](./demo/record-usermedia.ts)  
