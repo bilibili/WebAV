@@ -18,7 +18,6 @@
     "npm-dist"
   ],
   "devDependencies": {
-    "@types/dom-webcodecs": "^0.1.7",
     "@vitest/coverage-istanbul": "^0.29.8",
     "jsdom": "^21.1.1",
     "ts-standard": "^12.0.2",

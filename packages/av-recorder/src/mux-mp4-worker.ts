@@ -88,7 +88,7 @@ function encodeVideoTrack (
 
   let vTrackId: number
   const encoder = createVideoEncoder(opts, (chunk, meta) => {
-    if (vTrackId == null) {
+    if (vTrackId == null && meta != null) {
       videoTrackOpts.avcDecoderConfigRecord = meta.decoderConfig?.description
       vTrackId = mp4File.addTrack(videoTrackOpts)
 

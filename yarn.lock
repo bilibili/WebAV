@@ -1323,7 +1323,7 @@
   dependencies:
     "@types/dom-webcodecs" "*"
 
-"@types/dom-webcodecs@*", "@types/dom-webcodecs@^0.1.7":
+"@types/dom-webcodecs@*":
   version "0.1.7"
   resolved "https://registry.npmmirror.com/@types/dom-webcodecs/-/dom-webcodecs-0.1.7.tgz#29d3e7d4e0b9902676c599d74c1b6c15eafce714"
   integrity sha512-1euwRyJ7rQrddOa24d5ZcoDRMp68xEIwyb7PKb3Wpc2OullUxHQ4a63WPa5V8R+KtCWISKjgS+f83HCUVhXS/w==
@@ -1459,6 +1459,11 @@
   dependencies:
     "@typescript-eslint/types" "5.57.1"
     eslint-visitor-keys "^3.3.0"
+
+"@typescript/lib-dom@npm:@types/web":
+  version "0.0.99"
+  resolved "https://registry.npmjs.org/@types/web/-/web-0.0.99.tgz#a9c3a088e4634f6b08977f4fc733c916c2b0d50e"
+  integrity sha512-xMz3tOvtkZzc7RpQrDNiLe5sfMmP+fz8bOxHIZ/U8qXyvzDX4L4Ss1HCjor/O9DSelba+1iXK1VM7lruX28hiQ==
 
 "@vitest/coverage-istanbul@^0.29.8":
   version "0.29.8"

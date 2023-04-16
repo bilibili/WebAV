@@ -22,6 +22,7 @@
   "devDependencies": {
     "@types/dom-mediacapture-transform": "^0.1.5",
     "@types/wicg-file-system-access": "^2020.9.6",
+    "@typescript/lib-dom": "npm:@types/web",
     "@vitest/coverage-istanbul": "^0.29.8",
     "jsdom": "^21.1.1",
     "ts-standard": "^12.0.2",
