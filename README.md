@@ -1,6 +1,6 @@
 # WebAV
 
-Audio and video tools built using pure web technology, which is planned to include creation, editing, and export features, which can be applied to live streaming, recorded tutorials, video clips, etc.  
+Audio and video tools built using pure web technology, which is planned to include creation, editing, and export features, which can be applied to live streaming, record tutorials, video clips, etc.  
 使用纯Web技术构建的音视频工具，计划包含创建、编辑、导出功能，可应用于直播、教程录制、视频剪辑等产品中。  
 
 ## Motivation
