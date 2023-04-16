@@ -6,7 +6,8 @@
     "ts-standard": "^12.0.2"
   },
   "scripts": {
-    "build:demo": "lerna run build:demo"
+    "build:demo": "lerna run build:demo",
+    "postbuild:demo": "mkdir demo-dist && cp -r packages/**/demo-dist/* ./demo-dist"
   },
   "workspaces": [
     "packages/*"

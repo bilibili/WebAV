@@ -45,7 +45,7 @@ jobs:
         uses: actions/upload-pages-artifact@v1
         with:
           # Upload entire repository
-          path: ./packages/av-recorder/demo-dist  # 或者您的构建输出目录
+          path: ./demo-dist  # 或者您的构建输出目录
 
       - name: Deploy to GitHub Pages
         id: deployment
