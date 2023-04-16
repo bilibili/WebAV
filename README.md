@@ -13,5 +13,7 @@ This is an experimental project that tries to provide an easy-to-use API for pro
 ## Packages
 - [AVCanvas](packages/av-canvas/README.md)  
   Combine Text, Image, Video, Audio, UserMedia, DisplayMedia to generate MediaStream.  
+  使用文字、图片、音视频文件、摄像头&麦克风、分享屏幕来生成 MediaStream。  
 - [AVRecorder](packages/av-recorder/README.md)  
   Record MediaStream, export MP4 stream.  
+  录制 MediaStream，导出 MP4 流。  
