@@ -4,18 +4,19 @@
   "private": false,
   "repository": "https://github.com/hughfenghen/WebAV",
   "type": "module",
-  "types": "npm-dist/index.d.ts",
-  "module": "npm-dist/index.js",
+  "types": "dist/index.d.ts",
+  "module": "dist/index.js",
   "scripts": {
     "dev": "vite demo",
     "test": "vitest",
     "test:coverage": "vitest run --coverage",
-    "build": "rm -rf npm-dist && tsc -p build.tsconfig.json --outDir npm-dist",
+    "build": "rm -rf dist && tsc -p build.tsconfig.json --outDir dist",
+    "build:demo": "rm -rf demo-dist && vite build demo --outDir ../demo-dist",
     "prepublishOnly": "yarn build",
     "preview": "vite preview"
   },
   "files": [
-    "npm-dist"
+    "dist"
   ],
   "devDependencies": {
     "@vitest/coverage-istanbul": "^0.29.8",

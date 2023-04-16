@@ -1,6 +1,5 @@
 {
   "compilerOptions": {
-    "outDir": "npm-dist",
     "target": "ESNext",
     "useDefineForClassFields": true,
     "module": "ESNext",
