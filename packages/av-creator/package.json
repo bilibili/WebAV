@@ -10,7 +10,7 @@
     "dev": "vite demo",
     "test": "vitest",
     "test:coverage": "vitest run --coverage",
-    "build": "rm -rf npm-dist && tsc -p build.tsconfig.json --outDir npm-dist",
+    "buildxxx": "rm -rf npm-dist && tsc -p build.tsconfig.json --outDir npm-dist",
     "prepublishOnly": "yarn build",
     "preview": "vite preview"
   },
