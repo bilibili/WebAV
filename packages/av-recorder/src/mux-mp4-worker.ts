@@ -66,6 +66,7 @@ function init (
   self.postMessage({
     type: EWorkerMsg.OutputStream,
     data: stream
+    // @ts-expect-error
   }, [stream])
 
   return async () => {
@@ -190,7 +191,6 @@ function encodeVideoFrame (
       // 避免帧率超出期望太高
       if (frameCnt / offsetTime * 1000 > maxFPS) continue
 
-      // @ts-expect-error
       const vf = new VideoFrame(frame, {
         // timestamp 单位 微妙
         timestamp: offsetTime * 1000,
