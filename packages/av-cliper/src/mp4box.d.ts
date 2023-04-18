@@ -1,7 +1,7 @@
 
 declare module 'mp4box' {
 
-  interface MP4MediaTrack {
+  export interface MP4MediaTrack {
     id: number
     created: Date
     modified: Date
@@ -17,6 +17,19 @@ declare module 'mp4box' {
     codec: string
     language: string
     nb_samples: number
+    mdia: {
+      minf: {
+        stbl: {
+          stsd: {
+            entries: Array<Record<'avcC' | 'hvcC', Box>>
+          }
+        }
+      }
+    }
+  }
+
+  interface Box {
+    write: (ds: DataStream) => void
   }
 
   interface MP4VideoData {
@@ -40,7 +53,7 @@ declare module 'mp4box' {
 
   type MP4Track = MP4VideoTrack | MP4AudioTrack
 
-  interface MP4Info {
+  export interface MP4Info {
     duration: number
     timescale: number
     fragment_duration: number
@@ -51,6 +64,7 @@ declare module 'mp4box' {
     created: Date
     modified: Date
     tracks: MP4Track[]
+    videoTracks: MP4VideoTrack[]
   }
 
   export type MP4ArrayBuffer = ArrayBuffer & { fileStart: number }
@@ -63,7 +77,11 @@ declare module 'mp4box' {
     BIG_ENDIAN: unknown
     END_ENDIAN: unknown
     prototype: DataStream
-    new(): DataStream
+    new(
+      size?: number,
+      byteOffset?: number,
+      endianness?: DataStream.BIG_ENDIAN | DataStream.END_ENDIAN
+    ): DataStream
   }
 
   interface DataStream {
@@ -86,14 +104,30 @@ declare module 'mp4box' {
     is_sync: boolean
   }
 
+  export interface MP4Sample {
+    track_id: number
+    description: Box
+    is_rap: boolean
+    timescale: number
+    dts: number
+    cts: number
+    duration: number
+    size: number
+    data: ArrayBuffer
+  }
+
   export interface MP4File {
     boxes: MP4Box[]
 
     addTrack: (opts: TrackOpts) => number
     addSample: (trackId: number, buf: ArrayBuffer, sample: SampleOpts) => void
 
+    getTrackById: (id: number) => MP4Track
+    setExtractionOptions: (id: number) => void
+
     onMoovStart?: () => void
     onReady?: (info: MP4Info) => void
+    onSamples: (id: number, user: unknown, samples: MP4Sample[]) => void
     onError?: (e: string) => void
 
     appendBuffer: (data: MP4ArrayBuffer) => number
