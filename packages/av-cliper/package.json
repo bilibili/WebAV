@@ -1,21 +1,21 @@
 {
-  "name": "@webav/av-creator",
+  "name": "@webav/av-cliper",
   "version": "0.1.3",
   "private": false,
   "repository": "https://github.com/hughfenghen/WebAV",
   "type": "module",
-  "types": "npm-dist/av-creator.d.ts",
-  "module": "npm-dist/av-creator.js",
+  "types": "dist/av-cliper.d.ts",
+  "module": "dist/av-cliper.js",
   "scripts": {
     "dev": "vite demo",
     "test": "vitest",
     "test:coverage": "vitest run --coverage",
-    "buildxxx": "rm -rf npm-dist && tsc -p build.tsconfig.json --outDir npm-dist",
+    "buildxxx": "rm -rf dist && tsc -p build.tsconfig.json --outDir dist",
     "prepublishOnly": "yarn build",
     "preview": "vite preview"
   },
   "files": [
-    "npm-dist"
+    "dist"
   ],
   "devDependencies": {
     "@vitest/coverage-istanbul": "^0.29.8",
