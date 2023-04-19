@@ -18,10 +18,26 @@
       ],
       "args": [
         "${workspaceRoot}/node_modules/.bin/vitest",
-        // "--runInBand",
-        // "--watch",
-        // "--no-cache",
         "packages/av-canvas"
+      ],
+      "console": "integratedTerminal",
+      "internalConsoleOptions": "neverOpen",
+    },
+    {
+      "name": "av-cliper",
+      "type": "node",
+      "request": "launch",
+      "runtimeExecutable": "${workspaceRoot}/node_modules/.bin/lerna",
+      "runtimeArgs": [
+        "exec",
+        "--scope",
+        "@webav/av-cliper",
+        "--",
+        "node"
+      ],
+      "args": [
+        "${workspaceRoot}/node_modules/.bin/vitest",
+        "packages/av-cliper"
       ],
       "console": "integratedTerminal",
       "internalConsoleOptions": "neverOpen",
