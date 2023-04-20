@@ -21,14 +21,14 @@ declare module 'mp4box' {
       minf: {
         stbl: {
           stsd: {
-            entries: Array<Record<'avcC' | 'hvcC', Box>>
+            entries: Array<Record<'avcC' | 'hvcC', MP4Box>>
           }
         }
       }
     }
   }
 
-  interface Box {
+  export interface MP4Box {
     write: (ds: DataStream) => void
   }
 
@@ -89,12 +89,25 @@ declare module 'mp4box' {
     endianness: unknown
   }
 
-  interface TrackOpts {
+  export interface VideoTrackOpts {
     timescale: number
     width: number
     height: number
-    brands: string[]
+    brands?: string[]
     avcDecoderConfigRecord: AllowSharedBufferSource | undefined | null
+  }
+
+  export interface AudioTrackOpts {
+    timescale: number
+    media_duration: number
+    duration: number
+    nb_samples: number
+    samplerate: number
+    channel_count: number
+    samplesize: number
+    hdlr: string
+    name: string
+    type: string
   }
 
   interface SampleOpts {
@@ -104,10 +117,31 @@ declare module 'mp4box' {
     is_sync: boolean
   }
 
+  export interface VideoSampleDesc {
+    compressorname: string
+    frame_count: number
+    height: number
+    size: number
+    start: number
+    type: string
+    width: number
+    avcC?: MP4Box
+  }
+
+  export interface AudioSampleDesc {
+    samplerate: number
+    samplesize: number
+    size: number
+    start: number
+    type: string
+    channel_count: number
+  }
+
   export interface MP4Sample {
     track_id: number
-    description: Box
+    description: VideoSampleDesc | AudioSampleDesc
     is_rap: boolean
+    is_sync: boolean
     timescale: number
     dts: number
     cts: number
@@ -119,11 +153,14 @@ declare module 'mp4box' {
   export interface MP4File {
     boxes: MP4Box[]
 
-    addTrack: (opts: TrackOpts) => number
+    addTrack: (opts: VideoTrackOpts | AudioTrackOpts) => number
     addSample: (trackId: number, buf: ArrayBuffer, sample: SampleOpts) => void
 
     getTrackById: (id: number) => MP4Track
-    setExtractionOptions: (id: number) => void
+    setExtractionOptions: (id: number, user?: unknown, opts?: {
+      nbSamples?: number
+      rapAlignement?: boolean
+    }) => void
 
     onMoovStart?: () => void
     onReady?: (info: MP4Info) => void

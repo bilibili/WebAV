@@ -1,4 +1,4 @@
-import { MP4Source } from '../src/mp4-source'
+import { MP4Source, sampleStream2File } from '../src/mp4-source'
 
 document.querySelector('#extractMP4')?.addEventListener('click', () => {
   ;(async () => {
@@ -9,13 +9,16 @@ document.querySelector('#extractMP4')?.addEventListener('click', () => {
           description: 'Video',
           accept: { 'video/*': ['.mp4'] }
         }
-      ]
-      // multiple: true
+      ],
+      multiple: true
     })
 
     const mp4Source = new MP4Source(new Response(await fh.getFile()).body as ReadableStream<Uint8Array>)
 
-    console.log(mp4Source)
+    await sampleStream2File(mp4Source.sampleStream)
+      .pipeTo(await createFileWriter('mp4'))
+
+    // console.log(await mp4Source.getInfo())
     // const reader = mp4Source.sampleStream.getReader()
     // while (true) {
     //   const { done, value } = await reader.read()
@@ -24,3 +27,10 @@ document.querySelector('#extractMP4')?.addEventListener('click', () => {
     // }
   })().catch(console.error)
 })
+
+async function createFileWriter (extName: string): Promise<FileSystemWritableFileStream> {
+  const fileHandle = await window.showSaveFilePicker({
+    suggestedName: `WebAv-export-${Date.now()}.${extName}`
+  })
+  return await fileHandle.createWritable()
+}

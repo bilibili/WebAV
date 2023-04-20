@@ -79,7 +79,7 @@ declare module 'mp4box' {
     avcDecoderConfigRecord: AllowSharedBufferSource | undefined | null
   }
 
-  interface AudioTrackOpts {
+  export interface AudioTrackOpts {
     timescale: number
     media_duration: number
     duration: number
