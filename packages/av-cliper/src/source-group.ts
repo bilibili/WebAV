@@ -66,9 +66,10 @@ export class SourceGroup {
       return
     }
 
+    this.#ts = it.dur.start + value.timestamp
+    value.timestamp = this.#ts
     // todo：发送一个数组
     ctrl.enqueue(value)
-    this.#ts = value.timestamp
     this.#run(ctrl).catch(ctrl.error)
   }
 

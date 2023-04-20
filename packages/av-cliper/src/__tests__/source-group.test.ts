@@ -34,10 +34,11 @@ beforeAll(() => {
   vi.useFakeTimers()
 })
 
-test('SourceGroup', async () => {
+test('SourceGroup concat', async () => {
   const sg = new SourceGroup()
   // createRS()
-  sg.add({ start: 0, end: 1e2 }, createRS())
+  sg.add({ start: 0, end: 100 }, createRS())
+  sg.add({ start: 100, end: 200 }, createRS())
   sg.start()
   const reader = sg.outputStream.getReader()
   const count = vi.fn()
@@ -47,5 +48,5 @@ test('SourceGroup', async () => {
     if (done) break
     count()
   }
-  expect(count).toBeCalledTimes(11)
+  expect(count).toBeCalledTimes(22)
 })
