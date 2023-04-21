@@ -1,24 +1,25 @@
 import { concatMP4 } from '../src/concat-mp4'
 
-;(async function init () {
-  const [f1, f2] = await Promise.all(
-    (await (window as any).showOpenFilePicker({
-      startIn: 'downloads',
-      types: [
-        {
-          description: 'Video',
-          accept: { 'video/*': ['.mp4'] }
-        }
-      ],
-      multiple: true
-    }))
-      .map(async (fh: FileSystemFileHandle) => await fh.getFile())
-  )
+document.querySelector('#concatMP4')?.addEventListener('click', () => {
+  ;(async function () {
+    const [f1, f2] = await Promise.all(
+      (await (window as any).showOpenFilePicker({
+        types: [
+          {
+            description: 'Video',
+            accept: { 'video/*': ['.mp4'] }
+          }
+        ],
+        multiple: true
+      }))
+        .map(async (fh: FileSystemFileHandle) => await fh.getFile())
+    )
 
-  if (f1 == null || f2 == null) throw new Error('选择两个文件')
+    if (f1 == null || f2 == null) throw new Error('选择两个文件')
 
-  concatMP4(f1, f2)
-})().catch(console.error)
+    concatMP4(f1, f2)
+  })().catch(console.error)
+})
 
 export {}
 
