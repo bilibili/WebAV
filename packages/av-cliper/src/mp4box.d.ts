@@ -51,8 +51,6 @@ declare module 'mp4box' {
     audio: MP4AudioData
   }
 
-  type MP4Track = MP4VideoTrack | MP4AudioTrack
-
   export interface MP4Info {
     duration: number
     timescale: number
@@ -63,7 +61,7 @@ declare module 'mp4box' {
     brands: string[]
     created: Date
     modified: Date
-    tracks: MP4Track[]
+    tracks: Array<MP4VideoTrack | MP4AudioTrack>
     videoTracks: MP4VideoTrack[]
   }
 
@@ -71,6 +69,7 @@ declare module 'mp4box' {
 
   interface MP4Box {
     write: (dataStream: DataStream) => void
+    parse: (dataStream: DataStream) => void
   }
 
   const DataStream: {
@@ -93,8 +92,9 @@ declare module 'mp4box' {
     timescale: number
     width: number
     height: number
-    brands?: string[]
-    avcDecoderConfigRecord: AllowSharedBufferSource | undefined | null
+    brands: string[]
+    description_boxes?: AVCCBox[]
+    avcDecoderConfigRecord?: AllowSharedBufferSource | undefined | null
   }
 
   export interface AudioTrackOpts {
@@ -114,32 +114,13 @@ declare module 'mp4box' {
     duration: number
     dts?: number
     cts?: number
+    sample_description_index?: number
     is_sync: boolean
-  }
-
-  export interface VideoSampleDesc {
-    compressorname: string
-    frame_count: number
-    height: number
-    size: number
-    start: number
-    type: string
-    width: number
-    avcC?: MP4Box
-  }
-
-  export interface AudioSampleDesc {
-    samplerate: number
-    samplesize: number
-    size: number
-    start: number
-    type: string
-    channel_count: number
   }
 
   export interface MP4Sample {
     track_id: number
-    description: VideoSampleDesc | AudioSampleDesc
+    description: MP4ABoxParser | AVC1BoxParser
     is_rap: boolean
     is_sync: boolean
     timescale: number
@@ -150,13 +131,78 @@ declare module 'mp4box' {
     data: ArrayBuffer
   }
 
+  interface BoxParser {
+    boxes: BoxParser[]
+    size: number
+    start: number
+    type: string
+  }
+
+  export interface TrakBoxParser extends BoxParser {
+    type: 'trak'
+    samples: MP4Sample[]
+    nextSample: number
+    sample_size: number
+    mdia: MDIABoxParser
+  }
+
+  interface MDIABoxParser extends BoxParser {
+    type: 'mdia'
+    minf: MINFBoxParser
+  }
+
+  interface MINFBoxParser extends BoxParser {
+    type: 'minf'
+    stbl: STBLBoxParser
+  }
+
+  interface STBLBoxParser extends BoxParser {
+    type: 'stbl'
+    stsd: STSDBoxParser
+  }
+
+  interface STSDBoxParser extends BoxParser {
+    type: 'stsd'
+    entries: Array<AVC1BoxParser | MP4ABoxParser>
+    boxes: undefined
+  }
+
+  export interface AVC1BoxParser extends BoxParser {
+    type: 'avc1'
+    boxes: AVCCBox[]
+    avcC: AVCCBox
+    compressorname: string
+    frame_count: number
+    height: number
+    size: number
+    start: number
+    type: string
+    width: number
+  }
+
+  interface AVCCBox extends MP4Box {
+    PPS: Array<{ length: number, nalu: Uint8Array }>
+    SPS: Array<{ length: number, nalu: Uint8Array }>
+    type: 'avcC'
+  }
+
+  export interface MP4ABoxParser extends BoxParser {
+    type: 'mp4a'
+    channel_count: number
+    samplerate: number
+    samplesize: number
+    size: number
+    start: number
+    boxes: []
+  }
+
   export interface MP4File {
     boxes: MP4Box[]
 
     addTrack: (opts: VideoTrackOpts | AudioTrackOpts) => number
     addSample: (trackId: number, buf: ArrayBuffer, sample: SampleOpts) => void
 
-    getTrackById: (id: number) => MP4Track
+    getTrackById: (id: number) => TrakBoxParser
     setExtractionOptions: (id: number, user?: unknown, opts?: {
       nbSamples?: number
       rapAlignement?: boolean

@@ -1,4 +1,4 @@
-import mp4box, { AudioSampleDesc, AudioTrackOpts, MP4ArrayBuffer, MP4Box, MP4File, MP4Info, MP4Sample, VideoSampleDesc, VideoTrackOpts } from 'mp4box'
+import mp4box, { AudioTrackOpts, MP4ArrayBuffer, MP4Box, MP4File, MP4Info, MP4Sample, TrakBoxParser, VideoTrackOpts } from 'mp4box'
 
 export class MP4Source {
   #mp4File = mp4box.createFile()
@@ -17,6 +17,11 @@ export class MP4Source {
 
   async getInfo (): Promise<MP4Info> {
     return await this.#infoPromise
+  }
+
+  async getTracks (): Promise<TrakBoxParser[]> {
+    const info = await this.getInfo()
+    return info.tracks.map(({ id }) => this.#mp4File.getTrackById(id))
   }
 
   #onReady = (info: MP4Info): void => {

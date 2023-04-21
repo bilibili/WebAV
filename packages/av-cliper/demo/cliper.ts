@@ -1,4 +1,4 @@
-import { MP4Source, sampleStream2File } from '../src/mp4-source'
+import { MP4Source } from '../src/mp4-source'
 import { SourceGroup } from '../src/source-group'
 
 document.querySelector('#concatMP4')?.addEventListener('click', () => {
@@ -18,11 +18,11 @@ document.querySelector('#concatMP4')?.addEventListener('click', () => {
     const sg = new SourceGroup()
     await Promise.all(fhs.map(async (fh: FileSystemFileHandle) => {
       const mp4Source = new MP4Source(new Response(await fh.getFile()).body as ReadableStream<Uint8Array>)
-      sg.add(mp4Source.sampleStream)
+      await sg.add(mp4Source)
     }))
     sg.start()
 
-    await sampleStream2File(sg.outputStream)
+    await sg.outputStream
       .pipeTo(await createFileWriter('mp4'))
     console.timeEnd('cost')
 
