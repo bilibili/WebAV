@@ -1,8 +1,4 @@
-
-interface IDuration {
-  start: number
-  end: number
-}
+import { MP4Sample } from 'mp4box'
 
 enum EState {
   Pending = 'pending',
@@ -11,22 +7,21 @@ enum EState {
 }
 
 interface IItem {
-  dur: IDuration
   source: ReadableStream
-  reader: ReadableStreamDefaultReader<{ timestamp: number }>
+  reader: ReadableStreamDefaultReader<MP4Sample>
   state: EState
 }
 
 export class SourceGroup {
-  #items: IItem[] = []
+  #staticItems: IItem[] = []
 
   #ts = 0
 
   #state = 'pending'
 
-  #ctrl: ReadableStreamDefaultController | null = null
+  #ctrl: ReadableStreamDefaultController<MP4Sample> | null = null
 
-  outputStream: ReadableStream<any>
+  outputStream: ReadableStream<MP4Sample>
 
   constructor () {
     this.outputStream = new ReadableStream({
@@ -36,9 +31,8 @@ export class SourceGroup {
     })
   }
 
-  add (dur: IDuration, source: ReadableStream): void {
-    this.#items.push({
-      dur,
+  add (source: ReadableStream): void {
+    this.#staticItems.push({
       source,
       reader: source.getReader(),
       state: EState.Pending
@@ -52,7 +46,7 @@ export class SourceGroup {
     }
   }
 
-  async #run (ctrl: ReadableStreamDefaultController): Promise<void> {
+  async #run (ctrl: ReadableStreamDefaultController<MP4Sample>): Promise<void> {
     const it = this.#findNext(this.#ts)
     if (it == null) {
       this.#ctrl?.close()
@@ -66,8 +60,9 @@ export class SourceGroup {
       return
     }
 
-    this.#ts = it.dur.start + value.timestamp
-    value.timestamp = this.#ts
+    value.dts = this.#ts + value.dts
+    value.cts = this.#ts + value.cts
+    this.#ts = value.dts
     // todo：发送一个数组
     ctrl.enqueue(value)
     this.#run(ctrl).catch(ctrl.error)
@@ -75,21 +70,21 @@ export class SourceGroup {
 
   // todo: 应该返回 IItem[]
   #findNext (ts: number): IItem | null {
-    const items = this.#items.filter(it => it.state !== EState.Done)
-    const next = items.find(it => it.dur.start <= ts)
+    const items = this.#staticItems.filter(it => it.state !== EState.Done)
+    const next = items[0]
 
-    if (next != null) return next
+    return next ?? null
 
-    let min = Infinity
-    let idx: number | null = null
-    items.forEach((it, i) => {
-      const v = it.dur.start - ts
-      if (v < min) {
-        min = v
-        idx = i
-      }
-    })
+    // let min = Infinity
+    // let idx: number | null = null
+    // items.forEach((it, i) => {
+    //   const v = it.dur.start - ts
+    //   if (v < min) {
+    //     min = v
+    //     idx = i
+    //   }
+    // })
 
-    return idx != null ? this.#items[idx] : null
+    // return idx != null ? this.#staticItems[idx] : null
   }
 }

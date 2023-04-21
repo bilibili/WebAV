@@ -36,9 +36,8 @@ beforeAll(() => {
 
 test('SourceGroup concat', async () => {
   const sg = new SourceGroup()
-  // createRS()
-  sg.add({ start: 0, end: 100 }, createRS())
-  sg.add({ start: 100, end: 200 }, createRS())
+  sg.add(createRS())
+  sg.add(createRS())
   sg.start()
   const reader = sg.outputStream.getReader()
   const count = vi.fn()
