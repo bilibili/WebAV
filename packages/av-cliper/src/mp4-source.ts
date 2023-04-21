@@ -50,7 +50,9 @@ function careateSampleStream (mp4File: MP4File, rs: ReadableStream<Uint8Array>):
   return new ReadableStream({
     start: (ctrl) => {
       mp4File.onSamples = (_, __, samples) => {
-        samples.forEach(s => ctrl.enqueue(s))
+        // samples.forEach(s => ctrl.enqueue(s))
+        // todo: 解除过滤音频逻辑
+        samples.filter(s => s.description.type === 'avc1').forEach(s => ctrl.enqueue(s))
       }
     },
     pull: async (ctrl) => {
@@ -87,13 +89,15 @@ export function sampleStream2File (rs: ReadableStream<MP4Sample>): ReadableStrea
     const trackObj: Record<string, number> = {}
     function getTrackId (s: MP4Sample): number {
       const d = s.description as VideoSampleDesc & AudioSampleDesc
-      const trackMark = `type:${d.type};width:${d.width ?? 0};height:${d.height ?? 0};samplerate:${d.samplerate};samplesize:${d.samplesize};`
+      const trackMark = `type:${d.type}`
 
       if (trackMark in trackObj) return trackObj[trackMark]
 
-      const trackOpts = parseTrackOptsFromSample(s)
+      const trackOpts = parseTrackOptsFromSample({ ...s, timescale: 1e6 })
       const id = file.addTrack(trackOpts)
       trackObj[trackMark] = id
+
+      console.log(111111, trackOpts, s)
 
       return id
     }
@@ -107,10 +111,10 @@ export function sampleStream2File (rs: ReadableStream<MP4Sample>): ReadableStrea
 
       const id = getTrackId(value)
       file.addSample(id, value.data, {
-        dts: value.dts,
-        cts: value.cts,
+        dts: value.dts / value.timescale * 1e6,
+        cts: value.cts / value.timescale * 1e6,
         is_sync: value.is_sync,
-        duration: value.duration
+        duration: value.duration / value.timescale * 1e6
       })
     }
   }
@@ -127,7 +131,7 @@ function parseTrackOptsFromSample (s: MP4Sample): VideoTrackOpts | AudioTrackOpt
       timescale: s.timescale,
       width: d.width,
       height: d.height,
-      // brands: string[]
+      brands: ['isom', 'iso2', 'avc1', 'mp41'],
       avcDecoderConfigRecord: d.avcC == null ? null : parseAvcCDecodeConfRecord(d.avcC)
     }
   } else {

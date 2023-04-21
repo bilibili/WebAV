@@ -1,7 +1,7 @@
 import { MP4Source, sampleStream2File } from '../src/mp4-source'
 import { SourceGroup } from '../src/source-group'
 
-document.querySelector('#extractMP4')?.addEventListener('click', () => {
+document.querySelector('#concatMP4')?.addEventListener('click', () => {
   ;(async () => {
     const fhs = await (window as any).showOpenFilePicker({
       startIn: 'downloads',
@@ -14,6 +14,7 @@ document.querySelector('#extractMP4')?.addEventListener('click', () => {
       multiple: true
     })
 
+    console.time('cost')
     const sg = new SourceGroup()
     await Promise.all(fhs.map(async (fh: FileSystemFileHandle) => {
       const mp4Source = new MP4Source(new Response(await fh.getFile()).body as ReadableStream<Uint8Array>)
@@ -23,6 +24,7 @@ document.querySelector('#extractMP4')?.addEventListener('click', () => {
 
     await sampleStream2File(sg.outputStream)
       .pipeTo(await createFileWriter('mp4'))
+    console.timeEnd('cost')
 
     // await sampleStream2File(mp4Source.sampleStream)
     // .pipeTo(await createFileWriter('mp4'))
@@ -34,6 +36,31 @@ document.querySelector('#extractMP4')?.addEventListener('click', () => {
     //   if (done) return
     //   console.log(9999, value)
     // }
+  })().catch(console.error)
+})
+
+document.querySelector('#extractMP4Samples')?.addEventListener('click', () => {
+  ;(async () => {
+    const fhs = await (window as any).showOpenFilePicker({
+      startIn: 'downloads',
+      types: [
+        {
+          description: 'Video',
+          accept: { 'video/*': ['.mp4'] }
+        }
+      ],
+      multiple: false
+    })
+
+    const mp4Source = new MP4Source(new Response(await fhs[0].getFile()).body as ReadableStream<Uint8Array>)
+
+    console.log(await mp4Source.getInfo())
+    const reader = mp4Source.sampleStream.getReader()
+    while (true) {
+      const { done, value } = await reader.read()
+      if (done) return
+      console.log('--- sample: ', value)
+    }
   })().catch(console.error)
 })
 

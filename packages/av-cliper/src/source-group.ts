@@ -17,6 +17,8 @@ export class SourceGroup {
 
   #ts = 0
 
+  #offsetTs = 0
+
   #state = 'pending'
 
   #ctrl: ReadableStreamDefaultController<MP4Sample> | null = null
@@ -56,12 +58,15 @@ export class SourceGroup {
     const { done, value } = await it.reader.read()
     if (done) {
       it.state = EState.Done
+      this.#offsetTs = this.#ts
+      console.log(222222, this.#offsetTs)
       this.#run(ctrl).catch(ctrl.error)
       return
     }
 
-    value.dts = this.#ts + value.dts
-    value.cts = this.#ts + value.cts
+    // fixme: 跨资源才需要添加偏移值
+    // value.dts = this.#offsetTs + value.dts
+    // value.cts = this.#offsetTs + value.cts
     this.#ts = value.dts
     // todo：发送一个数组
     ctrl.enqueue(value)
