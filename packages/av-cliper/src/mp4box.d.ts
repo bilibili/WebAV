@@ -17,38 +17,34 @@ declare module 'mp4box' {
     codec: string
     language: string
     nb_samples: number
-    mdia: {
-      minf: {
-        stbl: {
-          stsd: {
-            entries: Array<Record<'avcC' | 'hvcC', MP4Box>>
-          }
-        }
-      }
-    }
+    // mdia: {
+    //   minf: {
+    //     stbl: {
+    //       stsd: {
+    //         entries: Array<Record<'avcC' | 'hvcC', MP4Box>>
+    //       }
+    //     }
+    //   }
+    // }
   }
 
   export interface MP4Box {
     write: (ds: DataStream) => void
   }
 
-  interface MP4VideoData {
-    width: number
-    height: number
-  }
-
   interface MP4VideoTrack extends MP4MediaTrack {
-    video: MP4VideoData
-  }
-
-  interface MP4AudioData {
-    sample_rate: number
-    channel_count: number
-    sample_size: number
+    video: {
+      width: number
+      height: number
+    }
   }
 
   interface MP4AudioTrack extends MP4MediaTrack {
-    audio: MP4AudioData
+    audio: {
+      sample_rate: number
+      channel_count: number
+      sample_size: number
+    }
   }
 
   export interface MP4Info {
@@ -63,6 +59,7 @@ declare module 'mp4box' {
     modified: Date
     tracks: Array<MP4VideoTrack | MP4AudioTrack>
     videoTracks: MP4VideoTrack[]
+    audioTracks: MP4AudioTrack[]
   }
 
   export type MP4ArrayBuffer = ArrayBuffer & { fileStart: number }
@@ -163,7 +160,7 @@ declare module 'mp4box' {
 
   interface STSDBoxParser extends BoxParser {
     type: 'stsd'
-    entries: Array<AVC1BoxParser | MP4ABoxParser>
+    entries: Array<AVC1BoxParser | HVCBoxParser | MP4ABoxParser>
     boxes: undefined
   }
 
@@ -180,10 +177,29 @@ declare module 'mp4box' {
     width: number
   }
 
+  export interface HVCBoxParser extends BoxParser {
+    type: 'hvc'
+    boxes: HVCCBox[]
+    hvcC: HVCCBox
+    compressorname: string
+    frame_count: number
+    height: number
+    size: number
+    start: number
+    type: string
+    width: number
+  }
+
   interface AVCCBox extends MP4Box {
     PPS: Array<{ length: number, nalu: Uint8Array }>
     SPS: Array<{ length: number, nalu: Uint8Array }>
     type: 'avcC'
+  }
+
+  interface HVCCBox extends MP4Box {
+    PPS: Array<{ length: number, nalu: Uint8Array }>
+    SPS: Array<{ length: number, nalu: Uint8Array }>
+    type: 'hvcC'
   }
 
   export interface MP4ABoxParser extends BoxParser {
@@ -194,6 +210,7 @@ declare module 'mp4box' {
     size: number
     start: number
     boxes: []
+    getCodec: () => string
   }
 
   export interface MP4File {
@@ -210,7 +227,7 @@ declare module 'mp4box' {
 
     onMoovStart?: () => void
     onReady?: (info: MP4Info) => void
-    onSamples: (id: number, user: unknown, samples: MP4Sample[]) => void
+    onSamples: (id: number, user: any, samples: MP4Sample[]) => void
     onError?: (e: string) => void
 
     appendBuffer: (data: MP4ArrayBuffer) => number

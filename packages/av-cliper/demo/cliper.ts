@@ -55,11 +55,11 @@ document.querySelector('#extractMP4Samples')?.addEventListener('click', () => {
     const mp4Source = new MP4Source(new Response(await fhs[0].getFile()).body as ReadableStream<Uint8Array>)
 
     console.log(await mp4Source.getInfo())
-    const reader = mp4Source.sampleStream.getReader()
+    const reader = mp4Source.stream.getReader()
     while (true) {
       const { done, value } = await reader.read()
       if (done) return
-      console.log('--- sample: ', value)
+      console.log('--- source stream: ', value)
     }
   })().catch(console.error)
 })
