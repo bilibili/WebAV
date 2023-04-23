@@ -81,10 +81,11 @@ declare module 'mp4box' {
 
   export interface AudioTrackOpts {
     timescale: number
-    media_duration: number
-    duration: number
-    nb_samples: number
+    media_duration?: number
+    duration?: number
     samplerate: number
+    channel_count: number
+    samplesize?: number
     hdlr: string
     name: string
     type: string

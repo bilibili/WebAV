@@ -223,14 +223,9 @@ function encodeAudioTrack (
 
   const audioTrackOpts = {
     timescale: 1e6,
-    media_duration: 0,
-    duration: 0,
-    nb_samples: 0,
     samplerate: audioOpts.sampleRate,
     channel_count: audioOpts.channelCount,
     samplesize: audioOpts.sampleSize,
-    width: 0,
-    height: 0,
     hdlr: 'soun',
     name: 'SoundHandler',
     type: audioOpts.codec === 'aac' ? 'mp4a' : 'Opus'
