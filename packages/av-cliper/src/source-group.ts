@@ -1,4 +1,4 @@
-import mp4box, { AVC1BoxParser, MP4ABoxParser, MP4File, MP4Sample, TrakBoxParser } from 'mp4box'
+import mp4box, { MP4File } from 'mp4box'
 import { MP4Source } from './mp4-source'
 
 enum EState {
@@ -10,6 +10,7 @@ enum EState {
 interface IItem {
   source: MP4Source
   reader: ReadableStreamDefaultReader<VideoFrame | AudioData>
+  startDemux: () => void
   description_index: number
   state: EState
 }
@@ -27,21 +28,35 @@ export class SourceGroup {
 
   #outputCanceled = false
 
-  #stopOutput = (): void => {}
+  #stopOutput: () => void
 
   outputStream: ReadableStream<ArrayBuffer>
+  #videoEncoder: VideoEncoder
 
   constructor () {
-    // this.outputStream = new ReadableStream({
-    //   start: (ctrl) => {
-    //     this.#ctrl = ctrl
-    //   }
-    // })
-    const { stream, stop: stopOutput } = convertFile2Stream(this.#outFile, 500, () => {
-      this.#outputCanceled = true
+    let updateCnt = 0
+    this.#videoEncoder = createVideoEncoder(this.#outFile, () => {
+      updateCnt += 1
     })
 
-    this.#stopOutput = stopOutput
+    const { stream, stop: stopOutput } = convertFile2Stream(this.#outFile, 500, () => {
+      this.#outputCanceled = true
+      stopOutput()
+    })
+
+    // this.#outFile.start()
+
+    this.#stopOutput = () => {
+      let last = updateCnt
+      const timerId = self.setInterval(() => {
+        console.log(3333, { last, updateCnt })
+        if (last === updateCnt) {
+          clearInterval(timerId)
+          stopOutput()
+        }
+        last = updateCnt
+      }, 300)
+    }
     this.outputStream = stream
   }
 
@@ -49,121 +64,64 @@ export class SourceGroup {
     this.#staticItems.push({
       source,
       reader: source.stream.getReader(),
+      startDemux: source.startDemux,
       description_index: this.#staticItems.length + 1,
       state: EState.Pending
     })
   }
 
   start (): void {
-    // const trakByType = this.#staticItems.map(({ tracks }) => tracks)
-    //   .flat()
-    //   .map(t => t.mdia.minf.stbl.stsd.entries)
-    //   .flat()
-    //   .reduce((acc, cur) => {
-    //     const arr = (acc[cur.type] ?? []).concat(cur)
-    //     return { ...acc, [cur.type]: arr }
-    //   }, {}) as { avc1?: AVC1BoxParser[], mp4a?: MP4ABoxParser[] }
-
-    // console.log(34444, trakByType)
-    // let vTrackId: null | number = null
-    // if (trakByType.avc1 != null) {
-    //   const f = trakByType.avc1[0]
-    //   vTrackId = this.#outFile.addTrack({
-    //     timescale: 1e6,
-    //     width: f.width,
-    //     height: f.height,
-    //     brands: ['isom', 'iso2', 'avc1', 'mp41'],
-    //     description_boxes: trakByType.avc1.map(a => a.avcC)
-    //   })
-    // }
-    // let aTrackId: null | number = null
-    // if (trakByType.mp4a != null) {
-    //   const mp4aBox = trakByType.mp4a[0]
-    //   // todo：音轨需要重编码，没想到怎么复用 track
-    //   aTrackId = this.#outFile.addTrack({
-    //     timescale: 1e6,
-    //     duration: 0,
-    //     nb_samples: 0,
-    //     media_duration: 0,
-    //     samplerate: mp4aBox.samplerate,
-    //     channel_count: mp4aBox.channel_count,
-    //     samplesize: mp4aBox.samplesize,
-    //     hdlr: 'soun',
-    //     name: 'SoundHandler',
-    //     type: mp4aBox.type
-    //   })
-    // }
-    // if (this.#state !== 'running') {
-    //   this.#state = 'running'
-    //   this.#run({
-    //     vTrackId,
-    //     aTrackId
-    //   }).catch(console.error)
-    // }
+    if (this.#state !== 'running') {
+      this.#state = 'running'
+      this.#run().catch(console.error)
+    }
   }
 
-  async #run (
-    tIds: {
-      vTrackId: number | null
-      aTrackId: number | null
-    }): Promise<void> {
-    // const it = this.#findNext(this.#ts)
-    // if (it == null || this.#outputCanceled) {
-    //   this.#stopOutput()
-    //   return
-    // }
+  async #run (): Promise<void> {
+    const it = this.#findNext()
+    console.log('--- findnext: ', it)
+    if (it == null || this.#outputCanceled) {
+      this.#stopOutput()
+      return
+    }
+    if (it.state !== EState.Reading) {
+      it.state = EState.Reading
+      it.startDemux()
+    }
 
-    // const { done, value } = await it.reader.read()
-    // if (done) {
-    //   it.state = EState.Done
-    //   this.#offsetTs = this.#ts
-    //   console.log(222222, this.#offsetTs)
-    //   this.#run(tIds).catch(console.error)
-    //   return
-    // }
+    const { done, value } = await it.reader.read()
+    if (done) {
+      it.state = EState.Done
+      this.#offsetTs = this.#ts
+      console.log(222222, this.#offsetTs)
+      this.#run().catch(console.error)
+      return
+    }
 
-    // // fixme: 跨资源才需要添加偏移值
-    // // value.dts = this.#offsetTs + value.dts
-    // // value.cts = this.#offsetTs + value.cts
-    // let trackId = 0
-    // if (value.description.type === 'avc1' && tIds.vTrackId != null) {
-    //   trackId = tIds.vTrackId
-    // } else if (value.description.type === 'mp4a' && tIds.aTrackId != null) {
-    //   trackId = tIds.aTrackId
-    // } else {
-    //   throw new Error('Unsupport sample type')
-    // }
+    if (value instanceof VideoFrame) {
+      const newf = new VideoFrame(value, {
+        timestamp: value.timestamp + this.#offsetTs,
+        alpha: 'discard'
+      })
+      this.#ts = value.timestamp
 
-    // this.#outFile.addSample(trackId, value.data, {
-    //   duration: value.duration / value.timescale * 1e6,
-    //   dts: value.dts / value.timescale * 1e6,
-    //   cts: value.cts / value.timescale * 1e6,
-    //   is_sync: value.is_sync,
-    //   sample_description_index: it.description_index
-    // })
+      this.#videoEncoder.encode(newf)
+      newf.close()
+      value.close()
 
-    // this.#ts = value.dts
-    // this.#run(tIds).catch(console.error)
+      this.#run().catch(console.error)
+    } else if (value instanceof AudioData) {
+      value.close()
+      this.#run().catch(console.error)
+    }
   }
 
-  // todo: 应该返回 IItem[]
-  #findNext (ts: number): IItem | null {
+  // todo: 应该返回 IItem
+  #findNext (): IItem | null {
     const items = this.#staticItems.filter(it => it.state !== EState.Done)
     const next = items[0]
 
     return next ?? null
-
-    // let min = Infinity
-    // let idx: number | null = null
-    // items.forEach((it, i) => {
-    //   const v = it.dur.start - ts
-    //   if (v < min) {
-    //     min = v
-    //     idx = i
-    //   }
-    // })
-
-    // return idx != null ? this.#staticItems[idx] : null
   }
 }
 
@@ -179,7 +137,8 @@ function convertFile2Stream (
 
   let sendedBoxIdx = 0
   const boxes = file.boxes
-  const deltaBuf = (): ArrayBuffer => {
+  const deltaBuf = (): ArrayBuffer | null => {
+    if (sendedBoxIdx >= boxes.length) return null
     const ds = new mp4box.DataStream()
     ds.endianness = mp4box.DataStream.BIG_ENDIAN
     for (let i = sendedBoxIdx; i < boxes.length; i++) {
@@ -194,13 +153,15 @@ function convertFile2Stream (
   const stream = new ReadableStream({
     start (ctrl) {
       timerId = self.setInterval(() => {
-        ctrl.enqueue(deltaBuf())
+        const buf = deltaBuf()
+        if (buf != null) ctrl.enqueue(buf)
       }, timeSlice)
 
       exit = () => {
         clearInterval(timerId)
         file.flush()
-        ctrl.enqueue(deltaBuf())
+        const buf = deltaBuf()
+        if (buf != null) ctrl.enqueue(buf)
         ctrl.close()
       }
 
@@ -220,4 +181,54 @@ function convertFile2Stream (
       exit?.()
     }
   }
+}
+
+function createVideoEncoder (outputFile: MP4File, onUpdate: () => void): VideoEncoder {
+  const vTrackOpts = {
+  // 微秒
+    timescale: 1e6,
+    width: 1280,
+    height: 720,
+    brands: ['isom', 'iso2', 'avc1', 'mp41'],
+    avcDecoderConfigRecord: null as AllowSharedBufferSource | undefined | null
+  }
+  let vTrackId = 0
+  const encoder = new VideoEncoder({
+    output (chunk, meta) {
+      onUpdate()
+      if (vTrackId === 0 && meta != null) {
+        vTrackOpts.avcDecoderConfigRecord = meta.decoderConfig?.description
+        vTrackId = outputFile.addTrack(vTrackOpts)
+      }
+      const buf = new ArrayBuffer(chunk.byteLength)
+      chunk.copyTo(buf)
+
+      const dts = chunk.timestamp
+      outputFile.addSample(
+        vTrackId,
+        buf,
+        {
+        // 每帧时长，单位微秒
+          duration: chunk.duration ?? 0,
+          dts,
+          cts: dts,
+          is_sync: chunk.type === 'key'
+        }
+      )
+    },
+    error: console.error
+  })
+  encoder.configure({
+    codec: 'avc1.42E01F',
+    width: 1280,
+    height: 720,
+    framerate: 30,
+    hardwareAcceleration: 'prefer-hardware',
+    // 码率
+    // bitrate: 3_000_000,
+    // mac 自带播放器只支持avc
+    avc: { format: 'avc' },
+    alpha: 'discard'
+  })
+  return encoder
 }

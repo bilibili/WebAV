@@ -25,17 +25,6 @@ document.querySelector('#concatMP4')?.addEventListener('click', () => {
     await sg.outputStream
       .pipeTo(await createFileWriter('mp4'))
     console.timeEnd('cost')
-
-    // await sampleStream2File(mp4Source.sampleStream)
-    // .pipeTo(await createFileWriter('mp4'))
-
-    // console.log(await mp4Source.getInfo())
-    // const reader = mp4Source.sampleStream.getReader()
-    // while (true) {
-    //   const { done, value } = await reader.read()
-    //   if (done) return
-    //   console.log(9999, value)
-    // }
   })().catch(console.error)
 })
 
@@ -57,9 +46,9 @@ document.querySelector('#extractMP4Samples')?.addEventListener('click', () => {
     console.log(await mp4Source.getInfo())
     const reader = mp4Source.stream.getReader()
     while (true) {
-      const { done, value } = await reader.read()
+      const { done } = await reader.read()
       if (done) return
-      console.log('--- source stream: ', value)
+      // console.log('--- source stream: ', value)
     }
   })().catch(console.error)
 })

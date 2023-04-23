@@ -8,10 +8,14 @@ export class MP4Source {
     this.#infoResolver = resolve
   })
 
+  startDemux: () => void
+
   constructor (rs: ReadableStream<Uint8Array>) {
-    this.stream = careateVideoFrameStream(rs, (info) => {
+    const { stream, startDemux } = demuxMP4Stream(rs, (info) => {
       this.#infoResolver?.(info)
     })
+    this.stream = stream
+    this.startDemux = startDemux
   }
 
   async getInfo (): Promise<MP4Info> {
@@ -21,28 +25,45 @@ export class MP4Source {
 /**
  * mp4 demux，文件流 转 VideoFrame 流
  */
-function careateVideoFrameStream (
+export function demuxMP4Stream (
   rs: ReadableStream<Uint8Array>,
   onReady: (info: MP4Info) => void
-): ReadableStream<VideoFrame | AudioData> {
-  let ctrlCnt = 0
+): {
+    stream: ReadableStream<VideoFrame | AudioData>
+    startDemux: () => void
+  } {
   let ctrl: ReadableStreamDefaultController<VideoFrame | AudioData> | null = null
+  const mp4File = mp4box.createFile()
+
+  let endTimer = 0
+  function resetEndTimer (): void {
+    clearTimeout(endTimer)
+    endTimer = self.setTimeout(() => {
+      ctrl?.close()
+      mp4File.stop()
+    }, 1000)
+  }
+
   const vd = new VideoDecoder({
     output: (vf) => {
+      // 若后续 vf 不关闭，会导致当前 output 不触发
       ctrl?.enqueue(vf)
-      ctrlCnt += 1
+      resetEndTimer()
     },
-    error: console.error
+    error: (e) => {
+      ;(ctrl?.error ?? console.error)(e)
+    }
   })
   const ad = new AudioDecoder({
     output: (audioData) => {
       ctrl?.enqueue(audioData)
-      ctrlCnt += 1
+      resetEndTimer()
     },
-    error: console.error
+    error: (e) => {
+      ;(ctrl?.error ?? console.error)(e)
+    }
   })
 
-  const mp4File = mp4box.createFile()
   mp4File.onReady = (info) => {
     onReady(info)
 
@@ -54,8 +75,8 @@ function careateVideoFrameStream (
         codec: vTrackInfo.codec,
         codedHeight: vTrackInfo.video.height,
         codedWidth: vTrackInfo.video.width,
-        description: parseVideoCodecDesc(vTrack),
-        duration: info.duration
+        description: parseVideoCodecDesc(vTrack)
+        // duration: info.duration
       }
       vd.configure(vdConf)
       mp4File.setExtractionOptions(vTrackInfo.id, 'video')
@@ -79,12 +100,14 @@ function careateVideoFrameStream (
 
   mp4File.onSamples = (_, sampleType: 'video' | 'audio', samples) => {
     if (sampleType === 'video') {
-      samples.forEach(s => vd.decode(new EncodedVideoChunk({
-        type: s.is_sync ? 'key' : 'delta',
-        timestamp: 1e6 * s.cts / s.timescale,
-        duration: 1e6 * s.duration / s.timescale,
-        data: s.data
-      })))
+      samples.forEach(s => {
+        vd.decode(new EncodedVideoChunk({
+          type: s.is_sync ? 'key' : 'delta',
+          timestamp: 1e6 * s.cts / s.timescale,
+          duration: 1e6 * s.duration / s.timescale,
+          data: s.data
+        }))
+      })
     } else if (sampleType === 'audio') {
       samples.forEach(s => ad.decode(new EncodedAudioChunk({
         type: s.is_sync ? 'key' : 'delta',
@@ -95,38 +118,31 @@ function careateVideoFrameStream (
     }
   }
 
-  let chunkOffset = 0
   const reader = rs.getReader()
-  let inputDone = false
-  return new ReadableStream({
-    start: (c) => {
-      ctrl = c
-    },
-    pull: async (ctrl) => {
-      while (ctrl.desiredSize != null && ctrl.desiredSize >= 0) {
-        const { done, value } = await reader.read()
-        if (done) {
-          if (!inputDone) {
-            // firt emit done
-            const last = ctrlCnt
-            const timerId = setInterval(() => {
-              if (ctrlCnt !== last) return
-              clearInterval(timerId)
-              ctrl.close()
-              mp4File.stop()
-            }, 300)
-          }
-          inputDone = true
-          return
-        }
-
-        const chunk = value.buffer as MP4ArrayBuffer
-        chunk.fileStart = chunkOffset
-        chunkOffset += chunk.byteLength
-        mp4File.appendBuffer(chunk)
-      }
+  let chunkOffset = 0
+  async function readFile (): Promise<void> {
+    const { done, value } = await reader.read()
+    if (done) {
+      console.log('source read done')
+      return
     }
-  }, { highWaterMark: 100 })
+
+    const chunk = value.buffer as MP4ArrayBuffer
+    chunk.fileStart = chunkOffset
+    chunkOffset += chunk.byteLength
+    mp4File.appendBuffer(chunk)
+
+    readFile().catch(console.error)
+  }
+
+  return {
+    stream: new ReadableStream({
+      start: (c) => { ctrl = c }
+    }),
+    startDemux: () => {
+      readFile().catch(console.error)
+    }
+  }
 }
 
 /**
