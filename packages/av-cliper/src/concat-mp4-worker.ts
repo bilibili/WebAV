@@ -101,12 +101,12 @@ const videoEncodingTrackOptions = {
   // brands: ['avc1'],
   avcDecoderConfigRecord: null as AllowSharedBufferSource | undefined | null
 }
-let vTrackId: number | null = null
+let vTrackId = 0
 const outputFile = mp4box.createFile()
 const encoder = new VideoEncoder({
   output (chunk, meta) {
     // console.log('======///', chunk, meta)
-    if (vTrackId == null) {
+    if (vTrackId === 0 && meta != null) {
       videoEncodingTrackOptions.avcDecoderConfigRecord = meta.decoderConfig?.description
       vTrackId = outputFile.addTrack(videoEncodingTrackOptions)
     }
