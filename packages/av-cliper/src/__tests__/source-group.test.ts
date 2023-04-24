@@ -3,7 +3,8 @@ import { ReadableStream } from 'web-streams-polyfill/ponyfill'
 import { beforeAll, expect, test, vi } from 'vitest'
 import { SourceGroup } from '../source-group'
 
-;(global as any).ReadableStream = ReadableStream
+import { MP4Source } from '../mp4-source';
+(global as any).ReadableStream = ReadableStream
 
 function createRS (): ReadableStream<any> {
   let timerId = 0
@@ -34,10 +35,10 @@ beforeAll(() => {
   vi.useFakeTimers()
 })
 
-test('SourceGroup concat', async () => {
+test('SourceGroup concat mp4', async () => {
   const sg = new SourceGroup()
-  sg.add(createRS())
-  sg.add(createRS())
+  await sg.add(new MP4Source(createRS()))
+  await sg.add(new MP4Source(createRS()))
   sg.start()
   const reader = sg.outputStream.getReader()
   const count = vi.fn()

@@ -41,12 +41,12 @@ document.querySelector('#decode-mp3')?.addEventListener('click', () => {
       // sampleRate : 48000
       const frameCnt = ab.sampleRate * ab.duration * 2
       const buf = new Float32Array(frameCnt)
-      const buf1 = ab.getChannelData(0)
-      buf.set(buf1, 0)
+      const chan0Buf = ab.getChannelData(0)
+      buf.set(chan0Buf, 0)
       if (ab.numberOfChannels >= 2) {
-        buf.set(ab.getChannelData(1), buf1.length)
+        buf.set(ab.getChannelData(1), chan0Buf.length)
       } else {
-        buf.set(buf1, buf1.length)
+        buf.set(chan0Buf, chan0Buf.length)
       }
 
       const mp4file = mp4box.createFile()

@@ -1,6 +1,7 @@
 import mp4box, { MP4File } from 'mp4box'
 import { MP4Source } from './mp4-source'
 import { convertFile2Stream } from './utils'
+import { AudioSoruce } from './audio-source'
 
 enum EState {
   Pending = 'pending',
@@ -8,15 +9,15 @@ enum EState {
   Done = 'done'
 }
 
-interface IItem {
-  source: MP4Source
+interface ISourceElement {
+  source: MP4Source | AudioSoruce
   reader: ReadableStreamDefaultReader<VideoFrame | AudioData>
-  startDemux: () => void
+  startDemux?: () => void
   state: EState
 }
 
 export class SourceGroup {
-  #staticItems: IItem[] = []
+  #staticItems: ISourceElement[] = []
 
   #ts = 0
 
@@ -32,10 +33,14 @@ export class SourceGroup {
 
   outputStream: ReadableStream<ArrayBuffer>
   #videoEncoder: VideoEncoder
+  #audioEncoder: AudioEncoder
 
   constructor () {
     let updateCnt = 0
     this.#videoEncoder = createVideoEncoder(this.#outFile, () => {
+      updateCnt += 1
+    })
+    this.#audioEncoder = createAudioEncoder(this.#outFile, () => {
       updateCnt += 1
     })
 
@@ -83,10 +88,10 @@ export class SourceGroup {
     }
     if (it.state !== EState.Reading) {
       it.state = EState.Reading
-      it.startDemux()
+      it.startDemux?.()
     }
 
-    const { done, value } = await it.reader.read()
+    const { done, value } = await it.reader?.read()
     if (done) {
       it.state = EState.Done
       this.#offsetTs = this.#ts
@@ -113,8 +118,8 @@ export class SourceGroup {
     }
   }
 
-  // todo: 应该返回 IItem
-  #findNext (): IItem | null {
+  // todo: 应该返回 IItem[]
+  #findNext (): ISourceElement | null {
     const items = this.#staticItems.filter(it => it.state !== EState.Done)
     const next = items[0]
 
@@ -169,5 +174,36 @@ function createVideoEncoder (outputFile: MP4File, onUpdate: () => void): VideoEn
     avc: { format: 'avc' },
     alpha: 'discard'
   })
+  return encoder
+}
+
+function createAudioEncoder (mp4file: MP4File, onUpdate: () => void): AudioEncoder {
+  // todo: Configurable
+  const audioTrackOpts = {
+    timescale: 1e6,
+    samplerate: 48000,
+    channel_count: 2,
+    hdlr: 'soun',
+    name: 'SoundHandler',
+    type: 'mp4a'
+  }
+
+  const trackId = mp4file.addTrack(audioTrackOpts)
+  const encoder = new AudioEncoder({
+    output: (chunk) => {
+      onUpdate()
+      const buf = new ArrayBuffer(chunk.byteLength)
+      chunk.copyTo(buf)
+      const dts = chunk.timestamp
+      mp4file.addSample(trackId, buf, {
+        duration: chunk.duration ?? 0,
+        dts,
+        cts: dts,
+        is_sync: chunk.type === 'key'
+      })
+    },
+    error: console.error
+  })
+
   return encoder
 }

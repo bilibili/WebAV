@@ -1,3 +1,4 @@
+import { AudioSoruce } from '../src/audio-source'
 import { MP4Source } from '../src/mp4-source'
 import { SourceGroup } from '../src/source-group'
 
@@ -50,6 +51,21 @@ document.querySelector('#extractMP4Samples')?.addEventListener('click', () => {
       if (done) return
       // console.log('--- source stream: ', value)
     }
+  })().catch(console.error)
+})
+
+document.querySelector('#concatMP3-4')?.addEventListener('click', () => {
+  ;(async () => {
+    const [mp40Resp, mp300Resp] = await Promise.all([
+      fetch('./assets/0.mp4'),
+      fetch('./assets/0-0.mp3')
+    ])
+    const mp4Src = new MP4Source(mp40Resp.body as ReadableStream<Uint8Array>)
+    const audioSrc = new AudioSoruce(await mp300Resp.arrayBuffer())
+    const sg = new SourceGroup()
+    await sg.add(mp4Src)
+    // await sg.add(audioSrc)
+    console.log(11111, mp4Src, await audioSrc.getAudioData())
   })().catch(console.error)
 })
 
