@@ -1,4 +1,5 @@
-import mp4box, { MP4ArrayBuffer, MP4Info, TrakBoxParser } from 'mp4box'
+import mp4box, { MP4ArrayBuffer, MP4Info } from 'mp4box'
+import { parseVideoCodecDesc } from './utils'
 
 export class MP4Source {
   stream: ReadableStream<VideoFrame | AudioData>
@@ -22,6 +23,7 @@ export class MP4Source {
     return await this.#infoPromise
   }
 }
+
 /**
  * mp4 demux，文件流 转 VideoFrame 流
  */
@@ -224,21 +226,3 @@ export function demuxMP4Stream (
 //     }
 //   }
 // }
-
-// track is H.264 or H.265.
-function parseVideoCodecDesc (track: TrakBoxParser): Uint8Array {
-  for (const entry of track.mdia.minf.stbl.stsd.entries) {
-    if ('avcC' in entry || 'hvcC ' in entry) {
-      const stream = new mp4box.DataStream(
-        undefined,
-        0,
-        mp4box.DataStream.BIG_ENDIAN
-      )
-      // @ts-expect-error
-      const box = 'avcC' in entry ? entry.avcC : entry.hvcC
-      box.write(stream)
-      return new Uint8Array(stream.buffer, 8) // Remove the box header.
-    }
-  }
-  throw Error('avcC or hvcC not found')
-}

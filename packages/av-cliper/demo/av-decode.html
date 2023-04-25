@@ -14,13 +14,21 @@
       overflow: hidden;
       position: relative;
     }
+
+    #canvas {
+      width: 900px;
+      height: 500px;
+    }
   </style>
 </head>
 
 <body>
   <div id="app">
-    <button id="decode-mp4">decode-mp4</button>
+    <button id="decode-mp4-to-stream">decode-mp4-to-stream</button>
+    <button id="decode-mp4-frames">decode-mp4-frames</button>
     <button id="decode-mp3">decode-mp3 & convert to mp4(aac)</button>
+    <hr>
+    <canvas id="canvas" width="1280" height="720"></canvas>
   </div>
   <script type="module" src="av-decode.ts"></script>
 </body>

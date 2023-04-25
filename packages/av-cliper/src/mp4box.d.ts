@@ -32,7 +32,7 @@ declare module 'mp4box' {
     write: (ds: DataStream) => void
   }
 
-  interface MP4VideoTrack extends MP4MediaTrack {
+  export interface MP4VideoTrack extends MP4MediaTrack {
     video: {
       width: number
       height: number
@@ -231,6 +231,7 @@ declare module 'mp4box' {
 
     appendBuffer: (data: MP4ArrayBuffer) => number
     start: () => void
+    seek: (time: number, useRAP?: boolean) => { offset: number, time: number }
     stop: () => void
     write: (ds: DataStream) => void
     flush: () => void

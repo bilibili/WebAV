@@ -1,15 +1,13 @@
 import mp4box from 'mp4box'
-import { demuxMP4Stream } from '../src/mp4-source'
-import { convertFile2Stream } from '../src/utils'
+import { demuxMP4Stream, parseMP42Frames } from '../src/mp4-source'
+import { convertFile2Stream, sleep } from '../src/utils'
+import { MP4FrameQueue } from '../src/mp4-frame-queue'
 
-document.querySelector('#decode-mp4')?.addEventListener('click', () => {
+document.querySelector('#decode-mp4-to-stream')?.addEventListener('click', () => {
   ;(async () => {
-    const files = await getLocalFiles({
-      multiple: false,
-      accept: { 'video/*': ['.mp4'] }
-    })
+    const resp = await fetch('./assets/0.mp4')
     const { stream, startDemux } = demuxMP4Stream(
-      new Response(files[0]).body as ReadableStream<Uint8Array>,
+      resp.body as ReadableStream<Uint8Array>,
       (info) => {
         console.log('ready: ', info)
       }
@@ -24,6 +22,63 @@ document.querySelector('#decode-mp4')?.addEventListener('click', () => {
       value.close()
     }
   })().catch(console.error)
+})
+
+const cvs = document.querySelector('#canvas') as HTMLCanvasElement
+const ctx = cvs.getContext('2d')
+document.querySelector('#decode-mp4-frames')?.addEventListener('click', () => {
+  ;(async () => {
+    const resp = await fetch('./assets/fragment.mp4')
+    const frameQ = new MP4FrameQueue(resp.body as ReadableStream<Uint8Array>)
+
+    await frameQ.ready
+
+    let time = 0
+    let cnt = 0
+    while (true) {
+      const { frame, state } = await frameQ.forward(time)
+      time += 1000 / 30 * 1000
+      console.log(111111, time, frame, cnt, state)
+      if (state === 'next') {
+        continue
+      }
+      if (state === 'done') {
+        console.log('----- end -----')
+        return
+      }
+      if (frame == null) {
+        console.log('?????')
+        await sleep(0)
+        continue
+      }
+      ctx?.drawImage(frame, 0, 0, frame.codedWidth, frame.codedHeight)
+      frame.close()
+      cnt += 1
+    }
+
+    // let time = 0
+    // const starTime = performance.now()
+    // const timerId = setInterval(() => {
+    //   time = performance.now() - starTime
+    //   const frame = frameQ.forward(time)
+    //   if (frame == null) {
+    //     clearInterval(timerId)
+    //     return
+    //   }
+    //   ctx?.drawImage(frame, 0, 0, frame.displayWidth, frame.displayHeight)
+    //   frame.close()
+    // }, 1000 / 30)
+  })().catch(console.error)
+  // let i = 0
+  // setInterval(() => {
+  //   const it = imgBitmpas[i++]
+  //   console.log(111, it)
+  //   if (it == null) {
+  //     i = 0
+  //     return
+  //   }
+  //   ctx?.drawImage(it, 0, 0, it.displayWidth, it.displayHeight)
+  // }, 30)
 })
 
 document.querySelector('#decode-mp3')?.addEventListener('click', () => {
