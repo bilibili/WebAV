@@ -8,24 +8,26 @@ export class MP4FrameQueue {
 
   ready: Promise<void>
 
-  #videoInfo: { duration: number } = { duration: 0 }
+  #videoInfo: { duration: number } = { duration: Infinity }
+
+  #frameParseEnded = false
 
   constructor (rs: ReadableStream<Uint8Array>) {
     this.ready = new Promise((resolve) => {
-      let cnt = 0
-      const { ready, seek, getInfo } = parseMP42Frames(rs, (vf) => {
+      let lastVf: VideoFrame | null = null
+      const { ready, seek } = parseMP42Frames(rs, (vf) => {
         this.#videoFrame.push(vf)
-        cnt++
+        lastVf = vf
         resolve()
+      }, () => {
+        if (lastVf == null) throw Error('mp4 parse error, no video frame')
+        this.#videoInfo.duration = lastVf.timestamp + (lastVf.duration ?? 0)
+        this.#frameParseEnded = true
       })
       ready.then(() => {
         seek(0)
-        this.#videoInfo = getInfo()
+        // this.#videoInfo = getInfo()
       }).catch(console.error)
-
-      setTimeout(() => {
-        console.log(88888, this.#videoInfo, cnt)
-      }, 5000)
     })
   }
 
@@ -63,57 +65,67 @@ export class MP4FrameQueue {
         state: 'done'
       }
     }
-    while (true) {
-      const { frame, nextOffset } = this.#next(time)
-      this.#ts = time
-      if (frame == null && nextOffset === -1) {
-        // console.log(22222222222)
-        // 等待填充 vf
-        await sleep(5)
-        continue
-      }
 
-      if (frame == null && nextOffset > time) {
-        // 需要外部增加时间
-        // todo: 维持最后一帧
-        return {
-          frame: null,
-          state: 'next'
+    this.#ts = time
+    const { frame, nextOffset } = this.#next(time)
+    if (frame == null) {
+      if (nextOffset === -1) {
+        // 解析已完成，队列已清空
+        if (this.#frameParseEnded) {
+          return {
+            frame: null,
+            state: 'done'
+          }
         }
+        // 队列已空，等待补充 vf
+        await sleep(5)
+        return await this.forward(time)
       }
-
-      if (time >= nextOffset) {
-        // frame 过期，再取下一个
-        frame?.close()
-        continue
-      }
-
+      // 当前 time 小于最前的 frame.timestamp，等待 time 增加
       return {
-        frame,
-        state: 'success'
+        frame: null,
+        state: 'next'
       }
+    }
+
+    if (time >= nextOffset) {
+      // frame 过期，再取下一个
+      frame?.close()
+      return await this.forward(time)
+    }
+    return {
+      frame,
+      state: 'success'
     }
   }
 }
 
 export function parseMP42Frames (
   rs: ReadableStream<Uint8Array>,
-  onOutput: (vf: VideoFrame) => void
+  onOutput: (vf: VideoFrame) => void,
+  onEnded: () => void
 ): {
     ready: Promise<void>
     getInfo: () => { duration: number }
     seek: (time: number) => void
   } {
   const mp4File = mp4box.createFile()
+  let endedTimer = 0
+  function resetTimer (): void {
+    clearTimeout(endedTimer)
+    endedTimer = self.setTimeout(onEnded, 300)
+  }
   const vd = new VideoDecoder({
-    output: onOutput,
+    output: (vf) => {
+      onOutput(vf)
+      resetTimer()
+    },
     error: console.error
   })
 
   let vInfo: MP4VideoTrack | null = null
   mp4File.onReady = (info) => {
     const vTrackInfo = info.videoTracks[0]
-    console.log(44444, info, vTrackInfo)
     if (vTrackInfo != null) {
       vInfo = vTrackInfo
       const vTrack = mp4File.getTrackById(vTrackInfo.id)

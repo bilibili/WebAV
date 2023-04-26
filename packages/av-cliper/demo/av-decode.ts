@@ -1,5 +1,5 @@
 import mp4box from 'mp4box'
-import { demuxMP4Stream, parseMP42Frames } from '../src/mp4-source'
+import { demuxMP4Stream } from '../src/mp4-source'
 import { convertFile2Stream, sleep } from '../src/utils'
 import { MP4FrameQueue } from '../src/mp4-frame-queue'
 
@@ -28,22 +28,23 @@ const cvs = document.querySelector('#canvas') as HTMLCanvasElement
 const ctx = cvs.getContext('2d')
 document.querySelector('#decode-mp4-frames')?.addEventListener('click', () => {
   ;(async () => {
-    const resp = await fetch('./assets/fragment.mp4')
+    const resp = await fetch('./assets/0.mp4')
     const frameQ = new MP4FrameQueue(resp.body as ReadableStream<Uint8Array>)
 
     await frameQ.ready
 
     let time = 0
-    let cnt = 0
+    console.time('parse time')
     while (true) {
       const { frame, state } = await frameQ.forward(time)
       time += 1000 / 30 * 1000
-      console.log(111111, time, frame, cnt, state)
+      // console.log(111111, time, frame, cnt, state)
       if (state === 'next') {
         continue
       }
       if (state === 'done') {
         console.log('----- end -----')
+        console.timeEnd('parse time')
         return
       }
       if (frame == null) {
@@ -53,7 +54,6 @@ document.querySelector('#decode-mp4-frames')?.addEventListener('click', () => {
       }
       ctx?.drawImage(frame, 0, 0, frame.codedWidth, frame.codedHeight)
       frame.close()
-      cnt += 1
     }
 
     // let time = 0
