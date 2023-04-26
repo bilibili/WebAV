@@ -10,7 +10,10 @@ export class WorkerSprite extends BaseSprite {
     this.#dataSource = ds
   }
 
-  async offscreenRender (ctx: CanvasRenderingContext2D, time: number): Promise<void> {
+  async offscreenRender (
+    ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D,
+    time: number
+  ): Promise<void> {
     super.render(ctx)
     const { w, h } = this.rect
     const { value, state } = await this.#dataSource.tick(time)

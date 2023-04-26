@@ -15,7 +15,9 @@ export abstract class BaseSprite {
 
   constructor (public name: string) {}
 
-  render (ctx: CanvasRenderingContext2D): void {
+  render (
+    ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D
+  ): void {
     // todo: clip
     const { rect: { center, angle } } = this
     ctx.setTransform(
