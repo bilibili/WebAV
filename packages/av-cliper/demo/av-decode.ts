@@ -55,30 +55,7 @@ document.querySelector('#decode-mp4-frames')?.addEventListener('click', () => {
       ctx?.drawImage(frame, 0, 0, frame.codedWidth, frame.codedHeight)
       frame.close()
     }
-
-    // let time = 0
-    // const starTime = performance.now()
-    // const timerId = setInterval(() => {
-    //   time = performance.now() - starTime
-    //   const frame = frameQ.forward(time)
-    //   if (frame == null) {
-    //     clearInterval(timerId)
-    //     return
-    //   }
-    //   ctx?.drawImage(frame, 0, 0, frame.displayWidth, frame.displayHeight)
-    //   frame.close()
-    // }, 1000 / 30)
   })().catch(console.error)
-  // let i = 0
-  // setInterval(() => {
-  //   const it = imgBitmpas[i++]
-  //   console.log(111, it)
-  //   if (it == null) {
-  //     i = 0
-  //     return
-  //   }
-  //   ctx?.drawImage(it, 0, 0, it.displayWidth, it.displayHeight)
-  // }, 30)
 })
 
 document.querySelector('#decode-mp3')?.addEventListener('click', () => {

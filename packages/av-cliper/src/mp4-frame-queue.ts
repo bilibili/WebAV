@@ -110,11 +110,6 @@ export function parseMP42Frames (
     seek: (time: number) => void
   } {
   const mp4File = mp4box.createFile()
-  let endedTimer = 0
-  function resetTimer (): void {
-    clearTimeout(endedTimer)
-    endedTimer = self.setTimeout(onEnded, 300)
-  }
   const vd = new VideoDecoder({
     output: (vf) => {
       onOutput(vf)
@@ -122,6 +117,16 @@ export function parseMP42Frames (
     },
     error: console.error
   })
+  let endedTimer = 0
+  function resetTimer (): void {
+    clearTimeout(endedTimer)
+    endedTimer = self.setTimeout(() => {
+      if (vd.decodeQueueSize === 0) {
+        onEnded()
+      }
+      // todo: warn, mabye not close emited frame
+    }, 300)
+  }
 
   let vInfo: MP4VideoTrack | null = null
   mp4File.onReady = (info) => {
