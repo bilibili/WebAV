@@ -1,8 +1,42 @@
 import mp4box, { MP4ArrayBuffer, MP4Sample, MP4VideoTrack } from 'mp4box'
-import { parseVideoCodecDesc, sleep } from './utils'
+import { BaseSprite } from './base-sprite'
+import { parseVideoCodecDesc, sleep } from '../utils'
 
-// todo: 待清理
-export class MP4FrameQueue {
+export class WorkerSprite extends BaseSprite {
+  #dataSource: IDataSource
+
+  constructor (name: string, ds: IDataSource) {
+    super(name)
+    this.#dataSource = ds
+  }
+
+  async offscreenRender (ctx: CanvasRenderingContext2D, time: number): Promise<void> {
+    super.render(ctx)
+    const { w, h } = this.rect
+    const { value, state } = await this.#dataSource.tick(time)
+    if (state === 'next' || state === 'done') {
+      return
+    }
+    if (state === 'success' && value != null) {
+      ctx.drawImage(value, -w / 2, -h / 2, w, h)
+    }
+  }
+
+  destroy (): void {}
+}
+
+interface IDataSource {
+  /**
+   * 当前瞬间，需要的数据
+   * @param time 时间，单位 微秒
+   */
+  tick: (time: number) => Promise<{
+    value: VideoFrame | null
+    state: 'done' | 'success' | 'next'
+  }>
+}
+
+export class MP4DataSource implements IDataSource {
   #videoFrame: VideoFrame[] = []
 
   #ts = 0
@@ -55,14 +89,14 @@ export class MP4FrameQueue {
     }
   }
 
-  async forward (time: number): Promise<{
-    frame: VideoFrame | null
+  async tick (time: number): Promise<{
+    value: VideoFrame | null
     state: 'success' | 'next' | 'done'
   }> {
     if (time < this.#ts) throw Error('time not allow rollback')
     if (time >= this.#videoInfo.duration) {
       return {
-        frame: null,
+        value: null,
         state: 'done'
       }
     }
@@ -74,17 +108,17 @@ export class MP4FrameQueue {
         // 解析已完成，队列已清空
         if (this.#frameParseEnded) {
           return {
-            frame: null,
+            value: null,
             state: 'done'
           }
         }
         // 队列已空，等待补充 vf
         await sleep(5)
-        return await this.forward(time)
+        return await this.tick(time)
       }
       // 当前 time 小于最前的 frame.timestamp，等待 time 增加
       return {
-        frame: null,
+        value: null,
         state: 'next'
       }
     }
@@ -92,10 +126,10 @@ export class MP4FrameQueue {
     if (time >= nextOffset) {
       // frame 过期，再取下一个
       frame?.close()
-      return await this.forward(time)
+      return await this.tick(time)
     }
     return {
-      frame,
+      value: frame,
       state: 'success'
     }
   }
@@ -141,7 +175,6 @@ export function parseMP42Frames (
         codedHeight: vTrackInfo.video.height,
         codedWidth: vTrackInfo.video.width,
         description: parseVideoCodecDesc(vTrack)
-        // duration: info.duration
       }
       vd.configure(vdConf)
       mp4File.setExtractionOptions(vTrackInfo.id, 'video')

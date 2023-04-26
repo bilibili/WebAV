@@ -1,3 +1,4 @@
+// todo: 待合并
 import mp4box, { MP4File, TrakBoxParser } from 'mp4box'
 
 export function convertFile2Stream (
