@@ -17,15 +17,6 @@ declare module 'mp4box' {
     codec: string
     language: string
     nb_samples: number
-    // mdia: {
-    //   minf: {
-    //     stbl: {
-    //       stsd: {
-    //         entries: Array<Record<'avcC' | 'hvcC', MP4Box>>
-    //       }
-    //     }
-    //   }
-    // }
   }
 
   export interface MP4Box {
@@ -76,6 +67,7 @@ declare module 'mp4box' {
     new(
       size?: number,
       byteOffset?: number,
+      // @ts-expect-error
       endianness?: DataStream.BIG_ENDIAN | DataStream.END_ENDIAN
     ): DataStream
   }
@@ -157,11 +149,10 @@ declare module 'mp4box' {
     stsd: STSDBoxParser
   }
 
-  interface STSDBoxParser extends BoxParser {
+  type STSDBoxParser = Omit<BoxParser & {
     type: 'stsd'
     entries: Array<AVC1BoxParser | HVCBoxParser | MP4ABoxParser>
-    boxes: undefined
-  }
+  }, 'boxes'>
 
   export interface AVC1BoxParser extends BoxParser {
     type: 'avc1'
@@ -172,7 +163,6 @@ declare module 'mp4box' {
     height: number
     size: number
     start: number
-    type: string
     width: number
   }
 
@@ -185,17 +175,16 @@ declare module 'mp4box' {
     height: number
     size: number
     start: number
-    type: string
     width: number
   }
 
-  interface AVCCBox extends MP4Box {
+  interface AVCCBox extends MP4Box, BoxParser {
     PPS: Array<{ length: number, nalu: Uint8Array }>
     SPS: Array<{ length: number, nalu: Uint8Array }>
     type: 'avcC'
   }
 
-  interface HVCCBox extends MP4Box {
+  interface HVCCBox extends MP4Box, BoxParser {
     PPS: Array<{ length: number, nalu: Uint8Array }>
     SPS: Array<{ length: number, nalu: Uint8Array }>
     type: 'hvcC'
@@ -244,6 +233,10 @@ declare module 'mp4box' {
     MP4File: MP4File
     createFile: () => MP4File
     DataStream: typeof DataStream
+    Log: {
+      debug: () => void
+      setLogLevel: (fn: () => void) => void
+    }
   }
 
   export default DefExp

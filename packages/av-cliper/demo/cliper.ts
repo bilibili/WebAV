@@ -70,6 +70,7 @@ document.querySelector('#concatMP3-4')?.addEventListener('click', () => {
 })
 
 async function createFileWriter (extName: string): Promise<FileSystemWritableFileStream> {
+  // @ts-expect-error
   const fileHandle = await window.showSaveFilePicker({
     suggestedName: `WebAv-export-${Date.now()}.${extName}`
   })

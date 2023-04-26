@@ -26,5 +26,8 @@
     "typescript": "^4.9.3",
     "vite": "^4.2.0",
     "vitest": "^0.29.7"
+  },
+  "dependencies": {
+    "mp4box": "^0.5.2"
   }
 }

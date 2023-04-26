@@ -159,6 +159,7 @@ async function getLocalFiles (
 }
 
 async function createFileWriter (extName: string): Promise<FileSystemWritableFileStream> {
+  // @ts-expect-error
   const fileHandle = await window.showSaveFilePicker({
     suggestedName: `WebAv-export-${Date.now()}.${extName}`
   })

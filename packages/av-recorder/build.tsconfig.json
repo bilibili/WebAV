@@ -7,6 +7,10 @@
       "ESNext",
       "DOM"
     ],
+    "types": [
+      "@types/dom-webcodecs",
+      "../../types/mp4box.d.ts"
+    ],
     "moduleResolution": "Node",
     "strict": true,
     "resolveJsonModule": true,

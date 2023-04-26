@@ -1323,7 +1323,7 @@
   dependencies:
     "@types/dom-webcodecs" "*"
 
-"@types/dom-webcodecs@*":
+"@types/dom-webcodecs@*", "@types/dom-webcodecs@^0.1.7":
   version "0.1.7"
   resolved "https://registry.npmmirror.com/@types/dom-webcodecs/-/dom-webcodecs-0.1.7.tgz#29d3e7d4e0b9902676c599d74c1b6c15eafce714"
   integrity sha512-1euwRyJ7rQrddOa24d5ZcoDRMp68xEIwyb7PKb3Wpc2OullUxHQ4a63WPa5V8R+KtCWISKjgS+f83HCUVhXS/w==

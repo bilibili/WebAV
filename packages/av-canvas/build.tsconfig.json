@@ -7,6 +7,9 @@
       "ESNext",
       "DOM"
     ],
+    "types": [
+      "../../types/mp4box.d.ts"
+    ],
     "moduleResolution": "Node",
     "strict": true,
     "resolveJsonModule": true,
