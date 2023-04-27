@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AVCanvas</title>
+
+  <style>
+    #app {
+      width: 900px;
+      height: 500px;
+      margin: 50px 50px;
+      overflow: hidden;
+      position: relative;
+    }
+
+    canvas {
+      width: 900px;
+      height: 500px;
+    }
+  </style>
+</head>
+
+<body>
+  <canvas id="canvas" width="1280" height="720"></canvas>
+  <br>
+  <button id="start">start</button>
+  <button id="decode-frame">decode-frame</button>
+  <script type="module" src="timeline.ts"></script>
+</body>
+
+</html>

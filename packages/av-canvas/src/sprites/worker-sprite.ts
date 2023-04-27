@@ -4,10 +4,16 @@ import { parseVideoCodecDesc, sleep } from '../utils'
 
 export class WorkerSprite extends BaseSprite {
   #dataSource: IDataSource
+  ready: Promise<void>
 
   constructor (name: string, ds: IDataSource) {
     super(name)
     this.#dataSource = ds
+    this.ready = ds.ready.then((vTrackInfo) => {
+      console.log(9999999, vTrackInfo)
+      this.rect.w = vTrackInfo.track_width
+      this.rect.h = vTrackInfo.track_height
+    })
   }
 
   async offscreenRender (
@@ -22,6 +28,7 @@ export class WorkerSprite extends BaseSprite {
     }
     if (state === 'success' && value != null) {
       ctx.drawImage(value, -w / 2, -h / 2, w, h)
+      value.close()
     }
   }
 
@@ -37,6 +44,8 @@ interface IDataSource {
     value: VideoFrame | null
     state: 'done' | 'success' | 'next'
   }>
+
+  ready: Promise<MP4VideoTrack>
 }
 
 export class MP4DataSource implements IDataSource {
@@ -44,7 +53,7 @@ export class MP4DataSource implements IDataSource {
 
   #ts = 0
 
-  ready: Promise<void>
+  ready: Promise<MP4VideoTrack>
 
   #videoInfo: { duration: number } = { duration: Infinity }
 
@@ -56,14 +65,15 @@ export class MP4DataSource implements IDataSource {
       const { ready, seek } = parseMP42Frames(rs, (vf) => {
         this.#videoFrame.push(vf)
         lastVf = vf
-        resolve()
       }, () => {
         if (lastVf == null) throw Error('mp4 parse error, no video frame')
         this.#videoInfo.duration = lastVf.timestamp + (lastVf.duration ?? 0)
         this.#frameParseEnded = true
       })
-      ready.then(() => {
+      ready.then((vTrackInfo) => {
         seek(0)
+        console.log(111111)
+        resolve(vTrackInfo)
         // this.#videoInfo = getInfo()
       }).catch(console.error)
     })
@@ -110,6 +120,7 @@ export class MP4DataSource implements IDataSource {
       if (nextOffset === -1) {
         // 解析已完成，队列已清空
         if (this.#frameParseEnded) {
+          console.log('--- worker ended ----')
           return {
             value: null,
             state: 'done'
@@ -131,6 +142,7 @@ export class MP4DataSource implements IDataSource {
       frame?.close()
       return await this.tick(time)
     }
+    // console.log(2222222, frame.timestamp, this.#videoFrame)
     return {
       value: frame,
       state: 'success'
@@ -143,7 +155,7 @@ export function parseMP42Frames (
   onOutput: (vf: VideoFrame) => void,
   onEnded: () => void
 ): {
-    ready: Promise<void>
+    ready: Promise<MP4VideoTrack>
     getInfo: () => { duration: number }
     seek: (time: number) => void
   } {
@@ -166,11 +178,10 @@ export function parseMP42Frames (
     }, 300)
   }
 
-  let vInfo: MP4VideoTrack | null = null
+  let vTrackInfo: MP4VideoTrack | null = null
   mp4File.onReady = (info) => {
-    const vTrackInfo = info.videoTracks[0]
+    vTrackInfo = info.videoTracks[0]
     if (vTrackInfo != null) {
-      vInfo = vTrackInfo
       const vTrack = mp4File.getTrackById(vTrackInfo.id)
       // Generate and emit an appropriate VideoDecoderConfig.
       const vdConf = {
@@ -187,17 +198,19 @@ export function parseMP42Frames (
 
   let videoSamples: MP4Sample[] = []
   let duration = 0
-  const ready = new Promise<void>((resolve) => {
+  const ready = new Promise<MP4VideoTrack>((resolve) => {
     let timerId = 0
     mp4File.onSamples = (_, __, samples) => {
       videoSamples = videoSamples.concat(samples)
       clearTimeout(timerId)
       timerId = self.setTimeout(() => {
         // 单位  微秒
-        duration = videoSamples.reduce((acc, cur) => acc + cur.duration, 0) /
-          (vInfo?.timescale ?? 1e6) *
-          1e6
-        resolve()
+        duration = videoSamples.reduce(
+          (acc, cur) => acc + cur.duration,
+          0
+        ) / (vTrackInfo?.timescale ?? 1e6) * 1e6
+
+        if (vTrackInfo != null) resolve(vTrackInfo)
       }, 300)
     }
   })
@@ -227,9 +240,9 @@ export function parseMP42Frames (
     }),
     seek: (time) => {
       // console.log(1111, videoSamples, vInfo)
-      if (vInfo == null) throw Error('Not ready')
+      if (vTrackInfo == null) throw Error('Not ready')
 
-      const targetTime = time * vInfo.timescale
+      const targetTime = time * vTrackInfo.timescale
       const endIdx = videoSamples.findIndex(s => s.cts >= targetTime)
       const targetSamp = videoSamples[endIdx]
 

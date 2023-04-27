@@ -76,6 +76,7 @@ function init (
   }
 }
 
+// todo: 待合并
 function encodeVideoTrack (
   opts: IWorkerOpts,
   mp4File: MP4File,
