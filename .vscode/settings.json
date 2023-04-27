@@ -1,6 +1,6 @@
 {
   "javascript.validate.enable": false,
-  "standard.engine": "standard",
+  "standard.engine": "ts-standard",
   "standard.validate": [
     "javascript",
     "javascriptreact",

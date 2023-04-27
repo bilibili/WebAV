@@ -20,9 +20,5 @@
     "noImplicitReturns": true,
     "noEmit": true,
     "skipLibCheck": true
-  },
-  "include": [
-    "packages/**/src/**/*",
-    "packages/**/demo/**/*"
-  ]
+  }
 }
