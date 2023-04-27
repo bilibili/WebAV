@@ -80,13 +80,14 @@ export class Timeline {
           timestamp: this.#ts
         })
         this.#ts += timeSlice
+        // console.log(4444, vf.duration)
 
         this.#videoEncoder.encode(vf, {
           keyFrame: frameCnt % 150 === 0
         })
         vf.close()
-        // this.#ctx.resetTransform()
-        // this.#ctx.clearRect(0, 0, this.#cvs.width, this.#cvs.height)
+        this.#ctx.resetTransform()
+        this.#ctx.clearRect(0, 0, this.#cvs.width, this.#cvs.height)
 
         frameCnt += 1
       }

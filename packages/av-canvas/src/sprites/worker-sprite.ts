@@ -6,6 +6,8 @@ export class WorkerSprite extends BaseSprite {
   #dataSource: IDataSource
   ready: Promise<void>
 
+  #lastVf: VideoFrame | null = null
+
   constructor (name: string, ds: IDataSource) {
     super(name)
     this.#dataSource = ds
@@ -23,12 +25,16 @@ export class WorkerSprite extends BaseSprite {
     super.render(ctx)
     const { w, h } = this.rect
     const { value, state } = await this.#dataSource.tick(time)
-    if (state === 'next' || state === 'done') {
-      return
+    if (state === 'done') return
+
+    const vf = value ?? this.#lastVf
+    if (vf != null) {
+      ctx.drawImage(vf, -w / 2, -h / 2, w, h)
     }
-    if (state === 'success' && value != null) {
-      ctx.drawImage(value, -w / 2, -h / 2, w, h)
-      value.close()
+
+    if (value != null) {
+      this.#lastVf?.close()
+      this.#lastVf = value
     }
   }
 
