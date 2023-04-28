@@ -1,4 +1,4 @@
-import mp4box, { MP4ArrayBuffer, MP4File, MP4Info, MP4Sample, MP4VideoTrack } from 'mp4box'
+import mp4box, { MP4ArrayBuffer, MP4AudioTrack, MP4File, MP4Info, MP4Sample, MP4VideoTrack } from 'mp4box'
 import { parseVideoCodecDesc } from './utils'
 
 type TCleanFn = () => void
@@ -9,12 +9,12 @@ interface IWorkerOpts {
     height: number
     expectFPS: number
   }
-  // audio: {
-  //   codec: 'opus' | 'aac'
-  //   sampleRate: number
-  //   sampleSize: number
-  //   channelCount: number
-  // } | null
+  audio: {
+    codec: 'opus' | 'aac'
+    sampleRate: number
+    sampleSize: number
+    channelCount: number
+  }
   bitrate: number
 }
 
@@ -31,15 +31,8 @@ export function demuxcode (
   } {
   const mp4File = stream2file(stream)
 
-  const vd = new VideoDecoder({
-    output: (vf) => {
-      cbs.onVideoOutput(vf)
-      resetEndTimer()
-    },
-    error: console.error
-  })
   const resetEndTimer = debounce(() => {
-    if (vd.decodeQueueSize === 0) {
+    if (vdecoder.decodeQueueSize === 0) {
       cbs.onEnded()
     } else {
       resetEndTimer()
@@ -47,9 +40,26 @@ export function demuxcode (
     // todo: warn, mabye not close emited frame
   }, 300)
 
+  const vdecoder = new VideoDecoder({
+    output: (vf) => {
+      cbs.onVideoOutput(vf)
+      resetEndTimer()
+    },
+    error: console.error
+  })
+  const adecoder = new AudioDecoder({
+    output: (audioData) => {
+      cbs.onAudioOutput(audioData)
+      resetEndTimer()
+    },
+    error: console.error
+  })
+
   let mp4Info: MP4Info | null = null
   let vTrackInfo: MP4VideoTrack | null = null
+  let aTrackInfo: MP4AudioTrack | null = null
   mp4File.onReady = (info) => {
+    console.log(5555, info)
     mp4Info = info
     vTrackInfo = info.videoTracks[0]
     if (vTrackInfo != null) {
@@ -61,13 +71,26 @@ export function demuxcode (
         codedWidth: vTrackInfo.video.width,
         description: parseVideoCodecDesc(vTrack)
       }
-      vd.configure(vdConf)
+      vdecoder.configure(vdConf)
       mp4File.setExtractionOptions(vTrackInfo.id, 'video')
-      mp4File.start()
     }
+
+    aTrackInfo = info.audioTracks[0]
+    if (aTrackInfo != null) {
+      const adConf = {
+        // description: trak.mdia.minf.stbl.stsd.entries[0].esds.esd.descs[0].descs[0].data;
+        codec: aTrackInfo.codec === 'mp4a' ? 'mp4a.40.2' : aTrackInfo.codec,
+        numberOfChannels: aTrackInfo.audio.channel_count,
+        sampleRate: aTrackInfo.audio.sample_rate
+      }
+      adecoder.configure(adConf)
+      mp4File.setExtractionOptions(aTrackInfo.id, 'audio')
+    }
+    mp4File.start()
   }
 
   let totalVideoSamples: MP4Sample[] = []
+  let totalAudioSamples: MP4Sample[] = []
   const resetReady = debounce(() => {
     if (mp4Info != null) {
       // Fragment mp4 中 duration 为 0，所以需要统计samples 的 duration
@@ -82,28 +105,44 @@ export function demuxcode (
   mp4File.onSamples = (_, type, samples) => {
     if (type === 'video') {
       totalVideoSamples = totalVideoSamples.concat(samples)
+    } else if (type === 'audio') {
+      totalAudioSamples = totalAudioSamples.concat(samples)
     }
     resetReady()
   }
 
   return {
     seek: (time) => {
-      if (vTrackInfo == null) throw Error('Not ready')
-
-      const startIdx = findStartSampleIdx(
-        totalVideoSamples,
-        time * vTrackInfo.timescale
-      )
-      // samples 全部 推入解码器，解码器有维护队列
-      const samples = totalVideoSamples.slice(startIdx)
-      samples.forEach(s => {
-        vd.decode(new EncodedVideoChunk({
+      if (vTrackInfo != null) {
+        const startIdx = findStartSampleIdx(
+          totalVideoSamples,
+          time * vTrackInfo.timescale
+        )
+        // samples 全部 推入解码器，解码器有维护队列
+        const samples = totalVideoSamples.slice(startIdx)
+        samples.forEach(s => {
+          vdecoder.decode(new EncodedVideoChunk({
+            type: s.is_sync ? 'key' : 'delta',
+            timestamp: 1e6 * s.cts / s.timescale,
+            duration: 1e6 * s.duration / s.timescale,
+            data: s.data
+          }))
+        })
+      }
+      if (aTrackInfo != null) {
+        const startIdx = findStartSampleIdx(
+          totalAudioSamples,
+          time * aTrackInfo.timescale
+        )
+        // samples 全部 推入解码器，解码器有维护队列
+        const samples = totalAudioSamples.slice(startIdx)
+        samples.forEach(s => adecoder.decode(new EncodedAudioChunk({
           type: s.is_sync ? 'key' : 'delta',
           timestamp: 1e6 * s.cts / s.timescale,
           duration: 1e6 * s.duration / s.timescale,
           data: s.data
-        }))
-      })
+        })))
+      }
     }
   }
 }
@@ -134,25 +173,39 @@ export function recodemux (
     onEnded: TCleanFn
   }
 ): {
-    encodeVideo: VideoEncoder['encode']
+    encodeVideo: (
+      frame: VideoFrame,
+      options?: VideoEncoderEncodeOptions
+    ) => void
+    encodeAudio: (data: AudioData) => void
     close: TCleanFn
     mp4file: MP4File
   } {
   const mp4file = mp4box.createFile()
 
-  const encoder = encodeVideoTrack(opts, mp4file, () => {})
+  let aEncoder: AudioEncoder | null = null
+  const vEncoder = encodeVideoTrack(opts, mp4file, () => {
+    // todo: 提上去
+    aEncoder = encodeAudioTrack(opts.audio, mp4file)
+  })
 
-  encoder.ondequeue = () => {
-    if (encoder.encodeQueueSize === 0) {
+  vEncoder.ondequeue = () => {
+    if (vEncoder.encodeQueueSize === 0) {
       cbs.onEnded()
     }
   }
 
   return {
-    encodeVideo: encoder.encode.bind(encoder),
+    encodeVideo: vEncoder.encode.bind(vEncoder),
+    encodeAudio: (ad) => {
+      if (aEncoder == null) {
+        console.log(1111, ad)
+      }
+      aEncoder?.encode(ad)
+    },
     close: () => {
-      encoder.flush().catch(console.error)
-      encoder.close()
+      vEncoder.flush().catch(console.error)
+      vEncoder.close()
     },
     mp4file
   }
@@ -168,7 +221,7 @@ export function encodeVideoTrack (
     timescale: 1e6,
     width: opts.video.width,
     height: opts.video.height,
-    brands: ['isom', 'iso2', 'avc1', 'mp41'],
+    brands: ['isom', 'iso2', 'avc1', 'mp42'],
     avcDecoderConfigRecord: null as AllowSharedBufferSource | undefined | null
   }
 
@@ -225,6 +278,49 @@ function createVideoEncoder (
     // mp4box.js 无法解析 annexb 的 mimeCodec ，只会显示 avc1
     // avc: { format: 'annexb' }
   })
+  return encoder
+}
+
+function encodeAudioTrack (
+  audioOpts: NonNullable<IWorkerOpts['audio']>,
+  mp4File: MP4File
+): AudioEncoder {
+  const audioTrackOpts = {
+    timescale: 1e6,
+    samplerate: audioOpts.sampleRate,
+    channel_count: audioOpts.channelCount,
+    samplesize: audioOpts.sampleSize,
+    // width: 0,
+    // height: 0,
+    // duration: 0,
+    // nb_samples: 0,
+    hdlr: 'soun',
+    name: 'SoundHandler',
+    type: audioOpts.codec === 'aac' ? 'mp4a' : 'Opus'
+  }
+
+  const trackId = mp4File.addTrack(audioTrackOpts)
+  const encoder = new AudioEncoder({
+    error: console.error,
+    output: (chunk) => {
+      const buf = new ArrayBuffer(chunk.byteLength)
+      chunk.copyTo(buf)
+      const dts = chunk.timestamp
+      mp4File.addSample(trackId, buf, {
+        duration: chunk.duration ?? 0,
+        dts,
+        cts: dts,
+        is_sync: chunk.type === 'key'
+      })
+    }
+  })
+  encoder.configure({
+    codec: audioOpts.codec === 'aac' ? 'mp4a.40.2' : 'opus',
+    sampleRate: audioOpts.sampleRate,
+    numberOfChannels: audioOpts.channelCount,
+    bitrate: 128_000
+  })
+
   return encoder
 }
 

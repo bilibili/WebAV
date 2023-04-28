@@ -1,4 +1,3 @@
-import { MP4File } from 'mp4box'
 import { WorkerSprite } from './worker-sprite'
 import { file2stream, recodemux } from '../mp4-utils'
 
@@ -20,11 +19,7 @@ export class Timeline {
 
   #closeOutStream: (() => void) | null = null
 
-  #remux: {
-    encodeVideo: (frame: VideoFrame, options?: VideoEncoderEncodeOptions) => void
-    close: () => void
-    mp4file: MP4File
-  }
+  #remux
 
   constructor (resolutions: { width: number, height: number }) {
     const { width, height } = resolutions
@@ -40,6 +35,13 @@ export class Timeline {
         width,
         height,
         expectFPS: 30
+      },
+      audio: {
+        codec: 'aac',
+        sampleRate: 48000,
+        sampleSize: 16,
+        // todo: channelCount 2
+        channelCount: 1
       },
       bitrate: 1_500_000
     }, {
@@ -79,7 +81,16 @@ export class Timeline {
           if (this.#ts < it.offset || this.#ts > it.offset + it.duration) {
             continue
           }
-          await it.sprite.offscreenRender(this.#ctx, this.#ts - it.offset)
+          const audioDataArr = await it.sprite.offscreenRender(
+            this.#ctx,
+            this.#ts - it.offset
+          )
+
+          // todo: reset ad timestamp
+          for (const ad of audioDataArr) {
+            this.#remux.encodeAudio(ad)
+            ad.close()
+          }
         }
         const vf = new VideoFrame(this.#cvs, {
           duration: timeSlice,

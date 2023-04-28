@@ -30,7 +30,7 @@ declare module 'mp4box' {
     }
   }
 
-  interface MP4AudioTrack extends MP4MediaTrack {
+  export interface MP4AudioTrack extends MP4MediaTrack {
     audio: {
       sample_rate: number
       channel_count: number

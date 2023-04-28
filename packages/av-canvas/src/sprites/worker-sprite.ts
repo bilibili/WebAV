@@ -21,21 +21,23 @@ export class WorkerSprite extends BaseSprite {
   async offscreenRender (
     ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D,
     time: number
-  ): Promise<void> {
+  ): Promise<AudioData[]> {
     super.render(ctx)
     const { w, h } = this.rect
-    const { value, state } = await this.#dataSource.tick(time)
-    if (state === 'done') return
+    const { video, audio, state } = await this.#dataSource.tick(time)
+    if (state === 'done') return []
 
-    const vf = value ?? this.#lastVf
+    const vf = video ?? this.#lastVf
     if (vf != null) {
       ctx.drawImage(vf, -w / 2, -h / 2, w, h)
     }
 
-    if (value != null) {
+    if (video != null) {
       this.#lastVf?.close()
-      this.#lastVf = value
+      this.#lastVf = video
     }
+
+    return audio
   }
 
   destroy (): void {}
@@ -47,7 +49,8 @@ interface IDataSource {
    * @param time 时间，单位 微秒
    */
   tick: (time: number) => Promise<{
-    value: VideoFrame | null
+    video: VideoFrame | null
+    audio: AudioData[]
     state: 'done' | 'success' | 'next'
   }>
 
@@ -62,7 +65,8 @@ interface IDataSource {
 }
 
 export class MP4DataSource implements IDataSource {
-  #videoFrame: VideoFrame[] = []
+  #videoFrames: VideoFrame[] = []
+  #audioDatas: AudioData[] = []
 
   #ts = 0
 
@@ -92,10 +96,12 @@ export class MP4DataSource implements IDataSource {
           seek(0)
         },
         onVideoOutput: (vf) => {
-          this.#videoFrame.push(vf)
+          this.#videoFrames.push(vf)
           lastVf = vf
         },
-        onAudioOutput: () => {},
+        onAudioOutput: (ad) => {
+          this.#audioDatas.push(ad)
+        },
         onEnded: () => {
           if (lastVf == null) throw Error('mp4 parse error, no video frame')
           this.meta.duration = lastVf.timestamp + (lastVf.duration ?? 0)
@@ -105,50 +111,68 @@ export class MP4DataSource implements IDataSource {
     })
   }
 
-  #next (time: number): { frame: VideoFrame | null, nextOffset: number } {
-    const rs = this.#videoFrame[0] ?? null
+  #next (time: number): {
+    video: VideoFrame | null
+    audio: AudioData[]
+    nextOffset: number
+  } {
+    const audioIdx = this.#audioDatas.findIndex(ad => ad.timestamp > time)
+    let audio: AudioData[] = []
+    if (audioIdx !== -1) {
+      audio = this.#audioDatas.slice(0, audioIdx)
+      this.#audioDatas = this.#audioDatas.slice(audioIdx)
+    }
+
+    const rs = this.#videoFrames[0] ?? null
     if (rs == null) {
       return {
-        frame: null,
+        video: null,
+        audio,
         nextOffset: -1
       }
     }
 
     if (time < rs.timestamp) {
       return {
-        frame: null,
+        video: null,
+        audio,
         nextOffset: rs.timestamp
       }
     }
 
-    this.#videoFrame.shift()
+    this.#videoFrames.shift()
+
     return {
-      frame: rs,
-      nextOffset: this.#videoFrame[0]?.timestamp ?? -1
+      video: rs,
+      audio,
+      nextOffset: this.#videoFrames[0]?.timestamp ?? -1
     }
   }
 
   async tick (time: number): Promise<{
-    value: VideoFrame | null
+    video: VideoFrame | null
+    audio: AudioData[]
     state: 'success' | 'next' | 'done'
   }> {
     if (time < this.#ts) throw Error('time not allow rollback')
     if (time >= this.meta.duration) {
       return {
-        value: null,
+        video: null,
+        audio: [],
         state: 'done'
       }
     }
 
     this.#ts = time
-    const { frame, nextOffset } = this.#next(time)
-    if (frame == null) {
+    const { video, audio, nextOffset } = this.#next(time)
+    if (video == null) {
       if (nextOffset === -1) {
         // 解析已完成，队列已清空
         if (this.#frameParseEnded) {
           console.log('--- worker ended ----')
           return {
-            value: null,
+            video: null,
+            audio,
             state: 'done'
           }
         }
@@ -158,19 +182,21 @@ export class MP4DataSource implements IDataSource {
       }
       // 当前 time 小于最前的 frame.timestamp，等待 time 增加
       return {
-        value: null,
+        video: null,
+        audio,
         state: 'next'
       }
     }
 
     if (time >= nextOffset) {
       // frame 过期，再取下一个
-      frame?.close()
+      video?.close()
       return await this.tick(time)
     }
     // console.log(2222222, frame.timestamp, this.#videoFrame)
     return {
-      value: frame,
+      video,
+      audio,
       state: 'success'
     }
   }

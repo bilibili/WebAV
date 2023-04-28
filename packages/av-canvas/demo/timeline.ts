@@ -41,11 +41,11 @@ document.querySelector('#decode-frame')?.addEventListener('click', () => {
     await ds.ready
     let time = 0
     while (true) {
-      const { state, value } = await ds.tick(time)
+      const { state, video } = await ds.tick(time)
       if (state === 'done') return
-      if (value != null && state === 'success') {
-        ctx.drawImage(value, 0, 0, value.codedWidth, value.codedHeight)
-        value.close()
+      if (video != null && state === 'success') {
+        ctx.drawImage(video, 0, 0, video.codedWidth, video.codedHeight)
+        video.close()
       }
       time += 40000
     }
