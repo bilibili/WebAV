@@ -1,6 +1,6 @@
 import { MP4File } from 'mp4box'
 import { WorkerSprite } from './worker-sprite'
-import { convertFile2Stream, recodemux } from '../mp4-utils'
+import { file2stream, recodemux } from '../mp4-utils'
 
 interface ITimeItem {
   offset: number
@@ -101,7 +101,7 @@ export class Timeline {
 
     run().catch(console.error)
 
-    const { stream, stop: closeOutStream } = convertFile2Stream(
+    const { stream, stop: closeOutStream } = file2stream(
       this.#remux.mp4file,
       500,
       () => {

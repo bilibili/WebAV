@@ -34,7 +34,8 @@ export function demuxcode (
 ): {
     seek: (time: number) => void
   } {
-  const mp4File = mp4box.createFile()
+  const mp4File = stream2file(stream)
+
   const vd = new VideoDecoder({
     output: (vf) => {
       cbs.onVideoOutput(vf)
@@ -100,47 +101,17 @@ export function demuxcode (
     }, 300)
   }
 
-  const reader = stream.getReader()
-  let chunkOffset = 0
-  async function readFile (): Promise<void> {
-    const { done, value } = await reader.read()
-    if (done) {
-      console.log('source read done')
-      return
-    }
-
-    const chunk = value.buffer as MP4ArrayBuffer
-    chunk.fileStart = chunkOffset
-    chunkOffset += chunk.byteLength
-    mp4File.appendBuffer(chunk)
-
-    readFile().catch(console.error)
-  }
-  readFile().catch(console.error)
-
   return {
     seek: (time) => {
-      // console.log(1111, videoSamples, vInfo)
       if (vTrackInfo == null) throw Error('Not ready')
 
-      const targetTime = time * vTrackInfo.timescale
-      const endIdx = totalVideoSamples.findIndex(s => s.cts >= targetTime)
-      const targetSamp = totalVideoSamples[endIdx]
-
-      if (targetSamp == null) throw Error('Not found frame')
-      let startIdx = 0
-      if (!targetSamp.is_sync) {
-        startIdx = endIdx - 1
-        while (true) {
-          if (startIdx <= 0) break
-          if (totalVideoSamples[startIdx].is_sync) break
-          startIdx -= 1
-        }
-      }
+      const startIdx = findStartSampleIdx(
+        totalVideoSamples,
+        time * vTrackInfo.timescale
+      )
       // samples 全部 推入解码器，解码器有维护队列
       const samples = totalVideoSamples.slice(startIdx)
       samples.forEach(s => {
-      // videoSamples.forEach(s => {
         vd.decode(new EncodedVideoChunk({
           type: s.is_sync ? 'key' : 'delta',
           timestamp: 1e6 * s.cts / s.timescale,
@@ -150,6 +121,26 @@ export function demuxcode (
       })
     }
   }
+}
+
+/**
+ * 找到最近的 关键帧 索引
+ */
+function findStartSampleIdx (samples: MP4Sample[], time: number): number {
+  const endIdx = samples.findIndex(s => s.cts >= time)
+  const targetSamp = samples[endIdx]
+
+  if (targetSamp == null) throw Error('Not found frame')
+  let startIdx = 0
+  if (!targetSamp.is_sync) {
+    startIdx = endIdx - 1
+    while (true) {
+      if (startIdx <= 0) break
+      if (samples[startIdx].is_sync) break
+      startIdx -= 1
+    }
+  }
+  return startIdx
 }
 
 export function recodemux (
@@ -252,7 +243,30 @@ function createVideoEncoder (
   return encoder
 }
 
-export function convertFile2Stream (
+function stream2file (stream: ReadableStream<Uint8Array>): MP4File {
+  const reader = stream.getReader()
+  let chunkOffset = 0
+  const file = mp4box.createFile()
+  async function readFile (): Promise<void> {
+    while (true) {
+      const { done, value } = await reader.read()
+      if (done) {
+        console.log('source read done')
+        return
+      }
+
+      const chunk = value.buffer as MP4ArrayBuffer
+      chunk.fileStart = chunkOffset
+      chunkOffset += chunk.byteLength
+      file.appendBuffer(chunk)
+    }
+  }
+  readFile().catch(console.error)
+
+  return file
+}
+
+export function file2stream (
   file: MP4File,
   timeSlice: number,
   onCancel: TCleanFn
