@@ -38,6 +38,7 @@ document.querySelector('#decode-frame')?.addEventListener('click', () => {
   ;(async () => {
     const resp1 = await fetch('./assets/fragment.mp4')
     const ds = new MP4DataSource(resp1.body as ReadableStream)
+    await ds.ready
     let time = 0
     while (true) {
       const { state, value } = await ds.tick(time)
@@ -56,5 +57,5 @@ async function createFileWriter (extName: string): Promise<FileSystemWritableFil
   const fileHandle = await window.showSaveFilePicker({
     suggestedName: `WebAv-export-${Date.now()}.${extName}`
   })
-  return await fileHandle.createWritable()
+  return fileHandle.createWritable()
 }
