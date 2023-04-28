@@ -28,7 +28,7 @@ export function demuxcode (
   cbs: {
     onReady: (info: MP4Info) => void
     onVideoOutput: (vf: VideoFrame) => void
-    onAudioOutput: (vf: AudioData) => void
+    onAudioOutput: (ad: AudioData) => void
     onEnded: () => void
   }
 ): {
@@ -48,6 +48,8 @@ export function demuxcode (
     endedTimer = self.setTimeout(() => {
       if (vd.decodeQueueSize === 0) {
         cbs.onEnded()
+      } else {
+        resetTimer()
       }
       // todo: warn, mabye not close emited frame
     }, 300)
@@ -150,14 +152,41 @@ export function demuxcode (
   }
 }
 
+export function recodemux (
+  opts: IWorkerOpts,
+  cbs: {
+    onEnded: TCleanFn
+  }
+): {
+    encodeVideo: VideoEncoder['encode']
+    close: TCleanFn
+    mp4file: MP4File
+  } {
+  const mp4file = mp4box.createFile()
+
+  const encoder = encodeVideoTrack(opts, mp4file, () => {})
+
+  encoder.ondequeue = () => {
+    if (encoder.encodeQueueSize === 0) {
+      cbs.onEnded()
+    }
+  }
+
+  return {
+    encodeVideo: encoder.encode.bind(encoder),
+    close: () => {
+      encoder.flush().catch(console.error)
+      encoder.close()
+    },
+    mp4file
+  }
+}
+
 export function encodeVideoTrack (
   opts: IWorkerOpts,
   mp4File: MP4File,
   onTrackReady: TCleanFn
-): {
-    stop: () => Promise<void>
-    encoder: VideoEncoder
-  } {
+): VideoEncoder {
   const videoTrackOpts = {
     // 微秒
     timescale: 1e6,
@@ -192,13 +221,7 @@ export function encodeVideoTrack (
     )
   })
 
-  return {
-    stop: async () => {
-      await encoder.flush()
-      encoder.close()
-    },
-    encoder
-  }
+  return encoder
 }
 
 function createVideoEncoder (

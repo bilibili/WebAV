@@ -1,6 +1,6 @@
-import mp4box, { MP4File } from 'mp4box'
+import { MP4File } from 'mp4box'
 import { WorkerSprite } from './worker-sprite'
-import { convertFile2Stream, encodeVideoTrack } from '../mp4-utils'
+import { convertFile2Stream, recodemux } from '../mp4-utils'
 
 interface ITimeItem {
   offset: number
@@ -17,11 +17,14 @@ export class Timeline {
   #cvs
 
   #ctx
-  #videoEncoder: VideoEncoder
 
-  #mp4file: MP4File
+  #closeOutStream: (() => void) | null = null
 
-  #stopVideoEncoder: () => Promise<void>
+  #remux: {
+    encodeVideo: (frame: VideoFrame, options?: VideoEncoderEncodeOptions) => void
+    close: () => void
+    mp4file: MP4File
+  }
 
   constructor (resolutions: { width: number, height: number }) {
     const { width, height } = resolutions
@@ -30,20 +33,22 @@ export class Timeline {
     const ctx = this.#cvs.getContext('2d', { alpha: false })
     if (ctx == null) throw Error('Can not create 2d offscreen context')
     this.#ctx = ctx
-    // ctx.fillStyle = "#ff0000"
-    // ctx.fillRect(0, 0, 1280, 720)
 
-    this.#mp4file = mp4box.createFile()
-    const { stop, encoder } = encodeVideoTrack({
+    console.time('cost')
+    this.#remux = recodemux({
       video: {
         width,
         height,
         expectFPS: 30
       },
       bitrate: 1_500_000
-    }, this.#mp4file, () => {})
-    this.#videoEncoder = encoder
-    this.#stopVideoEncoder = stop
+    }, {
+      onEnded: () => {
+        console.log('===== output ended ======', this.#ts)
+        this.#closeOutStream?.()
+        console.timeEnd('cost')
+      }
+    })
   }
 
   async add (
@@ -83,7 +88,7 @@ export class Timeline {
         this.#ts += timeSlice
         // console.log(4444, vf.duration)
 
-        this.#videoEncoder.encode(vf, {
+        this.#remux.encodeVideo(vf, {
           keyFrame: frameCnt % 150 === 0
         })
         vf.close()
@@ -94,22 +99,17 @@ export class Timeline {
       }
     }
 
-    console.time('cost')
-    this.#videoEncoder.ondequeue = () => {
-      if (this.#videoEncoder.encodeQueueSize === 0) {
-        console.log('===== output ended ======', this.#ts, maxTime)
-        stopFileStream()
-        console.timeEnd('cost')
-      }
-    }
-
     run().catch(console.error)
 
-    const { stream, stop: stopFileStream } = convertFile2Stream(this.#mp4file, 500, () => {
-      canceled = true
-      this.#videoEncoder.flush().catch(console.error)
-      // this.#videoEncoder.reset()
-    })
+    const { stream, stop: closeOutStream } = convertFile2Stream(
+      this.#remux.mp4file,
+      500,
+      () => {
+        canceled = true
+        this.#remux.close()
+      }
+    )
+    this.#closeOutStream = closeOutStream
 
     return stream
   }
