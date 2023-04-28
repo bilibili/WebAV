@@ -3,11 +3,6 @@ import { parseVideoCodecDesc } from './utils'
 
 type TCleanFn = () => void
 
-// demuxcode(stream {})
-// remuxcode
-// stream2file
-// file2stream
-
 interface IWorkerOpts {
   video: {
     width: number
@@ -39,22 +34,18 @@ export function demuxcode (
   const vd = new VideoDecoder({
     output: (vf) => {
       cbs.onVideoOutput(vf)
-      resetTimer()
+      resetEndTimer()
     },
     error: console.error
   })
-  let endedTimer = 0
-  function resetTimer (): void {
-    clearTimeout(endedTimer)
-    endedTimer = self.setTimeout(() => {
-      if (vd.decodeQueueSize === 0) {
-        cbs.onEnded()
-      } else {
-        resetTimer()
-      }
-      // todo: warn, mabye not close emited frame
-    }, 300)
-  }
+  const resetEndTimer = debounce(() => {
+    if (vd.decodeQueueSize === 0) {
+      cbs.onEnded()
+    } else {
+      resetEndTimer()
+    }
+    // todo: warn, mabye not close emited frame
+  }, 300)
 
   let mp4Info: MP4Info | null = null
   let vTrackInfo: MP4VideoTrack | null = null
@@ -77,28 +68,22 @@ export function demuxcode (
   }
 
   let totalVideoSamples: MP4Sample[] = []
-  let duration = 0
-  let timerId = 0
+  const resetReady = debounce(() => {
+    if (mp4Info != null) {
+      // Fragment mp4 中 duration 为 0，所以需要统计samples 的 duration
+      // 注意：所有 samples 的 duration 累加，与解码后的 VideoFrame 累加 值接近，但不相等
+      mp4Info.duration = totalVideoSamples.reduce(
+        (acc, cur) => acc + cur.duration, 0
+      )
+      cbs.onReady(mp4Info)
+    }
+  }, 300)
+
   mp4File.onSamples = (_, type, samples) => {
     if (type === 'video') {
       totalVideoSamples = totalVideoSamples.concat(samples)
     }
-
-    clearTimeout(timerId)
-    timerId = self.setTimeout(() => {
-      // 单位  微秒
-      duration = totalVideoSamples.reduce(
-        (acc, cur) => acc + cur.duration,
-        0
-      )
-
-      if (mp4Info != null) {
-        // Fragment mp4 中 duration 为 0，所以需要统计samples 的 duration
-        // 注意：所有 samples 的 duration 累加，与解码后的 VideoFrame 累加 值接近，但不相等
-        mp4Info.duration = duration
-        cbs.onReady(mp4Info)
-      }
-    }, 300)
+    resetReady()
   }
 
   return {
@@ -318,5 +303,19 @@ export function file2stream (
       stoped = true
       exit?.()
     }
+  }
+}
+
+export function debounce <F extends (...args: any[]) => any> (
+  func: F,
+  wait: number
+): (...rest: Parameters<F>) => void {
+  let timer = 0
+
+  return function (this: any, ...rest) {
+    self.clearTimeout(timer)
+    timer = self.setTimeout(() => {
+      func.apply(this, rest)
+    }, wait)
   }
 }
