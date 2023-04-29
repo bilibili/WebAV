@@ -89,7 +89,6 @@ export class Timeline {
           // todo: reset ad timestamp
           for (const ad of audioDataArr) {
             this.#remux.encodeAudio(ad)
-            ad.close()
           }
         }
         const vf = new VideoFrame(this.#cvs, {
@@ -102,7 +101,6 @@ export class Timeline {
         this.#remux.encodeVideo(vf, {
           keyFrame: frameCnt % 150 === 0
         })
-        vf.close()
         this.#ctx.resetTransform()
         this.#ctx.clearRect(0, 0, this.#cvs.width, this.#cvs.height)
 

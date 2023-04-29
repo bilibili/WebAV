@@ -1,11 +1,6 @@
 import { Timeline } from '../src/sprites/time-line'
 import { MP4DataSource, WorkerSprite } from '../src/sprites/worker-sprite'
 
-const timeline = new Timeline({
-  width: 1280,
-  height: 720
-})
-
 document.querySelector('#start')?.addEventListener('click', () => {
   ;(async () => {
     const resp1 = await fetch('./assets/0.mp4')
@@ -20,6 +15,10 @@ document.querySelector('#start')?.addEventListener('click', () => {
       'v1',
       new MP4DataSource(resp2.body as ReadableStream)
     )
+    const timeline = new Timeline({
+      width: 1280,
+      height: 720
+    })
     await timeline.add(spr2, {
       offset: 0 * 1e6,
       duration: 7 * 1e6

@@ -184,11 +184,19 @@ export function recodemux (
   const mp4file = mp4box.createFile()
 
   let aEncoder: AudioEncoder | null = null
+  let audioDataCache: AudioData[] = []
   const vEncoder = encodeVideoTrack(opts, mp4file, () => {
-    // todo: 提上去
+    // 音视频轨道必须同时创建, 保存在 moov 中
+    // 创建视频轨道需要 encdoer output 的 meta 数据, 所以音频轨道需要等待视频轨道
     aEncoder = encodeAudioTrack(opts.audio, mp4file)
+    audioDataCache.forEach(ad => {
+      aEncoder?.encode(ad)
+      ad.close()
+    })
+    audioDataCache = []
   })
 
+  // 兼容性 chrome 106
   vEncoder.ondequeue = () => {
     if (vEncoder.encodeQueueSize === 0) {
       cbs.onEnded()
@@ -196,16 +204,23 @@ export function recodemux (
   }
 
   return {
-    encodeVideo: vEncoder.encode.bind(vEncoder),
+    encodeVideo: (vf, opts) => {
+      vEncoder.encode(vf, opts)
+      vf.close()
+    },
     encodeAudio: (ad) => {
       if (aEncoder == null) {
-        console.log(1111, ad)
+        audioDataCache.push(ad)
+      } else {
+        aEncoder.encode(ad)
+        ad.close()
       }
-      aEncoder?.encode(ad)
     },
     close: () => {
       vEncoder.flush().catch(console.error)
       vEncoder.close()
+      aEncoder?.flush().catch(console.error)
+      aEncoder?.close()
     },
     mp4file
   }
@@ -221,7 +236,7 @@ export function encodeVideoTrack (
     timescale: 1e6,
     width: opts.video.width,
     height: opts.video.height,
-    brands: ['isom', 'iso2', 'avc1', 'mp42'],
+    brands: ['isom', 'iso2', 'avc1', 'mp42', 'mp41'],
     avcDecoderConfigRecord: null as AllowSharedBufferSource | undefined | null
   }
 
