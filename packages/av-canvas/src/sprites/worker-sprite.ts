@@ -191,7 +191,13 @@ export class MP4DataSource implements IDataSource {
     if (time >= nextOffset) {
       // frame 过期，再取下一个
       video?.close()
-      return await this.tick(time)
+      // 音频数据不能丢
+      const { video: nV, audio: nA, state } = await this.tick(time)
+      return {
+        video: nV,
+        audio: audio.concat(nA),
+        state
+      }
     }
     // console.log(2222222, frame.timestamp, this.#videoFrame)
     return {

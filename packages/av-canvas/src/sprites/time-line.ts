@@ -49,6 +49,7 @@ export class Timeline {
         console.log('===== output ended ======', this.#ts)
         this.#closeOutStream?.()
         console.timeEnd('cost')
+        this.#timeItems.forEach(it => it.sprite.destroy())
       }
     })
   }

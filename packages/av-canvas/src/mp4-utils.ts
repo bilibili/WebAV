@@ -59,7 +59,6 @@ export function demuxcode (
   let vTrackInfo: MP4VideoTrack | null = null
   let aTrackInfo: MP4AudioTrack | null = null
   mp4File.onReady = (info) => {
-    console.log(5555, info)
     mp4Info = info
     vTrackInfo = info.videoTracks[0]
     if (vTrackInfo != null) {
