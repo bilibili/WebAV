@@ -40,7 +40,11 @@ export class WorkerSprite extends BaseSprite {
     return audio
   }
 
-  destroy (): void {}
+  destroy (): void {
+    this.#lastVf?.close()
+    this.#lastVf = null
+    this.#dataSource.destroy()
+  }
 }
 
 interface IDataSource {
@@ -62,6 +66,8 @@ interface IDataSource {
     width: number
     height: number
   }
+
+  destroy: () => void
 }
 
 export class MP4DataSource implements IDataSource {
@@ -205,5 +211,10 @@ export class MP4DataSource implements IDataSource {
       audio,
       state: 'success'
     }
+  }
+
+  destroy (): void {
+    this.#videoFrames.forEach(f => f.close())
+    this.#videoFrames = []
   }
 }
