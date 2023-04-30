@@ -19,13 +19,13 @@ document.querySelector('#start')?.addEventListener('click', () => {
       width: 1280,
       height: 720
     })
-    await timeline.add(spr2, {
-      offset: 0 * 1e6,
-      duration: 7 * 1e6
-    })
     await timeline.add(spr1, {
-      offset: 7 * 1e6,
-      duration: 40 * 1e6
+      offset: 0 * 1e6,
+      duration: 35 * 1e6
+    })
+    await timeline.add(spr2, {
+      offset: 35 * 1e6,
+      duration: 7 * 1e6
     })
     await timeline.output().pipeTo(await createFileWriter('mp4'))
   })().catch(console.error)
