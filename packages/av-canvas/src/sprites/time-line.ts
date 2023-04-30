@@ -87,17 +87,9 @@ export class Timeline {
             this.#ts - it.offset
           )
 
-          // todo: reset ad timestamp
           for (const ad of audioDataArr) {
-            this.#remux.encodeAudio(new AudioData({
-              timestamp: ad.timestamp + it.offset,
-              numberOfChannels: ad.numberOfChannels,
-              numberOfFrames: ad.numberOfFrames,
-              sampleRate: ad.sampleRate,
-              format: ad.format,
-              data: extractBuf4AudioData(ad)
-            }))
-            ad.close()
+            // 此处看起来需要重置 timestamp，实际上不重置似乎也没有 bug，chrome、quicktime播放正常
+            this.#remux.encodeAudio(ad)
           }
           if (audioDataArr.length === 0) {
             const ad = createAudioPlaceholder(this.#ts, timeSlice)
@@ -135,27 +127,6 @@ export class Timeline {
 
     return stream
   }
-}
-
-function extractBuf4AudioData (ad: AudioData): ArrayBuffer {
-  const bufs: ArrayBuffer[] = []
-  let totalSize = 0
-  for (let i = 0; i < ad.numberOfChannels; i++) {
-    const chanBufSize = ad.allocationSize({ planeIndex: i })
-    totalSize += chanBufSize
-    const chanBuf = new ArrayBuffer(chanBufSize)
-    ad.copyTo(chanBuf, { planeIndex: i })
-    bufs.push(chanBuf)
-  }
-
-  const rs = new Uint8Array(totalSize)
-  let offset = 0
-  for (const buf of bufs) {
-    rs.set(new Uint8Array(buf), offset)
-    offset += buf.byteLength
-  }
-
-  return rs.buffer
 }
 
 function createAudioPlaceholder (ts: number, duration: number): AudioData {
