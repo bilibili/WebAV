@@ -3,18 +3,18 @@ import { sleep } from '../utils'
 import { demuxcode } from '../mp4-utils'
 
 export class WorkerSprite extends BaseSprite {
-  #dataSource: IDataSource
+  #clip: IClip
   ready: Promise<void>
 
   #lastVf: VideoFrame | null = null
 
-  constructor (name: string, ds: IDataSource) {
+  constructor (name: string, clip: IClip) {
     super(name)
-    this.#dataSource = ds
-    this.ready = ds.ready.then(() => {
-      console.log(9999999, ds.meta)
-      this.rect.w = ds.meta.width
-      this.rect.h = ds.meta.height
+    this.#clip = clip
+    this.ready = clip.ready.then(() => {
+      console.log(9999999, clip.meta)
+      this.rect.w = clip.meta.width
+      this.rect.h = clip.meta.height
     })
   }
 
@@ -24,7 +24,7 @@ export class WorkerSprite extends BaseSprite {
   ): Promise<AudioData[]> {
     super.render(ctx)
     const { w, h } = this.rect
-    const { video, audio, state } = await this.#dataSource.tick(time)
+    const { video, audio, state } = await this.#clip.tick(time)
     if (state === 'done') return []
 
     const vf = video ?? this.#lastVf
@@ -43,11 +43,11 @@ export class WorkerSprite extends BaseSprite {
   destroy (): void {
     this.#lastVf?.close()
     this.#lastVf = null
-    this.#dataSource.destroy()
+    this.#clip.destroy()
   }
 }
 
-interface IDataSource {
+interface IClip {
   /**
    * 当前瞬间，需要的数据
    * @param time 时间，单位 微秒
@@ -70,7 +70,7 @@ interface IDataSource {
   destroy: () => void
 }
 
-export class MP4DataSource implements IDataSource {
+export class MP4Clip implements IClip {
   #videoFrames: VideoFrame[] = []
   #audioDatas: AudioData[] = []
 

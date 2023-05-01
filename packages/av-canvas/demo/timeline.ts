@@ -1,19 +1,19 @@
 import { Timeline } from '../src/sprites/time-line'
-import { MP4DataSource, WorkerSprite } from '../src/sprites/worker-sprite'
+import { MP4Clip, WorkerSprite } from '../src/sprites/worker-sprite'
 
 document.querySelector('#start')?.addEventListener('click', () => {
   ;(async () => {
     const resp1 = await fetch('./assets/0.mp4')
     const spr1 = new WorkerSprite(
       'v1',
-      new MP4DataSource(resp1.body as ReadableStream)
+      new MP4Clip(resp1.body as ReadableStream)
     )
     // 45°
     spr1.rect.angle = Math.PI / 4
     const resp2 = await fetch('./assets/fragment.mp4')
     const spr2 = new WorkerSprite(
       'v1',
-      new MP4DataSource(resp2.body as ReadableStream)
+      new MP4Clip(resp2.body as ReadableStream)
     )
     const timeline = new Timeline({
       width: 1280,
@@ -36,11 +36,11 @@ const ctx = cvs.getContext('2d') as CanvasRenderingContext2D
 document.querySelector('#decode-frame')?.addEventListener('click', () => {
   ;(async () => {
     const resp1 = await fetch('./assets/fragment.mp4')
-    const ds = new MP4DataSource(resp1.body as ReadableStream)
-    await ds.ready
+    const clip = new MP4Clip(resp1.body as ReadableStream)
+    await clip.ready
     let time = 0
     while (true) {
-      const { state, video } = await ds.tick(time)
+      const { state, video } = await clip.tick(time)
       if (state === 'done') return
       if (video != null && state === 'success') {
         ctx.drawImage(video, 0, 0, video.codedWidth, video.codedHeight)
