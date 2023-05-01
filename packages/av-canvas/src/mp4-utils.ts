@@ -450,3 +450,24 @@ export function extractAudioDataBuf (ad: AudioData): ArrayBuffer {
 
   return rs.buffer
 }
+
+export function audioBuffer2Data (ab: AudioBuffer): AudioData {
+  const frameCnt = ab.sampleRate * ab.duration * 2
+  const buf = new Float32Array(frameCnt)
+  const chan0Buf = ab.getChannelData(0)
+  buf.set(chan0Buf, 0)
+  if (ab.numberOfChannels >= 2) {
+    buf.set(ab.getChannelData(1), chan0Buf.length)
+  } else {
+    buf.set(chan0Buf, chan0Buf.length)
+  }
+
+  return new AudioData({
+    numberOfChannels: 2,
+    numberOfFrames: ab.sampleRate * ab.duration,
+    sampleRate: ab.sampleRate,
+    timestamp: 0,
+    format: 'f32-planar',
+    data: buf
+  })
+}

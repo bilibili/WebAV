@@ -40,8 +40,9 @@ export class Timeline {
         codec: 'aac',
         sampleRate: 48000,
         sampleSize: 16,
-        // todo: channelCount 2
-        channelCount: 1
+        // todo: transform audiodata
+        // channelCount: 1
+        channelCount: 2
       },
       bitrate: 1_500_000
     }, {
@@ -68,7 +69,9 @@ export class Timeline {
   output (): ReadableStream<ArrayBuffer> {
     const lastIt = this.#timeItems.at(-1)
     if (lastIt == null) throw Error('Timeline is empty')
-    const maxTime = lastIt.offset + lastIt.duration
+    const maxTime = Math.max(
+      ...this.#timeItems.map(it => it.offset + it.duration)
+    )
 
     // 33ms, 30FPS
     const timeSlice = 33 * 1000
@@ -78,6 +81,7 @@ export class Timeline {
       while (this.#ts <= maxTime) {
         if (canceled) break
 
+        let audioCnt = 0
         for (const it of this.#timeItems) {
           if (this.#ts < it.offset || this.#ts > it.offset + it.duration) {
             continue
@@ -91,10 +95,11 @@ export class Timeline {
             // 此处看起来需要重置 timestamp，实际上不重置似乎也没有 bug，chrome、quicktime播放正常
             this.#remux.encodeAudio(ad)
           }
-          if (audioDataArr.length === 0) {
-            const ad = createAudioPlaceholder(this.#ts, timeSlice)
-            this.#remux.encodeAudio(ad)
-          }
+          audioCnt += audioDataArr.length
+        }
+        if (audioCnt === 0) {
+          // 当前时刻无音频时，使用无声音频占位，否则会导致后续音频播放时间偏差
+          this.#remux.encodeAudio(createAudioPlaceholder(this.#ts, timeSlice))
         }
         const vf = new VideoFrame(this.#cvs, {
           duration: timeSlice,
@@ -133,10 +138,10 @@ function createAudioPlaceholder (ts: number, duration: number): AudioData {
   const frameCnt = Math.floor(48000 * duration / 1e6)
   return new AudioData({
     timestamp: ts,
-    numberOfChannels: 1,
+    numberOfChannels: 2,
     numberOfFrames: frameCnt,
     sampleRate: 48000,
     format: 'f32-planar',
-    data: new Float32Array(frameCnt)
+    data: new Float32Array(frameCnt * 2)
   })
 }

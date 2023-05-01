@@ -12,7 +12,7 @@ export class WorkerSprite extends BaseSprite {
     super(name)
     this.#clip = clip
     this.ready = clip.ready.then(() => {
-      console.log(9999999, clip.meta)
+      console.log('--- WorkerSprite ready ---', clip.meta)
       this.rect.w = clip.meta.width
       this.rect.h = clip.meta.height
     })
@@ -53,7 +53,7 @@ interface IClip {
    * @param time 时间，单位 微秒
    */
   tick: (time: number) => Promise<{
-    video: VideoFrame | null
+    video?: VideoFrame
     audio: AudioData[]
     state: 'done' | 'success' | 'next'
   }>
@@ -156,14 +156,13 @@ export class MP4Clip implements IClip {
   }
 
   async tick (time: number): Promise<{
-    video: VideoFrame | null
+    video?: VideoFrame
     audio: AudioData[]
     state: 'success' | 'next' | 'done'
   }> {
     if (time < this.#ts) throw Error('time not allow rollback')
     if (time >= this.meta.duration) {
       return {
-        video: null,
         audio: [],
         state: 'done'
       }
@@ -177,7 +176,6 @@ export class MP4Clip implements IClip {
         if (this.#frameParseEnded) {
           console.log('--- worker ended ----')
           return {
-            video: null,
             audio,
             state: 'done'
           }
@@ -188,7 +186,6 @@ export class MP4Clip implements IClip {
       }
       // 当前 time 小于最前的 frame.timestamp，等待 time 增加
       return {
-        video: null,
         audio,
         state: 'next'
       }
@@ -216,5 +213,104 @@ export class MP4Clip implements IClip {
   destroy (): void {
     this.#videoFrames.forEach(f => f.close())
     this.#videoFrames = []
+  }
+}
+
+export class AudioClip implements IClip {
+  ready: Promise<void>
+
+  meta = {
+    // 微秒
+    duration: 0,
+    width: 0,
+    height: 0,
+    sampleRate: 48000,
+    numberOfChannels: 2
+  }
+
+  #audioDatas: AudioData[] = []
+
+  #ts = 0
+
+  constructor (buf: ArrayBuffer, opts: OfflineAudioContextOptions) {
+    const ctx = new OfflineAudioContext(opts)
+    // const ctx = new AudioContext()
+    this.ready = this.#init(ctx, buf)
+  }
+
+  async #init (ctx: OfflineAudioContext | AudioContext, buf: ArrayBuffer): Promise<void> {
+    const audioBuf = await ctx.decodeAudioData(buf)
+    this.meta = {
+      ...this.meta,
+      duration: audioBuf.duration * 1e6,
+      sampleRate: audioBuf.sampleRate,
+      numberOfChannels: audioBuf.numberOfChannels
+    }
+    const chanBufs: Float32Array[] = []
+    for (let i = 0; i < audioBuf.numberOfChannels; i += 1) {
+      chanBufs.push(audioBuf.getChannelData(i))
+    }
+    // 10ms 一个声音分片
+    const frameCnt = 1e4 / 1e6 * audioBuf.sampleRate
+    let [chan0, chan1] = chanBufs
+    if (chan1 == null) chan1 = chan0.slice(0)
+
+    let tsOffset = 0
+    while (true) {
+      if (chan0.length === 0 || chan1.length === 0) break
+
+      const cnt = chan0.length < frameCnt ? chan0.length : frameCnt
+      const data = new Float32Array(cnt * 2)
+      data.set(chan0.slice(0, cnt), 0)
+      data.set(chan1.slice(0, cnt), cnt)
+
+      this.#audioDatas.push(new AudioData({
+        format: 'f32-planar',
+        numberOfChannels: 2,
+        numberOfFrames: cnt,
+        sampleRate: audioBuf.sampleRate,
+        timestamp: tsOffset,
+        data
+      }))
+
+      chan0 = chan0.slice(cnt)
+      chan1 = chan1.slice(cnt)
+      tsOffset += 1e4
+    }
+  }
+
+  async tick (time: number): Promise<{
+    audio: AudioData[]
+    state: 'success' | 'next' | 'done'
+  }> {
+    if (time < this.#ts) throw Error('time not allow rollback')
+    if (time >= this.meta.duration) {
+      return {
+        audio: [],
+        state: 'done'
+      }
+    }
+
+    this.#ts = time
+
+    const idx = this.#audioDatas.findIndex(ad => ad.timestamp > time)
+    if (idx === -1) {
+      return {
+        audio: [],
+        state: 'next'
+      }
+    }
+    const audio = this.#audioDatas.slice(0, idx)
+    this.#audioDatas = this.#audioDatas.slice(idx)
+
+    return {
+      audio,
+      state: 'success'
+    }
+  }
+
+  destroy (): void {
+    console.log('---- audioclip destroy ----', this.#audioDatas)
+    this.#audioDatas.forEach(ad => ad.close())
   }
 }

@@ -1,7 +1,7 @@
 import { Timeline } from '../src/sprites/time-line'
-import { MP4Clip, WorkerSprite } from '../src/sprites/worker-sprite'
+import { AudioClip, MP4Clip, WorkerSprite } from '../src/sprites/worker-sprite'
 
-document.querySelector('#start')?.addEventListener('click', () => {
+document.querySelector('#mp4-mp4')?.addEventListener('click', () => {
   ;(async () => {
     const resp1 = await fetch('./assets/0.mp4')
     const spr1 = new WorkerSprite(
@@ -25,6 +25,39 @@ document.querySelector('#start')?.addEventListener('click', () => {
     })
     await timeline.add(spr2, {
       offset: 35 * 1e6,
+      duration: 7 * 1e6
+    })
+    await timeline.output().pipeTo(await createFileWriter('mp4'))
+  })().catch(console.error)
+})
+
+document.querySelector('#mp4-mp3')?.addEventListener('click', () => {
+  ;(async () => {
+    const resp1 = await fetch('./assets/0.mp4')
+    const spr1 = new WorkerSprite(
+      'v1',
+      new MP4Clip(resp1.body as ReadableStream)
+    )
+
+    const resp2 = await fetch('./assets/0-4.mp3')
+    const spr2 = new WorkerSprite(
+      'v1',
+      new AudioClip(await resp2.arrayBuffer(), {
+        numberOfChannels: 1,
+        sampleRate: 48000,
+        length: 4 * 48000
+      })
+    )
+    const timeline = new Timeline({
+      width: 1280,
+      height: 720
+    })
+    await timeline.add(spr1, {
+      offset: 0 * 1e6,
+      duration: 35 * 1e6
+    })
+    await timeline.add(spr2, {
+      offset: 0 * 1e6,
       duration: 7 * 1e6
     })
     await timeline.output().pipeTo(await createFileWriter('mp4'))
