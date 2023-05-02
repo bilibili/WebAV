@@ -471,3 +471,33 @@ export function audioBuffer2Data (ab: AudioBuffer): AudioData {
     data: buf
   })
 }
+
+/**
+ * 任意 channelCount 的 AudioData 转双声道
+ */
+export function stereoFixedAudioData (ad: AudioData): AudioData {
+  if (ad.numberOfChannels === 2) return ad
+
+  const len = ad.allocationSize({ planeIndex: 0 }) / 4
+  const data = new Float32Array(len * 2)
+  ad.copyTo(data, { planeIndex: 0 })
+
+  if (ad.numberOfChannels === 1) {
+    // 只有一个声道，则复制声道1的数据到声道 2
+    data.copyWithin(len, 0, len)
+  } else {
+    // 声道大于 2，只保留前两个声道数据
+    ad.copyTo(new DataView(data.buffer, len * 4), { planeIndex: 1 })
+  }
+
+  const rs = new AudioData({
+    timestamp: ad.timestamp,
+    numberOfChannels: 2,
+    numberOfFrames: ad.numberOfFrames,
+    sampleRate: 48000,
+    format: ad.format,
+    data
+  })
+  ad.close()
+  return rs
+}

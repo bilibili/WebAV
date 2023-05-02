@@ -1,5 +1,5 @@
 import { WorkerSprite } from './worker-sprite'
-import { file2stream, recodemux } from '../mp4-utils'
+import { file2stream, stereoFixedAudioData, recodemux } from '../mp4-utils'
 
 interface ITimeItem {
   offset: number
@@ -40,8 +40,6 @@ export class Timeline {
         codec: 'aac',
         sampleRate: 48000,
         sampleSize: 16,
-        // todo: transform audiodata
-        // channelCount: 1
         channelCount: 2
       },
       bitrate: 1_500_000
@@ -93,7 +91,10 @@ export class Timeline {
 
           for (const ad of audioDataArr) {
             // 此处看起来需要重置 timestamp，实际上不重置似乎也没有 bug，chrome、quicktime播放正常
-            this.#remux.encodeAudio(ad)
+            this.#remux.encodeAudio(
+              // 若channelCount不同，无法通过编码
+              stereoFixedAudioData(ad)
+            )
           }
           audioCnt += audioDataArr.length
         }
