@@ -1,5 +1,5 @@
 import { Timeline } from '../src/sprites/time-line'
-import { AudioClip, MP4Clip, WorkerSprite } from '../src/sprites/worker-sprite'
+import { AudioClip, ImgClip, MP4Clip, WorkerSprite } from '../src/sprites/worker-sprite'
 
 document.querySelector('#mp4-mp4')?.addEventListener('click', () => {
   ;(async () => {
@@ -15,6 +15,12 @@ document.querySelector('#mp4-mp4')?.addEventListener('click', () => {
       'v1',
       new MP4Clip(resp2.body as ReadableStream)
     )
+    const resp3 = await fetch('./assets/bangni.png')
+    const spr3 = new WorkerSprite(
+      'i1',
+      new ImgClip(await createImageBitmap(await resp3.blob()))
+    )
+
     const timeline = new Timeline({
       width: 1280,
       height: 720
@@ -24,8 +30,12 @@ document.querySelector('#mp4-mp4')?.addEventListener('click', () => {
       duration: 35 * 1e6
     })
     await timeline.add(spr2, {
-      offset: 35 * 1e6,
+      offset: 38 * 1e6,
       duration: 7 * 1e6
+    })
+    await timeline.add(spr3, {
+      offset: 35 * 1e6,
+      duration: 3 * 1e6
     })
     await timeline.output().pipeTo(await createFileWriter('mp4'))
   })().catch(console.error)

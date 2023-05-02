@@ -58,6 +58,11 @@ export class Timeline {
     opts: { offset: number, duration: number }
   ): Promise<void> {
     await sprite.ready
+    // 默认居中
+    const { rect } = sprite
+    rect.x = (this.#cvs.width - rect.w) / 2
+    rect.y = (this.#cvs.height - rect.h) / 2
+
     this.#timeItems.push({
       sprite,
       ...opts

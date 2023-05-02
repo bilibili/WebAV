@@ -6,7 +6,7 @@ export class WorkerSprite extends BaseSprite {
   #clip: IClip
   ready: Promise<void>
 
-  #lastVf: VideoFrame | null = null
+  #lastVf: VideoFrame | ImageBitmap | null = null
 
   constructor (name: string, clip: IClip) {
     super(name)
@@ -27,9 +27,9 @@ export class WorkerSprite extends BaseSprite {
     const { video, audio, state } = await this.#clip.tick(time)
     if (state === 'done') return []
 
-    const vf = video ?? this.#lastVf
-    if (vf != null) {
-      ctx.drawImage(vf, -w / 2, -h / 2, w, h)
+    const imgSource = video ?? this.#lastVf
+    if (imgSource != null) {
+      ctx.drawImage(imgSource, -w / 2, -h / 2, w, h)
     }
 
     if (video != null) {
@@ -53,7 +53,7 @@ interface IClip {
    * @param time 时间，单位 微秒
    */
   tick: (time: number) => Promise<{
-    video?: VideoFrame
+    video?: VideoFrame | ImageBitmap
     audio: AudioData[]
     state: 'done' | 'success' | 'next'
   }>
@@ -312,5 +312,42 @@ export class AudioClip implements IClip {
   destroy (): void {
     console.log('---- audioclip destroy ----', this.#audioDatas)
     this.#audioDatas.forEach(ad => ad.close())
+  }
+}
+
+export class ImgClip implements IClip {
+  ready: Promise<void>
+
+  meta = {
+    // 微秒
+    duration: 0,
+    width: 0,
+    height: 0
+  }
+
+  #img: ImageBitmap
+
+  constructor (imgBitmap: ImageBitmap) {
+    this.#img = imgBitmap
+    console.log(566666, this.#img)
+    this.meta.width = imgBitmap.width
+    this.meta.height = imgBitmap.height
+    this.ready = Promise.resolve()
+  }
+
+  async tick (): Promise<{
+    video: ImageBitmap
+    audio: []
+    state: 'success'
+  }> {
+    return {
+      video: await createImageBitmap(this.#img),
+      audio: [],
+      state: 'success'
+    }
+  }
+
+  destroy (): void {
+    this.#img.close()
   }
 }
