@@ -9,15 +9,18 @@
   - 媒体来源：摄像头、麦克风、分享屏幕
   - 本地文件：视频、音频、图片
   - 其他：文字
+- 视频剪辑
+  - mp4、mp3、图片 按时间线合成 
 - [AVRecorder](packages/av-recorder/README.md)
 
 ## 开发中
 
 - 日志
 - common包，packages复用
-- 合并mp4box.d.ts
 - 内存优化，避免大文件导致内存溢出
 - 单测
+- 视频时间裁剪
+- clip 动画
 
 ### 基础能力 
 - 素材拖动的磁吸效果  
