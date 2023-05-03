@@ -21,6 +21,7 @@ export class WorkerSprite extends BaseSprite {
     ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D,
     time: number
   ): Promise<AudioData[]> {
+    this.rect.animate(time)
     super.render(ctx)
     const { w, h } = this.rect
     const { video, audio, state } = await this.#clip.tick(time)

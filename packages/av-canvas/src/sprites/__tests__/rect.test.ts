@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest'
-import { Rect } from '../rect'
+import { Rect, TAnimationKeyFrame, linearTimeFn } from '../rect'
 
 describe('Rect', () => {
   test('center', () => {
@@ -35,5 +35,33 @@ describe('Rect', () => {
     expect(rect.checkHit(100, 100)).toBe(false)
     // 旋转后正上方外移一点点的位置被覆盖进来了
     expect(rect.checkHit(150, 90)).toBe(true)
+  })
+})
+
+describe('Animation', () => {
+  const keyFrames: TAnimationKeyFrame = [
+    [0, { angle: 0 }],
+    [0.2, { angle: Math.PI / 2 }],
+    [1, { angle: Math.PI }]
+  ]
+  const opts = {
+    duration: 10,
+    delay: 0,
+    iterationCount: Infinity
+  }
+
+  test('linearTimeFn 10%', () => {
+    const rs = linearTimeFn(1, keyFrames, opts)
+    expect(rs).toEqual({ angle: Math.PI / 4 })
+  })
+
+  test('linearTimeFn 20%', () => {
+    const rs = linearTimeFn(2, keyFrames, opts)
+    expect(rs).toEqual({ angle: Math.PI / 2 })
+  })
+
+  test('linearTimeFn 100%', () => {
+    const rs = linearTimeFn(10, keyFrames, opts)
+    expect(rs).toEqual({ angle: Math.PI })
   })
 })

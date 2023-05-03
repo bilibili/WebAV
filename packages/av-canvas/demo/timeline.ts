@@ -21,6 +21,10 @@ document.querySelector('#mp4-mp4')?.addEventListener('click', () => {
       'i1',
       new ImgClip(await createImageBitmap(await resp3.blob()))
     )
+    spr3.rect.setAnimation({
+      from: { angle: 0 },
+      to: { angle: Math.PI }
+    }, { duration: 3 })
 
     const timeline = new Timeline({
       width: 1280,
