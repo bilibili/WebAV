@@ -1,5 +1,5 @@
 import { WorkerSprite } from './worker-sprite'
-import { file2stream, stereoFixedAudioData, recodemux } from '../mp4-utils'
+import { file2stream, stereoFixedAudioData, recodemux } from './mp4-utils'
 
 interface ITimeItem {
   offset: number

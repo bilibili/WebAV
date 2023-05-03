@@ -1,5 +1,6 @@
-import { Timeline } from '../src/sprites/time-line'
-import { AudioClip, ImgClip, MP4Clip, WorkerSprite } from '../src/sprites/worker-sprite'
+import { AudioClip, ImgClip, MP4Clip } from '../src/cliper/clips'
+import { Timeline } from '../src/cliper/time-line'
+import { WorkerSprite } from '../src/cliper/worker-sprite'
 
 document.querySelector('#mp4-mp4')?.addEventListener('click', () => {
   ;(async () => {

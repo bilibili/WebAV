@@ -1,53 +1,7 @@
-import { BaseSprite } from './base-sprite'
-import { sleep } from '../utils'
-import { demuxcode } from '../mp4-utils'
+// 避免使用 DOM API 确保这些 Clip 能在 Worker 中运行
+import { demuxcode, sleep } from './mp4-utils'
 
-export class WorkerSprite extends BaseSprite {
-  #clip: IClip
-  ready: Promise<void>
-
-  #lastVf: VideoFrame | ImageBitmap | null = null
-
-  constructor (name: string, clip: IClip) {
-    super(name)
-    this.#clip = clip
-    this.ready = clip.ready.then(() => {
-      console.log('--- WorkerSprite ready ---', clip.meta)
-      this.rect.w = clip.meta.width
-      this.rect.h = clip.meta.height
-    })
-  }
-
-  async offscreenRender (
-    ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D,
-    time: number
-  ): Promise<AudioData[]> {
-    super.render(ctx)
-    const { w, h } = this.rect
-    const { video, audio, state } = await this.#clip.tick(time)
-    if (state === 'done') return []
-
-    const imgSource = video ?? this.#lastVf
-    if (imgSource != null) {
-      ctx.drawImage(imgSource, -w / 2, -h / 2, w, h)
-    }
-
-    if (video != null) {
-      this.#lastVf?.close()
-      this.#lastVf = video
-    }
-
-    return audio
-  }
-
-  destroy (): void {
-    this.#lastVf?.close()
-    this.#lastVf = null
-    this.#clip.destroy()
-  }
-}
-
-interface IClip {
+export interface IClip {
   /**
    * 当前瞬间，需要的数据
    * @param time 时间，单位 微秒
