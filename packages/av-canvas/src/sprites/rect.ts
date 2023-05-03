@@ -98,10 +98,10 @@ export class Rect implements IRectBaseProps {
         return [numK / 100, val]
       })
     this.#animatOpts = Object.assign({
-      delay: 0,
-      iterationCount: Infinity
-    }, opts)
-    this.#animatOpts.duration = opts.duration * 1e6
+      duration: opts.duration * 1e6,
+      delay: (opts.delay ?? 0) * 1e6,
+      iterationCount: opts.iterationCount ?? Infinity
+    })
   }
 
   animate (time: number): void {

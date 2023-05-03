@@ -67,7 +67,8 @@ export class Timeline {
 
     this.#timeItems.push({
       sprite,
-      ...opts
+      offset: opts.offset * 1e6,
+      duration: opts.duration * 1e6
     })
   }
 
