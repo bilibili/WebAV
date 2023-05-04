@@ -8,8 +8,8 @@
       "DOM"
     ],
     "types": [
-      "@types/dom-webcodecs",
-      "../../types/mp4box.d.ts"
+      "@types/dom-mediacapture-transform",
+      "@types/dom-webcodecs"
     ],
     "moduleResolution": "Node",
     "strict": true,
@@ -25,6 +25,8 @@
     "skipLibCheck": true
   },
   "include": [
+    "../../types/mp4box.d.ts",
+    "@types/dom-mediacapture-transform",
     "src/**/*"
   ],
   "exclude": [

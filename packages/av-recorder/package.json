@@ -31,6 +31,7 @@
     "vitest": "^0.29.7"
   },
   "dependencies": {
-    "fix-webm-duration": "^1.0.5"
+    "fix-webm-duration": "^1.0.5",
+    "mp4box": "^0.5.2"
   }
 }

@@ -1,6 +1,12 @@
 {
   "extends": "./build.tsconfig.json",
-  "compilerOptions": {},
+  "compilerOptions": {
+    "types": [
+      "@types/dom-mediacapture-transform",
+      "@types/dom-webcodecs",
+      "../../types/mp4box.d.ts"
+    ]
+  },
   "include": [
     "src",
     "demo"
