@@ -5,9 +5,9 @@ export default defineConfig({
   build: {
     rollupOptions: {
       input: {
-        main: resolve(__dirname, 'demo/record-usermedia.html'),
-      },
+        'record-usermedia': resolve(__dirname, 'demo/record-usermedia.html')
+      }
     },
     outDir: 'demo-dist'
-  },
+  }
 })

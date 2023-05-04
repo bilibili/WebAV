@@ -5,9 +5,10 @@ export default defineConfig({
   build: {
     rollupOptions: {
       input: {
-        main: resolve(__dirname, 'demo/record-avcanvas.html'),
-      },
+        'record-avcanvas': resolve(__dirname, 'demo/record-avcanvas.html'),
+        'concat-media': resolve(__dirname, 'demo/concat-media.html')
+      }
     },
     outDir: 'demo-dist'
-  },
+  }
 })
