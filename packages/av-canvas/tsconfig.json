@@ -1,7 +1,10 @@
 {
   "extends": "./build.tsconfig.json",
   "compilerOptions": {
-    "noEmit": true
+    "types": [
+      "@types/dom-webcodecs",
+      "../../types/mp4box.d.ts"
+    ]
   },
   "include": [
     "src",
