@@ -4,19 +4,19 @@ import { WorkerSprite } from '../src/cliper/worker-sprite'
 
 document.querySelector('#mp4-mp4')?.addEventListener('click', () => {
   ;(async () => {
-    const resp1 = await fetch('./assets/0.mp4')
+    const resp1 = await fetch('./public/0.mp4')
     const spr1 = new WorkerSprite(
       'v1',
       new MP4Clip(resp1.body as ReadableStream)
     )
     // 45°
     spr1.rect.angle = Math.PI / 4
-    const resp2 = await fetch('./assets/fragment.mp4')
+    const resp2 = await fetch('./public/fragment.mp4')
     const spr2 = new WorkerSprite(
       'v1',
       new MP4Clip(resp2.body as ReadableStream)
     )
-    const resp3 = await fetch('./assets/bangni.png')
+    const resp3 = await fetch('./public/bangni.png')
     const spr3 = new WorkerSprite(
       'i1',
       new ImgClip(await createImageBitmap(await resp3.blob()))

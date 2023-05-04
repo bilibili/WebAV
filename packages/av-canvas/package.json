@@ -11,7 +11,7 @@
     "test": "vitest",
     "test:coverage": "vitest run --coverage",
     "build": "rm -rf dist && tsc -p build.tsconfig.json --outDir dist",
-    "build:demo": "rm -rf demo-dist && vite build -c demo.vite.config.ts",
+    "build:demo": "rm -rf demo-dist && vite build -c demo.vite.config.ts && cp -r demo/public demo-dist/demo",
     "prepublishOnly": "yarn build",
     "preview": "vite preview"
   },
