@@ -1,5 +1,5 @@
 import { AudioClip, ImgClip, MP4Clip } from '../src/cliper/clips'
-import { Timeline } from '../src/cliper/time-line'
+import { Combinator } from '../src/cliper/combinator'
 import { WorkerSprite } from '../src/cliper/worker-sprite'
 
 document.querySelector('#mp4-mp4')?.addEventListener('click', () => {
@@ -29,14 +29,14 @@ document.querySelector('#mp4-mp4')?.addEventListener('click', () => {
       to: { angle: Math.PI, x: 100 }
     }, { duration: 3 })
 
-    const timeline = new Timeline({
+    const com = new Combinator({
       width: 1280,
       height: 720
     })
-    await timeline.add(spr1, { offset: 0, duration: 35 })
-    await timeline.add(spr2, { offset: 38, duration: 7 })
-    await timeline.add(spr3, { offset: 35, duration: 3 })
-    await timeline.output().pipeTo(await createFileWriter('mp4'))
+    await com.add(spr1, { offset: 0, duration: 35 })
+    await com.add(spr2, { offset: 38, duration: 7 })
+    await com.add(spr3, { offset: 35, duration: 3 })
+    await com.output().pipeTo(await createFileWriter('mp4'))
   })().catch(console.error)
 })
 
@@ -57,19 +57,13 @@ document.querySelector('#mp4-mp3')?.addEventListener('click', () => {
         length: 4 * 48000
       })
     )
-    const timeline = new Timeline({
+    const com = new Combinator({
       width: 1280,
       height: 720
     })
-    await timeline.add(spr1, {
-      offset: 0 * 1e6,
-      duration: 35 * 1e6
-    })
-    await timeline.add(spr2, {
-      offset: 0 * 1e6,
-      duration: 7 * 1e6
-    })
-    await timeline.output().pipeTo(await createFileWriter('mp4'))
+    await com.add(spr1, { offset: 0, duration: 35 })
+    await com.add(spr2, { offset: 0, duration: 7 })
+    await com.output().pipeTo(await createFileWriter('mp4'))
   })().catch(console.error)
 })
 

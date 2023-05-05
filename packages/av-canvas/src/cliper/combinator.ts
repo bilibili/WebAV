@@ -1,15 +1,15 @@
 import { WorkerSprite } from './worker-sprite'
 import { file2stream, stereoFixedAudioData, recodemux } from './mp4-utils'
 
-interface ITimeItem {
+interface IComItem {
   offset: number
   duration: number
   sprite: WorkerSprite
 }
 
 // todo: 编码、canvas 应从 Timeline中剥离
-export class Timeline {
-  #timeItems: ITimeItem[] = []
+export class Combinator {
+  #timeItems: IComItem[] = []
 
   #ts = 0
 
