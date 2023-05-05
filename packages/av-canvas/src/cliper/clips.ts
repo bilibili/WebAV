@@ -41,10 +41,13 @@ export class MP4Clip implements IClip {
     height: 0
   }
 
-  constructor (rs: ReadableStream<Uint8Array>) {
+  constructor (
+    rs: ReadableStream<Uint8Array>,
+    opts: { audio: boolean } = { audio: true }
+  ) {
     this.ready = new Promise((resolve) => {
       let lastVf: VideoFrame | null = null
-      const { seek } = demuxcode(rs, {
+      const { seek } = demuxcode(rs, opts, {
         onReady: (info) => {
           const videoTrack = info.videoTracks[0]
           this.meta = {

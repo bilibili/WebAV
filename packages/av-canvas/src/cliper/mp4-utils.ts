@@ -19,6 +19,7 @@ interface IWorkerOpts {
 
 export function demuxcode (
   stream: ReadableStream<Uint8Array>,
+  opts: { audio: boolean },
   cbs: {
     onReady: (info: MP4Info) => void
     onVideoOutput: (vf: VideoFrame) => void
@@ -74,7 +75,7 @@ export function demuxcode (
     }
 
     aTrackInfo = info.audioTracks[0]
-    if (aTrackInfo != null) {
+    if (opts.audio && aTrackInfo != null) {
       const adConf = {
         // description: trak.mdia.minf.stbl.stsd.entries[0].esds.esd.descs[0].descs[0].data;
         codec: aTrackInfo.codec === 'mp4a' ? 'mp4a.40.2' : aTrackInfo.codec,
@@ -127,7 +128,7 @@ export function demuxcode (
           }))
         })
       }
-      if (aTrackInfo != null) {
+      if (opts.audio && aTrackInfo != null) {
         const startIdx = findStartSampleIdx(
           totalAudioSamples,
           time * aTrackInfo.timescale

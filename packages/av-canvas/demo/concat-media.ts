@@ -14,7 +14,10 @@ document.querySelector('#mp4-mp4')?.addEventListener('click', () => {
     const resp2 = await fetch('./public/fragment.mp4')
     const spr2 = new WorkerSprite(
       'v1',
-      new MP4Clip(resp2.body as ReadableStream)
+      new MP4Clip(
+        resp2.body as ReadableStream
+        // { audio: false } // 禁止音频
+      )
     )
     const resp3 = await fetch('./public/bangni.png')
     const spr3 = new WorkerSprite(
