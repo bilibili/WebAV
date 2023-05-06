@@ -12,12 +12,12 @@ interface IRectBaseProps {
   angle: number
 }
 
-type TKeyFrameOpts = Record<`${number}%` | 'from' | 'to', Partial<IRectBaseProps>>
+type TKeyFrameOpts = Partial<Record<`${number}%` | 'from' | 'to', Partial<IRectBaseProps>>>
 
 interface IAnimationOpts {
   duration: number
   delay?: number
-  iterationCount?: number
+  iterCount?: number
 }
 
 export type TAnimationKeyFrame = Array<[number, Partial<IRectBaseProps>]>
@@ -96,11 +96,11 @@ export class Rect implements IRectBaseProps {
           throw Error('keyFrame must between 0~100')
         }
         return [numK / 100, val]
-      })
-    this.#animatOpts = Object.assign({
+      }) as TAnimationKeyFrame
+    this.#animatOpts = Object.assign({}, this.#animatOpts, {
       duration: opts.duration * 1e6,
       delay: (opts.delay ?? 0) * 1e6,
-      iterationCount: opts.iterationCount ?? Infinity
+      iterCount: opts.iterCount ?? Infinity
     })
   }
 
@@ -154,7 +154,7 @@ export function linearTimeFn (
   kf: TAnimationKeyFrame,
   opts: Required<IAnimationOpts>
 ): Partial<IRectBaseProps> {
-  if (time / opts.duration >= opts.iterationCount) return {}
+  if (time / opts.duration >= opts.iterCount) return {}
 
   const t = time % opts.duration
 
