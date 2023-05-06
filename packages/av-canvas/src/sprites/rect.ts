@@ -164,9 +164,9 @@ export function linearTimeFn (
 
   const startState = kf[idx - 1]
   const nextState = kf[idx]
-  const startFrame = startState[1]
   const nextFrame = nextState[1]
-  if (startFrame == null) return nextFrame
+  if (startState == null) return nextFrame
+  const startFrame = startState[1]
 
   const rs: Partial<IRectBaseProps> = {}
   // 介于两个Frame状态间的进度
