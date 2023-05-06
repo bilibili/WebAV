@@ -1,6 +1,16 @@
 import { AudioClip, ImgClip, MP4Clip } from '../src/cliper/clips'
 import { Combinator } from '../src/cliper/combinator'
 import { WorkerSprite } from '../src/cliper/worker-sprite'
+import { renderTxt2ImgBitmap } from '../src/utils'
+
+// ;(async () => {
+//   const img = await renderTxt2ImgBitmap('水印', `
+//     font-size:40px; text-shadow: 2px 2px 6px red;
+//   `)
+//   const cvs = document.querySelector('canvas') as HTMLCanvasElement
+//   const ctx = cvs.getContext('2d')
+//   ctx?.drawImage(img, 0, 0)
+// })().catch(console.error)
 
 document.querySelector('#mp4-mp4')?.addEventListener('click', () => {
   ;(async () => {
@@ -21,7 +31,7 @@ document.querySelector('#mp4-mp4')?.addEventListener('click', () => {
     )
     const resp3 = await fetch('./public/bangni.png')
     const spr3 = new WorkerSprite(
-      'i1',
+      'spr3',
       new ImgClip(await createImageBitmap(await resp3.blob()))
     )
     spr3.rect.setAnimation({
@@ -29,11 +39,23 @@ document.querySelector('#mp4-mp4')?.addEventListener('click', () => {
       to: { angle: Math.PI, x: 100 }
     }, { duration: 3 })
 
+    const spr4 = new WorkerSprite(
+      'spr4',
+      new ImgClip(await renderTxt2ImgBitmap('水印', `
+        font-size:40px; color: white; text-shadow: 2px 2px 6px red;
+      `))
+    )
+    spr4.rect.setAnimation({
+      from: { x: 0, y: 0 },
+      to: { x: 1280, y: 720 }
+    }, { duration: 40 })
+
     const com = new Combinator({
       width: 1280,
       height: 720
     })
     await com.add(spr1, { offset: 0, duration: 35 })
+    await com.add(spr4, { offset: 0, duration: 40 })
     await com.add(spr2, { offset: 38, duration: 7 })
     await com.add(spr3, { offset: 35, duration: 3 })
     await com.output().pipeTo(await createFileWriter('mp4'))
@@ -42,13 +64,13 @@ document.querySelector('#mp4-mp4')?.addEventListener('click', () => {
 
 document.querySelector('#mp4-mp3')?.addEventListener('click', () => {
   ;(async () => {
-    const resp1 = await fetch('./assets/0.mp4')
+    const resp1 = await fetch('./public/0.mp4')
     const spr1 = new WorkerSprite(
       'v1',
       new MP4Clip(resp1.body as ReadableStream)
     )
 
-    const resp2 = await fetch('./assets/0-4.mp3')
+    const resp2 = await fetch('./public/0-4.mp3')
     const spr2 = new WorkerSprite(
       'v1',
       new AudioClip(await resp2.arrayBuffer(), {
@@ -71,7 +93,7 @@ const cvs = document.querySelector('#canvas') as HTMLCanvasElement
 const ctx = cvs.getContext('2d') as CanvasRenderingContext2D
 document.querySelector('#decode-frame')?.addEventListener('click', () => {
   ;(async () => {
-    const resp1 = await fetch('./assets/fragment.mp4')
+    const resp1 = await fetch('./public/fragment.mp4')
     const clip = new MP4Clip(resp1.body as ReadableStream)
     await clip.ready
     let time = 0
