@@ -73,6 +73,7 @@ export class Combinator {
       offset: opts.offset * 1e6,
       duration: opts.duration * 1e6
     })
+    this.#comItems.sort((a, b) => a.sprite.zIndex - b.sprite.zIndex)
   }
 
   output (): ReadableStream<ArrayBuffer> {

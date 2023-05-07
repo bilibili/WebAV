@@ -52,13 +52,14 @@ document.querySelector('#mp4-mp4')?.addEventListener('click', () => {
       '75%': { x: 0, y: 680 },
       '100%': { x: 0, y: 0 }
     }, { duration: 4, iterCount: 1 })
+    spr4.zIndex = 10
 
     const com = new Combinator({
       width: 1280,
       height: 720
     })
-    await com.add(spr1, { offset: 0, duration: 35 })
     await com.add(spr4, { offset: 0, duration: 5 })
+    await com.add(spr1, { offset: 0, duration: 35 })
     await com.add(spr2, { offset: 38, duration: 7 })
     await com.add(spr3, { offset: 35, duration: 3 })
     await com.output().pipeTo(await createFileWriter('mp4'))
