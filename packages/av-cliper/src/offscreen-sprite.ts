@@ -1,7 +1,7 @@
 import { BaseSprite } from './base-sprite'
 import { IClip } from './clips'
 
-export class WorkerSprite extends BaseSprite {
+export class OffscreenSprite extends BaseSprite {
   #clip: IClip
   ready: Promise<void>
 

@@ -1,6 +1,6 @@
 import { AudioClip, ImgClip, MP4Clip } from '../src/clips'
 import { Combinator } from '../src/combinator'
-import { WorkerSprite } from '../src/worker-sprite'
+import { OffscreenSprite } from '../src/offscreen-sprite'
 import { renderTxt2ImgBitmap } from '../src/utils'
 
 // ;(async () => {
@@ -15,14 +15,14 @@ import { renderTxt2ImgBitmap } from '../src/utils'
 document.querySelector('#mp4-mp4')?.addEventListener('click', () => {
   ;(async () => {
     const resp1 = await fetch('./public/0.mp4')
-    const spr1 = new WorkerSprite(
+    const spr1 = new OffscreenSprite(
       'v1',
       new MP4Clip(resp1.body as ReadableStream)
     )
     // 45°
     spr1.rect.angle = Math.PI / 4
     const resp2 = await fetch('./public/fragment.mp4')
-    const spr2 = new WorkerSprite(
+    const spr2 = new OffscreenSprite(
       'v1',
       new MP4Clip(
         resp2.body as ReadableStream
@@ -30,7 +30,7 @@ document.querySelector('#mp4-mp4')?.addEventListener('click', () => {
       )
     )
     const resp3 = await fetch('./public/bangni.png')
-    const spr3 = new WorkerSprite(
+    const spr3 = new OffscreenSprite(
       'spr3',
       new ImgClip(await createImageBitmap(await resp3.blob()))
     )
@@ -39,7 +39,7 @@ document.querySelector('#mp4-mp4')?.addEventListener('click', () => {
       to: { angle: Math.PI, x: 300, y: 300, opacity: 0 }
     }, { duration: 3 })
 
-    const spr4 = new WorkerSprite(
+    const spr4 = new OffscreenSprite(
       'spr4',
       new ImgClip(await renderTxt2ImgBitmap('水印', `
         font-size:40px; color: white; text-shadow: 2px 2px 6px red;
@@ -70,13 +70,13 @@ document.querySelector('#mp4-mp4')?.addEventListener('click', () => {
 document.querySelector('#mp4-mp3')?.addEventListener('click', () => {
   ;(async () => {
     const resp1 = await fetch('./public/0.mp4')
-    const spr1 = new WorkerSprite(
+    const spr1 = new OffscreenSprite(
       'v1',
       new MP4Clip(resp1.body as ReadableStream)
     )
 
     const resp2 = await fetch('./public/0-4.mp3')
-    const spr2 = new WorkerSprite(
+    const spr2 = new OffscreenSprite(
       'v1',
       new AudioClip(await resp2.arrayBuffer(), {
         numberOfChannels: 1,

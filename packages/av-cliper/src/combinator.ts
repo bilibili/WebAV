@@ -1,10 +1,10 @@
-import { WorkerSprite } from './worker-sprite'
+import { OffscreenSprite } from './offscreen-sprite'
 import { file2stream, stereoFixedAudioData, recodemux } from './mp4-utils'
 
 interface IComItem {
   offset: number
   duration: number
-  sprite: WorkerSprite
+  sprite: OffscreenSprite
 }
 
 export class Combinator {
@@ -64,7 +64,7 @@ export class Combinator {
   }
 
   async add (
-    sprite: WorkerSprite,
+    sprite: OffscreenSprite,
     opts: { offset: number, duration: number }
   ): Promise<void> {
     await sprite.ready
