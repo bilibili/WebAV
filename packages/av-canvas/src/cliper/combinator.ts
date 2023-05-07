@@ -19,7 +19,7 @@ export class Combinator {
       self.AudioData != null
   }
 
-  #timeItems: IComItem[] = []
+  #comItems: IComItem[] = []
 
   #ts = 0
 
@@ -58,7 +58,7 @@ export class Combinator {
         console.log('===== output ended ======', this.#ts)
         this.#closeOutStream?.()
         console.timeEnd('cost')
-        this.#timeItems.forEach(it => it.sprite.destroy())
+        this.#comItems.forEach(it => it.sprite.destroy())
       }
     })
   }
@@ -68,14 +68,7 @@ export class Combinator {
     opts: { offset: number, duration: number }
   ): Promise<void> {
     await sprite.ready
-    // const { rect } = sprite
-    // if (rect.x === 0 && rect.y === 0) {
-    //   // 默认居中
-    //   rect.x = (this.#cvs.width - rect.w) / 2
-    //   rect.y = (this.#cvs.height - rect.h) / 2
-    // }
-
-    this.#timeItems.push({
+    this.#comItems.push({
       sprite,
       offset: opts.offset * 1e6,
       duration: opts.duration * 1e6
@@ -83,10 +76,10 @@ export class Combinator {
   }
 
   output (): ReadableStream<ArrayBuffer> {
-    const lastIt = this.#timeItems.at(-1)
+    const lastIt = this.#comItems.at(-1)
     if (lastIt == null) throw Error('Timeline is empty')
     const maxTime = Math.max(
-      ...this.#timeItems.map(it => it.offset + it.duration)
+      ...this.#comItems.map(it => it.offset + it.duration)
     )
 
     // 33ms, 30FPS
@@ -98,7 +91,7 @@ export class Combinator {
         if (canceled) break
 
         let audioCnt = 0
-        for (const it of this.#timeItems) {
+        for (const it of this.#comItems) {
           if (this.#ts < it.offset || this.#ts > it.offset + it.duration) {
             continue
           }
