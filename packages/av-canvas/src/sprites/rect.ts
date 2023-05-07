@@ -4,23 +4,13 @@ export type TCtrlKey = 't' | 'b' | 'l' | 'r' | 'lt' | 'lb' | 'rt' | 'rb' | 'rota
 
 export const CTRL_KEYS = ['t', 'b', 'l', 'r', 'lt', 'lb', 'rt', 'rb', 'rotate']
 
-interface IRectBaseProps {
+export interface IRectBaseProps {
   x: number
   y: number
   w: number
   h: number
   angle: number
 }
-
-type TKeyFrameOpts = Partial<Record<`${number}%` | 'from' | 'to', Partial<IRectBaseProps>>>
-
-interface IAnimationOpts {
-  duration: number
-  delay?: number
-  iterCount?: number
-}
-
-export type TAnimationKeyFrame = Array<[number, Partial<IRectBaseProps>]>
 
 export class Rect implements IRectBaseProps {
   /**
@@ -38,10 +28,6 @@ export class Rect implements IRectBaseProps {
    * ctrl.master is sprite rect
    */
   master: Rect | null = null
-
-  #animatKeyFrame: TAnimationKeyFrame | null = null
-
-  #animatOpts: Required<IAnimationOpts> | null = null
 
   constructor (x?: number, y?: number, w?: number, h?: number, master?: Rect | null) {
     this.x = x ?? 0
@@ -88,35 +74,6 @@ export class Rect implements IRectBaseProps {
     return new Rect(x, y, w, h, master)
   }
 
-  setAnimation (keyFrame: TKeyFrameOpts, opts: IAnimationOpts): void {
-    this.#animatKeyFrame = Object.entries(keyFrame)
-      .map(([k, val]) => {
-        const numK = ({ from: 0, to: 100 })[k] ?? Number(k.slice(0, -1))
-        if (isNaN(numK) || numK > 100 || numK < 0) {
-          throw Error('keyFrame must between 0~100')
-        }
-        return [numK / 100, val]
-      }) as TAnimationKeyFrame
-    this.#animatOpts = Object.assign({}, this.#animatOpts, {
-      duration: opts.duration * 1e6,
-      delay: (opts.delay ?? 0) * 1e6,
-      iterCount: opts.iterCount ?? Infinity
-    })
-  }
-
-  animate (time: number): void {
-    if (
-      this.#animatKeyFrame == null ||
-      this.#animatOpts == null ||
-      time < this.#animatOpts.delay
-    ) return
-    // todo: delay, other timing-function
-    Object.assign(
-      this,
-      linearTimeFn(time, this.#animatKeyFrame, this.#animatOpts)
-    )
-  }
-
   /**
    * 检测点击是否命中
    */
@@ -147,37 +104,4 @@ export class Rect implements IRectBaseProps {
 
     return true
   }
-}
-
-export function linearTimeFn (
-  time: number,
-  kf: TAnimationKeyFrame,
-  opts: Required<IAnimationOpts>
-): Partial<IRectBaseProps> {
-  if (time / opts.duration >= opts.iterCount) return {}
-
-  const t = time % opts.duration
-
-  const process = time === opts.duration ? 1 : t / opts.duration
-  const idx = kf.findIndex(it => it[0] >= process)
-  if (idx === -1) return {}
-
-  const startState = kf[idx - 1]
-  const nextState = kf[idx]
-  const nextFrame = nextState[1]
-  if (startState == null) return nextFrame
-  const startFrame = startState[1]
-
-  const rs: Partial<IRectBaseProps> = {}
-  // 介于两个Frame状态间的进度
-  const stateProcess = (process - startState[0]) / (nextState[0] - startState[0])
-  for (const prop in nextFrame) {
-    const p = prop as keyof IRectBaseProps
-    if (startFrame[p] == null) continue
-    // @ts-expect-error
-    // eslint-disable-next-line
-    rs[p] = (nextFrame[p] - startFrame[p]) * stateProcess + startFrame[p]
-  }
-
-  return rs
 }

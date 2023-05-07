@@ -34,9 +34,9 @@ document.querySelector('#mp4-mp4')?.addEventListener('click', () => {
       'spr3',
       new ImgClip(await createImageBitmap(await resp3.blob()))
     )
-    spr3.rect.setAnimation({
-      from: { angle: 0, x: 0 },
-      to: { angle: Math.PI, x: 100 }
+    spr3.setAnimation({
+      from: { angle: 0, x: 0, y: 0, opacity: 1 },
+      to: { angle: Math.PI, x: 300, y: 300, opacity: 0 }
     }, { duration: 3 })
 
     const spr4 = new WorkerSprite(
@@ -45,7 +45,7 @@ document.querySelector('#mp4-mp4')?.addEventListener('click', () => {
         font-size:40px; color: white; text-shadow: 2px 2px 6px red;
       `))
     )
-    spr4.rect.setAnimation({
+    spr4.setAnimation({
       '0%': { x: 0, y: 0 },
       '25%': { x: 1200, y: 680 },
       '50%': { x: 1200, y: 0 },
