@@ -7,9 +7,6 @@
       "ESNext",
       "DOM"
     ],
-    "types": [
-      "@types/dom-webcodecs"
-    ],
     "moduleResolution": "Node",
     "strict": true,
     "resolveJsonModule": true,
@@ -22,7 +19,6 @@
     "skipLibCheck": true
   },
   "include": [
-    "../../types/mp4box.d.ts",
     "src/**/*"
   ],
   "exclude": [

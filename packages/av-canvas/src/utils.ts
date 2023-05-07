@@ -2,6 +2,7 @@ export function createEl (tagName: string): HTMLElement {
   return document.createElement(tagName)
 }
 
+// todo: 合并，依赖 cliper
 export function renderTxt2Img (txt: string, cssText: string): HTMLImageElement {
   const div = createEl('div')
   div.style.cssText = `${cssText} visibility: hidden; position: fixed;`
@@ -26,13 +27,4 @@ export function renderTxt2Img (txt: string, cssText: string): HTMLImageElement {
 
   img.src = `data:image/svg+xml;charset=utf-8,${svgStr}`
   return img
-}
-
-export async function renderTxt2ImgBitmap (txt: string, cssText: string): Promise<ImageBitmap> {
-  const imgEl = renderTxt2Img(txt, cssText)
-  await new Promise((resolve) => { imgEl.onload = resolve })
-  const cvs = new OffscreenCanvas(imgEl.width, imgEl.height)
-  const ctx = cvs.getContext('2d')
-  ctx?.drawImage(imgEl, 0, 0, imgEl.width, imgEl.height)
-  return await createImageBitmap(cvs)
 }

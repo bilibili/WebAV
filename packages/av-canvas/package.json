@@ -11,7 +11,7 @@
     "test": "vitest",
     "test:coverage": "vitest run --coverage",
     "build": "rm -rf dist && tsc -p build.tsconfig.json --outDir dist",
-    "build:demo": "rm -rf demo-dist && vite build -c demo.vite.config.ts && cp -r demo/public demo-dist/demo",
+    "build:demo": "rm -rf demo-dist && vite build -c demo.vite.config.ts",
     "prepublishOnly": "yarn build",
     "preview": "vite preview"
   },
@@ -19,7 +19,6 @@
     "dist"
   ],
   "devDependencies": {
-    "@types/dom-webcodecs": "^0.1.7",
     "@vitest/coverage-istanbul": "^0.29.8",
     "@webav/av-recorder": "^0.1.3",
     "jsdom": "^21.1.1",
@@ -27,7 +26,5 @@
     "vite": "^4.2.0",
     "vitest": "^0.29.7"
   },
-  "dependencies": {
-    "mp4box": "^0.5.2"
-  }
+  "dependencies": {}
 }
