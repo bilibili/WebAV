@@ -1,4 +1,4 @@
-import { BaseSprite } from './base-sprite'
+import { BaseSprite } from '@webav/av-cliper'
 
 export class ImgSprite extends BaseSprite {
   #img: HTMLImageElement = new Image()

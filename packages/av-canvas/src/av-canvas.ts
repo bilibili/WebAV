@@ -1,4 +1,4 @@
-import { Rect, TCtrlKey } from './sprites/rect'
+import { Rect, TCtrlKey } from '@webav/av-cliper'
 import { renderCtrls } from './sprites/render-ctrl'
 import { ESpriteManagerEvt, SpriteManager } from './sprites/sprite-manager'
 import { draggabelSprite } from './sprites/sprite-op'

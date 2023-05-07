@@ -1,5 +1,5 @@
 import { createEl } from '../utils'
-import { BaseSprite } from './base-sprite'
+import { BaseSprite } from '@webav/av-cliper'
 
 interface IAudioSpriteOpts {
   audioCtx?: AudioContext

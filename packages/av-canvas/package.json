@@ -26,5 +26,7 @@
     "vite": "^4.2.0",
     "vitest": "^0.29.7"
   },
-  "dependencies": {}
+  "dependencies": {
+    "@webav/av-cliper": "^0.1.3"
+  }
 }

@@ -1,7 +1,6 @@
 import { ICvsRatio } from '../types'
 import { createEl } from '../utils'
-import { BaseSprite } from './base-sprite'
-import { CTRL_KEYS, TCtrlKey } from './rect'
+import { BaseSprite, CTRL_KEYS, TCtrlKey } from '@webav/av-cliper'
 import { ESpriteManagerEvt, SpriteManager } from './sprite-manager'
 
 export function renderCtrls (
