@@ -11,13 +11,6 @@
   "typescript.tsdk": "node_modules/typescript/lib",
   "typescript.format.enable": false,
   "javascript.format.enable": false,
-  "prettier.disableLanguages": [
-    "javascript",
-    "typescript",
-    "javascriptreact",
-    "typescriptreact",
-    "svelte"
-  ],
   "files.trimTrailingWhitespace": true,
   "editor.formatOnSave": true,
   "standard.options": {
