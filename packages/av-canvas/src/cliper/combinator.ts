@@ -7,8 +7,18 @@ interface IComItem {
   sprite: WorkerSprite
 }
 
-// todo: 编码、canvas 应从 Timeline中剥离
 export class Combinator {
+  static isSupported (): boolean {
+    return self.OffscreenCanvas != null &&
+      self.OfflineAudioContext != null &&
+      self.VideoEncoder != null &&
+      self.VideoDecoder != null &&
+      self.VideoFrame != null &&
+      self.AudioEncoder != null &&
+      self.AudioDecoder != null &&
+      self.AudioData != null
+  }
+
   #timeItems: IComItem[] = []
 
   #ts = 0
