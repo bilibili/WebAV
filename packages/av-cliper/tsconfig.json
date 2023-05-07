@@ -1,0 +1,13 @@
+{
+  "extends": "./build.tsconfig.json",
+  "compilerOptions": {
+    "types": [
+      "@types/dom-webcodecs",
+      "../../types/mp4box.d.ts"
+    ]
+  },
+  "include": [
+    "src",
+    "demo"
+  ]
+}
