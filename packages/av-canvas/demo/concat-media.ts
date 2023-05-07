@@ -53,6 +53,7 @@ document.querySelector('#mp4-mp4')?.addEventListener('click', () => {
       '100%': { x: 0, y: 0 }
     }, { duration: 4, iterCount: 1 })
     spr4.zIndex = 10
+    spr4.opacity = 0.5
 
     const com = new Combinator({
       width: 1280,

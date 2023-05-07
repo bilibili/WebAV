@@ -7,6 +7,8 @@ export abstract class BaseSprite {
 
   zIndex = 0
 
+  opacity = 1
+
   flip: 'horizontal' | 'vertical' | null = null
 
   audioNode: GainNode | null = null
@@ -30,6 +32,8 @@ export abstract class BaseSprite {
     )
     // 任意方向翻转，旋转角度转为负值，才能与控制点同步
     ctx.rotate((this.flip == null ? 1 : -1) * angle)
+
+    ctx.globalAlpha = this.opacity
   }
 
   abstract destroy (): void
