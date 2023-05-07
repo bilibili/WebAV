@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest'
-import { Rect, TAnimationKeyFrame, linearTimeFn } from '../rect'
+import { Rect } from '../rect'
 
 describe('Rect', () => {
   test('center', () => {
