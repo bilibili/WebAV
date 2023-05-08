@@ -34,30 +34,42 @@ document.querySelector('#mp4-mp4')?.addEventListener('click', () => {
       'spr3',
       new ImgClip(await createImageBitmap(await resp3.blob()))
     )
-    spr3.setAnimation({
-      from: { angle: 0, x: 0, y: 0, opacity: 1 },
-      to: { angle: Math.PI, x: 300, y: 300, opacity: 0 }
-    }, { duration: 3 })
+    spr3.setAnimation(
+      {
+        from: { angle: 0, x: 0, y: 0, opacity: 1 },
+        to: { angle: Math.PI, x: 300, y: 300, opacity: 0 }
+      },
+      { duration: 3 }
+    )
 
     const spr4 = new OffscreenSprite(
       'spr4',
-      new ImgClip(await renderTxt2ImgBitmap('水印', `
+      new ImgClip(
+        await renderTxt2ImgBitmap(
+          '水印',
+          `
         font-size:40px; color: white; text-shadow: 2px 2px 6px red;
-      `))
+      `
+        )
+      )
     )
-    spr4.setAnimation({
-      '0%': { x: 0, y: 0 },
-      '25%': { x: 1200, y: 680 },
-      '50%': { x: 1200, y: 0 },
-      '75%': { x: 0, y: 680 },
-      '100%': { x: 0, y: 0 }
-    }, { duration: 4, iterCount: 1 })
+    spr4.setAnimation(
+      {
+        '0%': { x: 0, y: 0 },
+        '25%': { x: 1200, y: 680 },
+        '50%': { x: 1200, y: 0 },
+        '75%': { x: 0, y: 680 },
+        '100%': { x: 0, y: 0 }
+      },
+      { duration: 4, iterCount: 1 }
+    )
     spr4.zIndex = 10
     spr4.opacity = 0.5
 
     const com = new Combinator({
       width: 1280,
-      height: 720
+      height: 720,
+      bgColor: 'white'
     })
     await com.add(spr4, { offset: 0, duration: 5 })
     await com.add(spr1, { offset: 0, duration: 35 })
@@ -114,7 +126,9 @@ document.querySelector('#decode-frame')?.addEventListener('click', () => {
   })().catch(console.error)
 })
 
-async function createFileWriter (extName: string): Promise<FileSystemWritableFileStream> {
+async function createFileWriter (
+  extName: string
+): Promise<FileSystemWritableFileStream> {
   // @ts-expect-error
   const fileHandle = await window.showSaveFilePicker({
     suggestedName: `WebAv-export-${Date.now()}.${extName}`

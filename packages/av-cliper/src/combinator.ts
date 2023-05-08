@@ -7,9 +7,16 @@ interface IComItem {
   sprite: OffscreenSprite
 }
 
+interface ICombinatorOpts {
+  width: number
+  height: number
+  bgColor?: string
+}
+
 export class Combinator {
   static isSupported (): boolean {
-    return self.OffscreenCanvas != null &&
+    return (
+      self.OffscreenCanvas != null &&
       self.OfflineAudioContext != null &&
       self.VideoEncoder != null &&
       self.VideoDecoder != null &&
@@ -17,6 +24,7 @@ export class Combinator {
       self.AudioEncoder != null &&
       self.AudioDecoder != null &&
       self.AudioData != null
+    )
   }
 
   #comItems: IComItem[] = []
@@ -31,41 +39,47 @@ export class Combinator {
 
   #remux
 
-  constructor (resolutions: { width: number, height: number }) {
-    const { width, height } = resolutions
+  #opts
+
+  constructor (opts: ICombinatorOpts) {
+    const { width, height } = opts
     this.#cvs = new OffscreenCanvas(width, height)
     // this.#cvs = document.querySelector('#canvas') as HTMLCanvasElement
     const ctx = this.#cvs.getContext('2d', { alpha: false })
     if (ctx == null) throw Error('Can not create 2d offscreen context')
     this.#ctx = ctx
+    this.#opts = Object.assign({ bgColor: '#000' }, opts)
 
     console.time('cost')
-    this.#remux = recodemux({
-      video: {
-        width,
-        height,
-        expectFPS: 30
+    this.#remux = recodemux(
+      {
+        video: {
+          width,
+          height,
+          expectFPS: 30
+        },
+        audio: {
+          codec: 'aac',
+          sampleRate: 48000,
+          sampleSize: 16,
+          channelCount: 2
+        },
+        bitrate: 1_500_000
       },
-      audio: {
-        codec: 'aac',
-        sampleRate: 48000,
-        sampleSize: 16,
-        channelCount: 2
-      },
-      bitrate: 1_500_000
-    }, {
-      onEnded: () => {
-        console.log('===== output ended ======', this.#ts)
-        this.#closeOutStream?.()
-        console.timeEnd('cost')
-        this.#comItems.forEach(it => it.sprite.destroy())
+      {
+        onEnded: () => {
+          console.log('===== output ended ======', this.#ts)
+          this.#closeOutStream?.()
+          console.timeEnd('cost')
+          this.#comItems.forEach(it => it.sprite.destroy())
+        }
       }
-    })
+    )
   }
 
   async add (
     sprite: OffscreenSprite,
-    opts: { offset: number, duration: number }
+    opts: { offset: number; duration: number }
   ): Promise<void> {
     await sprite.ready
     this.#comItems.push({
@@ -88,18 +102,26 @@ export class Combinator {
     let canceled = false
     const run = async (): Promise<void> => {
       let frameCnt = 0
+      const { width, height } = this.#cvs
+      const ctx = this.#ctx
       while (this.#ts <= maxTime) {
         if (canceled) break
+
+        ctx.fillStyle = this.#opts.bgColor
+        ctx.fillRect(0, 0, width, height)
 
         let audioCnt = 0
         for (const it of this.#comItems) {
           if (this.#ts < it.offset || this.#ts > it.offset + it.duration) {
             continue
           }
+
+          ctx.save()
           const audioDataArr = await it.sprite.offscreenRender(
-            this.#ctx,
+            ctx,
             this.#ts - it.offset
           )
+          ctx.restore()
 
           for (const ad of audioDataArr) {
             // 此处看起来需要重置 timestamp，实际上不重置似乎也没有 bug，chrome、quicktime播放正常
@@ -124,8 +146,8 @@ export class Combinator {
         this.#remux.encodeVideo(vf, {
           keyFrame: frameCnt % 150 === 0
         })
-        this.#ctx.resetTransform()
-        this.#ctx.clearRect(0, 0, this.#cvs.width, this.#cvs.height)
+        ctx.resetTransform()
+        ctx.clearRect(0, 0, width, height)
 
         frameCnt += 1
       }
@@ -148,7 +170,7 @@ export class Combinator {
 }
 
 function createAudioPlaceholder (ts: number, duration: number): AudioData {
-  const frameCnt = Math.floor(48000 * duration / 1e6)
+  const frameCnt = Math.floor((48000 * duration) / 1e6)
   return new AudioData({
     timestamp: ts,
     numberOfChannels: 2,
