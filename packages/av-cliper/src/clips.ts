@@ -189,15 +189,19 @@ export class AudioClip implements IClip {
 
   #ts = 0
 
-  constructor (buf: ArrayBuffer, opts: OfflineAudioContextOptions) {
+  constructor (
+    buf: ArrayBuffer,
+    opts: OfflineAudioContextOptions & { loop?: boolean; volume?: number }
+  ) {
     const ctx = new OfflineAudioContext(opts)
     // const ctx = new AudioContext()
-    this.ready = this.#init(ctx, buf)
+    this.ready = this.#init(ctx, buf, opts)
   }
 
   async #init (
     ctx: OfflineAudioContext | AudioContext,
-    buf: ArrayBuffer
+    buf: ArrayBuffer,
+    opts: OfflineAudioContextOptions & { loop?: boolean; volume?: number }
   ): Promise<void> {
     const audioBuf = await ctx.decodeAudioData(buf)
     this.meta = {
@@ -216,13 +220,16 @@ export class AudioClip implements IClip {
     if (chan1 == null) chan1 = chan0.slice(0)
 
     let tsOffset = 0
+    const volume = opts.volume ?? 1
     while (true) {
       if (chan0.length === 0 || chan1.length === 0) break
 
       const cnt = chan0.length < frameCnt ? chan0.length : frameCnt
-      const data = new Float32Array(cnt * 2)
+      let data = new Float32Array(cnt * 2)
       data.set(chan0.slice(0, cnt), 0)
       data.set(chan1.slice(0, cnt), cnt)
+
+      if (volume !== 1) data = data.map(v => v * volume)
 
       this.#audioDatas.push(
         new AudioData({
