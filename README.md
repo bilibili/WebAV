@@ -11,6 +11,9 @@ This is an experimental project that tries to provide an easy-to-use API for pro
 这是一个实验性项目，尝试提供简单易用的 API 在浏览器中处理音视频数据。  
 
 ## Packages
+- [AVCliper](packages/av-cliper/README.md)  
+  Audio and video editing tool library.  
+  音视频剪辑工具库. 
 - [AVCanvas](packages/av-canvas/README.md)  
   Combine Text, Image, Video, Audio, UserMedia, DisplayMedia to generate MediaStream.  
   使用文字、图片、音视频文件、摄像头&麦克风、分享屏幕来生成 MediaStream。  
