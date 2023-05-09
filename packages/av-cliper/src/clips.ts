@@ -189,19 +189,31 @@ export class AudioClip implements IClip {
 
   #ts = 0
 
+  #opts
+
+  // #audioDatas 索引开始位置，循环播放需要在 loopCount 变化时重置为 0
+  #cusorIdx = 0
+
+  // 循环播放器次数
+  #loopCount = 0
+
   constructor (
     buf: ArrayBuffer,
     opts: OfflineAudioContextOptions & { loop?: boolean; volume?: number }
   ) {
+    this.#opts = {
+      loop: false,
+      volume: 1,
+      ...opts
+    }
     const ctx = new OfflineAudioContext(opts)
     // const ctx = new AudioContext()
-    this.ready = this.#init(ctx, buf, opts)
+    this.ready = this.#init(ctx, buf)
   }
 
   async #init (
     ctx: OfflineAudioContext | AudioContext,
-    buf: ArrayBuffer,
-    opts: OfflineAudioContextOptions & { loop?: boolean; volume?: number }
+    buf: ArrayBuffer
   ): Promise<void> {
     const audioBuf = await ctx.decodeAudioData(buf)
     this.meta = {
@@ -220,7 +232,7 @@ export class AudioClip implements IClip {
     if (chan1 == null) chan1 = chan0.slice(0)
 
     let tsOffset = 0
-    const volume = opts.volume ?? 1
+    const volume = this.#opts.volume
     while (true) {
       if (chan0.length === 0 || chan1.length === 0) break
 
@@ -253,7 +265,7 @@ export class AudioClip implements IClip {
     state: 'success' | 'next' | 'done'
   }> {
     if (time < this.#ts) throw Error('time not allow rollback')
-    if (time >= this.meta.duration) {
+    if (!this.#opts.loop && time >= this.meta.duration) {
       return {
         audio: [],
         state: 'done'
@@ -262,20 +274,29 @@ export class AudioClip implements IClip {
 
     this.#ts = time
 
-    const idx = this.#audioDatas.findIndex(ad => ad.timestamp > time)
-    if (idx === -1) {
-      return {
-        audio: [],
-        state: 'next'
+    const loopCount = Math.floor(time / this.meta.duration)
+    if (loopCount > this.#loopCount) {
+      this.#cusorIdx = 0
+      this.#loopCount = loopCount
+    }
+
+    const offsetTime = time % this.meta.duration
+    let endIdx = -1
+    for (let i = this.#cusorIdx; i < this.#audioDatas.length; i += 1) {
+      if (this.#audioDatas[i].timestamp > offsetTime) {
+        endIdx = i
+        break
       }
     }
-    const audio = this.#audioDatas.slice(0, idx)
-    this.#audioDatas = this.#audioDatas.slice(idx)
+    if (endIdx === -1) return { audio: [], state: 'next' }
 
-    return {
-      audio,
-      state: 'success'
-    }
+    // todo: 内存优化
+    const audio = this.#audioDatas
+      .slice(this.#cusorIdx, endIdx)
+      .map(ad => ad.clone())
+    this.#cusorIdx = endIdx
+
+    return { audio, state: 'success' }
   }
 
   destroy (): void {

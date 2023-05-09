@@ -95,7 +95,8 @@ document.querySelector('#mp4-mp3')?.addEventListener('click', () => {
         numberOfChannels: 1,
         sampleRate: 48000,
         length: 4 * 48000,
-        volume: 2
+        volume: 2,
+        loop: true
       })
     )
     const com = new Combinator({
@@ -103,7 +104,7 @@ document.querySelector('#mp4-mp3')?.addEventListener('click', () => {
       height: 720
     })
     await com.add(spr1, { offset: 0, duration: 35 })
-    await com.add(spr2, { offset: 0, duration: 7 })
+    await com.add(spr2, { offset: 0, duration: 35 })
     await com.output().pipeTo(await createFileWriter('mp4'))
   })().catch(Log.error)
 })
