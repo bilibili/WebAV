@@ -1,6 +1,6 @@
 // 避免使用 DOM API 确保这些 Clip 能在 Worker 中运行
 import { Log } from './log'
-import { demuxcode, sleep } from './mp4-utils'
+import { adjustAudioDataVolume, demuxcode, sleep } from './mp4-utils'
 
 export interface IClip {
   /**
@@ -44,34 +44,44 @@ export class MP4Clip implements IClip {
 
   constructor (
     rs: ReadableStream<Uint8Array>,
-    opts: { audio: boolean } = { audio: true }
+    opts: { audio: boolean | { volume: number } } = { audio: true }
   ) {
     this.ready = new Promise(resolve => {
       let lastVf: VideoFrame | null = null
-      const { seek } = demuxcode(rs, opts, {
-        onReady: info => {
-          const videoTrack = info.videoTracks[0]
-          this.meta = {
-            duration: (info.duration / info.timescale) * 1e6,
-            width: videoTrack.track_width,
-            height: videoTrack.track_height
+      const volume =
+        typeof opts.audio === 'object' && 'volume' in opts.audio
+          ? opts.audio.volume
+          : 1
+      const { seek } = demuxcode(
+        rs,
+        { audio: opts.audio !== false },
+        {
+          onReady: info => {
+            const videoTrack = info.videoTracks[0]
+            this.meta = {
+              duration: (info.duration / info.timescale) * 1e6,
+              width: videoTrack.track_width,
+              height: videoTrack.track_height
+            }
+            resolve()
+            seek(0)
+          },
+          onVideoOutput: vf => {
+            this.#videoFrames.push(vf)
+            lastVf = vf
+          },
+          onAudioOutput: ad => {
+            this.#audioDatas.push(
+              volume === 1 ? ad : adjustAudioDataVolume(ad, volume)
+            )
+          },
+          onEnded: () => {
+            if (lastVf == null) throw Error('mp4 parse error, no video frame')
+            this.meta.duration = lastVf.timestamp + (lastVf.duration ?? 0)
+            this.#frameParseEnded = true
           }
-          resolve()
-          seek(0)
-        },
-        onVideoOutput: vf => {
-          this.#videoFrames.push(vf)
-          lastVf = vf
-        },
-        onAudioOutput: ad => {
-          this.#audioDatas.push(ad)
-        },
-        onEnded: () => {
-          if (lastVf == null) throw Error('mp4 parse error, no video frame')
-          this.meta.duration = lastVf.timestamp + (lastVf.duration ?? 0)
-          this.#frameParseEnded = true
         }
-      })
+      )
     })
   }
 

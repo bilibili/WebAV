@@ -26,8 +26,8 @@ document.querySelector('#mp4-mp4')?.addEventListener('click', () => {
     const spr2 = new OffscreenSprite(
       'v1',
       new MP4Clip(
-        resp2.body as ReadableStream
-        // { audio: false } // 禁止音频
+        resp2.body as ReadableStream,
+        { audio: { volume: 2 } } // 调整视频音量
       )
     )
     const resp3 = await fetch('./public/bangni.png')

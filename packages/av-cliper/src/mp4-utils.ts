@@ -460,6 +460,20 @@ export function extractAudioDataBuf (ad: AudioData): ArrayBuffer {
   return rs.buffer
 }
 
+export function adjustAudioDataVolume (ad: AudioData, volume: number) {
+  const data = new Float32Array(extractAudioDataBuf(ad)).map(v => v * volume)
+  const newAd = new AudioData({
+    sampleRate: ad.sampleRate,
+    numberOfChannels: ad.numberOfChannels,
+    timestamp: ad.timestamp,
+    format: ad.format,
+    numberOfFrames: ad.numberOfFrames,
+    data
+  })
+  ad.close()
+  return newAd
+}
+
 export function audioBuffer2Data (ab: AudioBuffer): AudioData {
   const frameCnt = ab.sampleRate * ab.duration * 2
   const buf = new Float32Array(frameCnt)
