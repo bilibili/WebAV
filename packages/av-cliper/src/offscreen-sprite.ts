@@ -1,5 +1,6 @@
 import { BaseSprite } from './base-sprite'
 import { IClip } from './clips'
+import { Log } from './log'
 
 export class OffscreenSprite extends BaseSprite {
   #clip: IClip
@@ -11,7 +12,7 @@ export class OffscreenSprite extends BaseSprite {
     super(name)
     this.#clip = clip
     this.ready = clip.ready.then(() => {
-      console.log('--- WorkerSprite ready ---', clip.meta)
+      Log.info(`--- WorkerSprite ready ---`, clip.meta)
       this.rect.w = clip.meta.width
       this.rect.h = clip.meta.height
     })

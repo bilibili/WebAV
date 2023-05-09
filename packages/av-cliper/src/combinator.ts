@@ -1,5 +1,6 @@
 import { OffscreenSprite } from './offscreen-sprite'
 import { file2stream, stereoFixedAudioData, recodemux } from './mp4-utils'
+import { Log } from './log'
 
 interface IComItem {
   offset: number
@@ -68,7 +69,7 @@ export class Combinator {
       },
       {
         onEnded: () => {
-          console.log('===== output ended ======', this.#ts)
+          Log.info(`===== output ended ====== ${this.#ts}`)
           this.#closeOutStream?.()
           console.timeEnd('cost')
           this.#comItems.forEach(it => it.sprite.destroy())
@@ -141,7 +142,6 @@ export class Combinator {
           timestamp: this.#ts
         })
         this.#ts += timeSlice
-        // console.log(4444, vf.duration)
 
         this.#remux.encodeVideo(vf, {
           keyFrame: frameCnt % 150 === 0
@@ -153,7 +153,7 @@ export class Combinator {
       }
     }
 
-    run().catch(console.error)
+    run().catch(Log.error)
 
     const { stream, stop: closeOutStream } = file2stream(
       this.#remux.mp4file,

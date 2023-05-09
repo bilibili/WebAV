@@ -1,5 +1,6 @@
 import { AudioClip, ImgClip, MP4Clip } from '../src/clips'
 import { Combinator } from '../src/combinator'
+import { Log } from '../src/log'
 import { OffscreenSprite } from '../src/offscreen-sprite'
 import { renderTxt2ImgBitmap } from '../src/utils'
 
@@ -10,7 +11,7 @@ import { renderTxt2ImgBitmap } from '../src/utils'
 //   const cvs = document.querySelector('canvas') as HTMLCanvasElement
 //   const ctx = cvs.getContext('2d')
 //   ctx?.drawImage(img, 0, 0)
-// })().catch(console.error)
+// })().catch(Log.error)
 
 document.querySelector('#mp4-mp4')?.addEventListener('click', () => {
   ;(async () => {
@@ -76,7 +77,7 @@ document.querySelector('#mp4-mp4')?.addEventListener('click', () => {
     await com.add(spr2, { offset: 38, duration: 7 })
     await com.add(spr3, { offset: 35, duration: 3 })
     await com.output().pipeTo(await createFileWriter('mp4'))
-  })().catch(console.error)
+  })().catch(Log.error)
 })
 
 document.querySelector('#mp4-mp3')?.addEventListener('click', () => {
@@ -103,7 +104,7 @@ document.querySelector('#mp4-mp3')?.addEventListener('click', () => {
     await com.add(spr1, { offset: 0, duration: 35 })
     await com.add(spr2, { offset: 0, duration: 7 })
     await com.output().pipeTo(await createFileWriter('mp4'))
-  })().catch(console.error)
+  })().catch(Log.error)
 })
 
 const cvs = document.querySelector('#canvas') as HTMLCanvasElement
@@ -123,7 +124,7 @@ document.querySelector('#decode-frame')?.addEventListener('click', () => {
       }
       time += 40000
     }
-  })().catch(console.error)
+  })().catch(Log.error)
 })
 
 async function createFileWriter (

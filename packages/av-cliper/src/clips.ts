@@ -1,4 +1,5 @@
 // 避免使用 DOM API 确保这些 Clip 能在 Worker 中运行
+import { Log } from './log'
 import { demuxcode, sleep } from './mp4-utils'
 
 export interface IClip {
@@ -45,24 +46,24 @@ export class MP4Clip implements IClip {
     rs: ReadableStream<Uint8Array>,
     opts: { audio: boolean } = { audio: true }
   ) {
-    this.ready = new Promise((resolve) => {
+    this.ready = new Promise(resolve => {
       let lastVf: VideoFrame | null = null
       const { seek } = demuxcode(rs, opts, {
-        onReady: (info) => {
+        onReady: info => {
           const videoTrack = info.videoTracks[0]
           this.meta = {
-            duration: info.duration / info.timescale * 1e6,
+            duration: (info.duration / info.timescale) * 1e6,
             width: videoTrack.track_width,
             height: videoTrack.track_height
           }
           resolve()
           seek(0)
         },
-        onVideoOutput: (vf) => {
+        onVideoOutput: vf => {
           this.#videoFrames.push(vf)
           lastVf = vf
         },
-        onAudioOutput: (ad) => {
+        onAudioOutput: ad => {
           this.#audioDatas.push(ad)
         },
         onEnded: () => {
@@ -131,7 +132,7 @@ export class MP4Clip implements IClip {
       if (nextOffset === -1) {
         // 解析已完成，队列已清空
         if (this.#frameParseEnded) {
-          console.log('--- worker ended ----')
+          Log.info('--- worker ended ----')
           return {
             audio,
             state: 'done'
@@ -159,7 +160,6 @@ export class MP4Clip implements IClip {
         state
       }
     }
-    // console.log(2222222, frame.timestamp, this.#videoFrame)
     return {
       video,
       audio,
@@ -195,7 +195,10 @@ export class AudioClip implements IClip {
     this.ready = this.#init(ctx, buf)
   }
 
-  async #init (ctx: OfflineAudioContext | AudioContext, buf: ArrayBuffer): Promise<void> {
+  async #init (
+    ctx: OfflineAudioContext | AudioContext,
+    buf: ArrayBuffer
+  ): Promise<void> {
     const audioBuf = await ctx.decodeAudioData(buf)
     this.meta = {
       ...this.meta,
@@ -208,7 +211,7 @@ export class AudioClip implements IClip {
       chanBufs.push(audioBuf.getChannelData(i))
     }
     // 10ms 一个声音分片
-    const frameCnt = 1e4 / 1e6 * audioBuf.sampleRate
+    const frameCnt = (1e4 / 1e6) * audioBuf.sampleRate
     let [chan0, chan1] = chanBufs
     if (chan1 == null) chan1 = chan0.slice(0)
 
@@ -221,14 +224,16 @@ export class AudioClip implements IClip {
       data.set(chan0.slice(0, cnt), 0)
       data.set(chan1.slice(0, cnt), cnt)
 
-      this.#audioDatas.push(new AudioData({
-        format: 'f32-planar',
-        numberOfChannels: 2,
-        numberOfFrames: cnt,
-        sampleRate: audioBuf.sampleRate,
-        timestamp: tsOffset,
-        data
-      }))
+      this.#audioDatas.push(
+        new AudioData({
+          format: 'f32-planar',
+          numberOfChannels: 2,
+          numberOfFrames: cnt,
+          sampleRate: audioBuf.sampleRate,
+          timestamp: tsOffset,
+          data
+        })
+      )
 
       chan0 = chan0.slice(cnt)
       chan1 = chan1.slice(cnt)
@@ -267,7 +272,7 @@ export class AudioClip implements IClip {
   }
 
   destroy (): void {
-    console.log('---- audioclip destroy ----', this.#audioDatas)
+    Log.info('---- audioclip destroy ----', this.#audioDatas)
     this.#audioDatas.forEach(ad => ad.close())
   }
 }
@@ -286,7 +291,6 @@ export class ImgClip implements IClip {
 
   constructor (imgBitmap: ImageBitmap) {
     this.#img = imgBitmap
-    console.log(566666, this.#img)
     this.meta.width = imgBitmap.width
     this.meta.height = imgBitmap.height
     this.ready = Promise.resolve()

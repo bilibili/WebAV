@@ -1,4 +1,13 @@
-import mp4box, { MP4ArrayBuffer, MP4AudioTrack, MP4File, MP4Info, MP4Sample, MP4VideoTrack, TrakBoxParser } from 'mp4box'
+import mp4box, {
+  MP4ArrayBuffer,
+  MP4AudioTrack,
+  MP4File,
+  MP4Info,
+  MP4Sample,
+  MP4VideoTrack,
+  TrakBoxParser
+} from 'mp4box'
+import { Log } from './log'
 
 type TCleanFn = () => void
 
@@ -27,8 +36,8 @@ export function demuxcode (
     onEnded: () => void
   }
 ): {
-    seek: (time: number) => void
-  } {
+  seek: (time: number) => void
+} {
   const mp4File = stream2file(stream)
 
   const resetEndTimer = debounce(() => {
@@ -41,24 +50,24 @@ export function demuxcode (
   }, 300)
 
   const vdecoder = new VideoDecoder({
-    output: (vf) => {
+    output: vf => {
       cbs.onVideoOutput(vf)
       resetEndTimer()
     },
-    error: console.error
+    error: Log.error
   })
   const adecoder = new AudioDecoder({
-    output: (audioData) => {
+    output: audioData => {
       cbs.onAudioOutput(audioData)
       resetEndTimer()
     },
-    error: console.error
+    error: Log.error
   })
 
   let mp4Info: MP4Info | null = null
   let vTrackInfo: MP4VideoTrack | null = null
   let aTrackInfo: MP4AudioTrack | null = null
-  mp4File.onReady = (info) => {
+  mp4File.onReady = info => {
     mp4Info = info
     vTrackInfo = info.videoTracks[0]
     if (vTrackInfo != null) {
@@ -95,7 +104,8 @@ export function demuxcode (
       // Fragment mp4 中 duration 为 0，所以需要统计samples 的 duration
       // 注意：所有 samples 的 duration 累加，与解码后的 VideoFrame 累加 值接近，但不相等
       mp4Info.duration = totalVideoSamples.reduce(
-        (acc, cur) => acc + cur.duration, 0
+        (acc, cur) => acc + cur.duration,
+        0
       )
       cbs.onReady(mp4Info)
     }
@@ -111,7 +121,7 @@ export function demuxcode (
   }
 
   return {
-    seek: (time) => {
+    seek: time => {
       if (vTrackInfo != null) {
         const startIdx = findStartSampleIdx(
           totalVideoSamples,
@@ -120,12 +130,14 @@ export function demuxcode (
         // samples 全部 推入解码器，解码器有维护队列
         const samples = totalVideoSamples.slice(startIdx)
         samples.forEach(s => {
-          vdecoder.decode(new EncodedVideoChunk({
-            type: s.is_sync ? 'key' : 'delta',
-            timestamp: 1e6 * s.cts / s.timescale,
-            duration: 1e6 * s.duration / s.timescale,
-            data: s.data
-          }))
+          vdecoder.decode(
+            new EncodedVideoChunk({
+              type: s.is_sync ? 'key' : 'delta',
+              timestamp: (1e6 * s.cts) / s.timescale,
+              duration: (1e6 * s.duration) / s.timescale,
+              data: s.data
+            })
+          )
         })
       }
       if (opts.audio && aTrackInfo != null) {
@@ -135,12 +147,16 @@ export function demuxcode (
         )
         // samples 全部 推入解码器，解码器有维护队列
         const samples = totalAudioSamples.slice(startIdx)
-        samples.forEach(s => adecoder.decode(new EncodedAudioChunk({
-          type: s.is_sync ? 'key' : 'delta',
-          timestamp: 1e6 * s.cts / s.timescale,
-          duration: 1e6 * s.duration / s.timescale,
-          data: s.data
-        })))
+        samples.forEach(s =>
+          adecoder.decode(
+            new EncodedAudioChunk({
+              type: s.is_sync ? 'key' : 'delta',
+              timestamp: (1e6 * s.cts) / s.timescale,
+              duration: (1e6 * s.duration) / s.timescale,
+              data: s.data
+            })
+          )
+        )
       }
     }
   }
@@ -172,14 +188,11 @@ export function recodemux (
     onEnded: TCleanFn
   }
 ): {
-    encodeVideo: (
-      frame: VideoFrame,
-      options?: VideoEncoderEncodeOptions
-    ) => void
-    encodeAudio: (data: AudioData) => void
-    close: TCleanFn
-    mp4file: MP4File
-  } {
+  encodeVideo: (frame: VideoFrame, options?: VideoEncoderEncodeOptions) => void
+  encodeAudio: (data: AudioData) => void
+  close: TCleanFn
+  mp4file: MP4File
+} {
   const mp4file = mp4box.createFile()
 
   let aEncoder: AudioEncoder | null = null
@@ -207,7 +220,7 @@ export function recodemux (
       vEncoder.encode(vf, opts)
       vf.close()
     },
-    encodeAudio: (ad) => {
+    encodeAudio: ad => {
       if (aEncoder == null) {
         audioDataCache.push(ad)
       } else {
@@ -216,9 +229,9 @@ export function recodemux (
       }
     },
     close: () => {
-      vEncoder.flush().catch(console.error)
+      vEncoder.flush().catch(Log.error)
       vEncoder.close()
-      aEncoder?.flush().catch(console.error)
+      aEncoder?.flush().catch(Log.error)
       aEncoder?.close()
     },
     mp4file
@@ -252,16 +265,12 @@ export function encodeVideoTrack (
     chunk.copyTo(buf)
     const dts = chunk.timestamp
 
-    mp4File.addSample(
-      vTrackId,
-      buf,
-      {
-        duration: chunk.duration ?? 0,
-        dts,
-        cts: dts,
-        is_sync: chunk.type === 'key'
-      }
-    )
+    mp4File.addSample(vTrackId, buf, {
+      duration: chunk.duration ?? 0,
+      dts,
+      cts: dts,
+      is_sync: chunk.type === 'key'
+    })
   })
 
   return encoder
@@ -272,7 +281,7 @@ function createVideoEncoder (
   outHandler: EncodedVideoChunkOutputCallback
 ): VideoEncoder {
   const encoder = new VideoEncoder({
-    error: console.error,
+    error: Log.error,
     output: outHandler
   })
 
@@ -315,8 +324,8 @@ function encodeAudioTrack (
 
   const trackId = mp4File.addTrack(audioTrackOpts)
   const encoder = new AudioEncoder({
-    error: console.error,
-    output: (chunk) => {
+    error: Log.error,
+    output: chunk => {
       const buf = new ArrayBuffer(chunk.byteLength)
       chunk.copyTo(buf)
       const dts = chunk.timestamp
@@ -346,7 +355,7 @@ function stream2file (stream: ReadableStream<Uint8Array>): MP4File {
     while (true) {
       const { done, value } = await reader.read()
       if (done) {
-        console.log('source read done')
+        Log.info('source read done')
         return
       }
 
@@ -356,7 +365,7 @@ function stream2file (stream: ReadableStream<Uint8Array>): MP4File {
       file.appendBuffer(chunk)
     }
   }
-  readFile().catch(console.error)
+  readFile().catch(Log.error)
 
   return file
 }
@@ -366,9 +375,9 @@ export function file2stream (
   timeSlice: number,
   onCancel: TCleanFn
 ): {
-    stream: ReadableStream<ArrayBuffer>
-    stop: TCleanFn
-  } {
+  stream: ReadableStream<ArrayBuffer>
+  stop: TCleanFn
+} {
   let timerId = 0
 
   let sendedBoxIdx = 0
@@ -384,7 +393,7 @@ export function file2stream (
   }
 
   let stoped = false
-  let exit: (TCleanFn) | null = null
+  let exit: TCleanFn | null = null
   const stream = new ReadableStream({
     start (ctrl) {
       timerId = self.setInterval(() => {
@@ -416,7 +425,7 @@ export function file2stream (
   }
 }
 
-export function debounce <F extends (...args: any[]) => any> (
+export function debounce<F extends (...args: any[]) => any>(
   func: F,
   wait: number
 ): (...rest: Parameters<F>) => void {
@@ -521,7 +530,7 @@ function parseVideoCodecDesc (track: TrakBoxParser): Uint8Array {
 }
 
 export async function sleep (time: number): Promise<void> {
-  return await new Promise((resolve) => {
+  return await new Promise(resolve => {
     setTimeout(resolve, time)
   })
 }
