@@ -129,6 +129,21 @@ document.querySelector('#decode-frame')?.addEventListener('click', () => {
   })().catch(Log.error)
 })
 
+document.querySelector('#decode-mp4a')?.addEventListener('click', () => {
+  ;(async () => {
+    const resp1 = await fetch('./public/sample1.m4a')
+    const clip = new AudioClip(await resp1.arrayBuffer())
+    await clip.ready
+    let time = 0
+    while (true) {
+      const { state, audio } = await clip.tick(time)
+      console.log(state, audio)
+      if (state === 'done') return
+      time += 40000
+    }
+  })().catch(Log.error)
+})
+
 async function createFileWriter (
   extName: string
 ): Promise<FileSystemWritableFileStream> {

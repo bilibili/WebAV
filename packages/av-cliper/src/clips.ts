@@ -197,7 +197,13 @@ export class AudioClip implements IClip {
 
   #audioDatas: AudioData[] = []
 
+  #chan0Buf = new Float32Array()
+  #chan1Buf = new Float32Array()
+
+  // 微秒
   #ts = 0
+
+  #frameOffset = 0
 
   #opts
 
@@ -209,15 +215,15 @@ export class AudioClip implements IClip {
 
   constructor (
     buf: ArrayBuffer,
-    opts: OfflineAudioContextOptions & { loop?: boolean; volume?: number }
+    opts?: OfflineAudioContextOptions & { loop?: boolean; volume?: number }
   ) {
     this.#opts = {
       loop: false,
       volume: 1,
       ...opts
     }
-    const ctx = new OfflineAudioContext(opts)
-    // const ctx = new AudioContext()
+    // const ctx = new OfflineAudioContext(opts)
+    const ctx = new AudioContext()
     this.ready = this.#init(ctx, buf)
   }
 
@@ -225,53 +231,78 @@ export class AudioClip implements IClip {
     ctx: OfflineAudioContext | AudioContext,
     buf: ArrayBuffer
   ): Promise<void> {
+    const tStart = performance.now()
     const audioBuf = await ctx.decodeAudioData(buf)
+    Log.info('Audio clip decoded:', performance.now() - tStart)
+
     this.meta = {
       ...this.meta,
       duration: audioBuf.duration * 1e6,
       sampleRate: audioBuf.sampleRate,
       numberOfChannels: audioBuf.numberOfChannels
     }
-    const chanBufs: Float32Array[] = []
-    for (let i = 0; i < audioBuf.numberOfChannels; i += 1) {
-      chanBufs.push(audioBuf.getChannelData(i))
-    }
-    // 10ms 一个声音分片
-    const frameCnt = (1e4 / 1e6) * audioBuf.sampleRate
-    let [chan0, chan1] = chanBufs
-    if (chan1 == null) chan1 = chan0.slice(0)
 
-    let tsOffset = 0
+    this.#chan0Buf = audioBuf.getChannelData(0)
+    this.#chan1Buf =
+      audioBuf.numberOfChannels > 1
+        ? audioBuf.getChannelData(1)
+        : // 单声道 转 立体声
+          this.#chan0Buf
+
     const volume = this.#opts.volume
-    while (true) {
-      if (chan0.length === 0 || chan1.length === 0) break
-
-      const cnt = chan0.length < frameCnt ? chan0.length : frameCnt
-      let data = new Float32Array(cnt * 2)
-      data.set(chan0.slice(0, cnt), 0)
-      data.set(chan1.slice(0, cnt), cnt)
-
-      if (volume !== 1) data = data.map(v => v * volume)
-
-      this.#audioDatas.push(
-        new AudioData({
-          format: 'f32-planar',
-          numberOfChannels: 2,
-          numberOfFrames: cnt,
-          sampleRate: audioBuf.sampleRate,
-          timestamp: tsOffset,
-          data
-        })
-      )
-
-      chan0 = chan0.slice(cnt)
-      chan1 = chan1.slice(cnt)
-      tsOffset += 1e4
+    if (volume !== 1) {
+      this.#chan0Buf = this.#chan0Buf.map(v => v * volume)
+      if (this.#chan0Buf !== this.#chan1Buf) {
+        this.#chan1Buf = this.#chan0Buf.map(v => v * volume)
+      }
     }
+
+    // const chanBufs: Float32Array[] = []
+    // for (let i = 0; i < audioBuf.numberOfChannels; i += 1) {
+    //   chanBufs.push(audioBuf.getChannelData(i))
+    // }
+    // let [chan0, chan1] = chanBufs
+    // // 单声道 转 立体声
+    // if (chan1 == null) chan1 = chan0.slice(0)
+
+    // let size = 0
+    // let tsOffset = 0
+    // // 100ms 一个声音分片
+    // const frameCnt = (1e5 / 1e6) * audioBuf.sampleRate
+    // while (true) {
+    //   if (chan0.length === 0 || chan1.length === 0) break
+
+    //   const cnt = chan0.length < frameCnt ? chan0.length : frameCnt
+    //   let data = new Float32Array(cnt * 2)
+    //   data.set(chan0.slice(0, cnt), 0)
+    //   data.set(chan1.slice(0, cnt), cnt)
+    //   console.log(4444, (size += data.byteLength))
+
+    //   if (volume !== 1) data = data.map(v => v * volume)
+
+    //   // this.#audioDatas.push(
+    //   //   new AudioData({
+    //   //     format: 'f32-planar',
+    //   //     numberOfChannels: 2,
+    //   //     numberOfFrames: cnt,
+    //   //     sampleRate: audioBuf.sampleRate,
+    //   //     timestamp: tsOffset,
+    //   //     data
+    //   //   })
+    //   // )
+
+    //   chan0 = chan0.slice(cnt)
+    //   chan1 = chan1.slice(cnt)
+    //   tsOffset += 1e4
+    // }
+    Log.info(
+      'Audio clip convert to AudioData, time:',
+      performance.now() - tStart
+    )
   }
 
   async tick (time: number): Promise<{
-    audio: AudioData[]
+    audio: Float32Array[]
     state: 'success' | 'next' | 'done'
   }> {
     if (time < this.#ts) throw Error('time not allow rollback')
@@ -282,31 +313,40 @@ export class AudioClip implements IClip {
       }
     }
 
+    const deltaTime = (time = this.#ts)
     this.#ts = time
 
-    const loopCount = Math.floor(time / this.meta.duration)
-    if (loopCount > this.#loopCount) {
-      this.#cusorIdx = 0
-      this.#loopCount = loopCount
-    }
-
-    const offsetTime = time % this.meta.duration
-    let endIdx = -1
-    for (let i = this.#cusorIdx; i < this.#audioDatas.length; i += 1) {
-      if (this.#audioDatas[i].timestamp > offsetTime) {
-        endIdx = i
-        break
-      }
-    }
-    if (endIdx === -1) return { audio: [], state: 'next' }
-
-    // todo: 内存优化
-    const audio = this.#audioDatas
-      .slice(this.#cusorIdx, endIdx)
-      .map(ad => ad.clone())
-    this.#cusorIdx = endIdx
+    const frameCnt = Math.ceil(deltaTime * (this.meta.sampleRate / 1e6))
+    const audio = [
+      this.#chan0Buf.slice(this.#frameOffset, frameCnt),
+      this.#chan1Buf.slice(this.#frameOffset, frameCnt)
+    ]
 
     return { audio, state: 'success' }
+
+    // const loopCount = Math.floor(time / this.meta.duration)
+    // if (loopCount > this.#loopCount) {
+    //   this.#cusorIdx = 0
+    //   this.#loopCount = loopCount
+    // }
+
+    // const offsetTime = time % this.meta.duration
+    // let endIdx = -1
+    // // for (let i = this.#cusorIdx; i < this.#audioDatas.length; i += 1) {
+    // //   if (this.#audioDatas[i].timestamp > offsetTime) {
+    // //     endIdx = i
+    // //     break
+    // //   }
+    // // }
+    // if (endIdx === -1) return { audio: [], state: 'next' }
+
+    // // todo: 内存优化
+    // const audio = this.#audioDatas
+    //   .slice(this.#cusorIdx, endIdx)
+    //   .map(ad => ad.clone())
+    // this.#cusorIdx = endIdx
+
+    // return { audio, state: 'success' }
   }
 
   destroy (): void {
