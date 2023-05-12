@@ -147,9 +147,42 @@ document.querySelector('#mix-m4a')?.addEventListener('click', () => {
       height: 720
     })
     await com.add(spr1, { offset: 0, duration: 5 })
-    await com.add(spr2, { offset: 0, duration: 3 })
+    // await com.add(spr2, { offset: 0, duration: 3 })
     await com.output().pipeTo(await createFileWriter('mp4'))
   })().catch(Log.error)
+})
+
+document.querySelector('#decode-m4a')?.addEventListener('click', () => {
+  ;(async () => {
+    const resp1 = await fetch('./public/sample1.m4a')
+    const clip = new AudioClip(await resp1.arrayBuffer())
+    await clip.ready
+    const ctx = new AudioContext()
+    let time = 0
+    async function play () {
+      const { audio, state } = await clip.tick(time)
+      time += 100000
+      if (state === 'done') {
+        console.log('--- ended')
+        return
+      }
+      const len = audio[0].length
+      if (len === 0) {
+        play()
+        return
+      }
+
+      const buf = ctx.createBuffer(2, len, 48000)
+      buf.copyToChannel(audio[0], 0)
+      buf.copyToChannel(audio[1], 0)
+      const source = ctx.createBufferSource()
+      source.buffer = buf
+      source.connect(ctx.destination)
+      source.onended = play
+      source.start()
+    }
+    play()
+  })()
 })
 
 async function createFileWriter (

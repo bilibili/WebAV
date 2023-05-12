@@ -22,11 +22,12 @@ describe('AudioClip', () => {
       audio: [new Float32Array(0), new Float32Array(0)],
       state: 'success'
     })
-    // 30ms
+    // 每次取 30ms 的数据
+    await clip.tick(1000 * 30 * 1)
     const {
       audio: [chan0, chan1],
       state
-    } = await clip.tick(1000 * 30)
+    } = await clip.tick(1000 * 30 * 2)
     expect(state).toBe('success')
     expect(chan0.length).toBe((48000 / 1e3) * 30)
     expect(chan1.length).toBe((48000 / 1e3) * 30)

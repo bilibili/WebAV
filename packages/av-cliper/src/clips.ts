@@ -317,10 +317,12 @@ export class AudioClip implements IClip {
     this.#ts = time
 
     const frameCnt = Math.ceil(deltaTime * (this.meta.sampleRate / 1e6))
+    const endIdx = this.#frameOffset + frameCnt
     const audio = [
-      this.#chan0Buf.slice(this.#frameOffset, frameCnt),
-      this.#chan1Buf.slice(this.#frameOffset, frameCnt)
+      this.#chan0Buf.slice(this.#frameOffset, endIdx),
+      this.#chan1Buf.slice(this.#frameOffset, endIdx)
     ]
+    this.#frameOffset = endIdx
 
     return { audio, state: 'success' }
 
