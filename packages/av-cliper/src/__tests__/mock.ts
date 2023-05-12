@@ -13,6 +13,14 @@ Object.assign(global, {
   })
 })
 
+Object.assign(global, {
+  AudioData: class {
+    constructor (init) {
+      Object.assign(this, init)
+    }
+  }
+})
+
 export const AudioBufferMock = {
   duration: 0,
   sampleRate: 48000,

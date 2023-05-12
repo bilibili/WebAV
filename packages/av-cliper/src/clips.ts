@@ -9,7 +9,7 @@ export interface IClip {
    */
   tick: (time: number) => Promise<{
     video?: VideoFrame | ImageBitmap
-    audio: AudioData[] | Float32Array[]
+    audio: Float32Array[]
     state: 'done' | 'success' | 'next'
   }>
 

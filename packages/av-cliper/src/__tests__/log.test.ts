@@ -1,4 +1,4 @@
-import { vi, describe, expect, test } from 'vitest'
+import { vi, expect, test } from 'vitest'
 import { Log } from '../log'
 
 const errorSpy = vi.spyOn(console, 'error')

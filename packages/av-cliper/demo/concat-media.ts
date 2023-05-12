@@ -129,18 +129,26 @@ document.querySelector('#decode-frame')?.addEventListener('click', () => {
   })().catch(Log.error)
 })
 
-document.querySelector('#decode-mp4a')?.addEventListener('click', () => {
+document.querySelector('#mix-m4a')?.addEventListener('click', () => {
   ;(async () => {
     const resp1 = await fetch('./public/sample1.m4a')
-    const clip = new AudioClip(await resp1.arrayBuffer())
-    await clip.ready
-    let time = 0
-    while (true) {
-      const { state, audio } = await clip.tick(time)
-      console.log(state, audio)
-      if (state === 'done') return
-      time += 40000
-    }
+    const resp2 = await fetch('./public/sample2.m4a')
+    const spr1 = new OffscreenSprite(
+      '1',
+      new AudioClip(await resp1.arrayBuffer())
+    )
+    const spr2 = new OffscreenSprite(
+      '2',
+      new AudioClip(await resp2.arrayBuffer())
+    )
+
+    const com = new Combinator({
+      width: 1280,
+      height: 720
+    })
+    await com.add(spr1, { offset: 0, duration: 5 })
+    await com.add(spr2, { offset: 0, duration: 3 })
+    await com.output().pipeTo(await createFileWriter('mp4'))
   })().catch(Log.error)
 })
 

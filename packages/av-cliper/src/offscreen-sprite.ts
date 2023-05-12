@@ -21,7 +21,7 @@ export class OffscreenSprite extends BaseSprite {
   async offscreenRender (
     ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D,
     time: number
-  ): Promise<AudioData[]> {
+  ): Promise<Float32Array[]> {
     this.animate(time)
     super.render(ctx)
     const { w, h } = this.rect

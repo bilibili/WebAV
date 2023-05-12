@@ -1,5 +1,5 @@
 import { OffscreenSprite } from './offscreen-sprite'
-import { file2stream, stereoFixedAudioData, recodemux } from './mp4-utils'
+import { file2stream, recodemux, mixPCM } from './mp4-utils'
 import { Log } from './log'
 
 interface IComItem {
@@ -111,31 +111,34 @@ export class Combinator {
         ctx.fillStyle = this.#opts.bgColor
         ctx.fillRect(0, 0, width, height)
 
-        let audioCnt = 0
+        const audios = []
         for (const it of this.#comItems) {
           if (this.#ts < it.offset || this.#ts > it.offset + it.duration) {
             continue
           }
 
           ctx.save()
-          const audioDataArr = await it.sprite.offscreenRender(
-            ctx,
-            this.#ts - it.offset
+          audios.push(
+            await it.sprite.offscreenRender(ctx, this.#ts - it.offset)
           )
           ctx.restore()
-
-          for (const ad of audioDataArr) {
-            // 此处看起来需要重置 timestamp，实际上不重置似乎也没有 bug，chrome、quicktime播放正常
-            this.#remux.encodeAudio(
-              // 若channelCount不同，无法通过编码
-              stereoFixedAudioData(ad)
-            )
-          }
-          audioCnt += audioDataArr.length
         }
-        if (audioCnt === 0) {
+
+        if (audios.every(a => a[0].length === 0)) {
           // 当前时刻无音频时，使用无声音频占位，否则会导致后续音频播放时间偏差
           this.#remux.encodeAudio(createAudioPlaceholder(this.#ts, timeSlice))
+        } else {
+          const data = mixPCM(audios)
+          this.#remux.encodeAudio(
+            new AudioData({
+              timestamp: this.#ts,
+              numberOfChannels: 2,
+              numberOfFrames: data.length / 2,
+              sampleRate: 48000,
+              format: 'f32-planar',
+              data
+            })
+          )
         }
         const vf = new VideoFrame(this.#cvs, {
           duration: timeSlice,

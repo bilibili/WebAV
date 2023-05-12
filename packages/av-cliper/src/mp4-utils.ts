@@ -525,6 +525,24 @@ export function stereoFixedAudioData (ad: AudioData): AudioData {
   return rs
 }
 
+export function mixPCM (audios: Float32Array[][]): Float32Array {
+  const maxLen = Math.max(...audios.map(a => a[0].length))
+  const data = new Float32Array(maxLen * 2)
+
+  for (let bufIdx = 0; bufIdx < maxLen; bufIdx++) {
+    let chan0 = 0
+    let chan1 = 0
+    for (let trackIdx = 0; trackIdx < audios.length; trackIdx++) {
+      chan0 += audios[trackIdx][0][bufIdx] ?? 0
+      chan1 += audios[trackIdx][1][bufIdx] ?? 0
+    }
+    data[bufIdx] = chan0
+    data[bufIdx + maxLen] = chan1
+  }
+
+  return data
+}
+
 // track is H.264 or H.265.
 function parseVideoCodecDesc (track: TrakBoxParser): Uint8Array {
   for (const entry of track.mdia.minf.stbl.stsd.entries) {
