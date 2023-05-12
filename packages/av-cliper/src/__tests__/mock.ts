@@ -15,6 +15,7 @@ Object.assign(global, {
 
 export const AudioBufferMock = {
   duration: 0,
+  sampleRate: 48000,
   getChannelData: vi.fn().mockReturnValue(new Float32Array(0))
 }
 

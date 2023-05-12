@@ -9,7 +9,7 @@ export interface IClip {
    */
   tick: (time: number) => Promise<{
     video?: VideoFrame | ImageBitmap
-    audio: AudioData[]
+    audio: AudioData[] | Float32Array[]
     state: 'done' | 'success' | 'next'
   }>
 
@@ -313,7 +313,7 @@ export class AudioClip implements IClip {
       }
     }
 
-    const deltaTime = (time = this.#ts)
+    const deltaTime = time - this.#ts
     this.#ts = time
 
     const frameCnt = Math.ceil(deltaTime * (this.meta.sampleRate / 1e6))
