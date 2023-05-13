@@ -207,16 +207,13 @@ export class AudioClip implements IClip {
 
   #opts
 
-  // 循环播放器次数
-  #loopCount = 0
-
   constructor (buf: ArrayBuffer, opts?: { loop?: boolean; volume?: number }) {
     this.#opts = {
       loop: false,
       volume: 1,
       ...opts
     }
-    // const ctx = new OfflineAudioContext(opts)
+
     const ctx = new AudioContext()
     this.ready = this.#init(ctx, buf)
   }
@@ -266,10 +263,7 @@ export class AudioClip implements IClip {
   }> {
     if (time < this.#ts) throw Error('time not allow rollback')
     if (!this.#opts.loop && time >= this.meta.duration) {
-      return {
-        audio: [],
-        state: 'done'
-      }
+      return { audio: [], state: 'done' }
     }
 
     const deltaTime = time - this.#ts
@@ -278,36 +272,12 @@ export class AudioClip implements IClip {
     const frameCnt = Math.ceil(deltaTime * (this.meta.sampleRate / 1e6))
     const endIdx = this.#frameOffset + frameCnt
     const audio = [
-      this.#chan0Buf.slice(this.#frameOffset, endIdx),
-      this.#chan1Buf.slice(this.#frameOffset, endIdx)
+      ringSliceFloat32Array(this.#chan0Buf, this.#frameOffset, endIdx),
+      ringSliceFloat32Array(this.#chan1Buf, this.#frameOffset, endIdx)
     ]
     this.#frameOffset = endIdx
 
     return { audio, state: 'success' }
-
-    // const loopCount = Math.floor(time / this.meta.duration)
-    // if (loopCount > this.#loopCount) {
-    //   this.#cusorIdx = 0
-    //   this.#loopCount = loopCount
-    // }
-
-    // const offsetTime = time % this.meta.duration
-    // let endIdx = -1
-    // // for (let i = this.#cusorIdx; i < this.#audioDatas.length; i += 1) {
-    // //   if (this.#audioDatas[i].timestamp > offsetTime) {
-    // //     endIdx = i
-    // //     break
-    // //   }
-    // // }
-    // if (endIdx === -1) return { audio: [], state: 'next' }
-
-    // // todo: 内存优化
-    // const audio = this.#audioDatas
-    //   .slice(this.#cusorIdx, endIdx)
-    //   .map(ad => ad.clone())
-    // this.#cusorIdx = endIdx
-
-    // return { audio, state: 'success' }
   }
 
   destroy (): void {
@@ -350,4 +320,22 @@ export class ImgClip implements IClip {
   destroy (): void {
     this.#img.close()
   }
+}
+
+/**
+ *  循环 即 环形取值
+ */
+function ringSliceFloat32Array (
+  data: Float32Array,
+  start: number,
+  end: number
+): Float32Array {
+  const cnt = end - start
+  const rs = new Float32Array(cnt)
+  let i = 0
+  while (i < cnt) {
+    rs[i] = data[(start + i) % data.length]
+    i += 1
+  }
+  return rs
 }

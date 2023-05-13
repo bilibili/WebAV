@@ -26,11 +26,15 @@ describe('AudioClip', () => {
     await clip.tick(1000 * 30 * 1)
     const {
       audio: [chan0, chan1],
-      state
+      state: s1
     } = await clip.tick(1000 * 30 * 2)
-    expect(state).toBe('success')
+    expect(s1).toBe('success')
     expect(chan0.length).toBe((48000 / 1e3) * 30)
     expect(chan1.length).toBe((48000 / 1e3) * 30)
+
+    // 取第 11s 的数据
+    const { state: s2 } = await clip.tick(1e6 * 11)
+    expect(s2).toBe('done')
   })
 
   test('AudioClip volume', async () => {
@@ -43,5 +47,17 @@ describe('AudioClip', () => {
       audio: [chan0]
     } = await clip.tick(1000 * 30)
     expect(Math.round(chan0[0] * 10) / 10).toBe(0.1)
+  })
+
+  test('AudioClip loop', async () => {
+    const clip = new AudioClip(new ArrayBuffer(0), { loop: true })
+    await clip.ready
+    // 接近尾端
+    await clip.tick(1e6 * 9)
+    // 超过尾端 1s
+    const {
+      audio: [chan0]
+    } = await clip.tick(1e6 * 11)
+    expect(chan0.length).toBe(48000 * 2)
   })
 })
