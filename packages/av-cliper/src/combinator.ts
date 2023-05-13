@@ -98,7 +98,7 @@ export class Combinator {
       ...this.#comItems.map(it => it.offset + it.duration)
     )
 
-    // 33ms, 30FPS
+    // 33ms ≈ 30FPS
     const timeSlice = 33 * 1000
     let canceled = false
     const run = async (): Promise<void> => {
@@ -124,7 +124,7 @@ export class Combinator {
           ctx.restore()
         }
 
-        if (audios.every(a => a[0].length === 0)) {
+        if (audios.flat().every(a => a.length === 0)) {
           // 当前时刻无音频时，使用无声音频占位，否则会导致后续音频播放时间偏差
           this.#remux.encodeAudio(createAudioPlaceholder(this.#ts, timeSlice))
         } else {

@@ -1,6 +1,7 @@
 // 避免使用 DOM API 确保这些 Clip 能在 Worker 中运行
+import { concatFloat32Array, extractAudioDataBuf } from './av-utils'
 import { Log } from './log'
-import { adjustAudioDataVolume, demuxcode, sleep } from './mp4-utils'
+import { demuxcode, sleep } from './mp4-utils'
 
 export interface IClip {
   /**
@@ -42,13 +43,15 @@ export class MP4Clip implements IClip {
     height: 0
   }
 
+  #volume = 1
+
   constructor (
     rs: ReadableStream<Uint8Array>,
     opts: { audio: boolean | { volume: number } } = { audio: true }
   ) {
     this.ready = new Promise(resolve => {
       let lastVf: VideoFrame | null = null
-      const volume =
+      this.#volume =
         typeof opts.audio === 'object' && 'volume' in opts.audio
           ? opts.audio.volume
           : 1
@@ -71,9 +74,7 @@ export class MP4Clip implements IClip {
             lastVf = vf
           },
           onAudioOutput: ad => {
-            this.#audioDatas.push(
-              volume === 1 ? ad : adjustAudioDataVolume(ad, volume)
-            )
+            this.#audioDatas.push(ad)
           },
           onEnded: () => {
             if (lastVf == null) throw Error('mp4 parse error, no video frame')
@@ -87,13 +88,38 @@ export class MP4Clip implements IClip {
 
   #next (time: number): {
     video: VideoFrame | null
-    audio: AudioData[]
+    audio: Float32Array[]
     nextOffset: number
   } {
     const audioIdx = this.#audioDatas.findIndex(ad => ad.timestamp > time)
-    let audio: AudioData[] = []
+    let audio: Float32Array[] = []
     if (audioIdx !== -1) {
-      audio = this.#audioDatas.slice(0, audioIdx)
+      // [AudioData1, AudioData2] => [chan0Float32Array, chan1Float32Array]
+      audio = this.#audioDatas
+        .slice(0, audioIdx)
+        /**
+         * [
+         *   AudioData1[chan0Float32Array, chan1Float32Array],
+         *   AudioData2[chan0Float32Array, chan1Float32Array]
+         * ]
+         */
+        .map(ad => extractAudioDataBuf(ad))
+        /**
+         * [chan0Float32Array, chan1Float32Array]
+         */
+        .reduce(
+          (acc, cur) =>
+            cur.map((v, idx) =>
+              concatFloat32Array([acc[idx] ?? new Float32Array(0), v])
+            ),
+          []
+        )
+
+      if (this.#volume !== 1) {
+        for (const buf of audio) {
+          for (let i = 0; i < buf.length; i += 1) buf[i] *= this.#volume
+        }
+      }
       this.#audioDatas = this.#audioDatas.slice(audioIdx)
     }
 
@@ -125,7 +151,7 @@ export class MP4Clip implements IClip {
 
   async tick (time: number): Promise<{
     video?: VideoFrame
-    audio: AudioData[]
+    audio: Float32Array[]
     state: 'success' | 'next' | 'done'
   }> {
     if (time < this.#ts) throw Error('time not allow rollback')

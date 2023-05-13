@@ -439,41 +439,6 @@ export function debounce<F extends (...args: any[]) => any>(
   }
 }
 
-export function extractAudioDataBuf (ad: AudioData): ArrayBuffer {
-  const bufs: ArrayBuffer[] = []
-  let totalSize = 0
-  for (let i = 0; i < ad.numberOfChannels; i++) {
-    const chanBufSize = ad.allocationSize({ planeIndex: i })
-    totalSize += chanBufSize
-    const chanBuf = new ArrayBuffer(chanBufSize)
-    ad.copyTo(chanBuf, { planeIndex: i })
-    bufs.push(chanBuf)
-  }
-
-  const rs = new Uint8Array(totalSize)
-  let offset = 0
-  for (const buf of bufs) {
-    rs.set(new Uint8Array(buf), offset)
-    offset += buf.byteLength
-  }
-
-  return rs.buffer
-}
-
-export function adjustAudioDataVolume (ad: AudioData, volume: number) {
-  const data = new Float32Array(extractAudioDataBuf(ad)).map(v => v * volume)
-  const newAd = new AudioData({
-    sampleRate: ad.sampleRate,
-    numberOfChannels: ad.numberOfChannels,
-    timestamp: ad.timestamp,
-    format: ad.format,
-    numberOfFrames: ad.numberOfFrames,
-    data
-  })
-  ad.close()
-  return newAd
-}
-
 export function audioBuffer2Data (ab: AudioBuffer): AudioData {
   const frameCnt = ab.sampleRate * ab.duration * 2
   const buf = new Float32Array(frameCnt)
@@ -533,8 +498,8 @@ export function mixPCM (audios: Float32Array[][]): Float32Array {
     let chan0 = 0
     let chan1 = 0
     for (let trackIdx = 0; trackIdx < audios.length; trackIdx++) {
-      chan0 += audios[trackIdx][0][bufIdx] ?? 0
-      chan1 += audios[trackIdx][1][bufIdx] ?? 0
+      chan0 += audios[trackIdx][0]?.[bufIdx] ?? 0
+      chan1 += audios[trackIdx][1]?.[bufIdx] ?? 0
     }
     data[bufIdx] = chan0
     data[bufIdx + maxLen] = chan1

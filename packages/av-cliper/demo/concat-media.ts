@@ -92,9 +92,6 @@ document.querySelector('#mp4-mp3')?.addEventListener('click', () => {
     const spr2 = new OffscreenSprite(
       'v1',
       new AudioClip(await resp2.arrayBuffer(), {
-        numberOfChannels: 1,
-        sampleRate: 48000,
-        length: 4 * 48000,
         volume: 2,
         loop: true
       })
