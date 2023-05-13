@@ -207,16 +207,10 @@ export class AudioClip implements IClip {
 
   #opts
 
-  // #audioDatas 索引开始位置，循环播放需要在 loopCount 变化时重置为 0
-  #cusorIdx = 0
-
   // 循环播放器次数
   #loopCount = 0
 
-  constructor (
-    buf: ArrayBuffer,
-    opts?: OfflineAudioContextOptions & { loop?: boolean; volume?: number }
-  ) {
+  constructor (buf: ArrayBuffer, opts?: { loop?: boolean; volume?: number }) {
     this.#opts = {
       loop: false,
       volume: 1,
@@ -251,50 +245,15 @@ export class AudioClip implements IClip {
 
     const volume = this.#opts.volume
     if (volume !== 1) {
-      this.#chan0Buf = this.#chan0Buf.map(v => v * volume)
+      for (let i = 0; i < this.#chan0Buf.length; i++)
+        this.#chan0Buf[i] *= volume
+
       if (this.#chan0Buf !== this.#chan1Buf) {
-        this.#chan1Buf = this.#chan0Buf.map(v => v * volume)
+        for (let i = 0; i < this.#chan1Buf.length; i++)
+          this.#chan1Buf[i] *= volume
       }
     }
 
-    // const chanBufs: Float32Array[] = []
-    // for (let i = 0; i < audioBuf.numberOfChannels; i += 1) {
-    //   chanBufs.push(audioBuf.getChannelData(i))
-    // }
-    // let [chan0, chan1] = chanBufs
-    // // 单声道 转 立体声
-    // if (chan1 == null) chan1 = chan0.slice(0)
-
-    // let size = 0
-    // let tsOffset = 0
-    // // 100ms 一个声音分片
-    // const frameCnt = (1e5 / 1e6) * audioBuf.sampleRate
-    // while (true) {
-    //   if (chan0.length === 0 || chan1.length === 0) break
-
-    //   const cnt = chan0.length < frameCnt ? chan0.length : frameCnt
-    //   let data = new Float32Array(cnt * 2)
-    //   data.set(chan0.slice(0, cnt), 0)
-    //   data.set(chan1.slice(0, cnt), cnt)
-    //   console.log(4444, (size += data.byteLength))
-
-    //   if (volume !== 1) data = data.map(v => v * volume)
-
-    //   // this.#audioDatas.push(
-    //   //   new AudioData({
-    //   //     format: 'f32-planar',
-    //   //     numberOfChannels: 2,
-    //   //     numberOfFrames: cnt,
-    //   //     sampleRate: audioBuf.sampleRate,
-    //   //     timestamp: tsOffset,
-    //   //     data
-    //   //   })
-    //   // )
-
-    //   chan0 = chan0.slice(cnt)
-    //   chan1 = chan1.slice(cnt)
-    //   tsOffset += 1e4
-    // }
     Log.info(
       'Audio clip convert to AudioData, time:',
       performance.now() - tStart

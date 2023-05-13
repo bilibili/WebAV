@@ -135,7 +135,7 @@ document.querySelector('#mix-m4a')?.addEventListener('click', () => {
     const resp2 = await fetch('./public/sample2.m4a')
     const spr1 = new OffscreenSprite(
       '1',
-      new AudioClip(await resp1.arrayBuffer())
+      new AudioClip(await resp1.arrayBuffer(), { volume: 0.5 })
     )
     const spr2 = new OffscreenSprite(
       '2',
@@ -147,7 +147,7 @@ document.querySelector('#mix-m4a')?.addEventListener('click', () => {
       height: 720
     })
     await com.add(spr1, { offset: 0, duration: 5 })
-    // await com.add(spr2, { offset: 0, duration: 3 })
+    await com.add(spr2, { offset: 0, duration: 3 })
     await com.output().pipeTo(await createFileWriter('mp4'))
   })().catch(Log.error)
 })

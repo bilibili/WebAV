@@ -9,13 +9,13 @@ describe('AudioClip', () => {
     AudioBufferMock.getChannelData.mockReturnValue(new Float32Array(48000 * 10))
   })
 
-  test('audio clip decode', async () => {
+  test('AudioClip decode', async () => {
     const clip = new AudioClip(new ArrayBuffer(0))
     await clip.ready
     expect(clip.meta.duration).toBe(10 * 1e6)
   })
 
-  test('audio clip tick', async () => {
+  test('AudioClip tick', async () => {
     const clip = new AudioClip(new ArrayBuffer(0))
     await clip.ready
     expect(await clip.tick(0)).toEqual({
@@ -31,5 +31,17 @@ describe('AudioClip', () => {
     expect(state).toBe('success')
     expect(chan0.length).toBe((48000 / 1e3) * 30)
     expect(chan1.length).toBe((48000 / 1e3) * 30)
+  })
+
+  test('AudioClip volume', async () => {
+    AudioBufferMock.getChannelData.mockReturnValueOnce(
+      new Float32Array(Array(48000 * 10).fill(1))
+    )
+    const clip = new AudioClip(new ArrayBuffer(0), { volume: 0.1 })
+    await clip.ready
+    const {
+      audio: [chan0]
+    } = await clip.tick(1000 * 30)
+    expect(Math.round(chan0[0] * 10) / 10).toBe(0.1)
   })
 })
