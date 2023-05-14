@@ -10,7 +10,7 @@ export interface IClip {
    */
   tick: (time: number) => Promise<{
     video?: VideoFrame | ImageBitmap
-    audio: Float32Array[]
+    audio?: Float32Array[]
     state: 'done' | 'success' | 'next'
   }>
 
@@ -333,12 +333,10 @@ export class ImgClip implements IClip {
 
   async tick (): Promise<{
     video: ImageBitmap
-    audio: []
     state: 'success'
   }> {
     return {
       video: await createImageBitmap(this.#img),
-      audio: [],
       state: 'success'
     }
   }
