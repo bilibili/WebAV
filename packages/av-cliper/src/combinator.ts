@@ -1,6 +1,7 @@
 import { OffscreenSprite } from './offscreen-sprite'
-import { file2stream, recodemux, mixPCM } from './mp4-utils'
+import { file2stream, recodemux } from './mp4-utils'
 import { Log } from './log'
+import { mixPCM } from './av-utils'
 
 interface IComItem {
   offset: number

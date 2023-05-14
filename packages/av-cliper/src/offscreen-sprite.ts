@@ -38,7 +38,7 @@ export class OffscreenSprite extends BaseSprite {
       this.#lastVf = video
     }
 
-    return audio
+    return audio ?? []
   }
 
   destroy (): void {

@@ -1,7 +1,12 @@
 // 避免使用 DOM API 确保这些 Clip 能在 Worker 中运行
-import { concatFloat32Array, extractAudioDataBuf } from './av-utils'
+import {
+  concatFloat32Array,
+  decodeGif,
+  extractAudioDataBuf,
+  sleep
+} from './av-utils'
 import { Log } from './log'
-import { demuxcode, sleep } from './mp4-utils'
+import { demuxcode } from './mp4-utils'
 
 export interface IClip {
   /**
@@ -10,7 +15,7 @@ export interface IClip {
    */
   tick: (time: number) => Promise<{
     video?: VideoFrame | ImageBitmap
-    audio: Float32Array[]
+    audio?: Float32Array[]
     state: 'done' | 'success' | 'next'
   }>
 
@@ -322,29 +327,59 @@ export class ImgClip implements IClip {
     height: 0
   }
 
-  #img: ImageBitmap
+  #img: ImageBitmap | null = null
 
-  constructor (imgBitmap: ImageBitmap) {
-    this.#img = imgBitmap
-    this.meta.width = imgBitmap.width
-    this.meta.height = imgBitmap.height
-    this.ready = Promise.resolve()
+  #frames: VideoFrame[] = []
+
+  constructor (
+    dataSource: ImageBitmap | { type: 'gif'; stream: ReadableStream }
+  ) {
+    if (dataSource instanceof ImageBitmap) {
+      this.#img = dataSource
+      this.meta.width = dataSource.width
+      this.meta.height = dataSource.height
+      this.ready = Promise.resolve()
+    } else {
+      this.ready = this.#gifInit(dataSource.stream)
+    }
   }
 
-  async tick (): Promise<{
-    video: ImageBitmap
-    audio: []
+  async #gifInit (stream: ReadableStream) {
+    this.#frames = await decodeGif(stream)
+    const firstVf = this.#frames[0]
+    if (firstVf == null) throw Error('No frame available in gif')
+
+    this.meta = {
+      duration: this.#frames.reduce((acc, cur) => acc + (cur.duration ?? 0), 0),
+      width: firstVf.codedWidth,
+      height: firstVf.codedHeight
+    }
+  }
+
+  async tick (time: number): Promise<{
+    video: ImageBitmap | VideoFrame
     state: 'success'
   }> {
+    if (this.#img != null) {
+      return {
+        video: await createImageBitmap(this.#img),
+        state: 'success'
+      }
+    }
+    const tt = time % this.meta.duration
     return {
-      video: await createImageBitmap(this.#img),
-      audio: [],
+      video: (
+        this.#frames.find(
+          f => tt >= f.timestamp && tt <= f.timestamp + (f.duration ?? 0)
+        ) ?? this.#frames[0]
+      ).clone(),
       state: 'success'
     }
   }
 
   destroy (): void {
-    this.#img.close()
+    this.#img?.close()
+    this.#frames.forEach(f => f.close())
   }
 }
 
