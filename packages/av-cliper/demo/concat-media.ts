@@ -1,3 +1,4 @@
+import { decodeGif } from '../src/av-utils'
 import { AudioClip, ImgClip, MP4Clip } from '../src/clips'
 import { Combinator } from '../src/combinator'
 import { Log } from '../src/log'
@@ -179,6 +180,13 @@ document.querySelector('#decode-m4a')?.addEventListener('click', () => {
       source.start()
     }
     play()
+  })()
+})
+
+document.querySelector('#decode-gif')?.addEventListener('click', () => {
+  ;(async () => {
+    const resp1 = await fetch('./public/testgif.gif')
+    console.log(4444, await decodeGif(resp1.body as ReadableStream))
   })()
 })
 
