@@ -490,8 +490,11 @@ export function stereoFixedAudioData (ad: AudioData): AudioData {
   return rs
 }
 
+/**
+ * 混合多个音轨的 PCM 数据
+ */
 export function mixPCM (audios: Float32Array[][]): Float32Array {
-  const maxLen = Math.max(...audios.map(a => a[0].length))
+  const maxLen = Math.max(...audios.map(a => a[0]?.length ?? 0))
   const data = new Float32Array(maxLen * 2)
 
   for (let bufIdx = 0; bufIdx < maxLen; bufIdx++) {

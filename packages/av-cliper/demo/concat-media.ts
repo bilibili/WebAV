@@ -5,12 +5,12 @@ import { Log } from '../src/log'
 import { OffscreenSprite } from '../src/offscreen-sprite'
 import { renderTxt2ImgBitmap } from '../src/utils'
 
+const cvs = document.querySelector('canvas') as HTMLCanvasElement
+const ctx = cvs.getContext('2d')!
 // ;(async () => {
 //   const img = await renderTxt2ImgBitmap('水印', `
 //     font-size:40px; text-shadow: 2px 2px 6px red;
 //   `)
-//   const cvs = document.querySelector('canvas') as HTMLCanvasElement
-//   const ctx = cvs.getContext('2d')
 //   ctx?.drawImage(img, 0, 0)
 // })().catch(Log.error)
 
@@ -107,8 +107,6 @@ document.querySelector('#mp4-mp3')?.addEventListener('click', () => {
   })().catch(Log.error)
 })
 
-const cvs = document.querySelector('#canvas') as HTMLCanvasElement
-const ctx = cvs.getContext('2d') as CanvasRenderingContext2D
 document.querySelector('#decode-frame')?.addEventListener('click', () => {
   ;(async () => {
     const resp1 = await fetch('./public/fragment.mp4')
@@ -183,10 +181,39 @@ document.querySelector('#decode-m4a')?.addEventListener('click', () => {
   })()
 })
 
+document.querySelector('#gif-m4a')?.addEventListener('click', () => {
+  ;(async () => {
+    const resp1 = await fetch('./public/testgif.gif')
+    const spr1 = new OffscreenSprite(
+      's1',
+      new ImgClip({ type: 'gif', stream: resp1.body! })
+    )
+    const resp2 = await fetch('./public/sample1.m4a')
+    const spr2 = new OffscreenSprite(
+      's2',
+      new AudioClip(await resp2.arrayBuffer())
+    )
+    const com = new Combinator({ width: 1280, height: 720 })
+    await com.add(spr1, { duration: 10, offset: 0 })
+    await com.add(spr2, { duration: 10, offset: 0 })
+    await com.output().pipeTo(await createFileWriter('mp4'))
+  })()
+})
+
 document.querySelector('#decode-gif')?.addEventListener('click', () => {
   ;(async () => {
     const resp1 = await fetch('./public/testgif.gif')
-    console.log(4444, await decodeGif(resp1.body as ReadableStream))
+    const frames = await decodeGif(resp1.body!)
+
+    let i = 0
+    function render (vf: VideoFrame) {
+      if (vf == null) return
+      ctx.drawImage(vf, 0, 0)
+      setTimeout(() => {
+        render(frames[++i])
+      }, (vf.duration ?? 0) / 1000)
+    }
+    render(frames[0])
   })()
 })
 
