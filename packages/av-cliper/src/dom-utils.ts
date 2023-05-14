@@ -1,3 +1,5 @@
+// 在主线程中执行的 工具函数
+
 export function createEl (tagName: string): HTMLElement {
   return document.createElement(tagName)
 }
@@ -22,15 +24,23 @@ export function renderTxt2Img (txt: string, cssText: string): HTMLImageElement {
         <div xmlns="http://www.w3.org/1999/xhtml">${div.outerHTML}</div>
     </foreignObject>
     </svg>
-  `.replace(/\n/g, '').replace(/\t/g, '').replace(/#/g, '%23')
+  `
+    .replace(/\n/g, '')
+    .replace(/\t/g, '')
+    .replace(/#/g, '%23')
 
   img.src = `data:image/svg+xml;charset=utf-8,${svgStr}`
   return img
 }
 
-export async function renderTxt2ImgBitmap (txt: string, cssText: string): Promise<ImageBitmap> {
+export async function renderTxt2ImgBitmap (
+  txt: string,
+  cssText: string
+): Promise<ImageBitmap> {
   const imgEl = renderTxt2Img(txt, cssText)
-  await new Promise((resolve) => { imgEl.onload = resolve })
+  await new Promise(resolve => {
+    imgEl.onload = resolve
+  })
   const cvs = new OffscreenCanvas(imgEl.width, imgEl.height)
   const ctx = cvs.getContext('2d')
   ctx?.drawImage(imgEl, 0, 0, imgEl.width, imgEl.height)

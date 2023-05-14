@@ -1,7 +1,12 @@
 // 避免使用 DOM API 确保这些 Clip 能在 Worker 中运行
-import { concatFloat32Array, decodeGif, extractAudioDataBuf } from './av-utils'
+import {
+  concatFloat32Array,
+  decodeGif,
+  extractAudioDataBuf,
+  sleep
+} from './av-utils'
 import { Log } from './log'
-import { demuxcode, sleep } from './mp4-utils'
+import { demuxcode } from './mp4-utils'
 
 export interface IClip {
   /**

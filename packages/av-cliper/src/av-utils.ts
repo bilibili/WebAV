@@ -71,3 +71,30 @@ export async function decodeGif (
   }
   return rs
 }
+
+/**
+ * 混合多个音轨的 PCM 数据
+ */
+export function mixPCM (audios: Float32Array[][]): Float32Array {
+  const maxLen = Math.max(...audios.map(a => a[0]?.length ?? 0))
+  const data = new Float32Array(maxLen * 2)
+
+  for (let bufIdx = 0; bufIdx < maxLen; bufIdx++) {
+    let chan0 = 0
+    let chan1 = 0
+    for (let trackIdx = 0; trackIdx < audios.length; trackIdx++) {
+      chan0 += audios[trackIdx][0]?.[bufIdx] ?? 0
+      chan1 += audios[trackIdx][1]?.[bufIdx] ?? 0
+    }
+    data[bufIdx] = chan0
+    data[bufIdx + maxLen] = chan1
+  }
+
+  return data
+}
+
+export async function sleep (time: number): Promise<void> {
+  return await new Promise(resolve => {
+    setTimeout(resolve, time)
+  })
+}

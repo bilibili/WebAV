@@ -3,7 +3,7 @@ import { AudioClip, ImgClip, MP4Clip } from '../src/clips'
 import { Combinator } from '../src/combinator'
 import { Log } from '../src/log'
 import { OffscreenSprite } from '../src/offscreen-sprite'
-import { renderTxt2ImgBitmap } from '../src/utils'
+import { renderTxt2ImgBitmap } from '../src/dom-utils'
 
 const cvs = document.querySelector('canvas') as HTMLCanvasElement
 const ctx = cvs.getContext('2d')!
