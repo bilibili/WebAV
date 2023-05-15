@@ -206,19 +206,27 @@ export function recodemux (opts: IWorkerOpts): {
   })
 
   let maxSize = 0
-  // 兼容性 chrome 106
-  vEncoder.ondequeue = () => {
-    if (vEncoder.encodeQueueSize > maxSize) maxSize = vEncoder.encodeQueueSize
-    rs.progress = 1 - vEncoder.encodeQueueSize / maxSize
-    if (vEncoder.encodeQueueSize === 0) {
-      rs.onEnded?.()
-    }
+  let endCheckTimer = 0
+  let started = false
+  function checkEnded () {
+    if (started) return
+    started = true
+    endCheckTimer = setInterval(() => {
+      rs.progress = 1 - vEncoder.encodeQueueSize / maxSize
+      if (vEncoder.encodeQueueSize === 0) {
+        clearInterval(endCheckTimer)
+        rs.onEnded?.()
+      }
+    }, 100)
   }
 
   const rs: ReturnType<typeof recodemux> = {
     encodeVideo: (vf, opts) => {
       vEncoder.encode(vf, opts)
       vf.close()
+
+      if (vEncoder.encodeQueueSize > maxSize) maxSize = vEncoder.encodeQueueSize
+      checkEnded()
     },
     encodeAudio: ad => {
       if (aEncoder == null) {
@@ -226,9 +234,11 @@ export function recodemux (opts: IWorkerOpts): {
       } else {
         aEncoder.encode(ad)
         ad.close()
+        checkEnded()
       }
     },
     close: () => {
+      clearInterval(endCheckTimer)
       vEncoder.flush().catch(Log.error)
       vEncoder.close()
       aEncoder?.flush().catch(Log.error)
