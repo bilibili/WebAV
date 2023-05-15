@@ -93,83 +93,83 @@ export class Combinator {
   }
 
   output (): ReadableStream<ArrayBuffer> {
-    const lastIt = this.#comItems.at(-1)
-    if (lastIt == null) throw Error('Timeline is empty')
-    const maxTime = Math.max(
-      ...this.#comItems.map(it => it.offset + it.duration)
-    )
+    if (this.#comItems.length === 0) throw Error('No clip added')
 
-    // 33ms ≈ 30FPS
-    const timeSlice = 33 * 1000
-    let canceled = false
-    const run = async (): Promise<void> => {
-      let frameCnt = 0
-      const { width, height } = this.#cvs
-      const ctx = this.#ctx
-      while (this.#ts <= maxTime) {
-        if (canceled) break
-
-        ctx.fillStyle = this.#opts.bgColor
-        ctx.fillRect(0, 0, width, height)
-
-        const audios = []
-        for (const it of this.#comItems) {
-          if (this.#ts < it.offset || this.#ts > it.offset + it.duration) {
-            continue
-          }
-
-          ctx.save()
-          audios.push(
-            await it.sprite.offscreenRender(ctx, this.#ts - it.offset)
-          )
-          ctx.restore()
-        }
-
-        if (audios.flat().every(a => a.length === 0)) {
-          // 当前时刻无音频时，使用无声音频占位，否则会导致后续音频播放时间偏差
-          this.#remux.encodeAudio(createAudioPlaceholder(this.#ts, timeSlice))
-        } else {
-          const data = mixPCM(audios)
-          this.#remux.encodeAudio(
-            new AudioData({
-              timestamp: this.#ts,
-              numberOfChannels: 2,
-              numberOfFrames: data.length / 2,
-              sampleRate: 48000,
-              format: 'f32-planar',
-              data
-            })
-          )
-        }
-        const vf = new VideoFrame(this.#cvs, {
-          duration: timeSlice,
-          timestamp: this.#ts
-        })
-        this.#ts += timeSlice
-
-        this.#remux.encodeVideo(vf, {
-          keyFrame: frameCnt % 150 === 0
-        })
-        ctx.resetTransform()
-        ctx.clearRect(0, 0, width, height)
-
-        frameCnt += 1
-      }
+    const runState = {
+      cancel: false
     }
-
-    run().catch(Log.error)
+    this.#run(runState).catch(Log.error)
 
     const { stream, stop: closeOutStream } = file2stream(
       this.#remux.mp4file,
       500,
       () => {
-        canceled = true
+        runState.cancel = true
         this.#remux.close()
       }
     )
     this.#closeOutStream = closeOutStream
 
     return stream
+  }
+
+  async #run (state: { cancel: boolean }): Promise<void> {
+    // 33ms ≈ 30FPS
+    const timeSlice = 33 * 1000
+    const maxTime = Math.max(
+      ...this.#comItems.map(it => it.offset + it.duration)
+    )
+
+    let frameCnt = 0
+    const { width, height } = this.#cvs
+    const ctx = this.#ctx
+    while (this.#ts <= maxTime) {
+      if (state.cancel) break
+
+      ctx.fillStyle = this.#opts.bgColor
+      ctx.fillRect(0, 0, width, height)
+
+      const audios = []
+      for (const it of this.#comItems) {
+        if (this.#ts < it.offset || this.#ts > it.offset + it.duration) {
+          continue
+        }
+
+        ctx.save()
+        audios.push(await it.sprite.offscreenRender(ctx, this.#ts - it.offset))
+        ctx.restore()
+      }
+
+      if (audios.flat().every(a => a.length === 0)) {
+        // 当前时刻无音频时，使用无声音频占位，否则会导致后续音频播放时间偏差
+        this.#remux.encodeAudio(createAudioPlaceholder(this.#ts, timeSlice))
+      } else {
+        const data = mixPCM(audios)
+        this.#remux.encodeAudio(
+          new AudioData({
+            timestamp: this.#ts,
+            numberOfChannels: 2,
+            numberOfFrames: data.length / 2,
+            sampleRate: 48000,
+            format: 'f32-planar',
+            data
+          })
+        )
+      }
+      const vf = new VideoFrame(this.#cvs, {
+        duration: timeSlice,
+        timestamp: this.#ts
+      })
+      this.#ts += timeSlice
+
+      this.#remux.encodeVideo(vf, {
+        keyFrame: frameCnt % 150 === 0
+      })
+      ctx.resetTransform()
+      ctx.clearRect(0, 0, width, height)
+
+      frameCnt += 1
+    }
   }
 }
 
