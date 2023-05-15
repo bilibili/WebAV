@@ -2,6 +2,7 @@ import { OffscreenSprite } from './offscreen-sprite'
 import { file2stream, recodemux } from './mp4-utils'
 import { Log } from './log'
 import { mixPCM } from './av-utils'
+import { EventTool } from './event-tool'
 
 interface IComItem {
   offset: number
@@ -31,8 +32,6 @@ export class Combinator {
 
   #comItems: IComItem[] = []
 
-  #ts = 0
-
   #cvs
 
   #ctx
@@ -42,6 +41,11 @@ export class Combinator {
   #remux
 
   #opts
+
+  #evtTool = new EventTool<{
+    OutputProgress: (progress: number) => void
+  }>()
+  on = this.#evtTool.on
 
   constructor (opts: ICombinatorOpts) {
     const { width, height } = opts
@@ -53,30 +57,20 @@ export class Combinator {
     this.#opts = Object.assign({ bgColor: '#000' }, opts)
 
     console.time('cost')
-    this.#remux = recodemux(
-      {
-        video: {
-          width,
-          height,
-          expectFPS: 30
-        },
-        audio: {
-          codec: 'aac',
-          sampleRate: 48000,
-          sampleSize: 16,
-          channelCount: 2
-        },
-        bitrate: 1_500_000
+    this.#remux = recodemux({
+      video: {
+        width,
+        height,
+        expectFPS: 30
       },
-      {
-        onEnded: () => {
-          Log.info(`===== output ended ====== ${this.#ts}`)
-          this.#closeOutStream?.()
-          console.timeEnd('cost')
-          this.#comItems.forEach(it => it.sprite.destroy())
-        }
-      }
-    )
+      audio: {
+        codec: 'aac',
+        sampleRate: 48000,
+        sampleSize: 16,
+        channelCount: 2
+      },
+      bitrate: 1_500_000
+    })
   }
 
   async add (
@@ -96,16 +90,26 @@ export class Combinator {
     if (this.#comItems.length === 0) throw Error('No clip added')
 
     const runState = {
-      cancel: false
+      cancel: false,
+      progress: 0
     }
     this.#run(runState).catch(Log.error)
 
+    const stopProg = this.#updateProgress(runState)
+    this.#remux.onEnded = () => {
+      Log.info('===== output ended ======')
+      this.#closeOutStream?.()
+      console.timeEnd('cost')
+      stopProg()
+      this.#comItems.forEach(it => it.sprite.destroy())
+    }
     const { stream, stop: closeOutStream } = file2stream(
       this.#remux.mp4file,
       500,
       () => {
         runState.cancel = true
         this.#remux.close()
+        stopProg()
       }
     )
     this.#closeOutStream = closeOutStream
@@ -113,7 +117,7 @@ export class Combinator {
     return stream
   }
 
-  async #run (state: { cancel: boolean }): Promise<void> {
+  async #run (state: { cancel: boolean; progress: number }): Promise<void> {
     // 33ms ≈ 30FPS
     const timeSlice = 33 * 1000
     const maxTime = Math.max(
@@ -123,7 +127,9 @@ export class Combinator {
     let frameCnt = 0
     const { width, height } = this.#cvs
     const ctx = this.#ctx
-    while (this.#ts <= maxTime) {
+    let ts = 0
+    while (ts <= maxTime) {
+      state.progress = ts / maxTime
       if (state.cancel) break
 
       ctx.fillStyle = this.#opts.bgColor
@@ -131,23 +137,23 @@ export class Combinator {
 
       const audios = []
       for (const it of this.#comItems) {
-        if (this.#ts < it.offset || this.#ts > it.offset + it.duration) {
+        if (ts < it.offset || ts > it.offset + it.duration) {
           continue
         }
 
         ctx.save()
-        audios.push(await it.sprite.offscreenRender(ctx, this.#ts - it.offset))
+        audios.push(await it.sprite.offscreenRender(ctx, ts - it.offset))
         ctx.restore()
       }
 
       if (audios.flat().every(a => a.length === 0)) {
         // 当前时刻无音频时，使用无声音频占位，否则会导致后续音频播放时间偏差
-        this.#remux.encodeAudio(createAudioPlaceholder(this.#ts, timeSlice))
+        this.#remux.encodeAudio(createAudioPlaceholder(ts, timeSlice))
       } else {
         const data = mixPCM(audios)
         this.#remux.encodeAudio(
           new AudioData({
-            timestamp: this.#ts,
+            timestamp: ts,
             numberOfChannels: 2,
             numberOfFrames: data.length / 2,
             sampleRate: 48000,
@@ -158,9 +164,9 @@ export class Combinator {
       }
       const vf = new VideoFrame(this.#cvs, {
         duration: timeSlice,
-        timestamp: this.#ts
+        timestamp: ts
       })
-      this.#ts += timeSlice
+      ts += timeSlice
 
       this.#remux.encodeVideo(vf, {
         keyFrame: frameCnt % 150 === 0
@@ -169,6 +175,19 @@ export class Combinator {
       ctx.clearRect(0, 0, width, height)
 
       frameCnt += 1
+    }
+  }
+
+  #updateProgress (mixinState: { progress: number }): () => void {
+    const timer = setInterval(() => {
+      this.#evtTool.emit(
+        'OutputProgress',
+        mixinState.progress * 0.5 + this.#remux.progress * 0.5
+      )
+    }, 500)
+    return () => {
+      clearInterval(timer)
+      this.#evtTool.emit('OutputProgress', 1)
     }
   }
 }

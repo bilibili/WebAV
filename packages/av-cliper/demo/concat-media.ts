@@ -77,6 +77,9 @@ document.querySelector('#mp4-mp4')?.addEventListener('click', () => {
     await com.add(spr1, { offset: 0, duration: 35 })
     await com.add(spr2, { offset: 38, duration: 7 })
     await com.add(spr3, { offset: 35, duration: 3 })
+    com.on('OutputProgress', v => {
+      console.log('----- progress:', v)
+    })
     await com.output().pipeTo(await createFileWriter('mp4'))
   })().catch(Log.error)
 })

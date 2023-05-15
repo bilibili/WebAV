@@ -182,16 +182,13 @@ function findStartSampleIdx (samples: MP4Sample[], time: number): number {
   return startIdx
 }
 
-export function recodemux (
-  opts: IWorkerOpts,
-  cbs: {
-    onEnded: TCleanFn
-  }
-): {
+export function recodemux (opts: IWorkerOpts): {
   encodeVideo: (frame: VideoFrame, options?: VideoEncoderEncodeOptions) => void
   encodeAudio: (data: AudioData) => void
   close: TCleanFn
   mp4file: MP4File
+  progress: number
+  onEnded?: TCleanFn
 } {
   const mp4file = mp4box.createFile()
 
@@ -208,14 +205,17 @@ export function recodemux (
     audioDataCache = []
   })
 
+  let maxSize = 0
   // 兼容性 chrome 106
   vEncoder.ondequeue = () => {
+    if (vEncoder.encodeQueueSize > maxSize) maxSize = vEncoder.encodeQueueSize
+    rs.progress = 1 - vEncoder.encodeQueueSize / maxSize
     if (vEncoder.encodeQueueSize === 0) {
-      cbs.onEnded()
+      rs.onEnded?.()
     }
   }
 
-  return {
+  const rs: ReturnType<typeof recodemux> = {
     encodeVideo: (vf, opts) => {
       vEncoder.encode(vf, opts)
       vf.close()
@@ -234,8 +234,11 @@ export function recodemux (
       aEncoder?.flush().catch(Log.error)
       aEncoder?.close()
     },
-    mp4file
+    mp4file,
+    progress: 0
   }
+
+  return rs
 }
 
 export function encodeVideoTrack (
