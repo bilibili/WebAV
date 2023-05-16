@@ -452,57 +452,6 @@ export function debounce<F extends (...args: any[]) => any>(
   }
 }
 
-export function audioBuffer2Data (ab: AudioBuffer): AudioData {
-  const frameCnt = ab.sampleRate * ab.duration * 2
-  const buf = new Float32Array(frameCnt)
-  const chan0Buf = ab.getChannelData(0)
-  buf.set(chan0Buf, 0)
-  if (ab.numberOfChannels >= 2) {
-    buf.set(ab.getChannelData(1), chan0Buf.length)
-  } else {
-    buf.set(chan0Buf, chan0Buf.length)
-  }
-
-  return new AudioData({
-    numberOfChannels: 2,
-    numberOfFrames: ab.sampleRate * ab.duration,
-    sampleRate: ab.sampleRate,
-    timestamp: 0,
-    format: 'f32-planar',
-    data: buf
-  })
-}
-
-/**
- * 任意 channelCount 的 AudioData 转双声道
- */
-export function stereoFixedAudioData (ad: AudioData): AudioData {
-  if (ad.numberOfChannels === 2) return ad
-
-  const len = ad.allocationSize({ planeIndex: 0 }) / 4
-  const data = new Float32Array(len * 2)
-  ad.copyTo(data, { planeIndex: 0 })
-
-  if (ad.numberOfChannels === 1) {
-    // 只有一个声道，则复制声道1的数据到声道 2
-    data.copyWithin(len, 0, len)
-  } else {
-    // 声道大于 2，只保留前两个声道数据
-    ad.copyTo(new DataView(data.buffer, len * 4), { planeIndex: 1 })
-  }
-
-  const rs = new AudioData({
-    timestamp: ad.timestamp,
-    numberOfChannels: 2,
-    numberOfFrames: ad.numberOfFrames,
-    sampleRate: 48000,
-    format: ad.format,
-    data
-  })
-  ad.close()
-  return rs
-}
-
 // track is H.264 or H.265.
 function parseVideoCodecDesc (track: TrakBoxParser): Uint8Array {
   for (const entry of track.mdia.minf.stbl.stsd.entries) {
