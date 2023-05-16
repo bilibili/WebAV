@@ -3,6 +3,7 @@ import { file2stream, recodemux } from './mp4-utils'
 import { Log } from './log'
 import { mixPCM } from './av-utils'
 import { EventTool } from './event-tool'
+import { DEFAULT_AUDIO_SAMPLE_RATE } from './clips'
 
 interface IComItem {
   offset: number
@@ -65,7 +66,7 @@ export class Combinator {
       },
       audio: {
         codec: 'aac',
-        sampleRate: 48000,
+        sampleRate: DEFAULT_AUDIO_SAMPLE_RATE,
         sampleSize: 16,
         channelCount: 2
       },
@@ -148,15 +149,20 @@ export class Combinator {
 
       if (audios.flat().every(a => a.length === 0)) {
         // 当前时刻无音频时，使用无声音频占位，否则会导致后续音频播放时间偏差
-        this.#remux.encodeAudio(createAudioPlaceholder(ts, timeSlice))
+        this.#remux.encodeAudio(
+          createAudioPlaceholder(ts, timeSlice, DEFAULT_AUDIO_SAMPLE_RATE)
+        )
       } else {
         const data = mixPCM(audios)
+        if (ts < timeSlice * 4) {
+          console.log(111, audios, data)
+        }
         this.#remux.encodeAudio(
           new AudioData({
             timestamp: ts,
             numberOfChannels: 2,
             numberOfFrames: data.length / 2,
-            sampleRate: 48000,
+            sampleRate: DEFAULT_AUDIO_SAMPLE_RATE,
             format: 'f32-planar',
             data
           })
@@ -192,13 +198,17 @@ export class Combinator {
   }
 }
 
-function createAudioPlaceholder (ts: number, duration: number): AudioData {
-  const frameCnt = Math.floor((48000 * duration) / 1e6)
+function createAudioPlaceholder (
+  ts: number,
+  duration: number,
+  sampleRate: number
+): AudioData {
+  const frameCnt = Math.floor((sampleRate * duration) / 1e6)
   return new AudioData({
     timestamp: ts,
     numberOfChannels: 2,
     numberOfFrames: frameCnt,
-    sampleRate: 48000,
+    sampleRate: sampleRate,
     format: 'f32-planar',
     data: new Float32Array(frameCnt * 2)
   })

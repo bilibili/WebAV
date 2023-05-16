@@ -1,5 +1,10 @@
 import { decodeGif } from '../src/av-utils'
-import { AudioClip, ImgClip, MP4Clip } from '../src/clips'
+import {
+  AudioClip,
+  DEFAULT_AUDIO_SAMPLE_RATE,
+  ImgClip,
+  MP4Clip
+} from '../src/clips'
 import { Combinator } from '../src/combinator'
 import { Log } from '../src/log'
 import { OffscreenSprite } from '../src/offscreen-sprite'
@@ -86,7 +91,7 @@ document.querySelector('#mp4-mp4')?.addEventListener('click', () => {
 
 document.querySelector('#mp4-mp3')?.addEventListener('click', () => {
   ;(async () => {
-    const resp1 = await fetch('./public/0.mp4')
+    const resp1 = await fetch('./public/fenfen.mp4')
     const spr1 = new OffscreenSprite(
       'v1',
       new MP4Clip(resp1.body as ReadableStream)
@@ -171,7 +176,7 @@ document.querySelector('#decode-m4a')?.addEventListener('click', () => {
         return
       }
 
-      const buf = ctx.createBuffer(2, len, 48000)
+      const buf = ctx.createBuffer(2, len, DEFAULT_AUDIO_SAMPLE_RATE)
       buf.copyToChannel(audio[0], 0)
       buf.copyToChannel(audio[1], 0)
       const source = ctx.createBufferSource()

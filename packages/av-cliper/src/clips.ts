@@ -214,6 +214,8 @@ export class MP4Clip implements IClip {
   }
 }
 
+export const DEFAULT_AUDIO_SAMPLE_RATE = 48000
+
 export class AudioClip implements IClip {
   ready: Promise<void>
 
@@ -222,7 +224,7 @@ export class AudioClip implements IClip {
     duration: 0,
     width: 0,
     height: 0,
-    sampleRate: 48000,
+    sampleRate: DEFAULT_AUDIO_SAMPLE_RATE,
     numberOfChannels: 2
   }
 
