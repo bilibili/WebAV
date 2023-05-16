@@ -1,5 +1,6 @@
 // 避免使用 DOM API 确保这些 Clip 能在 Worker 中运行
 import {
+  audioResample,
   concatFloat32Array,
   decodeGif,
   extractPCM4AudioBuffer,
@@ -46,7 +47,8 @@ export class MP4Clip implements IClip {
     // 微秒
     duration: 0,
     width: 0,
-    height: 0
+    height: 0,
+    audioSampleRate: DEFAULT_AUDIO_SAMPLE_RATE
   }
 
   #volume = 1
@@ -70,7 +72,10 @@ export class MP4Clip implements IClip {
             this.meta = {
               duration: (info.duration / info.timescale) * 1e6,
               width: videoTrack.track_width,
-              height: videoTrack.track_height
+              height: videoTrack.track_height,
+              audioSampleRate:
+                info.audioTracks[0]?.audio.sample_rate ??
+                DEFAULT_AUDIO_SAMPLE_RATE
             }
             Log.info('MP4Clip info:', info)
             resolve()
@@ -93,11 +98,11 @@ export class MP4Clip implements IClip {
     })
   }
 
-  #next (time: number): {
+  async #next (time: number): Promise<{
     video: VideoFrame | null
     audio: Float32Array[]
     nextOffset: number
-  } {
+  }> {
     const audioIdx = this.#audioDatas.findIndex(ad => ad.timestamp > time)
     let audio: Float32Array[] = []
     if (audioIdx !== -1) {
@@ -121,6 +126,13 @@ export class MP4Clip implements IClip {
             ),
           []
         )
+
+      if (this.meta.audioSampleRate !== DEFAULT_AUDIO_SAMPLE_RATE) {
+        audio = await audioResample(audio, this.meta.audioSampleRate, {
+          rate: DEFAULT_AUDIO_SAMPLE_RATE,
+          chanCount: 2
+        })
+      }
 
       if (this.#volume !== 1) {
         for (const buf of audio) {
@@ -170,7 +182,7 @@ export class MP4Clip implements IClip {
     }
 
     this.#ts = time
-    const { video, audio, nextOffset } = this.#next(time)
+    const { video, audio, nextOffset } = await this.#next(time)
     if (video == null) {
       if (nextOffset === -1) {
         // 解析已完成，队列已清空

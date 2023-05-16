@@ -103,6 +103,46 @@ export function mixPCM (audios: Float32Array[][]): Float32Array {
   return data
 }
 
+/**
+ * 音频 PCM 重采样
+ * @param pcmData PCM
+ * @param curRate 当前采样率
+ * @param target { reate: 目标采样率, chanCount: 目标声道数 }
+ * @returns PCM
+ */
+export async function audioResample (
+  pcmData: Float32Array[],
+  curRate: number,
+  target: {
+    rate: number
+    chanCount: number
+  }
+): Promise<Float32Array[]> {
+  const chanCnt = pcmData.length
+  const emptyPCM = Array(target.chanCount)
+    .fill(0)
+    .map(() => new Float32Array(0))
+  if (chanCnt === 0) return emptyPCM
+
+  const len = Math.max(...pcmData.map(c => c.length))
+  if (len === 0) return emptyPCM
+
+  const ctx = new OfflineAudioContext(
+    target.chanCount,
+    (len * target.rate) / curRate,
+    target.rate
+  )
+  const abSource = ctx.createBufferSource()
+  const ab = ctx.createBuffer(chanCnt, len, curRate)
+  pcmData.forEach((d, idx) => ab.copyToChannel(d, idx))
+
+  abSource.buffer = ab
+  abSource.connect(ctx.destination)
+  abSource.start()
+
+  return extractPCM4AudioBuffer(await ctx.startRendering())
+}
+
 export async function sleep (time: number): Promise<void> {
   return await new Promise(resolve => {
     setTimeout(resolve, time)

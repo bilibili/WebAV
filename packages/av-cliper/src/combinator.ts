@@ -154,9 +154,6 @@ export class Combinator {
         )
       } else {
         const data = mixPCM(audios)
-        if (ts < timeSlice * 4) {
-          console.log(111, audios, data)
-        }
         this.#remux.encodeAudio(
           new AudioData({
             timestamp: ts,
