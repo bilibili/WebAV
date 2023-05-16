@@ -15,23 +15,33 @@ export function concatFloat32Array (bufs: Float32Array[]): Float32Array {
 }
 
 /**
- * 提取各个声道的 buffer 数据
+ * 从 AudioData 中提取 PCM 数据
  */
-export function extractAudioDataBuf (ad: AudioData): Float32Array[] {
-  const bufs: ArrayBuffer[] = []
-  for (let i = 0; i < ad.numberOfChannels; i++) {
-    const chanBufSize = ad.allocationSize({ planeIndex: i })
-    const chanBuf = new ArrayBuffer(chanBufSize)
-    ad.copyTo(chanBuf, { planeIndex: i })
-    bufs.push(chanBuf)
-  }
+export function extractPCM4AudioData (ad: AudioData): Float32Array[] {
+  return Array(ad.numberOfChannels)
+    .fill(0)
+    .map((_, idx) => {
+      const chanBufSize = ad.allocationSize({ planeIndex: idx })
+      const chanBuf = new ArrayBuffer(chanBufSize)
+      ad.copyTo(chanBuf, { planeIndex: idx })
+      return new Float32Array(chanBuf)
+    })
+}
 
-  return bufs.map(b => new Float32Array(b))
+/**
+ * 从 AudioBuffer 中提取 PCM
+ */
+export function extractPCM4AudioBuffer (ab: AudioBuffer): Float32Array[] {
+  return Array(ab.numberOfChannels)
+    .fill(0)
+    .map((_, idx) => {
+      return ab.getChannelData(idx)
+    })
 }
 
 export function adjustAudioDataVolume (ad: AudioData, volume: number) {
   const data = new Float32Array(
-    concatFloat32Array(extractAudioDataBuf(ad))
+    concatFloat32Array(extractPCM4AudioData(ad))
   ).map(v => v * volume)
   const newAd = new AudioData({
     sampleRate: ad.sampleRate,

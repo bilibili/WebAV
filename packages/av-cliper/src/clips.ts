@@ -2,7 +2,8 @@
 import {
   concatFloat32Array,
   decodeGif,
-  extractAudioDataBuf,
+  extractPCM4AudioBuffer,
+  extractPCM4AudioData,
   sleep
 } from './av-utils'
 import { Log } from './log'
@@ -71,6 +72,7 @@ export class MP4Clip implements IClip {
               width: videoTrack.track_width,
               height: videoTrack.track_height
             }
+            Log.info('MP4Clip info:', info)
             resolve()
             seek(0)
           },
@@ -108,7 +110,7 @@ export class MP4Clip implements IClip {
          *   AudioData2[chan0Float32Array, chan1Float32Array]
          * ]
          */
-        .map(ad => extractAudioDataBuf(ad))
+        .map(ad => extractPCM4AudioData(ad))
         /**
          * [chan0Float32Array, chan1Float32Array]
          */
@@ -217,6 +219,8 @@ export class MP4Clip implements IClip {
 export const DEFAULT_AUDIO_SAMPLE_RATE = 48000
 
 export class AudioClip implements IClip {
+  static ctx = new AudioContext({ sampleRate: DEFAULT_AUDIO_SAMPLE_RATE })
+
   ready: Promise<void>
 
   meta = {
@@ -247,8 +251,7 @@ export class AudioClip implements IClip {
       ...opts
     }
 
-    const ctx = new AudioContext()
-    this.ready = this.#init(ctx, buf)
+    this.ready = this.#init(AudioClip.ctx, buf)
   }
 
   async #init (
@@ -257,8 +260,13 @@ export class AudioClip implements IClip {
   ): Promise<void> {
     const tStart = performance.now()
     const audioBuf = await ctx.decodeAudioData(buf)
-    Log.info('Audio clip decoded:', performance.now() - tStart)
+    Log.info(
+      'Audio clip decoded complete:',
+      audioBuf,
+      performance.now() - tStart
+    )
 
+    const pcm = extractPCM4AudioBuffer(audioBuf)
     this.meta = {
       ...this.meta,
       duration: audioBuf.duration * 1e6,
@@ -266,22 +274,14 @@ export class AudioClip implements IClip {
       numberOfChannels: audioBuf.numberOfChannels
     }
 
-    this.#chan0Buf = audioBuf.getChannelData(0)
-    this.#chan1Buf =
-      audioBuf.numberOfChannels > 1
-        ? audioBuf.getChannelData(1)
-        : // 单声道 转 立体声
-          this.#chan0Buf
+    this.#chan0Buf = pcm[0]
+    // 单声道 转 立体声
+    this.#chan1Buf = pcm[1] ?? this.#chan0Buf
 
     const volume = this.#opts.volume
     if (volume !== 1) {
-      for (let i = 0; i < this.#chan0Buf.length; i++)
-        this.#chan0Buf[i] *= volume
-
-      if (this.#chan0Buf !== this.#chan1Buf) {
-        for (let i = 0; i < this.#chan1Buf.length; i++)
-          this.#chan1Buf[i] *= volume
-      }
+      for (const chan of pcm)
+        for (let i = 0; i < chan.length; i += 1) chan[i] *= volume
     }
 
     Log.info(
