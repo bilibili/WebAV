@@ -40,7 +40,7 @@ export class MP4Clip implements IClip {
 
   ready: Promise<void>
 
-  #decodeEnded = false
+  #destroyed = false
 
   meta = {
     // 微秒
@@ -58,7 +58,7 @@ export class MP4Clip implements IClip {
 
   #hasAudioTrack = false
 
-  #stopDemuxcode = () => {}
+  #demuxcoder: ReturnType<typeof demuxcode> | null = null
 
   constructor (
     rs: ReadableStream<Uint8Array>,
@@ -70,7 +70,7 @@ export class MP4Clip implements IClip {
         typeof opts.audio === 'object' && 'volume' in opts.audio
           ? opts.audio.volume
           : 1
-      const { seek, stop } = demuxcode(
+      this.#demuxcoder = demuxcode(
         rs,
         { audio: opts.audio !== false },
         {
@@ -86,7 +86,7 @@ export class MP4Clip implements IClip {
             }
             Log.info('MP4Clip info:', info)
             resolve()
-            seek(0)
+            this.#demuxcoder?.seek(0)
           },
           onVideoOutput: vf => {
             this.#videoFrames.push(vf)
@@ -95,14 +95,13 @@ export class MP4Clip implements IClip {
           onAudioOutput: async ad => {
             this.#audioData2PCMBuf(ad)
           },
-          onEnded: () => {
+          onComplete: () => {
+            Log.info('MP4Clip decode complete')
             if (lastVf == null) throw Error('mp4 parse error, no video frame')
             this.meta.duration = lastVf.timestamp + (lastVf.duration ?? 0)
-            this.#decodeEnded = true
           }
         }
       )
-      this.#stopDemuxcode = stop
     })
   }
 
@@ -156,7 +155,12 @@ export class MP4Clip implements IClip {
 
   async #nextVideo (time: number): Promise<VideoFrame | null> {
     if (this.#videoFrames.length === 0) {
-      if (this.#decodeEnded) return null
+      if (
+        this.#destroyed ||
+        this.#demuxcoder?.getDecodeQueueSize().video === 0
+      ) {
+        return null
+      }
 
       await sleep(5)
       return this.#nextVideo(time)
@@ -174,7 +178,12 @@ export class MP4Clip implements IClip {
   async #nextAudio (deltaTime: number): Promise<Float32Array[]> {
     const frameCnt = Math.ceil(deltaTime * (this.meta.audioSampleRate / 1e6))
     if (frameCnt === 0) return []
-    if (this.#audioChan0.length < frameCnt && !this.#decodeEnded) {
+    // 小心避免死循环
+    if (
+      this.#audioChan0.length < frameCnt &&
+      !this.#destroyed &&
+      this.#demuxcoder?.getDecodeQueueSize().audio !== 0
+    ) {
       console.log(44444)
       await sleep(5)
       return this.#nextAudio(deltaTime)
@@ -216,7 +225,8 @@ export class MP4Clip implements IClip {
 
   destroy (): void {
     Log.info('MP4Clip destroy, ts:', this.#ts)
-    this.#stopDemuxcode()
+    this.#destroyed = true
+    this.#demuxcoder?.stop()
     this.#videoFrames.forEach(f => f.close())
     this.#videoFrames = []
   }

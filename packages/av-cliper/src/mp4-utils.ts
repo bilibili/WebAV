@@ -33,21 +33,26 @@ export function demuxcode (
     onReady: (info: MP4Info) => void
     onVideoOutput: (vf: VideoFrame) => void
     onAudioOutput: (ad: AudioData) => void
-    onEnded: () => void
+    onComplete: () => void
   }
 ): {
   seek: (time: number) => void
   stop: () => void
+  getDecodeQueueSize: () => {
+    video: number
+    audio: number
+  }
 } {
   const { file: mp4File, stop: stopReadStream } = stream2file(stream)
 
+  let stopResetEndTimer = false
   const resetEndTimer = debounce(() => {
-    if (vdecoder.decodeQueueSize === 0) {
-      cbs.onEnded()
+    if (stopResetEndTimer) return
+    if (vdecoder.decodeQueueSize === 0 && adecoder.decodeQueueSize === 0) {
+      cbs.onComplete()
     } else {
       resetEndTimer()
     }
-    // todo: warn, mabye not close emited frame
   }, 300)
 
   const vdecoder = new VideoDecoder({
@@ -100,6 +105,7 @@ export function demuxcode (
 
   let totalVideoSamples: MP4Sample[] = []
   let totalAudioSamples: MP4Sample[] = []
+  // todo: 大文件时需要流式加载
   const resetReady = debounce(() => {
     if (mp4Info != null) {
       // Fragment mp4 中 duration 为 0，所以需要统计samples 的 duration
@@ -123,12 +129,17 @@ export function demuxcode (
 
   return {
     stop: () => {
+      stopResetEndTimer = true
       mp4File.stop()
       vdecoder.close()
       adecoder.close()
       stopReadStream()
       stream.cancel()
     },
+    getDecodeQueueSize: () => ({
+      video: vdecoder.decodeQueueSize,
+      audio: adecoder.decodeQueueSize
+    }),
     seek: time => {
       if (vTrackInfo != null) {
         const startIdx = findStartSampleIdx(

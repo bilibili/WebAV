@@ -123,13 +123,14 @@ document.querySelector('#decode-frame')?.addEventListener('click', () => {
     let time = 0
     while (true) {
       const { state, video } = await clip.tick(time)
-      if (state === 'done') return
+      if (state === 'done') break
       if (video != null && state === 'success') {
         ctx.drawImage(video, 0, 0, video.codedWidth, video.codedHeight)
         video.close()
       }
       time += 40000
     }
+    clip.destroy()
   })().catch(Log.error)
 })
 
