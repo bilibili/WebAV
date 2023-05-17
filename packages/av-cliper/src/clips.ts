@@ -90,29 +90,7 @@ export class MP4Clip implements IClip {
             lastVf = vf
           },
           onAudioOutput: async ad => {
-            const pcmArr =
-              ad.sampleRate === DEFAULT_AUDIO_SAMPLE_RATE
-                ? extractPCM4AudioData(ad)
-                : await audioResample(extractPCM4AudioData(ad), ad.sampleRate, {
-                    chanCount: ad.numberOfChannels,
-                    rate: DEFAULT_AUDIO_SAMPLE_RATE
-                  })
-
-            if (this.#volume !== 1) {
-              for (const pcm of pcmArr)
-                for (let i = 0; i < pcm.length; i++) pcm[i] *= this.#volume
-            }
-
-            this.#audioChan0 = concatFloat32Array([this.#audioChan0, pcmArr[0]])
-            if (pcmArr.length === 1) {
-              this.#audioChan1 = this.#audioChan0
-            } else {
-              this.#audioChan1 = concatFloat32Array([
-                this.#audioChan1,
-                pcmArr[1]
-              ])
-            }
-            ad.close()
+            this.#audioData2PCMBuf(ad)
           },
           onEnded: () => {
             if (lastVf == null) throw Error('mp4 parse error, no video frame')
@@ -124,6 +102,54 @@ export class MP4Clip implements IClip {
       this.#stopDemuxcode = stop
     })
   }
+
+  #audioData2PCMBuf = (() => {
+    let chan0 = new Float32Array(0)
+    let chan1 = new Float32Array(0)
+
+    let needResample = true
+    const flushResampleData = async (curRate: number) => {
+      const data = [chan0, chan1]
+      chan0 = new Float32Array(0)
+      chan1 = new Float32Array(0)
+
+      const pcmArr = await audioResample(data, curRate, {
+        rate: DEFAULT_AUDIO_SAMPLE_RATE,
+        chanCount: 2
+      })
+      this.#audioChan0 = concatFloat32Array([this.#audioChan0, pcmArr[0]])
+      this.#audioChan1 = concatFloat32Array([
+        this.#audioChan1,
+        pcmArr[1] ?? pcmArr[0]
+      ])
+    }
+    return (ad: AudioData) => {
+      needResample = ad.sampleRate !== DEFAULT_AUDIO_SAMPLE_RATE
+
+      const pcmArr = extractPCM4AudioData(ad)
+      let curRate = ad.sampleRate
+      ad.close()
+      if (this.#volume !== 1) {
+        for (const pcm of pcmArr)
+          for (let i = 0; i < pcm.length; i++) pcm[i] *= this.#volume
+      }
+
+      if (needResample) {
+        chan0 = concatFloat32Array([chan0, pcmArr[0]])
+        chan1 = concatFloat32Array([chan1, pcmArr[1] ?? pcmArr[0]])
+        if (chan0.length >= curRate / 5) {
+          // 累计 200ms 的音频数据再进行采样，过短可能导致声音有卡顿
+          flushResampleData(curRate).catch(Log.error)
+        }
+      } else {
+        this.#audioChan0 = concatFloat32Array([this.#audioChan0, pcmArr[0]])
+        this.#audioChan1 = concatFloat32Array([
+          this.#audioChan1,
+          pcmArr[1] ?? pcmArr[0]
+        ])
+      }
+    }
+  })()
 
   async #nextVideo (time: number): Promise<VideoFrame | null> {
     if (this.#videoFrames.length === 0) {
@@ -176,10 +202,7 @@ export class MP4Clip implements IClip {
     const video = await this.#nextVideo(time)
     this.#ts = time
     if (video == null) {
-      return {
-        audio,
-        state: 'success'
-      }
+      return { audio, state: 'success' }
     }
 
     return { video, audio, state: 'success' }
