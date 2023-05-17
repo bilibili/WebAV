@@ -178,7 +178,7 @@ document.querySelector('#decode-m4a')?.addEventListener('click', () => {
 
       const buf = ctx.createBuffer(2, len, DEFAULT_AUDIO_SAMPLE_RATE)
       buf.copyToChannel(audio[0], 0)
-      buf.copyToChannel(audio[1], 0)
+      buf.copyToChannel(audio[1], 1)
       const source = ctx.createBufferSource()
       source.buffer = buf
       source.connect(ctx.destination)
