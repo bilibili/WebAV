@@ -15,23 +15,33 @@ export function concatFloat32Array (bufs: Float32Array[]): Float32Array {
 }
 
 /**
- * 提取各个声道的 buffer 数据
+ * 从 AudioData 中提取 PCM 数据
  */
-export function extractAudioDataBuf (ad: AudioData): Float32Array[] {
-  const bufs: ArrayBuffer[] = []
-  for (let i = 0; i < ad.numberOfChannels; i++) {
-    const chanBufSize = ad.allocationSize({ planeIndex: i })
-    const chanBuf = new ArrayBuffer(chanBufSize)
-    ad.copyTo(chanBuf, { planeIndex: i })
-    bufs.push(chanBuf)
-  }
+export function extractPCM4AudioData (ad: AudioData): Float32Array[] {
+  return Array(ad.numberOfChannels)
+    .fill(0)
+    .map((_, idx) => {
+      const chanBufSize = ad.allocationSize({ planeIndex: idx })
+      const chanBuf = new ArrayBuffer(chanBufSize)
+      ad.copyTo(chanBuf, { planeIndex: idx })
+      return new Float32Array(chanBuf)
+    })
+}
 
-  return bufs.map(b => new Float32Array(b))
+/**
+ * 从 AudioBuffer 中提取 PCM
+ */
+export function extractPCM4AudioBuffer (ab: AudioBuffer): Float32Array[] {
+  return Array(ab.numberOfChannels)
+    .fill(0)
+    .map((_, idx) => {
+      return ab.getChannelData(idx)
+    })
 }
 
 export function adjustAudioDataVolume (ad: AudioData, volume: number) {
   const data = new Float32Array(
-    concatFloat32Array(extractAudioDataBuf(ad))
+    concatFloat32Array(extractPCM4AudioData(ad))
   ).map(v => v * volume)
   const newAd = new AudioData({
     sampleRate: ad.sampleRate,
@@ -91,6 +101,46 @@ export function mixPCM (audios: Float32Array[][]): Float32Array {
   }
 
   return data
+}
+
+/**
+ * 音频 PCM 重采样
+ * @param pcmData PCM
+ * @param curRate 当前采样率
+ * @param target { reate: 目标采样率, chanCount: 目标声道数 }
+ * @returns PCM
+ */
+export async function audioResample (
+  pcmData: Float32Array[],
+  curRate: number,
+  target: {
+    rate: number
+    chanCount: number
+  }
+): Promise<Float32Array[]> {
+  const chanCnt = pcmData.length
+  const emptyPCM = Array(target.chanCount)
+    .fill(0)
+    .map(() => new Float32Array(0))
+  if (chanCnt === 0) return emptyPCM
+
+  const len = Math.max(...pcmData.map(c => c.length))
+  if (len === 0) return emptyPCM
+
+  const ctx = new OfflineAudioContext(
+    target.chanCount,
+    (len * target.rate) / curRate,
+    target.rate
+  )
+  const abSource = ctx.createBufferSource()
+  const ab = ctx.createBuffer(chanCnt, len, curRate)
+  pcmData.forEach((d, idx) => ab.copyToChannel(d, idx))
+
+  abSource.buffer = ab
+  abSource.connect(ctx.destination)
+  abSource.start()
+
+  return extractPCM4AudioBuffer(await ctx.startRendering())
 }
 
 export async function sleep (time: number): Promise<void> {

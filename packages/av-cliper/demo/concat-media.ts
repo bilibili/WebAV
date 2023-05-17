@@ -1,5 +1,10 @@
 import { decodeGif } from '../src/av-utils'
-import { AudioClip, ImgClip, MP4Clip } from '../src/clips'
+import {
+  AudioClip,
+  DEFAULT_AUDIO_SAMPLE_RATE,
+  ImgClip,
+  MP4Clip
+} from '../src/clips'
 import { Combinator } from '../src/combinator'
 import { Log } from '../src/log'
 import { OffscreenSprite } from '../src/offscreen-sprite'
@@ -171,9 +176,9 @@ document.querySelector('#decode-m4a')?.addEventListener('click', () => {
         return
       }
 
-      const buf = ctx.createBuffer(2, len, 48000)
+      const buf = ctx.createBuffer(2, len, DEFAULT_AUDIO_SAMPLE_RATE)
       buf.copyToChannel(audio[0], 0)
-      buf.copyToChannel(audio[1], 0)
+      buf.copyToChannel(audio[1], 1)
       const source = ctx.createBufferSource()
       source.buffer = buf
       source.connect(ctx.destination)

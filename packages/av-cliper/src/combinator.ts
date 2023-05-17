@@ -3,6 +3,7 @@ import { file2stream, recodemux } from './mp4-utils'
 import { Log } from './log'
 import { mixPCM } from './av-utils'
 import { EventTool } from './event-tool'
+import { DEFAULT_AUDIO_SAMPLE_RATE } from './clips'
 
 interface IComItem {
   offset: number
@@ -65,7 +66,7 @@ export class Combinator {
       },
       audio: {
         codec: 'aac',
-        sampleRate: 48000,
+        sampleRate: DEFAULT_AUDIO_SAMPLE_RATE,
         sampleSize: 16,
         channelCount: 2
       },
@@ -101,7 +102,6 @@ export class Combinator {
       this.#closeOutStream?.()
       console.timeEnd('cost')
       stopProg()
-      this.#comItems.forEach(it => it.sprite.destroy())
     }
     const { stream, stop: closeOutStream } = file2stream(
       this.#remux.mp4file,
@@ -135,9 +135,12 @@ export class Combinator {
       ctx.fillStyle = this.#opts.bgColor
       ctx.fillRect(0, 0, width, height)
 
-      const audios = []
-      for (const it of this.#comItems) {
+      const audios: Float32Array[][] = []
+      for (let i = 0; i < this.#comItems.length; i++) {
+        const it = this.#comItems[i]
         if (ts < it.offset || ts > it.offset + it.duration) {
+          it.sprite.destroy()
+          this.#comItems.splice(i, 1)
           continue
         }
 
@@ -146,9 +149,12 @@ export class Combinator {
         ctx.restore()
       }
 
+      Log.debug('combinator run, ts:', ts, ' audio track count:', audios.length)
       if (audios.flat().every(a => a.length === 0)) {
         // 当前时刻无音频时，使用无声音频占位，否则会导致后续音频播放时间偏差
-        this.#remux.encodeAudio(createAudioPlaceholder(ts, timeSlice))
+        this.#remux.encodeAudio(
+          createAudioPlaceholder(ts, timeSlice, DEFAULT_AUDIO_SAMPLE_RATE)
+        )
       } else {
         const data = mixPCM(audios)
         this.#remux.encodeAudio(
@@ -156,7 +162,7 @@ export class Combinator {
             timestamp: ts,
             numberOfChannels: 2,
             numberOfFrames: data.length / 2,
-            sampleRate: 48000,
+            sampleRate: DEFAULT_AUDIO_SAMPLE_RATE,
             format: 'f32-planar',
             data
           })
@@ -176,6 +182,8 @@ export class Combinator {
 
       frameCnt += 1
     }
+
+    this.#comItems.forEach(it => it.sprite.destroy())
   }
 
   #updateProgress (mixinState: { progress: number }): () => void {
@@ -192,13 +200,17 @@ export class Combinator {
   }
 }
 
-function createAudioPlaceholder (ts: number, duration: number): AudioData {
-  const frameCnt = Math.floor((48000 * duration) / 1e6)
+function createAudioPlaceholder (
+  ts: number,
+  duration: number,
+  sampleRate: number
+): AudioData {
+  const frameCnt = Math.floor((sampleRate * duration) / 1e6)
   return new AudioData({
     timestamp: ts,
     numberOfChannels: 2,
     numberOfFrames: frameCnt,
-    sampleRate: 48000,
+    sampleRate: sampleRate,
     format: 'f32-planar',
     data: new Float32Array(frameCnt * 2)
   })

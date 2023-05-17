@@ -37,8 +37,9 @@ export function demuxcode (
   }
 ): {
   seek: (time: number) => void
+  stop: () => void
 } {
-  const mp4File = stream2file(stream)
+  const { file: mp4File, stop: stopReadStream } = stream2file(stream)
 
   const resetEndTimer = debounce(() => {
     if (vdecoder.decodeQueueSize === 0) {
@@ -121,6 +122,13 @@ export function demuxcode (
   }
 
   return {
+    stop: () => {
+      mp4File.stop()
+      vdecoder.close()
+      adecoder.close()
+      stopReadStream()
+      stream.cancel()
+    },
     seek: time => {
       if (vTrackInfo != null) {
         const startIdx = findStartSampleIdx(
@@ -360,12 +368,16 @@ function encodeAudioTrack (
   return encoder
 }
 
-function stream2file (stream: ReadableStream<Uint8Array>): MP4File {
+function stream2file (stream: ReadableStream<Uint8Array>): {
+  file: MP4File
+  stop: () => void
+} {
   const reader = stream.getReader()
   let chunkOffset = 0
   const file = mp4box.createFile()
+  let stoped = false
   async function readFile (): Promise<void> {
-    while (true) {
+    while (!stoped) {
       const { done, value } = await reader.read()
       if (done) {
         Log.info('source read done')
@@ -379,8 +391,15 @@ function stream2file (stream: ReadableStream<Uint8Array>): MP4File {
     }
   }
   readFile().catch(Log.error)
+  reader.closed
 
-  return file
+  return {
+    file,
+    stop: () => {
+      stoped = true
+      reader.releaseLock()
+    }
+  }
 }
 
 export function file2stream (
@@ -450,57 +469,6 @@ export function debounce<F extends (...args: any[]) => any>(
       func.apply(this, rest)
     }, wait)
   }
-}
-
-export function audioBuffer2Data (ab: AudioBuffer): AudioData {
-  const frameCnt = ab.sampleRate * ab.duration * 2
-  const buf = new Float32Array(frameCnt)
-  const chan0Buf = ab.getChannelData(0)
-  buf.set(chan0Buf, 0)
-  if (ab.numberOfChannels >= 2) {
-    buf.set(ab.getChannelData(1), chan0Buf.length)
-  } else {
-    buf.set(chan0Buf, chan0Buf.length)
-  }
-
-  return new AudioData({
-    numberOfChannels: 2,
-    numberOfFrames: ab.sampleRate * ab.duration,
-    sampleRate: ab.sampleRate,
-    timestamp: 0,
-    format: 'f32-planar',
-    data: buf
-  })
-}
-
-/**
- * 任意 channelCount 的 AudioData 转双声道
- */
-export function stereoFixedAudioData (ad: AudioData): AudioData {
-  if (ad.numberOfChannels === 2) return ad
-
-  const len = ad.allocationSize({ planeIndex: 0 }) / 4
-  const data = new Float32Array(len * 2)
-  ad.copyTo(data, { planeIndex: 0 })
-
-  if (ad.numberOfChannels === 1) {
-    // 只有一个声道，则复制声道1的数据到声道 2
-    data.copyWithin(len, 0, len)
-  } else {
-    // 声道大于 2，只保留前两个声道数据
-    ad.copyTo(new DataView(data.buffer, len * 4), { planeIndex: 1 })
-  }
-
-  const rs = new AudioData({
-    timestamp: ad.timestamp,
-    numberOfChannels: 2,
-    numberOfFrames: ad.numberOfFrames,
-    sampleRate: 48000,
-    format: ad.format,
-    data
-  })
-  ad.close()
-  return rs
 }
 
 // track is H.264 or H.265.
