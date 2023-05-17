@@ -56,6 +56,8 @@ export class MP4Clip implements IClip {
 
   #volume = 1
 
+  #stopDemuxcode = () => {}
+
   constructor (
     rs: ReadableStream<Uint8Array>,
     opts: { audio: boolean | { volume: number } } = { audio: true }
@@ -66,7 +68,7 @@ export class MP4Clip implements IClip {
         typeof opts.audio === 'object' && 'volume' in opts.audio
           ? opts.audio.volume
           : 1
-      const { seek } = demuxcode(
+      const { seek, stop } = demuxcode(
         rs,
         { audio: opts.audio !== false },
         {
@@ -119,6 +121,7 @@ export class MP4Clip implements IClip {
           }
         }
       )
+      this.#stopDemuxcode = stop
     })
   }
 
@@ -175,7 +178,7 @@ export class MP4Clip implements IClip {
     if (video == null) {
       return {
         audio,
-        state: this.#decodeEnded ? 'done' : 'success'
+        state: 'success'
       }
     }
 
@@ -183,6 +186,8 @@ export class MP4Clip implements IClip {
   }
 
   destroy (): void {
+    Log.info('MP4Clip destroy, ts:', this.#ts)
+    this.#stopDemuxcode()
     this.#videoFrames.forEach(f => f.close())
     this.#videoFrames = []
   }

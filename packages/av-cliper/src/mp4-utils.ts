@@ -37,8 +37,9 @@ export function demuxcode (
   }
 ): {
   seek: (time: number) => void
+  stop: () => void
 } {
-  const mp4File = stream2file(stream)
+  const { file: mp4File, stop: stopReadStream } = stream2file(stream)
 
   const resetEndTimer = debounce(() => {
     if (vdecoder.decodeQueueSize === 0) {
@@ -121,6 +122,13 @@ export function demuxcode (
   }
 
   return {
+    stop: () => {
+      mp4File.stop()
+      vdecoder.close()
+      adecoder.close()
+      stopReadStream()
+      stream.cancel()
+    },
     seek: time => {
       if (vTrackInfo != null) {
         const startIdx = findStartSampleIdx(
@@ -360,12 +368,16 @@ function encodeAudioTrack (
   return encoder
 }
 
-function stream2file (stream: ReadableStream<Uint8Array>): MP4File {
+function stream2file (stream: ReadableStream<Uint8Array>): {
+  file: MP4File
+  stop: () => void
+} {
   const reader = stream.getReader()
   let chunkOffset = 0
   const file = mp4box.createFile()
+  let stoped = false
   async function readFile (): Promise<void> {
-    while (true) {
+    while (!stoped) {
       const { done, value } = await reader.read()
       if (done) {
         Log.info('source read done')
@@ -379,8 +391,15 @@ function stream2file (stream: ReadableStream<Uint8Array>): MP4File {
     }
   }
   readFile().catch(Log.error)
+  reader.closed
 
-  return file
+  return {
+    file,
+    stop: () => {
+      stoped = true
+      reader.releaseLock()
+    }
+  }
 }
 
 export function file2stream (

@@ -102,7 +102,6 @@ export class Combinator {
       this.#closeOutStream?.()
       console.timeEnd('cost')
       stopProg()
-      this.#comItems.forEach(it => it.sprite.destroy())
     }
     const { stream, stop: closeOutStream } = file2stream(
       this.#remux.mp4file,
@@ -137,8 +136,11 @@ export class Combinator {
       ctx.fillRect(0, 0, width, height)
 
       const audios: Float32Array[][] = []
-      for (const it of this.#comItems) {
+      for (let i = 0; i < this.#comItems.length; i++) {
+        const it = this.#comItems[i]
         if (ts < it.offset || ts > it.offset + it.duration) {
+          it.sprite.destroy()
+          this.#comItems.splice(i, 1)
           continue
         }
 
@@ -147,6 +149,7 @@ export class Combinator {
         ctx.restore()
       }
 
+      Log.debug('combinator run, ts:', ts, ' audio track count:', audios.length)
       if (audios.flat().every(a => a.length === 0)) {
         // 当前时刻无音频时，使用无声音频占位，否则会导致后续音频播放时间偏差
         this.#remux.encodeAudio(
@@ -179,6 +182,8 @@ export class Combinator {
 
       frameCnt += 1
     }
+
+    this.#comItems.forEach(it => it.sprite.destroy())
   }
 
   #updateProgress (mixinState: { progress: number }): () => void {
