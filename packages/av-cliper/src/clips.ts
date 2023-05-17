@@ -56,6 +56,8 @@ export class MP4Clip implements IClip {
 
   #volume = 1
 
+  #hasAudioTrack = false
+
   #stopDemuxcode = () => {}
 
   constructor (
@@ -73,6 +75,7 @@ export class MP4Clip implements IClip {
         { audio: opts.audio !== false },
         {
           onReady: info => {
+            this.#hasAudioTrack = info.audioTracks.length > 0
             const videoTrack = info.videoTracks[0]
             this.meta = {
               duration: (info.duration / info.timescale) * 1e6,
@@ -172,6 +175,7 @@ export class MP4Clip implements IClip {
     const frameCnt = Math.ceil(deltaTime * (this.meta.audioSampleRate / 1e6))
     if (frameCnt === 0) return []
     if (this.#audioChan0.length < frameCnt && !this.#decodeEnded) {
+      console.log(44444)
       await sleep(5)
       return this.#nextAudio(deltaTime)
     }
@@ -198,7 +202,9 @@ export class MP4Clip implements IClip {
       return { audio: [], state: 'done' }
     }
 
-    const audio = await this.#nextAudio(time - this.#ts)
+    const audio = this.#hasAudioTrack
+      ? await this.#nextAudio(time - this.#ts)
+      : []
     const video = await this.#nextVideo(time)
     this.#ts = time
     if (video == null) {

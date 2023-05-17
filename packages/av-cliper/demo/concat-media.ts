@@ -91,7 +91,7 @@ document.querySelector('#mp4-mp4')?.addEventListener('click', () => {
 
 document.querySelector('#mp4-mp3')?.addEventListener('click', () => {
   ;(async () => {
-    const resp1 = await fetch('./public/fenfen.mp4')
+    const resp1 = await fetch('./public/0.mp4')
     const spr1 = new OffscreenSprite(
       'v1',
       new MP4Clip(resp1.body as ReadableStream)
