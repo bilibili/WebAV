@@ -18,7 +18,7 @@ export interface IClip {
   tick: (time: number) => Promise<{
     video?: VideoFrame | ImageBitmap
     audio?: Float32Array[]
-    state: 'done' | 'success' | 'next'
+    state: 'done' | 'success'
   }>
 
   ready: Promise<void>
@@ -35,21 +35,24 @@ export interface IClip {
 
 export class MP4Clip implements IClip {
   #videoFrames: VideoFrame[] = []
-  #audioDatas: AudioData[] = []
 
   #ts = 0
 
   ready: Promise<void>
 
-  #frameParseEnded = false
+  #decodeEnded = false
 
   meta = {
     // 微秒
     duration: 0,
     width: 0,
     height: 0,
-    audioSampleRate: DEFAULT_AUDIO_SAMPLE_RATE
+    audioSampleRate: DEFAULT_AUDIO_SAMPLE_RATE,
+    audioChanCount: 2
   }
+
+  #audioChan0 = new Float32Array(0)
+  #audioChan1 = new Float32Array(0)
 
   #volume = 1
 
@@ -73,9 +76,8 @@ export class MP4Clip implements IClip {
               duration: (info.duration / info.timescale) * 1e6,
               width: videoTrack.track_width,
               height: videoTrack.track_height,
-              audioSampleRate:
-                info.audioTracks[0]?.audio.sample_rate ??
-                DEFAULT_AUDIO_SAMPLE_RATE
+              audioSampleRate: DEFAULT_AUDIO_SAMPLE_RATE,
+              audioChanCount: 2
             }
             Log.info('MP4Clip info:', info)
             resolve()
@@ -85,141 +87,99 @@ export class MP4Clip implements IClip {
             this.#videoFrames.push(vf)
             lastVf = vf
           },
-          onAudioOutput: ad => {
-            this.#audioDatas.push(ad)
+          onAudioOutput: async ad => {
+            const pcmArr =
+              ad.sampleRate === DEFAULT_AUDIO_SAMPLE_RATE
+                ? extractPCM4AudioData(ad)
+                : await audioResample(extractPCM4AudioData(ad), ad.sampleRate, {
+                    chanCount: ad.numberOfChannels,
+                    rate: DEFAULT_AUDIO_SAMPLE_RATE
+                  })
+
+            if (this.#volume !== 1) {
+              for (const pcm of pcmArr)
+                for (let i = 0; i < pcm.length; i++) pcm[i] *= this.#volume
+            }
+
+            this.#audioChan0 = concatFloat32Array([this.#audioChan0, pcmArr[0]])
+            if (pcmArr.length === 1) {
+              this.#audioChan1 = this.#audioChan0
+            } else {
+              this.#audioChan1 = concatFloat32Array([
+                this.#audioChan1,
+                pcmArr[1]
+              ])
+            }
+            ad.close()
           },
           onEnded: () => {
             if (lastVf == null) throw Error('mp4 parse error, no video frame')
             this.meta.duration = lastVf.timestamp + (lastVf.duration ?? 0)
-            this.#frameParseEnded = true
+            this.#decodeEnded = true
           }
         }
       )
     })
   }
 
-  async #next (time: number): Promise<{
-    video: VideoFrame | null
-    audio: Float32Array[]
-    nextOffset: number
-  }> {
-    const audioIdx = this.#audioDatas.findIndex(ad => ad.timestamp > time)
-    let audio: Float32Array[] = []
-    if (audioIdx !== -1) {
-      // [AudioData1, AudioData2] => [chan0Float32Array, chan1Float32Array]
-      audio = this.#audioDatas
-        .slice(0, audioIdx)
-        /**
-         * [
-         *   AudioData1[chan0Float32Array, chan1Float32Array],
-         *   AudioData2[chan0Float32Array, chan1Float32Array]
-         * ]
-         */
-        .map(ad => extractPCM4AudioData(ad))
-        /**
-         * [chan0Float32Array, chan1Float32Array]
-         */
-        .reduce(
-          (acc, cur) =>
-            cur.map((v, idx) =>
-              concatFloat32Array([acc[idx] ?? new Float32Array(0), v])
-            ),
-          []
-        )
+  async #nextVideo (time: number): Promise<VideoFrame | null> {
+    if (this.#videoFrames.length === 0) {
+      if (this.#decodeEnded) return null
 
-      if (this.meta.audioSampleRate !== DEFAULT_AUDIO_SAMPLE_RATE) {
-        audio = await audioResample(audio, this.meta.audioSampleRate, {
-          rate: DEFAULT_AUDIO_SAMPLE_RATE,
-          chanCount: 2
-        })
-      }
-
-      if (this.#volume !== 1) {
-        for (const buf of audio) {
-          for (let i = 0; i < buf.length; i += 1) buf[i] *= this.#volume
-        }
-      }
-      this.#audioDatas = this.#audioDatas.slice(audioIdx)
+      await sleep(5)
+      return this.#nextVideo(time)
     }
 
-    const rs = this.#videoFrames[0] ?? null
-    if (rs == null) {
-      return {
-        video: null,
-        audio,
-        nextOffset: -1
-      }
-    }
-
+    const rs = this.#videoFrames[0]
     if (time < rs.timestamp) {
-      return {
-        video: null,
-        audio,
-        nextOffset: rs.timestamp
-      }
+      return null
     }
 
     this.#videoFrames.shift()
+    return rs
+  }
 
-    return {
-      video: rs,
-      audio,
-      nextOffset: this.#videoFrames[0]?.timestamp ?? -1
+  async #nextAudio (deltaTime: number): Promise<Float32Array[]> {
+    const frameCnt = Math.ceil(deltaTime * (this.meta.audioSampleRate / 1e6))
+    if (frameCnt === 0) return []
+    if (this.#audioChan0.length < frameCnt && !this.#decodeEnded) {
+      await sleep(5)
+      return this.#nextAudio(deltaTime)
     }
+
+    const audio = [
+      this.#audioChan0.slice(0, frameCnt),
+      this.#audioChan1.slice(0, frameCnt)
+    ]
+
+    this.#audioChan0 = this.#audioChan0.slice(frameCnt)
+    if (this.meta.audioChanCount > 1) {
+      this.#audioChan1 = this.#audioChan1.slice(frameCnt)
+    }
+    return audio
   }
 
   async tick (time: number): Promise<{
     video?: VideoFrame
     audio: Float32Array[]
-    state: 'success' | 'next' | 'done'
+    state: 'success' | 'done'
   }> {
     if (time < this.#ts) throw Error('time not allow rollback')
     if (time >= this.meta.duration) {
-      return {
-        audio: [],
-        state: 'done'
-      }
+      return { audio: [], state: 'done' }
     }
 
+    const audio = await this.#nextAudio(time - this.#ts)
+    const video = await this.#nextVideo(time)
     this.#ts = time
-    const { video, audio, nextOffset } = await this.#next(time)
     if (video == null) {
-      if (nextOffset === -1) {
-        // 解析已完成，队列已清空
-        if (this.#frameParseEnded) {
-          Log.info('--- worker ended ----')
-          return {
-            audio,
-            state: 'done'
-          }
-        }
-        // 队列已空，等待补充 vf
-        await sleep(5)
-        return await this.tick(time)
-      }
-      // 当前 time 小于最前的 frame.timestamp，等待 time 增加
       return {
         audio,
-        state: 'next'
+        state: this.#decodeEnded ? 'done' : 'success'
       }
     }
 
-    if (time >= nextOffset) {
-      // frame 过期，再取下一个
-      video?.close()
-      // 音频数据不能丢
-      const { video: nV, audio: nA, state } = await this.tick(time)
-      return {
-        video: nV,
-        audio: audio.concat(nA),
-        state
-      }
-    }
-    return {
-      video,
-      audio,
-      state: 'success'
-    }
+    return { video, audio, state: 'success' }
   }
 
   destroy (): void {
@@ -243,8 +203,6 @@ export class AudioClip implements IClip {
     sampleRate: DEFAULT_AUDIO_SAMPLE_RATE,
     numberOfChannels: 2
   }
-
-  #audioDatas: AudioData[] = []
 
   #chan0Buf = new Float32Array()
   #chan1Buf = new Float32Array()
@@ -304,7 +262,7 @@ export class AudioClip implements IClip {
 
   async tick (time: number): Promise<{
     audio: Float32Array[]
-    state: 'success' | 'next' | 'done'
+    state: 'success' | 'done'
   }> {
     if (time < this.#ts) throw Error('time not allow rollback')
     if (!this.#opts.loop && time >= this.meta.duration) {
@@ -326,8 +284,9 @@ export class AudioClip implements IClip {
   }
 
   destroy (): void {
-    Log.info('---- audioclip destroy ----', this.#audioDatas)
-    this.#audioDatas.forEach(ad => ad.close())
+    this.#chan0Buf = new Float32Array(0)
+    this.#chan1Buf = new Float32Array(0)
+    Log.info('---- audioclip destroy ----')
   }
 }
 

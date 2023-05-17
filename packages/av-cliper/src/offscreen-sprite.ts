@@ -26,7 +26,7 @@ export class OffscreenSprite extends BaseSprite {
     super.render(ctx)
     const { w, h } = this.rect
     const { video, audio, state } = await this.#clip.tick(time)
-    if (state === 'done') return []
+    if (state === 'done') return audio ?? []
 
     const imgSource = video ?? this.#lastVf
     if (imgSource != null) {

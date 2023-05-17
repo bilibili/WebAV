@@ -136,7 +136,7 @@ export class Combinator {
       ctx.fillStyle = this.#opts.bgColor
       ctx.fillRect(0, 0, width, height)
 
-      const audios = []
+      const audios: Float32Array[][] = []
       for (const it of this.#comItems) {
         if (ts < it.offset || ts > it.offset + it.duration) {
           continue
