@@ -1,0 +1,121 @@
+import { extractPCM4AudioBuffer } from '../av-utils'
+import { Log } from '../log'
+import { DEFAULT_AUDIO_SAMPLE_RATE, IClip } from './iclip'
+
+export class AudioClip implements IClip {
+  static ctx = new AudioContext({ sampleRate: DEFAULT_AUDIO_SAMPLE_RATE })
+
+  ready: Promise<void>
+
+  meta = {
+    // 微秒
+    duration: 0,
+    width: 0,
+    height: 0,
+    sampleRate: DEFAULT_AUDIO_SAMPLE_RATE,
+    numberOfChannels: 2
+  }
+
+  #chan0Buf = new Float32Array()
+  #chan1Buf = new Float32Array()
+
+  // 微秒
+  #ts = 0
+
+  #frameOffset = 0
+
+  #opts
+
+  constructor (buf: ArrayBuffer, opts?: { loop?: boolean; volume?: number }) {
+    this.#opts = {
+      loop: false,
+      volume: 1,
+      ...opts
+    }
+
+    this.ready = this.#init(AudioClip.ctx, buf)
+  }
+
+  async #init (
+    ctx: OfflineAudioContext | AudioContext,
+    buf: ArrayBuffer
+  ): Promise<void> {
+    const tStart = performance.now()
+    const audioBuf = await ctx.decodeAudioData(buf)
+    Log.info(
+      'Audio clip decoded complete:',
+      audioBuf,
+      performance.now() - tStart
+    )
+
+    const pcm = extractPCM4AudioBuffer(audioBuf)
+    this.meta = {
+      ...this.meta,
+      duration: audioBuf.duration * 1e6,
+      sampleRate: audioBuf.sampleRate,
+      numberOfChannels: audioBuf.numberOfChannels
+    }
+
+    this.#chan0Buf = pcm[0]
+    // 单声道 转 立体声
+    this.#chan1Buf = pcm[1] ?? this.#chan0Buf
+
+    const volume = this.#opts.volume
+    if (volume !== 1) {
+      for (const chan of pcm)
+        for (let i = 0; i < chan.length; i += 1) chan[i] *= volume
+    }
+
+    Log.info(
+      'Audio clip convert to AudioData, time:',
+      performance.now() - tStart
+    )
+  }
+
+  async tick (time: number): Promise<{
+    audio: Float32Array[]
+    state: 'success' | 'done'
+  }> {
+    if (time < this.#ts) throw Error('time not allow rollback')
+    if (!this.#opts.loop && time >= this.meta.duration) {
+      return { audio: [], state: 'done' }
+    }
+
+    const deltaTime = time - this.#ts
+    this.#ts = time
+
+    const frameCnt = Math.ceil(deltaTime * (this.meta.sampleRate / 1e6))
+    const endIdx = this.#frameOffset + frameCnt
+    const audio = [
+      ringSliceFloat32Array(this.#chan0Buf, this.#frameOffset, endIdx),
+      ringSliceFloat32Array(this.#chan1Buf, this.#frameOffset, endIdx)
+    ]
+    this.#frameOffset = endIdx
+
+    return { audio, state: 'success' }
+  }
+
+  destroy (): void {
+    this.#chan0Buf = new Float32Array(0)
+    this.#chan1Buf = new Float32Array(0)
+    Log.info('---- audioclip destroy ----')
+  }
+}
+
+/**
+ *  循环 即 环形取值
+ */
+function ringSliceFloat32Array (
+  data: Float32Array,
+  start: number,
+  end: number
+): Float32Array {
+  const cnt = end - start
+  const rs = new Float32Array(cnt)
+  let i = 0
+  while (i < cnt) {
+    rs[i] = data[(start + i) % data.length]
+    i += 1
+  }
+  return rs
+}
