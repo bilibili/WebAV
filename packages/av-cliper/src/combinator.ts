@@ -78,7 +78,9 @@ export class Combinator {
     sprite: OffscreenSprite,
     opts: { offset: number; duration: number }
   ): Promise<void> {
+    Log.info('Combinator add sprite:', sprite.name)
     await sprite.ready
+    Log.info('Combinator add sprite ready:', sprite.name)
     this.#comItems.push({
       sprite,
       offset: opts.offset * 1e6,
@@ -138,7 +140,8 @@ export class Combinator {
       const audios: Float32Array[][] = []
       for (let i = 0; i < this.#comItems.length; i++) {
         const it = this.#comItems[i]
-        if (ts < it.offset || ts > it.offset + it.duration) {
+        if (ts < it.offset) continue
+        if (ts > it.offset + it.duration) {
           it.sprite.destroy()
           this.#comItems.splice(i, 1)
           continue

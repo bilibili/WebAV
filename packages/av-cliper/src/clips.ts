@@ -184,7 +184,6 @@ export class MP4Clip implements IClip {
       !this.#destroyed &&
       this.#demuxcoder?.getDecodeQueueSize().audio !== 0
     ) {
-      console.log(44444)
       await sleep(5)
       return this.#nextAudio(deltaTime)
     }
@@ -395,6 +394,7 @@ export class ImgClip implements IClip {
   }
 
   destroy (): void {
+    Log.info('ImgClip destroy')
     this.#img?.close()
     this.#frames.forEach(f => f.close())
   }

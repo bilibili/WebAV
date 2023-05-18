@@ -12,7 +12,7 @@ export class OffscreenSprite extends BaseSprite {
     super(name)
     this.#clip = clip
     this.ready = clip.ready.then(() => {
-      Log.info(`--- WorkerSprite ready ---`, clip.meta)
+      Log.info('OffscreenSprite ready:', clip.meta)
       this.rect.w = clip.meta.width
       this.rect.h = clip.meta.height
     })
@@ -42,6 +42,7 @@ export class OffscreenSprite extends BaseSprite {
   }
 
   destroy (): void {
+    Log.info(`OffscreenSprite ${this.name} destroy`)
     this.#lastVf?.close()
     this.#lastVf = null
     this.#clip.destroy()
