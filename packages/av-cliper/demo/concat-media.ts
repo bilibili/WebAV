@@ -23,14 +23,14 @@ document.querySelector('#mp4-mp4')?.addEventListener('click', () => {
   ;(async () => {
     const resp1 = await fetch('./public/0.mp4')
     const spr1 = new OffscreenSprite(
-      'v1',
+      'spr1',
       new MP4Clip(resp1.body as ReadableStream)
     )
     // 45°
-    spr1.rect.angle = Math.PI / 4
+    // spr1.rect.angle = Math.PI / 4
     const resp2 = await fetch('./public/fragment.mp4')
     const spr2 = new OffscreenSprite(
-      'v1',
+      'spr2',
       new MP4Clip(
         resp2.body as ReadableStream,
         { audio: { volume: 2 } } // 调整视频音量
@@ -93,15 +93,15 @@ document.querySelector('#mp4-mp3')?.addEventListener('click', () => {
   ;(async () => {
     const resp1 = await fetch('./public/0.mp4')
     const spr1 = new OffscreenSprite(
-      'v1',
+      'spr1',
       new MP4Clip(resp1.body as ReadableStream)
     )
 
     const resp2 = await fetch('./public/0-4.mp3')
     const spr2 = new OffscreenSprite(
-      'v1',
+      'spr2',
       new AudioClip(await resp2.arrayBuffer(), {
-        volume: 2,
+        // volume: 2,
         loop: true
       })
     )
@@ -117,7 +117,7 @@ document.querySelector('#mp4-mp3')?.addEventListener('click', () => {
 
 document.querySelector('#decode-frame')?.addEventListener('click', () => {
   ;(async () => {
-    const resp1 = await fetch('./public/fragment.mp4')
+    const resp1 = await fetch('./public/alpha-hevc.mp4')
     const clip = new MP4Clip(resp1.body as ReadableStream)
     await clip.ready
     let time = 0

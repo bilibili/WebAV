@@ -8,14 +8,14 @@ Combine video, audio, images, text, with animation support
 
 const resp1 = await fetch('./public/0.mp4')
 const spr1 = new OffscreenSprite(
-  'v1',
+  'spr1',
   new MP4Clip(resp1.body as ReadableStream)
 )
 // 45°
 spr1.rect.angle = Math.PI / 4
 const resp2 = await fetch('./public/fragment.mp4')
 const spr2 = new OffscreenSprite(
-  'v1',
+  'spr2',
   new MP4Clip(
     resp2.body as ReadableStream
   )
