@@ -482,20 +482,20 @@ export function debounce<F extends (...args: any[]) => any>(
   }
 }
 
-// track is H.264 or H.265.
+// track is H.264, H.265 or VPX.
 function parseVideoCodecDesc (track: TrakBoxParser): Uint8Array {
   for (const entry of track.mdia.minf.stbl.stsd.entries) {
-    if ('avcC' in entry || 'hvcC ' in entry) {
+    // @ts-expect-error
+    const box = entry.avcC ?? entry.hvcC ?? entry.vpcC
+    if (box != null) {
       const stream = new mp4box.DataStream(
         undefined,
         0,
         mp4box.DataStream.BIG_ENDIAN
       )
-      // @ts-expect-error
-      const box = 'avcC' in entry ? entry.avcC : entry.hvcC
       box.write(stream)
       return new Uint8Array(stream.buffer, 8) // Remove the box header.
     }
   }
-  throw Error('avcC or hvcC not found')
+  throw Error('avcC, hvcC or VPX not found')
 }
