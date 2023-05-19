@@ -145,6 +145,11 @@ export class MP4Clip implements IClip {
     if (time < rs.timestamp) {
       return null
     }
+    if (time > rs.timestamp + (rs.duration ?? 0)) {
+      // 过期，找下一帧
+      this.#videoFrames.shift()?.close()
+      return this.#nextVideo(time)
+    }
 
     this.#videoFrames.shift()
     return rs
@@ -198,7 +203,14 @@ export class MP4Clip implements IClip {
   }
 
   destroy (): void {
-    Log.info('MP4Clip destroy, ts:', this.#ts)
+    Log.info(
+      'MP4Clip destroy, ts:',
+      this.#ts,
+      ', remainder frame count:',
+      this.#videoFrames.length,
+      ', decoderQueueSzie:',
+      this.#demuxcoder?.getDecodeQueueSize()
+    )
     this.#destroyed = true
     this.#demuxcoder?.stop()
     this.#videoFrames.forEach(f => f.close())

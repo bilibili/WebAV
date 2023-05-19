@@ -39,6 +39,7 @@ export class ImgClip implements IClip {
       width: firstVf.codedWidth,
       height: firstVf.codedHeight
     }
+    Log.info('ImgClip ready:', this.meta)
   }
 
   async tick (time: number): Promise<{
