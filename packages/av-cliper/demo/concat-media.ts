@@ -14,7 +14,7 @@ document.querySelector('#mp4-mp4')?.addEventListener('click', () => {
       'spr1',
       new MP4Clip(resp1.body as ReadableStream)
     )
-    const resp3 = await fetch('./public/imgs/bangni.png')
+    const resp3 = await fetch('./public/img/bangni.png')
     const spr3 = new OffscreenSprite(
       'spr3',
       new ImgClip(await createImageBitmap(await resp3.blob()))
@@ -117,7 +117,7 @@ document.querySelector('#mix-audio')?.addEventListener('click', () => {
 
 document.querySelector('#gif-m4a')?.addEventListener('click', () => {
   ;(async () => {
-    const resp1 = await fetch('./public/imgs/animated.gif')
+    const resp1 = await fetch('./public/img/animated.gif')
     const spr1 = new OffscreenSprite(
       's1',
       new ImgClip({ type: 'image/gif', stream: resp1.body! })

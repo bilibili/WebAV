@@ -6,14 +6,16 @@ const cvs = document.querySelector('canvas') as HTMLCanvasElement
 const ctx = cvs.getContext('2d')!
 
 const imgs = {
-  'image/avif': './public/imgs/animated.avif',
-  'image/webp': './public/imgs/animated.webp',
-  'image/png': './public/imgs/animated.png',
-  'image/gif': './public/imgs/animated.gif'
+  'image/avif': './public/img/animated.avif',
+  'image/webp': './public/img/animated.webp',
+  'image/png': './public/img/animated.png',
+  'image/gif': './public/img/animated.gif'
 }
 
+let stopImg = () => {}
 document.querySelector('#decode-img')?.addEventListener('click', () => {
   ;(async () => {
+    stopImg()
     const imgType = (
       document.querySelector('input[name=img-type]:checked') as HTMLInputElement
     ).value
@@ -27,9 +29,12 @@ document.querySelector('#decode-img')?.addEventListener('click', () => {
       if (vf == null) return
       ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height)
       ctx.drawImage(vf, 0, 0)
-      setTimeout(() => {
+      const timer = setTimeout(() => {
         render(frames[++i])
       }, (vf.duration ?? 0) / 1000)
+      stopImg = () => {
+        clearTimeout(timer)
+      }
     }
     render(frames[0])
   })()
