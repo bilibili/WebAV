@@ -5,25 +5,6 @@ import { Log } from '../src/log'
 const cvs = document.querySelector('canvas') as HTMLCanvasElement
 const ctx = cvs.getContext('2d')!
 
-document.querySelector('#decode-frame')?.addEventListener('click', () => {
-  ;(async () => {
-    const resp1 = await fetch('./public/alpha-hevc.mp4')
-    const clip = new MP4Clip(resp1.body as ReadableStream)
-    await clip.ready
-    let time = 0
-    while (true) {
-      const { state, video } = await clip.tick(time)
-      if (state === 'done') break
-      if (video != null && state === 'success') {
-        ctx.drawImage(video, 0, 0, video.codedWidth, video.codedHeight)
-        video.close()
-      }
-      time += 40000
-    }
-    clip.destroy()
-  })().catch(Log.error)
-})
-
 const imgs = {
   'image/avif': './public/imgs/animated.avif',
   'image/webp': './public/imgs/animated.webp',
@@ -103,4 +84,34 @@ document.querySelector('#decode-audio')?.addEventListener('click', () => {
     }
     play()
   })()
+})
+
+const videos = {
+  'alpha-hevc.mp4': './public/video/alpha-hevc.mp4',
+  'bear-vp9.mp4': './public/video/bear-vp9.mp4'
+}
+document.querySelector('#decode-video')?.addEventListener('click', () => {
+  ;(async () => {
+    const videoType = (
+      document.querySelector(
+        'input[name=video-type]:checked'
+      ) as HTMLInputElement
+    ).value
+    // @ts-expect-error
+    const resp1 = await fetch(videos[videoType])
+    const clip = new MP4Clip(resp1.body!)
+    await clip.ready
+    let time = 0
+    while (true) {
+      const { state, video } = await clip.tick(time)
+      if (state === 'done') break
+      if (video != null && state === 'success') {
+        ctx.clearRect(0, 0, cvs.width, cvs.height)
+        ctx.drawImage(video, 0, 0, video.codedWidth, video.codedHeight)
+        video.close()
+      }
+      time += 40000
+    }
+    clip.destroy()
+  })().catch(Log.error)
 })

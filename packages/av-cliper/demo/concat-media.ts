@@ -9,30 +9,22 @@ const ctx = cvs.getContext('2d')!
 
 document.querySelector('#mp4-mp4')?.addEventListener('click', () => {
   ;(async () => {
-    const resp1 = await fetch('./public/0.mp4')
+    const resp1 = await fetch('./public/video/0.mp4')
     const spr1 = new OffscreenSprite(
       'spr1',
       new MP4Clip(resp1.body as ReadableStream)
-    )
-    // 45°
-    // spr1.rect.angle = Math.PI / 4
-    const resp2 = await fetch('./public/fragment.mp4')
-    const spr2 = new OffscreenSprite(
-      'spr2',
-      new MP4Clip(
-        resp2.body as ReadableStream,
-        { audio: { volume: 2 } } // 调整视频音量
-      )
     )
     const resp3 = await fetch('./public/imgs/bangni.png')
     const spr3 = new OffscreenSprite(
       'spr3',
       new ImgClip(await createImageBitmap(await resp3.blob()))
     )
+    // 初始旋转 180°
+    spr3.rect.angle = Math.PI
     spr3.setAnimation(
       {
-        from: { angle: 0, x: 0, y: 0, opacity: 1 },
-        to: { angle: Math.PI, x: 300, y: 300, opacity: 0 }
+        from: { angle: Math.PI, x: 0, y: 0, opacity: 1 },
+        to: { angle: Math.PI * 2, x: 300, y: 300, opacity: 0 }
       },
       { duration: 3 }
     )
@@ -42,9 +34,7 @@ document.querySelector('#mp4-mp4')?.addEventListener('click', () => {
       new ImgClip(
         await renderTxt2ImgBitmap(
           '水印',
-          `
-        font-size:40px; color: white; text-shadow: 2px 2px 6px red;
-      `
+          `font-size:40px; color: white; text-shadow: 2px 2px 6px red;`
         )
       )
     )
@@ -68,7 +58,6 @@ document.querySelector('#mp4-mp4')?.addEventListener('click', () => {
     })
     await com.add(spr4, { offset: 0, duration: 5 })
     await com.add(spr1, { offset: 0, duration: 35 })
-    await com.add(spr2, { offset: 38, duration: 7 })
     await com.add(spr3, { offset: 35, duration: 3 })
     com.on('OutputProgress', v => {
       console.log('----- progress:', v)
@@ -79,13 +68,13 @@ document.querySelector('#mp4-mp4')?.addEventListener('click', () => {
 
 document.querySelector('#mp4-mp3')?.addEventListener('click', () => {
   ;(async () => {
-    const resp1 = await fetch('./public/0.mp4')
+    const resp1 = await fetch('./public/video/0.mp4')
     const spr1 = new OffscreenSprite(
       'spr1',
       new MP4Clip(resp1.body as ReadableStream)
     )
 
-    const resp2 = await fetch('./public/audio/44.1kHz-2chan.mp3')
+    const resp2 = await fetch('./public/audio/16kHz-1chan.mp3')
     const spr2 = new OffscreenSprite(
       'spr2',
       new AudioClip(await resp2.arrayBuffer(), {
@@ -103,10 +92,10 @@ document.querySelector('#mp4-mp3')?.addEventListener('click', () => {
   })().catch(Log.error)
 })
 
-document.querySelector('#mix-m4a')?.addEventListener('click', () => {
+document.querySelector('#mix-audio')?.addEventListener('click', () => {
   ;(async () => {
-    const resp1 = await fetch('./public/44.1kHz-2chan.m4a')
-    const resp2 = await fetch('./public/16kHz-1chan.mp3')
+    const resp1 = await fetch('./public/audio/44.1kHz-2chan.m4a')
+    const resp2 = await fetch('./public/audio/16kHz-1chan.mp3')
     const spr1 = new OffscreenSprite(
       '1',
       new AudioClip(await resp1.arrayBuffer(), { volume: 0.5 })
@@ -128,12 +117,12 @@ document.querySelector('#mix-m4a')?.addEventListener('click', () => {
 
 document.querySelector('#gif-m4a')?.addEventListener('click', () => {
   ;(async () => {
-    const resp1 = await fetch('./public/testgif.gif')
+    const resp1 = await fetch('./public/imgs/animated.gif')
     const spr1 = new OffscreenSprite(
       's1',
       new ImgClip({ type: 'image/gif', stream: resp1.body! })
     )
-    const resp2 = await fetch('./public/1kHz-2chan.m4a')
+    const resp2 = await fetch('./public/audio/44.1kHz-2chan.m4a')
     const spr2 = new OffscreenSprite(
       's2',
       new AudioClip(await resp2.arrayBuffer())
