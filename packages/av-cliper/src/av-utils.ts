@@ -55,11 +55,12 @@ export function adjustAudioDataVolume (ad: AudioData, volume: number) {
   return newAd
 }
 
-export async function decodeGif (
-  stream: ReadableStream<Uint8Array>
+export async function decodeImg (
+  stream: ReadableStream<Uint8Array>,
+  type: string
 ): Promise<VideoFrame[]> {
   const init = {
-    type: 'image/gif',
+    type,
     data: stream
   }
 

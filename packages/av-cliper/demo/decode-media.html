@@ -25,13 +25,19 @@
 <body>
   <canvas id="canvas" width="1280" height="720"></canvas>
   <br>
-  <button id="mp4-mp4">mp4+mp4</button>
-  <button id="mp4-mp3">mp4+mp3</button>
-  <button id="gif-m4a">gif+m4a</button>
+  <button id="decode-img">decode gif</button>
+  <input id="avif" type="radio" name="img-type" value="image/avif" checked>
+  <label for="avif">avif</label>
+  <input id="webp" type="radio" name="img-type" value="image/webp">
+  <label for="webp">webp</label>
+  <input id="png" type="radio" name="img-type" value="image/png">
+  <label for="png">png</label>
+  <input id="gif" type="radio" name="img-type" value="image/gif">
+  <label for="gif">gif</label>
+  <hr>
   <button id="decode-frame">decode-frame</button>
-  <button id="mix-m4a">mix m4a</button>
   <button id="decode-m4a">decode m4a</button>
-  <script type="module" src="concat-media.ts"></script>
+  <script type="module" src="decode-media.ts"></script>
 </body>
 
 </html>

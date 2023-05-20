@@ -1,4 +1,4 @@
-import { decodeGif } from '../av-utils'
+import { decodeImg } from '../av-utils'
 import { Log } from '../log'
 import { IClip } from './iclip'
 
@@ -17,7 +17,7 @@ export class ImgClip implements IClip {
   #frames: VideoFrame[] = []
 
   constructor (
-    dataSource: ImageBitmap | { type: 'gif'; stream: ReadableStream }
+    dataSource: ImageBitmap | { type: 'image/gif'; stream: ReadableStream }
   ) {
     if (dataSource instanceof ImageBitmap) {
       this.#img = dataSource
@@ -25,12 +25,12 @@ export class ImgClip implements IClip {
       this.meta.height = dataSource.height
       this.ready = Promise.resolve()
     } else {
-      this.ready = this.#gifInit(dataSource.stream)
+      this.ready = this.#gifInit(dataSource.stream, dataSource.type)
     }
   }
 
-  async #gifInit (stream: ReadableStream) {
-    this.#frames = await decodeGif(stream)
+  async #gifInit (stream: ReadableStream, type: string) {
+    this.#frames = await decodeImg(stream, type)
     const firstVf = this.#frames[0]
     if (firstVf == null) throw Error('No frame available in gif')
 

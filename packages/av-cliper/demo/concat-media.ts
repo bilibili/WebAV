@@ -1,4 +1,3 @@
-import { decodeGif } from '../src/av-utils'
 import {
   AudioClip,
   DEFAULT_AUDIO_SAMPLE_RATE,
@@ -12,12 +11,6 @@ import { renderTxt2ImgBitmap } from '../src/dom-utils'
 
 const cvs = document.querySelector('canvas') as HTMLCanvasElement
 const ctx = cvs.getContext('2d')!
-// ;(async () => {
-//   const img = await renderTxt2ImgBitmap('水印', `
-//     font-size:40px; text-shadow: 2px 2px 6px red;
-//   `)
-//   ctx?.drawImage(img, 0, 0)
-// })().catch(Log.error)
 
 document.querySelector('#mp4-mp4')?.addEventListener('click', () => {
   ;(async () => {
@@ -195,7 +188,7 @@ document.querySelector('#gif-m4a')?.addEventListener('click', () => {
     const resp1 = await fetch('./public/testgif.gif')
     const spr1 = new OffscreenSprite(
       's1',
-      new ImgClip({ type: 'gif', stream: resp1.body! })
+      new ImgClip({ type: 'image/gif', stream: resp1.body! })
     )
     const resp2 = await fetch('./public/sample1.m4a')
     const spr2 = new OffscreenSprite(
@@ -206,23 +199,6 @@ document.querySelector('#gif-m4a')?.addEventListener('click', () => {
     await com.add(spr1, { duration: 10, offset: 0 })
     await com.add(spr2, { duration: 10, offset: 0 })
     await com.output().pipeTo(await createFileWriter('mp4'))
-  })()
-})
-
-document.querySelector('#decode-gif')?.addEventListener('click', () => {
-  ;(async () => {
-    const resp1 = await fetch('./public/testgif.gif')
-    const frames = await decodeGif(resp1.body!)
-
-    let i = 0
-    function render (vf: VideoFrame) {
-      if (vf == null) return
-      ctx.drawImage(vf, 0, 0)
-      setTimeout(() => {
-        render(frames[++i])
-      }, (vf.duration ?? 0) / 1000)
-    }
-    render(frames[0])
   })()
 })
 
