@@ -1,9 +1,4 @@
-import {
-  AudioClip,
-  DEFAULT_AUDIO_SAMPLE_RATE,
-  ImgClip,
-  MP4Clip
-} from '../src/clips'
+import { AudioClip, ImgClip, MP4Clip } from '../src/clips'
 import { Combinator } from '../src/combinator'
 import { Log } from '../src/log'
 import { OffscreenSprite } from '../src/offscreen-sprite'
@@ -29,7 +24,7 @@ document.querySelector('#mp4-mp4')?.addEventListener('click', () => {
         { audio: { volume: 2 } } // 调整视频音量
       )
     )
-    const resp3 = await fetch('./public/bangni.png')
+    const resp3 = await fetch('./public/imgs/bangni.png')
     const spr3 = new OffscreenSprite(
       'spr3',
       new ImgClip(await createImageBitmap(await resp3.blob()))
@@ -90,7 +85,7 @@ document.querySelector('#mp4-mp3')?.addEventListener('click', () => {
       new MP4Clip(resp1.body as ReadableStream)
     )
 
-    const resp2 = await fetch('./public/0-4.mp3')
+    const resp2 = await fetch('./public/audio/44.1kHz-2chan.mp3')
     const spr2 = new OffscreenSprite(
       'spr2',
       new AudioClip(await resp2.arrayBuffer(), {
@@ -108,29 +103,10 @@ document.querySelector('#mp4-mp3')?.addEventListener('click', () => {
   })().catch(Log.error)
 })
 
-document.querySelector('#decode-frame')?.addEventListener('click', () => {
-  ;(async () => {
-    const resp1 = await fetch('./public/alpha-hevc.mp4')
-    const clip = new MP4Clip(resp1.body as ReadableStream)
-    await clip.ready
-    let time = 0
-    while (true) {
-      const { state, video } = await clip.tick(time)
-      if (state === 'done') break
-      if (video != null && state === 'success') {
-        ctx.drawImage(video, 0, 0, video.codedWidth, video.codedHeight)
-        video.close()
-      }
-      time += 40000
-    }
-    clip.destroy()
-  })().catch(Log.error)
-})
-
 document.querySelector('#mix-m4a')?.addEventListener('click', () => {
   ;(async () => {
-    const resp1 = await fetch('./public/sample1.m4a')
-    const resp2 = await fetch('./public/sample2.m4a')
+    const resp1 = await fetch('./public/44.1kHz-2chan.m4a')
+    const resp2 = await fetch('./public/16kHz-1chan.mp3')
     const spr1 = new OffscreenSprite(
       '1',
       new AudioClip(await resp1.arrayBuffer(), { volume: 0.5 })
@@ -150,39 +126,6 @@ document.querySelector('#mix-m4a')?.addEventListener('click', () => {
   })().catch(Log.error)
 })
 
-document.querySelector('#decode-m4a')?.addEventListener('click', () => {
-  ;(async () => {
-    const resp1 = await fetch('./public/sample1.m4a')
-    const clip = new AudioClip(await resp1.arrayBuffer())
-    await clip.ready
-    const ctx = new AudioContext()
-    let time = 0
-    async function play () {
-      const { audio, state } = await clip.tick(time)
-      time += 100000
-      if (state === 'done') {
-        console.log('--- ended')
-        return
-      }
-      const len = audio[0].length
-      if (len === 0) {
-        play()
-        return
-      }
-
-      const buf = ctx.createBuffer(2, len, DEFAULT_AUDIO_SAMPLE_RATE)
-      buf.copyToChannel(audio[0], 0)
-      buf.copyToChannel(audio[1], 1)
-      const source = ctx.createBufferSource()
-      source.buffer = buf
-      source.connect(ctx.destination)
-      source.onended = play
-      source.start()
-    }
-    play()
-  })()
-})
-
 document.querySelector('#gif-m4a')?.addEventListener('click', () => {
   ;(async () => {
     const resp1 = await fetch('./public/testgif.gif')
@@ -190,7 +133,7 @@ document.querySelector('#gif-m4a')?.addEventListener('click', () => {
       's1',
       new ImgClip({ type: 'image/gif', stream: resp1.body! })
     )
-    const resp2 = await fetch('./public/sample1.m4a')
+    const resp2 = await fetch('./public/1kHz-2chan.m4a')
     const spr2 = new OffscreenSprite(
       's2',
       new AudioClip(await resp2.arrayBuffer())

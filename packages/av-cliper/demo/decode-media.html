@@ -25,7 +25,7 @@
 <body>
   <canvas id="canvas" width="1280" height="720"></canvas>
   <br>
-  <button id="decode-img">decode gif</button>
+  <button id="decode-img">decode image</button>
   <input id="avif" type="radio" name="img-type" value="image/avif" checked>
   <label for="avif">avif</label>
   <input id="webp" type="radio" name="img-type" value="image/webp">
@@ -35,8 +35,15 @@
   <input id="gif" type="radio" name="img-type" value="image/gif">
   <label for="gif">gif</label>
   <hr>
+  <button id="decode-audio">decode audio</button>
+  <input id="44.1kHz-2chan.m4a" type="radio" name="audio-type" value="44.1kHz-2chan.m4a" checked>
+  <label for="44.1kHz-2chan.m4a">44.1kHz-2chan.m4a</label>
+  <input id="44.1kHz-2chan.mp3" type="radio" name="audio-type" value="44.1kHz-2chan.mp3">
+  <label for="44.1kHz-2chan.mp3">44.1kHz-2chan.mp3</label>
+  <input id="16kHz-1chan.mp3" type="radio" name="audio-type" value="16kHz-1chan.mp3">
+  <label for="16kHz-1chan.mp3">16kHz-1chan.mp3</label>
+  <hr>
   <button id="decode-frame">decode-frame</button>
-  <button id="decode-m4a">decode m4a</button>
   <script type="module" src="decode-media.ts"></script>
 </body>
 
