@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>WebGL Filter</title>
+
+  <style>
+    #app {
+      width: 900px;
+      height: 500px;
+      margin: 50px 50px;
+      overflow: hidden;
+      position: relative;
+    }
+
+    canvas {
+      width: 900px;
+      height: 500px;
+    }
+  </style>
+</head>
+
+<body>
+  <canvas id="canvas" width="1280" height="720"></canvas>
+  <br>
+  <div class="video_demo" style="visibility: visible;"><canvas class="video_canvas" id="js_output_2" width="1680"
+      height="2368"></canvas></div>
+  <script type="module" src="webgl-filter.ts"></script>
+  <script type="module">
+    const headMv = new AlphaVideo({
+      src: "https://dlied5sdk.myapp.com/music/release/upload/t_mm_file_publish/2868412.mp4",
+      width: document.body.clientWidth,
+      height: (375 * document.body.clientWidth) / 266,
+      loop: true, // 是否循环播放
+      canvas: document.getElementById('js_output_2'),
+    });
+    headMv.play();
+  </script>
+
+</body>
+
+</html>
