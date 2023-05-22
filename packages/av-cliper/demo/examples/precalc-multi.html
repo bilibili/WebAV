@@ -1,0 +1,29 @@
+<!DOCTYPE HTML>
+<html lang="en-US">
+	<head>
+		<meta charset="UTF-8">
+		<title>Chroma GL: pre-calculated multi-channel, still image</title>
+		<style type="text/css">
+		
+		canvas {
+			border: red solid 1px;
+		}
+		
+		</style>
+		<script type="text/javascript" src="../chromagl.js"></script>
+	</head>
+	<body>
+		<img src="images/multibg.png" alt="" id="image" width="480" height="540"/>
+		<canvas width="480" height="270" id="cnvs"></canvas>
+	</body>
+	<script type="text/javascript">
+	
+	var canvas = document.getElementById('cnvs');
+
+	var chroma = new ChromaGL('image', canvas);
+	chroma.addChromaKey('pre', 0);
+	chroma.addChromaKey({mode: 'pre', source: 1}, 0);
+	chroma.addChromaKey({mode: 'pre', source: 2}, 0);
+//	chroma.go();
+	</script>
+</html>

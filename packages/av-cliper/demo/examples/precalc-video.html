@@ -1,0 +1,88 @@
+<!DOCTYPE HTML>
+<html lang="en-US">
+	<head>
+		<meta charset="UTF-8">
+		<title>Chroma GL: Pre-Calculated video</title>
+		<style type="text/css">
+		
+		#container {
+			position: relative;
+			width: 480px;
+			height: 270px;
+			display: inline-block;
+		}
+		
+		#container > canvas,
+		#container > iframe {
+			position: absolute;
+			top: 0;
+		}
+		
+		#container > iframe {
+			width: 480px;
+			height: 270px;
+		}
+		
+		canvas {
+			border: red solid 1px;
+			pointer-events: none;
+		}
+		
+		</style>
+		<script type="text/javascript" src="../chromagl.js"></script>
+	</head>
+	<body>
+		<video src="/okgo/videos/wtf_greenscreen_alpha_sm.ogg" controls preload width="500" height="360" id="image"></video>
+		<div id="container">
+			<iframe src="http://xkcd.com" frameborder="0"></iframe>
+			<canvas width="480" height="270" id="cnvs"></canvas>
+		</div>
+		<br/><input type="checkbox" id="wtf" onchange="wtf(this)"/> WTF?
+		<p><span id="fps">0</span> frames per second</p>
+	</body>
+	<script type="text/javascript">
+	var clearScreen = true;
+	function wtf(target) {
+		clearScreen = !target.checked;
+	}
+
+	var fps = document.getElementById('fps');
+	var frames = 0;
+	var fpsUpdateTime = 0;
+
+	var chroma;
+	var canvas = document.getElementById('cnvs');
+	function draw() {
+		//update frame rate
+		var now = Date.now();
+		var elapsed = now - fpsUpdateTime;
+		if (elapsed >= 2000) {
+			fps.innerHTML = elapsed ? Math.round(1000 * frames / elapsed) : '';
+			fpsUpdateTime = now;
+			frames = 0;
+		}
+		frames++;
+
+		//clear canvas
+		
+		//draw background
+		
+		//draw logos (tracked)
+		
+		chroma.refresh(clearScreen);
+	}
+
+	window.addEventListener('load',function() {
+		chroma = new ChromaGL('image', canvas);
+		chroma.addChromaKey('pre', 0);
+		//chroma.go();
+
+		setInterval(draw, 20);
+
+		/*
+			weird bug in video driver on mac causes errors if you leave the page alone for a while and come back.  This might get around it
+		*/
+		window.onfocus = draw;
+	}, false);
+	</script>
+</html>
