@@ -66,3 +66,7 @@ await com.add(spr2, { offset: 38, duration: 7 })
 await com.add(spr3, { offset: 35, duration: 3 })
 await com.output().pipeTo(await createFileWriter('mp4'))
 ```
+
+## Demo
+[concat media](https://hughfenghen.github.io/WebAV/demo/concat-media.html)  
+[decode media](https://hughfenghen.github.io/WebAV/demo/decode-media.html)  
