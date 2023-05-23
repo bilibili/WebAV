@@ -25,4 +25,4 @@ dist-ssr
 
 coverage
 
-**/public/pri-*
+**/public/**/pri-*

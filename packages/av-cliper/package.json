@@ -7,7 +7,7 @@
   "types": "dist/index.d.ts",
   "module": "dist/index.js",
   "scripts": {
-    "dev": "vite demo",
+    "dev": "vite demo --host 0.0.0.0",
     "test": "vitest",
     "test:coverage": "vitest run --coverage",
     "build": "rm -rf dist && tsc -p build.tsconfig.json --outDir dist",

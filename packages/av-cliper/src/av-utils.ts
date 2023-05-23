@@ -144,8 +144,8 @@ export async function audioResample (
   return extractPCM4AudioBuffer(await ctx.startRendering())
 }
 
-export async function sleep (time: number): Promise<void> {
-  return await new Promise(resolve => {
+export function sleep (time: number): Promise<void> {
+  return new Promise(resolve => {
     setTimeout(resolve, time)
   })
 }
