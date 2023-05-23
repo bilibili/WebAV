@@ -118,6 +118,7 @@ export function demuxcode (
     }
   }, 300)
 
+  // todo：性能优化，提前ready
   mp4File.onSamples = (_, type, samples) => {
     if (type === 'video') {
       totalVideoSamples = totalVideoSamples.concat(samples)
@@ -166,7 +167,7 @@ export function demuxcode (
         )
         // samples 全部 推入解码器，解码器有维护队列
         const samples = totalAudioSamples.slice(startIdx)
-        samples.forEach(s =>
+        samples.forEach(s => {
           adecoder.decode(
             new EncodedAudioChunk({
               type: s.is_sync ? 'key' : 'delta',
@@ -175,7 +176,7 @@ export function demuxcode (
               data: s.data
             })
           )
-        )
+        })
       }
     }
   }
@@ -476,6 +477,7 @@ export function debounce<F extends (...args: any[]) => any>(
 
   return function (this: any, ...rest) {
     self.clearTimeout(timer)
+    // todo: 性能优化，避免大量创建 timer
     timer = self.setTimeout(() => {
       func.apply(this, rest)
     }, wait)

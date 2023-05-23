@@ -13,11 +13,11 @@ export class MP4Clip implements IClip {
 
   #ts = 0
 
-  ready: Promise<void>
+  ready: Promise<{ width: number; height: number }>
 
   #destroyed = false
 
-  meta = {
+  #meta = {
     // 微秒
     duration: 0,
     width: 0,
@@ -52,7 +52,7 @@ export class MP4Clip implements IClip {
           onReady: info => {
             this.#hasAudioTrack = info.audioTracks.length > 0
             const videoTrack = info.videoTracks[0]
-            this.meta = {
+            this.#meta = {
               duration: (info.duration / info.timescale) * 1e6,
               width: videoTrack.track_width,
               height: videoTrack.track_height,
@@ -60,7 +60,10 @@ export class MP4Clip implements IClip {
               audioChanCount: 2
             }
             Log.info('MP4Clip info:', info)
-            resolve()
+            resolve({
+              width: videoTrack.track_width,
+              height: videoTrack.track_height
+            })
             this.#demuxcoder?.seek(0)
           },
           onVideoOutput: vf => {
@@ -73,7 +76,7 @@ export class MP4Clip implements IClip {
           onComplete: () => {
             Log.info('MP4Clip decode complete')
             if (lastVf == null) throw Error('mp4 parse error, no video frame')
-            this.meta.duration = lastVf.timestamp + (lastVf.duration ?? 0)
+            this.#meta.duration = lastVf.timestamp + (lastVf.duration ?? 0)
           }
         }
       )
@@ -137,7 +140,7 @@ export class MP4Clip implements IClip {
         return null
       }
 
-      await sleep(5)
+      await sleep(1)
       return this.#nextVideo(time)
     }
 
@@ -156,7 +159,7 @@ export class MP4Clip implements IClip {
   }
 
   async #nextAudio (deltaTime: number): Promise<Float32Array[]> {
-    const frameCnt = Math.ceil(deltaTime * (this.meta.audioSampleRate / 1e6))
+    const frameCnt = Math.ceil(deltaTime * (this.#meta.audioSampleRate / 1e6))
     if (frameCnt === 0) return []
     // 小心避免死循环
     if (
@@ -164,7 +167,7 @@ export class MP4Clip implements IClip {
       !this.#destroyed &&
       this.#demuxcoder?.getDecodeQueueSize().audio !== 0
     ) {
-      await sleep(5)
+      await sleep(1)
       return this.#nextAudio(deltaTime)
     }
 
@@ -174,7 +177,7 @@ export class MP4Clip implements IClip {
     ]
 
     this.#audioChan0 = this.#audioChan0.slice(frameCnt)
-    if (this.meta.audioChanCount > 1) {
+    if (this.#meta.audioChanCount > 1) {
       this.#audioChan1 = this.#audioChan1.slice(frameCnt)
     }
     return audio
@@ -186,7 +189,7 @@ export class MP4Clip implements IClip {
     state: 'success' | 'done'
   }> {
     if (time < this.#ts) throw Error('time not allow rollback')
-    if (time >= this.meta.duration) {
+    if (time >= this.#meta.duration) {
       return { audio: [], state: 'done' }
     }
 

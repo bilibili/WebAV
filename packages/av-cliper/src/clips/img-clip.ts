@@ -3,9 +3,9 @@ import { Log } from '../log'
 import { IClip } from './iclip'
 
 export class ImgClip implements IClip {
-  ready: Promise<void>
+  ready: Promise<{ width: number; height: number }>
 
-  meta = {
+  #meta = {
     // 微秒
     duration: 0,
     width: 0,
@@ -21,11 +21,19 @@ export class ImgClip implements IClip {
   ) {
     if (dataSource instanceof ImageBitmap) {
       this.#img = dataSource
-      this.meta.width = dataSource.width
-      this.meta.height = dataSource.height
-      this.ready = Promise.resolve()
+      this.#meta.width = dataSource.width
+      this.#meta.height = dataSource.height
+      this.ready = Promise.resolve({
+        width: dataSource.width,
+        height: dataSource.height
+      })
     } else {
-      this.ready = this.#gifInit(dataSource.stream, dataSource.type)
+      this.ready = this.#gifInit(dataSource.stream, dataSource.type).then(
+        () => ({
+          width: this.#meta.width,
+          height: this.#meta.height
+        })
+      )
     }
   }
 
@@ -34,12 +42,12 @@ export class ImgClip implements IClip {
     const firstVf = this.#frames[0]
     if (firstVf == null) throw Error('No frame available in gif')
 
-    this.meta = {
+    this.#meta = {
       duration: this.#frames.reduce((acc, cur) => acc + (cur.duration ?? 0), 0),
       width: firstVf.codedWidth,
       height: firstVf.codedHeight
     }
-    Log.info('ImgClip ready:', this.meta)
+    Log.info('ImgClip ready:', this.#meta)
   }
 
   async tick (time: number): Promise<{
@@ -52,7 +60,7 @@ export class ImgClip implements IClip {
         state: 'success'
       }
     }
-    const tt = time % this.meta.duration
+    const tt = time % this.#meta.duration
     return {
       video: (
         this.#frames.find(

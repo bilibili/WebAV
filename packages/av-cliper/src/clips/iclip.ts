@@ -9,14 +9,7 @@ export interface IClip {
     state: 'done' | 'success'
   }>
 
-  ready: Promise<void>
-
-  meta: {
-    // 微秒
-    duration: number
-    width: number
-    height: number
-  }
+  ready: Promise<{ width: number; height: number }>
 
   destroy: () => void
 }

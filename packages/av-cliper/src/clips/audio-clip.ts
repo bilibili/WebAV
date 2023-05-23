@@ -5,9 +5,9 @@ import { DEFAULT_AUDIO_SAMPLE_RATE, IClip } from './iclip'
 export class AudioClip implements IClip {
   static ctx = new AudioContext({ sampleRate: DEFAULT_AUDIO_SAMPLE_RATE })
 
-  ready: Promise<void>
+  ready: Promise<{ width: number; height: number }>
 
-  meta = {
+  #meta = {
     // 微秒
     duration: 0,
     width: 0,
@@ -33,7 +33,11 @@ export class AudioClip implements IClip {
       ...opts
     }
 
-    this.ready = this.#init(AudioClip.ctx, buf)
+    this.ready = this.#init(AudioClip.ctx, buf).then(() => ({
+      // audio 没有宽高，无需绘制
+      width: 0,
+      height: 0
+    }))
   }
 
   async #init (
@@ -49,8 +53,8 @@ export class AudioClip implements IClip {
     )
 
     const pcm = extractPCM4AudioBuffer(audioBuf)
-    this.meta = {
-      ...this.meta,
+    this.#meta = {
+      ...this.#meta,
       duration: audioBuf.duration * 1e6,
       sampleRate: audioBuf.sampleRate,
       numberOfChannels: audioBuf.numberOfChannels
@@ -77,14 +81,14 @@ export class AudioClip implements IClip {
     state: 'success' | 'done'
   }> {
     if (time < this.#ts) throw Error('time not allow rollback')
-    if (!this.#opts.loop && time >= this.meta.duration) {
+    if (!this.#opts.loop && time >= this.#meta.duration) {
       return { audio: [], state: 'done' }
     }
 
     const deltaTime = time - this.#ts
     this.#ts = time
 
-    const frameCnt = Math.ceil(deltaTime * (this.meta.sampleRate / 1e6))
+    const frameCnt = Math.ceil(deltaTime * (this.#meta.sampleRate / 1e6))
     const endIdx = this.#frameOffset + frameCnt
     const audio = [
       ringSliceFloat32Array(this.#chan0Buf, this.#frameOffset, endIdx),

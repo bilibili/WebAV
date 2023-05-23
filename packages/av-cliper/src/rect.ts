@@ -1,6 +1,18 @@
-interface IPoint { x: number, y: number }
+interface IPoint {
+  x: number
+  y: number
+}
 
-export type TCtrlKey = 't' | 'b' | 'l' | 'r' | 'lt' | 'lb' | 'rt' | 'rb' | 'rotate'
+export type TCtrlKey =
+  | 't'
+  | 'b'
+  | 'l'
+  | 'r'
+  | 'lt'
+  | 'lb'
+  | 'rt'
+  | 'rb'
+  | 'rotate'
 
 export const CTRL_KEYS = ['t', 'b', 'l', 'r', 'lt', 'lb', 'rt', 'rb', 'rotate']
 
@@ -29,7 +41,13 @@ export class Rect implements IRectBaseProps {
    */
   master: Rect | null = null
 
-  constructor (x?: number, y?: number, w?: number, h?: number, master?: Rect | null) {
+  constructor (
+    x?: number,
+    y?: number,
+    w?: number,
+    h?: number,
+    master?: Rect | null
+  ) {
     this.x = x ?? 0
     this.y = y ?? 0
     this.w = w ?? 0
@@ -45,7 +63,6 @@ export class Rect implements IRectBaseProps {
   // 上下左右+四个角+旋转控制点
   get ctrls (): Record<TCtrlKey, Rect> {
     const { w, h } = this
-    // todo：控制点在高分辨率下看起来太小
     // 控制点元素大小, 以 分辨率 为基准
     const sz = Rect.CTRL_SIZE
     // half size

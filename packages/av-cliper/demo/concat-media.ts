@@ -68,7 +68,7 @@ document.querySelector('#mp4-mp4')?.addEventListener('click', () => {
 
 document.querySelector('#mp4-mp3')?.addEventListener('click', () => {
   ;(async () => {
-    const resp1 = await fetch('./public/video/0.mp4')
+    const resp1 = await fetch('./public/video/pri-bunny_avc_frag.mp4')
     const spr1 = new OffscreenSprite(
       'spr1',
       new MP4Clip(resp1.body as ReadableStream)
@@ -86,8 +86,11 @@ document.querySelector('#mp4-mp3')?.addEventListener('click', () => {
       width: 1280,
       height: 720
     })
-    await com.add(spr1, { offset: 0, duration: 35 })
-    await com.add(spr2, { offset: 0, duration: 35 })
+    await com.add(spr1, { offset: 0, duration: 3 * 60 })
+    await com.add(spr2, { offset: 0, duration: 3 * 60 })
+    com.on('OutputProgress', v => {
+      console.log('----- progress:', v)
+    })
     await com.output().pipeTo(await createFileWriter('mp4'))
   })().catch(Log.error)
 })

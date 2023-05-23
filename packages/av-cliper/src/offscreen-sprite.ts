@@ -11,10 +11,9 @@ export class OffscreenSprite extends BaseSprite {
   constructor (name: string, clip: IClip) {
     super(name)
     this.#clip = clip
-    this.ready = clip.ready.then(() => {
-      Log.info('OffscreenSprite ready:', clip.meta)
-      this.rect.w = clip.meta.width
-      this.rect.h = clip.meta.height
+    this.ready = clip.ready.then(({ width, height }) => {
+      this.rect.w = width
+      this.rect.h = height
     })
   }
 

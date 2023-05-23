@@ -10,12 +10,6 @@ beforeEach(() => {
   )
 })
 
-test('AudioClip decode', async () => {
-  const clip = new AudioClip(new ArrayBuffer(0))
-  await clip.ready
-  expect(clip.meta.duration).toBe(10 * 1e6)
-})
-
 test('AudioClip tick', async () => {
   const clip = new AudioClip(new ArrayBuffer(0))
   await clip.ready
