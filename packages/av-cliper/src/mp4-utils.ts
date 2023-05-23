@@ -118,7 +118,6 @@ export function demuxcode (
     }
   }, 300)
 
-  // todo：性能优化，提前ready
   mp4File.onSamples = (_, type, samples) => {
     if (type === 'video') {
       totalVideoSamples = totalVideoSamples.concat(samples)
@@ -403,7 +402,6 @@ function stream2file (stream: ReadableStream<Uint8Array>): {
     }
   }
   readFile().catch(Log.error)
-  reader.closed
 
   return {
     file,
