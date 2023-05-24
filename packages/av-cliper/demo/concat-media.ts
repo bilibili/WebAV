@@ -68,7 +68,7 @@ document.querySelector('#mp4-mp4')?.addEventListener('click', () => {
 
 document.querySelector('#mp4-mp3')?.addEventListener('click', () => {
   ;(async () => {
-    const resp1 = await fetch('./public/video/pri-bunny_avc_frag.mp4')
+    const resp1 = await fetch('./public/video/0.mp4')
     const spr1 = new OffscreenSprite(
       'spr1',
       new MP4Clip(resp1.body as ReadableStream)
@@ -86,8 +86,8 @@ document.querySelector('#mp4-mp3')?.addEventListener('click', () => {
       width: 1280,
       height: 720
     })
-    await com.add(spr1, { offset: 0, duration: 3 * 60 })
-    await com.add(spr2, { offset: 0, duration: 3 * 60 })
+    await com.add(spr1, { offset: 0, duration: 60 })
+    await com.add(spr2, { offset: 0 })
     com.on('OutputProgress', v => {
       console.log('----- progress:', v)
     })
@@ -146,3 +146,23 @@ async function createFileWriter (
   })
   return fileHandle.createWritable()
 }
+
+// const com1 = new Combinator({
+//   width: 1280,
+//   height: 720
+// })
+
+// com1.add(spr1, { offset: 0, duration: 3 })
+// com1.add(spr2, { offset: 3, duration: 3 })
+// com1.add(spr3, { offset: 0, duration: 6 })
+
+// // ========
+
+// const com2 = new Combinator({
+//   width: 1280,
+//   height: 720
+// })
+// com2.add(spr1, { position: 'static' })
+// com2.add(spr2, { position: 'static' })
+// com2.add(spr3, { position: 'static' })
+// com2.add(spr4, { offset: 0 })

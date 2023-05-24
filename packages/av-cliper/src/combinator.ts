@@ -76,7 +76,7 @@ export class Combinator {
 
   async add (
     sprite: OffscreenSprite,
-    opts: { offset: number; duration: number }
+    opts: { offset: number; duration?: number }
   ): Promise<void> {
     Log.info('Combinator add sprite:', sprite.name)
     await sprite.ready
@@ -84,7 +84,7 @@ export class Combinator {
     this.#comItems.push({
       sprite,
       offset: opts.offset * 1e6,
-      duration: opts.duration * 1e6
+      duration: opts.duration == null ? -1 : opts.duration * 1e6
     })
     this.#comItems.sort((a, b) => a.sprite.zIndex - b.sprite.zIndex)
   }
@@ -141,7 +141,8 @@ export class Combinator {
       for (let i = 0; i < this.#comItems.length; i++) {
         const it = this.#comItems[i]
         if (ts < it.offset) continue
-        if (ts > it.offset + it.duration) {
+        // 超过设定时间，主动掐断
+        if (it.duration > 0 && ts > it.offset + it.duration) {
           it.sprite.destroy()
           this.#comItems.splice(i, 1)
           continue
