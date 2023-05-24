@@ -120,3 +120,58 @@ document.querySelector('#decode-video')?.addEventListener('click', () => {
     clip.destroy()
   })().catch(Log.error)
 })
+
+// 测试解码、重编码性能
+// document.querySelector('#decode-video')?.addEventListener('click', () => {
+//   ;(async () => {
+//     const videoType = (
+//       document.querySelector(
+//         'input[name=video-type]:checked'
+//       ) as HTMLInputElement
+//     ).value
+//     // @ts-expect-error
+//     const resp1 = await fetch(videos[videoType])
+//     const clip = new MP4Clip(resp1.body!)
+//     await clip.ready
+//     let time = 0
+//     const cvs = new OffscreenCanvas(1280, 720)
+//     const ctx = cvs.getContext('2d')!
+//     const recoder = recodemux({
+//       video: {
+//         width: 1280,
+//         height: 720,
+//         expectFPS: 30
+//       },
+//       audio: {
+//         codec: 'aac',
+//         sampleRate: DEFAULT_AUDIO_SAMPLE_RATE,
+//         sampleSize: 16,
+//         channelCount: 2
+//       },
+//       bitrate: 1_500_000
+//     })
+//     console.time('decode')
+//     console.time('encode')
+//     while (time < 3 * 60 * 1e6) {
+//       const { state, video } = await clip.tick(time)
+//       if (state === 'done') break
+//       if (video != null && state === 'success') {
+//         // ctx.clearRect(0, 0, cvs.width, cvs.height)
+//         ctx.drawImage(video, 0, 0, video.codedWidth, video.codedHeight)
+//         recoder.encodeVideo(
+//           new VideoFrame(cvs, {
+//             duration: 33000,
+//             timestamp: time
+//           })
+//         )
+//         video.close()
+//       }
+//       time += 33 * 1000
+//     }
+//     console.timeEnd('decode')
+//     recoder.onEnded = () => {
+//       console.timeEnd('encode')
+//     }
+//     clip.destroy()
+//   })().catch(Log.error)
+// })
