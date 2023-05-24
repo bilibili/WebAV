@@ -379,7 +379,7 @@ function encodeAudioTrack (
   return encoder
 }
 
-function stream2file (stream: ReadableStream<Uint8Array>): {
+export function stream2file (stream: ReadableStream<Uint8Array>): {
   file: MP4File
   stop: () => void
 } {
@@ -483,7 +483,7 @@ export function debounce<F extends (...args: any[]) => any>(
 }
 
 // track is H.264, H.265 or VPX.
-function parseVideoCodecDesc (track: TrakBoxParser): Uint8Array {
+export function parseVideoCodecDesc (track: TrakBoxParser): Uint8Array {
   for (const entry of track.mdia.minf.stbl.stsd.entries) {
     // @ts-expect-error
     const box = entry.avcC ?? entry.hvcC ?? entry.vpcC
@@ -494,7 +494,7 @@ function parseVideoCodecDesc (track: TrakBoxParser): Uint8Array {
         mp4box.DataStream.BIG_ENDIAN
       )
       box.write(stream)
-      return new Uint8Array(stream.buffer, 8) // Remove the box header.
+      return new Uint8Array(stream.buffer.slice(8)) // Remove the box header.
     }
   }
   throw Error('avcC, hvcC or VPX not found')

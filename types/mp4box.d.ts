@@ -1,6 +1,4 @@
-
 declare module 'mp4box' {
-
   export interface MP4MediaTrack {
     id: number
     created: Date
@@ -64,7 +62,7 @@ declare module 'mp4box' {
     BIG_ENDIAN: unknown
     END_ENDIAN: unknown
     prototype: DataStream
-    new(
+    new (
       size?: number,
       byteOffset?: number,
       // @ts-expect-error
@@ -104,6 +102,7 @@ declare module 'mp4box' {
     cts?: number
     sample_description_index?: number
     is_sync: boolean
+    description?: MP4ABoxParser | AVC1BoxParser
   }
 
   export interface MP4Sample {
@@ -149,10 +148,13 @@ declare module 'mp4box' {
     stsd: STSDBoxParser
   }
 
-  type STSDBoxParser = Omit<BoxParser & {
-    type: 'stsd'
-    entries: Array<AVC1BoxParser | HVCBoxParser | MP4ABoxParser>
-  }, 'boxes'>
+  type STSDBoxParser = Omit<
+    BoxParser & {
+      type: 'stsd'
+      entries: Array<AVC1BoxParser | HVCBoxParser | MP4ABoxParser>
+    },
+    'boxes'
+  >
 
   export interface AVC1BoxParser extends BoxParser {
     type: 'avc1'
@@ -179,14 +181,14 @@ declare module 'mp4box' {
   }
 
   interface AVCCBox extends MP4Box, BoxParser {
-    PPS: Array<{ length: number, nalu: Uint8Array }>
-    SPS: Array<{ length: number, nalu: Uint8Array }>
+    PPS: Array<{ length: number; nalu: Uint8Array }>
+    SPS: Array<{ length: number; nalu: Uint8Array }>
     type: 'avcC'
   }
 
   interface HVCCBox extends MP4Box, BoxParser {
-    PPS: Array<{ length: number, nalu: Uint8Array }>
-    SPS: Array<{ length: number, nalu: Uint8Array }>
+    PPS: Array<{ length: number; nalu: Uint8Array }>
+    SPS: Array<{ length: number; nalu: Uint8Array }>
     type: 'hvcC'
   }
 
@@ -208,10 +210,14 @@ declare module 'mp4box' {
     addSample: (trackId: number, buf: ArrayBuffer, sample: SampleOpts) => void
 
     getTrackById: (id: number) => TrakBoxParser
-    setExtractionOptions: (id: number, user?: unknown, opts?: {
-      nbSamples?: number
-      rapAlignement?: boolean
-    }) => void
+    setExtractionOptions: (
+      id: number,
+      user?: unknown,
+      opts?: {
+        nbSamples?: number
+        rapAlignement?: boolean
+      }
+    ) => void
 
     onMoovStart?: () => void
     onReady?: (info: MP4Info) => void
@@ -220,14 +226,13 @@ declare module 'mp4box' {
 
     appendBuffer: (data: MP4ArrayBuffer) => number
     start: () => void
-    seek: (time: number, useRAP?: boolean) => { offset: number, time: number }
+    seek: (time: number, useRAP?: boolean) => { offset: number; time: number }
     stop: () => void
     write: (ds: DataStream) => void
     flush: () => void
-
   }
 
-  export function createFile (): MP4File
+  export function createFile(): MP4File
 
   const DefExp: {
     MP4File: MP4File
