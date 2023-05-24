@@ -24,6 +24,6 @@ map.set(Log.info, 1)
 map.set(Log.warn, 2)
 map.set(Log.error, 3)
 
-// if (import.meta.env.DEV) {
-//   Log.setLogLevel(Log.debug)
-// }
+if (import.meta.env.DEV) {
+  Log.setLogLevel(Log.debug)
+}
