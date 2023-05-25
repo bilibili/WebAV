@@ -26,14 +26,17 @@ export class AudioClip implements IClip {
 
   #opts
 
-  constructor (buf: ArrayBuffer, opts?: { loop?: boolean; volume?: number }) {
+  constructor (
+    stream: ReadableStream<Uint8Array>,
+    opts?: { loop?: boolean; volume?: number }
+  ) {
     this.#opts = {
       loop: false,
       volume: 1,
       ...opts
     }
 
-    this.ready = this.#init(AudioClip.ctx, buf).then(() => ({
+    this.ready = this.#init(AudioClip.ctx, stream).then(() => ({
       // audio 没有宽高，无需绘制
       width: 0,
       height: 0
@@ -42,9 +45,10 @@ export class AudioClip implements IClip {
 
   async #init (
     ctx: OfflineAudioContext | AudioContext,
-    buf: ArrayBuffer
+    stream: ReadableStream<Uint8Array>
   ): Promise<void> {
     const tStart = performance.now()
+    const buf = await new Response(stream).arrayBuffer()
     const audioBuf = await ctx.decodeAudioData(buf)
     Log.info(
       'Audio clip decoded complete:',

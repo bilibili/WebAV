@@ -77,7 +77,7 @@ document.querySelector('#mp4-mp3')?.addEventListener('click', () => {
     const resp2 = await fetch('./public/audio/16kHz-1chan.mp3')
     const spr2 = new OffscreenSprite(
       'spr2',
-      new AudioClip(await resp2.arrayBuffer(), {
+      new AudioClip(resp2.body!, {
         // volume: 2,
         loop: true
       })
@@ -101,12 +101,9 @@ document.querySelector('#mix-audio')?.addEventListener('click', () => {
     const resp2 = await fetch('./public/audio/16kHz-1chan.mp3')
     const spr1 = new OffscreenSprite(
       '1',
-      new AudioClip(await resp1.arrayBuffer(), { volume: 0.5 })
+      new AudioClip(resp1.body!, { volume: 0.5 })
     )
-    const spr2 = new OffscreenSprite(
-      '2',
-      new AudioClip(await resp2.arrayBuffer())
-    )
+    const spr2 = new OffscreenSprite('2', new AudioClip(resp2.body!))
 
     const com = new Combinator({
       width: 1280,
@@ -126,10 +123,7 @@ document.querySelector('#gif-m4a')?.addEventListener('click', () => {
       new ImgClip({ type: 'image/gif', stream: resp1.body! })
     )
     const resp2 = await fetch('./public/audio/44.1kHz-2chan.m4a')
-    const spr2 = new OffscreenSprite(
-      's2',
-      new AudioClip(await resp2.arrayBuffer())
-    )
+    const spr2 = new OffscreenSprite('s2', new AudioClip(resp2.body!))
     const com = new Combinator({ width: 1280, height: 720 })
     await com.add(spr1, { duration: 10, offset: 0 })
     await com.add(spr2, { duration: 10, offset: 0 })
