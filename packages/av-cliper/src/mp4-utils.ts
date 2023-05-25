@@ -10,6 +10,8 @@ import mp4box, {
 } from 'mp4box'
 import { Log } from './log'
 import { AudioTrackOpts } from 'mp4box'
+import { extractPCM4AudioData, sleep } from './av-utils'
+import { extractPCM4AudioBuffer } from './av-utils'
 
 type TCleanFn = () => void
 
@@ -75,6 +77,7 @@ export function demuxcode (
   let mp4Info: MP4Info | null = null
   let vTrackInfo: MP4VideoTrack | null = null
   let aTrackInfo: MP4AudioTrack | null = null
+  // todo: 用 demuxMP4 替代
   mp4File.onReady = info => {
     mp4Info = info
     vTrackInfo = info.videoTracks[0]
@@ -347,10 +350,6 @@ function encodeAudioTrack (
     samplerate: audioOpts.sampleRate,
     channel_count: audioOpts.channelCount,
     samplesize: audioOpts.sampleSize,
-    // width: 0,
-    // height: 0,
-    // duration: 0,
-    // nb_samples: 0,
     hdlr: 'soun',
     name: 'SoundHandler',
     type: audioOpts.codec === 'aac' ? 'mp4a' : 'Opus'
@@ -507,10 +506,10 @@ export function parseVideoCodecDesc (track: TrakBoxParser): Uint8Array {
   throw Error('avcC, hvcC or VPX not found')
 }
 
-async function demuxMP4 (
+function demuxMP4 (
   stream: ReadableStream,
   cbs: {
-    onReady: (file: MP4File, info: MP4Info) => void
+    onReady: (file: MP4File, info: MP4Info) => void | Promise<void>
     onEnded: () => void
     onSamples: (
       id: number,
@@ -523,8 +522,9 @@ async function demuxMP4 (
 
   file.onSamples = cbs.onSamples
 
-  file.onReady = info => {
-    cbs.onReady(file, info)
+  file.onReady = async info => {
+    await cbs.onReady(file, info)
+
     const vTrackId = info.videoTracks[0]?.id
     if (vTrackId != null) file.setExtractionOptions(vTrackId, 'video')
 
@@ -604,7 +604,7 @@ export function fastConcatMP4 (streams: ReadableStream<Uint8Array>[]) {
     let lastASamp: any = null
     for (const stream of streams) {
       await new Promise<void>(async resolve => {
-        await demuxMP4(stream, {
+        demuxMP4(stream, {
           onReady: (file, info) => {
             const { videoTrackConf, audioTrackConf } = extractFileConfig(
               file,
@@ -629,6 +629,7 @@ export function fastConcatMP4 (streams: ReadableStream<Uint8Array>[]) {
                 is_sync: s.is_sync
               })
             })
+
             const lastSamp = samples.at(-1)
             if (lastSamp == null) return
             if (type === 'video') {
@@ -656,4 +657,105 @@ export function fastConcatMP4 (streams: ReadableStream<Uint8Array>[]) {
   run().catch(Log.error)
 
   return stream
+}
+
+function createSyncAudioDecoder (
+  adConf: Parameters<AudioDecoder['configure']>[0]
+) {
+  let lock = false
+
+  let cacheAD: AudioData[] = []
+  const adecoder = new AudioDecoder({
+    output: ad => {
+      cacheAD.push(ad)
+    },
+    error: Log.error
+  })
+  adecoder.configure(adConf)
+
+  return async (ss: MP4Sample[]) => {
+    while (lock || adecoder.decodeQueueSize > 0) {
+      await sleep(1)
+    }
+    lock = true
+
+    ss.forEach(s => {
+      adecoder.decode(
+        new EncodedAudioChunk({
+          type: s.is_sync ? 'key' : 'delta',
+          timestamp: (1e6 * s.cts) / s.timescale,
+          duration: (1e6 * s.duration) / s.timescale,
+          data: s.data
+        })
+      )
+    })
+
+    while (adecoder.decodeQueueSize > 0) {
+      await sleep(1)
+    }
+    const rs = cacheAD
+    cacheAD = []
+    lock = false
+
+    return rs
+  }
+}
+
+export async function mixinMP4AndAudio (
+  mp4Stream: ReadableStream<Uint8Array>,
+  audio: {
+    stream: ReadableStream<Uint8Array>
+    volume: number
+  }
+) {
+  const outfile = mp4box.createFile()
+  let audioSampleDecoder: ReturnType<typeof createSyncAudioDecoder> | null =
+    null
+
+  const audioArray = await new Response(audio.stream).arrayBuffer()
+  let audioPCM: Float32Array[] = []
+
+  let vTrackId = 0
+  let aTrackId = 0
+  demuxMP4(mp4Stream, {
+    onReady: async (file, info) => {
+      const { videoTrackConf, audioTrackConf, audioDecoderConf } =
+        extractFileConfig(file, info)
+      if (vTrackId === 0 && videoTrackConf != null) {
+        vTrackId = outfile.addTrack(videoTrackConf)
+      }
+      if (aTrackId === 0 && audioTrackConf != null) {
+        aTrackId = outfile.addTrack(audioTrackConf)
+        const audioCtx = new AudioContext({
+          sampleRate: audioTrackConf.samplerate
+        })
+        audioPCM = extractPCM4AudioBuffer(
+          await audioCtx.decodeAudioData(audioArray)
+        )
+      }
+      if (audioDecoderConf == null) throw Error('mp4 not have audio track')
+      audioSampleDecoder = createSyncAudioDecoder(audioDecoderConf)
+    },
+    onSamples: async (id, type, samples) => {
+      if (type === 'video') {
+        samples.forEach(s => outfile.addSample(id, s.data, s))
+      }
+      if (type === 'audio') {
+        ;(await audioSampleDecoder?.(samples))?.map(ad =>
+          extractPCM4AudioData(ad)
+        )
+        console.log(444, audioPCM)
+      }
+    },
+    onEnded: () => {
+      stopOut()
+    }
+  })
+
+  const { stream: outStream, stop: stopOut } = file2stream(
+    outfile,
+    500,
+    () => {}
+  )
+  return outStream
 }

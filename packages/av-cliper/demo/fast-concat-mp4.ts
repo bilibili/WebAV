@@ -1,5 +1,5 @@
 import { Log } from '../src/log'
-import { fastConcatMP4 } from '../src/mp4-utils'
+import { fastConcatMP4, mixinMP4AndAudio } from '../src/mp4-utils'
 
 document.querySelector('#fast-concat-mp4')?.addEventListener('click', () => {
   ;(async () => {
@@ -9,6 +9,17 @@ document.querySelector('#fast-concat-mp4')?.addEventListener('click', () => {
       (await fetch('./public/video/webav3.mp4')).body!
     ])
     stream.pipeTo(await createFileWriter('mp4'))
+  })().catch(Log.error)
+})
+
+document.querySelector('#mixin-mp4-audio')?.addEventListener('click', () => {
+  ;(async () => {
+    ;(
+      await mixinMP4AndAudio((await fetch('./public/video/webav1.mp4')).body!, {
+        stream: (await fetch('./public/audio/44.1kHz-2chan.mp3')).body!,
+        volume: 1
+      })
+    ).pipeTo(await createFileWriter('mp4'))
   })().catch(Log.error)
 })
 
