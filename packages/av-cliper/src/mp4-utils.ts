@@ -421,21 +421,22 @@ export function file2stream (
   timeSlice: number,
   onCancel: TCleanFn
 ): {
-  stream: ReadableStream<ArrayBuffer>
+  stream: ReadableStream<Uint8Array>
   stop: TCleanFn
 } {
   let timerId = 0
 
   let sendedBoxIdx = 0
   const boxes = file.boxes
-  const deltaBuf = (): ArrayBuffer => {
+  const deltaBuf = (): Uint8Array | null => {
     const ds = new mp4box.DataStream()
     ds.endianness = mp4box.DataStream.BIG_ENDIAN
+    if (sendedBoxIdx >= boxes.length) return null
     for (let i = sendedBoxIdx; i < boxes.length; i++) {
       boxes[i].write(ds)
     }
     sendedBoxIdx = boxes.length
-    return ds.buffer
+    return new Uint8Array(ds.buffer)
   }
 
   let stoped = false
@@ -443,13 +444,15 @@ export function file2stream (
   const stream = new ReadableStream({
     start (ctrl) {
       timerId = self.setInterval(() => {
-        ctrl.enqueue(deltaBuf())
+        const d = deltaBuf()
+        if (d != null) ctrl.enqueue(d)
       }, timeSlice)
 
       exit = () => {
         clearInterval(timerId)
         file.flush()
-        ctrl.enqueue(deltaBuf())
+        const d = deltaBuf()
+        if (d != null) ctrl.enqueue(d)
         ctrl.close()
       }
 
