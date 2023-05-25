@@ -230,6 +230,8 @@ declare module 'mp4box' {
     stop: () => void
     write: (ds: DataStream) => void
     flush: () => void
+    // 额外扩展的方法
+    onFlush?: () => void
   }
 
   export function createFile(): MP4File

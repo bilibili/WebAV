@@ -5,9 +5,11 @@ import mp4box, {
   MP4Info,
   MP4Sample,
   MP4VideoTrack,
-  TrakBoxParser
+  TrakBoxParser,
+  VideoTrackOpts
 } from 'mp4box'
 import { Log } from './log'
+import { AudioTrackOpts } from 'mp4box'
 
 type TCleanFn = () => void
 
@@ -391,7 +393,9 @@ export function stream2file (stream: ReadableStream<Uint8Array>): {
     while (!stoped) {
       const { done, value } = await reader.read()
       if (done) {
-        Log.info('source read done')
+        Log.info('stream source read done')
+        file.flush()
+        file.onFlush?.()
         return
       }
 
@@ -498,4 +502,155 @@ export function parseVideoCodecDesc (track: TrakBoxParser): Uint8Array {
     }
   }
   throw Error('avcC, hvcC or VPX not found')
+}
+
+async function demuxMP4 (
+  stream: ReadableStream,
+  cbs: {
+    onReady: (file: MP4File, info: MP4Info) => void
+    onEnded: () => void
+    onSamples: (
+      id: number,
+      type: 'video' | 'audio',
+      samples: MP4Sample[]
+    ) => void
+  }
+) {
+  const { file, stop } = stream2file(stream)
+
+  file.onSamples = cbs.onSamples
+
+  file.onReady = info => {
+    cbs.onReady(file, info)
+    const vTrackId = info.videoTracks[0]?.id
+    if (vTrackId != null) file.setExtractionOptions(vTrackId, 'video')
+
+    const aTrackId = info.audioTracks[0]?.id
+    if (aTrackId != null) file.setExtractionOptions(aTrackId, 'audio')
+
+    file.start()
+  }
+
+  file.onFlush = cbs.onEnded
+
+  return { file, stop }
+}
+
+function extractFileConfig (file: MP4File, info: MP4Info) {
+  const vTrack = info.videoTracks[0]
+  const rs: {
+    videoTrackConf?: VideoTrackOpts
+    videoDecoderConf?: Parameters<VideoDecoder['configure']>[0]
+    audioTrackConf?: AudioTrackOpts
+    audioDecoderConf?: Parameters<AudioDecoder['configure']>[0]
+  } = {}
+  if (vTrack != null) {
+    const videoDesc = parseVideoCodecDesc(file.getTrackById(vTrack.id)).buffer
+    rs.videoTrackConf = {
+      timescale: vTrack.timescale,
+      width: vTrack.video.width,
+      height: vTrack.video.height,
+      brands: info.brands,
+      avcDecoderConfigRecord: videoDesc
+    }
+    rs.videoDecoderConf = {
+      codec: vTrack.codec,
+      codedHeight: vTrack.video.height,
+      codedWidth: vTrack.video.width,
+      description: videoDesc
+    }
+  }
+
+  const aTrack = info.audioTracks[0]
+  if (aTrack != null) {
+    rs.audioTrackConf = {
+      timescale: aTrack.timescale,
+      samplerate: aTrack.audio.sample_rate,
+      channel_count: aTrack.audio.channel_count,
+      samplesize: aTrack.audio.sample_size,
+      hdlr: 'soun',
+      name: 'SoundHandler',
+      type: aTrack.codec
+    }
+    rs.audioDecoderConf = {
+      codec: aTrack.codec === 'mp4a' ? 'mp4a.40.2' : aTrack.codec,
+      numberOfChannels: aTrack.audio.channel_count,
+      sampleRate: aTrack.audio.sample_rate
+    }
+  }
+  return rs
+}
+
+/**
+ * 快速顺序合并多个mp4流，要求所有mp4的属性是一致的
+ * 属性包括（不限于）：音视频编码格式、分辨率、采样率
+ */
+export function fastConcatMP4 (streams: ReadableStream<Uint8Array>[]) {
+  const outfile = mp4box.createFile()
+  const { stream, stop: stopOutStream } = file2stream(outfile, 500, () => {})
+
+  async function run () {
+    let vTrackId = 0
+    let vDTS = 0
+    let vCTS = 0
+    let aTrackId = 0
+    let aDTS = 0
+    let aCTS = 0
+    // ts bug, 不能正确识别类型
+    let lastVSamp: any = null
+    let lastASamp: any = null
+    for (const stream of streams) {
+      await new Promise<void>(async resolve => {
+        await demuxMP4(stream, {
+          onReady: (file, info) => {
+            const { videoTrackConf, audioTrackConf } = extractFileConfig(
+              file,
+              info
+            )
+            if (vTrackId === 0 && videoTrackConf != null) {
+              vTrackId = outfile.addTrack(videoTrackConf)
+            }
+            if (aTrackId === 0 && audioTrackConf != null) {
+              aTrackId = outfile.addTrack(audioTrackConf)
+            }
+          },
+          onSamples: (_, type, samples) => {
+            const id = type === 'video' ? vTrackId : aTrackId
+            const offsetDTS = type === 'video' ? vDTS : aDTS
+            const offsetCTS = type === 'video' ? vCTS : aCTS
+            samples.forEach(s => {
+              outfile.addSample(id, s.data, {
+                duration: s.duration,
+                dts: s.dts + offsetDTS,
+                cts: s.cts + offsetCTS,
+                is_sync: s.is_sync
+              })
+            })
+            const lastSamp = samples.at(-1)
+            if (lastSamp == null) return
+            if (type === 'video') {
+              lastVSamp = lastSamp
+            } else if (type === 'audio') {
+              lastASamp = lastSamp
+            }
+          },
+          onEnded: resolve
+        })
+      })
+      if (lastVSamp != null) {
+        vDTS = lastVSamp.dts
+        vCTS = lastVSamp.cts
+      }
+      if (lastASamp != null) {
+        aDTS = lastASamp.dts
+        aCTS = lastASamp.cts
+      }
+    }
+
+    stopOutStream()
+  }
+
+  run().catch(Log.error)
+
+  return stream
 }
