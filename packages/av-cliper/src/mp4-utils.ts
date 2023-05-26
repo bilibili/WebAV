@@ -5,12 +5,18 @@ import mp4box, {
   MP4Info,
   MP4Sample,
   MP4VideoTrack,
+  SampleOpts,
   TrakBoxParser,
   VideoTrackOpts
 } from 'mp4box'
 import { Log } from './log'
 import { AudioTrackOpts } from 'mp4box'
-import { extractPCM4AudioData, sleep } from './av-utils'
+import {
+  extractPCM4AudioData,
+  mixPCM,
+  ringSliceFloat32Array,
+  sleep
+} from './av-utils'
 import { extractPCM4AudioBuffer } from './av-utils'
 
 type TCleanFn = () => void
@@ -418,7 +424,7 @@ export function stream2file (stream: ReadableStream<Uint8Array>): {
 export function file2stream (
   file: MP4File,
   timeSlice: number,
-  onCancel: TCleanFn
+  onCancel?: TCleanFn
 ): {
   stream: ReadableStream<Uint8Array>
   stop: TCleanFn
@@ -460,7 +466,7 @@ export function file2stream (
     },
     cancel () {
       clearInterval(timerId)
-      onCancel()
+      onCancel?.()
     }
   })
 
@@ -506,11 +512,27 @@ export function parseVideoCodecDesc (track: TrakBoxParser): Uint8Array {
   throw Error('avcC, hvcC or VPX not found')
 }
 
+// todo: 替换已有代码
+function chunk2MP4SampleOpts (chunk: EncodedAudioChunk): SampleOpts & {
+  data: ArrayBuffer
+} {
+  const buf = new ArrayBuffer(chunk.byteLength)
+  chunk.copyTo(buf)
+  const dts = chunk.timestamp
+  return {
+    duration: chunk.duration ?? 0,
+    dts,
+    cts: dts,
+    is_sync: chunk.type === 'key',
+    data: buf
+  }
+}
+
 function demuxMP4 (
   stream: ReadableStream,
   cbs: {
     onReady: (file: MP4File, info: MP4Info) => void | Promise<void>
-    onEnded: () => void
+    onEnded?: () => void
     onSamples: (
       id: number,
       type: 'video' | 'audio',
@@ -659,7 +681,7 @@ export function fastConcatMP4 (streams: ReadableStream<Uint8Array>[]) {
   return stream
 }
 
-function createSyncAudioDecoder (
+function createMP4AudioSampleDecoder (
   adConf: Parameters<AudioDecoder['configure']>[0]
 ) {
   let lock = false
@@ -701,22 +723,85 @@ function createSyncAudioDecoder (
   }
 }
 
+function createMP4AudioSampleEncoder (
+  aeConf: Parameters<AudioEncoder['configure']>[0]
+) {
+  let lock = false
+
+  let cacheChunk: EncodedAudioChunk[] = []
+  const adEncoder = new AudioEncoder({
+    output: chunk => {
+      cacheChunk.push(chunk)
+    },
+    error: Log.error
+  })
+
+  adEncoder.configure({
+    codec: aeConf.codec,
+    sampleRate: aeConf.sampleRate,
+    numberOfChannels: aeConf.numberOfChannels
+  })
+  return async (
+    data: Float32Array,
+    ts: number
+  ): Promise<ReturnType<typeof chunk2MP4SampleOpts>[]> => {
+    while (lock || adEncoder.encodeQueueSize > 0) {
+      await sleep(1)
+    }
+    lock = true
+
+    adEncoder.encode(
+      new AudioData({
+        timestamp: ts,
+        numberOfChannels: aeConf.numberOfChannels,
+        numberOfFrames: data.length / aeConf.numberOfChannels,
+        sampleRate: aeConf.sampleRate,
+        format: 'f32-planar',
+        data
+      })
+    )
+
+    while (cacheChunk.length === 0 || adEncoder.encodeQueueSize > 0) {
+      await sleep(1)
+    }
+    const rs = cacheChunk.map(chunk => chunk2MP4SampleOpts(chunk))
+    cacheChunk = []
+    lock = false
+
+    return rs
+  }
+}
+
+/**
+ * 混合mp4与音频文件，仅重编码音频
+ * @returns
+ */
 export async function mixinMP4AndAudio (
   mp4Stream: ReadableStream<Uint8Array>,
   audio: {
     stream: ReadableStream<Uint8Array>
     volume: number
+    loop: boolean
   }
 ) {
   const outfile = mp4box.createFile()
-  let audioSampleDecoder: ReturnType<typeof createSyncAudioDecoder> | null =
-    null
+  const { stream: outStream, stop: stopOut } = file2stream(outfile, 500)
+  const mixEnded = debounce(stopOut, 300)
+
+  let audioSampleDecoder: ReturnType<
+    typeof createMP4AudioSampleDecoder
+  > | null = null
+
+  let audioSampleEncoder: ReturnType<
+    typeof createMP4AudioSampleEncoder
+  > | null = null
 
   const audioArray = await new Response(audio.stream).arrayBuffer()
-  let audioPCM: Float32Array[] = []
+  let inputAudioPCM: Float32Array[] = []
 
   let vTrackId = 0
   let aTrackId = 0
+  let audioOffset = 0
   demuxMP4(mp4Stream, {
     onReady: async (file, info) => {
       const { videoTrackConf, audioTrackConf, audioDecoderConf } =
@@ -729,33 +814,64 @@ export async function mixinMP4AndAudio (
         const audioCtx = new AudioContext({
           sampleRate: audioTrackConf.samplerate
         })
-        audioPCM = extractPCM4AudioBuffer(
+        inputAudioPCM = extractPCM4AudioBuffer(
           await audioCtx.decodeAudioData(audioArray)
         )
       }
+
       if (audioDecoderConf == null) throw Error('mp4 not have audio track')
-      audioSampleDecoder = createSyncAudioDecoder(audioDecoderConf)
+      audioSampleDecoder = createMP4AudioSampleDecoder(audioDecoderConf)
+      audioSampleEncoder = createMP4AudioSampleEncoder(audioDecoderConf)
     },
     onSamples: async (id, type, samples) => {
       if (type === 'video') {
         samples.forEach(s => outfile.addSample(id, s.data, s))
+        return
       }
-      if (type === 'audio') {
-        ;(await audioSampleDecoder?.(samples))?.map(ad =>
-          extractPCM4AudioData(ad)
+
+      // todo: 处理 mp4 无音轨场景
+      if (type !== 'audio') return
+      if (audioSampleDecoder == null || audioSampleEncoder == null) {
+        throw Error('Audio codec not created')
+      }
+
+      // 1. 先解码mp4音频
+      const mixiedPCM = (await audioSampleDecoder(samples)).map(ad => {
+        const mp4AudioBuf = extractPCM4AudioData(ad)
+        const inputAudioBuf = inputAudioPCM.map(chanBuf =>
+          audio.loop
+            ? ringSliceFloat32Array(
+                chanBuf,
+                audioOffset,
+                audioOffset + mp4AudioBuf[0].length
+              )
+            : chanBuf.slice(audioOffset, audioOffset + mp4AudioBuf[0].length)
         )
-        console.log(444, audioPCM)
-      }
-    },
-    onEnded: () => {
-      stopOut()
+
+        if (audio.volume !== 1) {
+          for (const buf of inputAudioBuf)
+            for (let i = 0; i < buf.length; i++) buf[i] *= audio.volume
+        }
+
+        audioOffset += mp4AudioBuf[0].length
+        // 2. 混合输入的音频
+        return {
+          pcm: mixPCM([mp4AudioBuf, inputAudioBuf]),
+          ts: ad.timestamp
+        }
+      })
+
+      if (audioSampleEncoder == null) return
+      mixiedPCM.forEach(async ({ pcm, ts }) => {
+        // 3. 重编码音频
+        ;(await audioSampleEncoder?.(pcm, ts))?.forEach(s => {
+          // 4. 添加到 mp4 音轨
+          outfile.addSample(aTrackId, s.data, s)
+        })
+        mixEnded()
+      })
     }
   })
 
-  const { stream: outStream, stop: stopOut } = file2stream(
-    outfile,
-    500,
-    () => {}
-  )
   return outStream
 }

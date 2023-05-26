@@ -149,3 +149,21 @@ export function sleep (time: number): Promise<void> {
     setTimeout(resolve, time)
   })
 }
+
+/**
+ *  循环 即 环形取值，主要用于截取 PCM
+ */
+export function ringSliceFloat32Array (
+  data: Float32Array,
+  start: number,
+  end: number
+): Float32Array {
+  const cnt = end - start
+  const rs = new Float32Array(cnt)
+  let i = 0
+  while (i < cnt) {
+    rs[i] = data[(start + i) % data.length]
+    i += 1
+  }
+  return rs
+}

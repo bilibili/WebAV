@@ -1,4 +1,4 @@
-import { extractPCM4AudioBuffer } from '../av-utils'
+import { extractPCM4AudioBuffer, ringSliceFloat32Array } from '../av-utils'
 import { Log } from '../log'
 import { DEFAULT_AUDIO_SAMPLE_RATE, IClip } from './iclip'
 
@@ -108,22 +108,4 @@ export class AudioClip implements IClip {
     this.#chan1Buf = new Float32Array(0)
     Log.info('---- audioclip destroy ----')
   }
-}
-
-/**
- *  循环 即 环形取值
- */
-function ringSliceFloat32Array (
-  data: Float32Array,
-  start: number,
-  end: number
-): Float32Array {
-  const cnt = end - start
-  const rs = new Float32Array(cnt)
-  let i = 0
-  while (i < cnt) {
-    rs[i] = data[(start + i) % data.length]
-    i += 1
-  }
-  return rs
 }

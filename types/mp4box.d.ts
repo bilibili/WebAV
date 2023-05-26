@@ -96,7 +96,7 @@ declare module 'mp4box' {
     type: string
   }
 
-  interface SampleOpts {
+  export interface SampleOpts {
     duration: number
     dts?: number
     cts?: number

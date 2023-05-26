@@ -17,7 +17,8 @@ document.querySelector('#mixin-mp4-audio')?.addEventListener('click', () => {
     ;(
       await mixinMP4AndAudio((await fetch('./public/video/webav1.mp4')).body!, {
         stream: (await fetch('./public/audio/44.1kHz-2chan.mp3')).body!,
-        volume: 1
+        volume: 1,
+        loop: true
       })
     ).pipeTo(await createFileWriter('mp4'))
   })().catch(Log.error)
@@ -28,7 +29,7 @@ async function createFileWriter (
 ): Promise<FileSystemWritableFileStream> {
   // @ts-expect-error
   const fileHandle = await window.showSaveFilePicker({
-    suggestedName: `WebAv-export-${Date.now()}.${extName}`
+    suggestedName: `WebAv-export.${extName}`
   })
   return fileHandle.createWritable()
 }
