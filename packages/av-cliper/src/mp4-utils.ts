@@ -571,12 +571,21 @@ function extractFileConfig (file: MP4File, info: MP4Info) {
   } = {}
   if (vTrack != null) {
     const videoDesc = parseVideoCodecDesc(file.getTrackById(vTrack.id)).buffer
+    const { descKey, type } = vTrack.codec.startsWith('avc1')
+      ? { descKey: 'avcDecoderConfigRecord', type: 'avc1' }
+      : vTrack.codec.startsWith('hvc1')
+      ? { descKey: 'hevcDecoderConfigRecord', type: 'hvc1' }
+      : { descKey: '', type: '' }
+    if (descKey === '') throw Error('Unsupported video codec')
+
     rs.videoTrackConf = {
       timescale: vTrack.timescale,
+      duration: vTrack.duration,
       width: vTrack.video.width,
       height: vTrack.video.height,
       brands: info.brands,
-      avcDecoderConfigRecord: videoDesc
+      type,
+      [descKey]: videoDesc
     }
     rs.videoDecoderConf = {
       codec: vTrack.codec,

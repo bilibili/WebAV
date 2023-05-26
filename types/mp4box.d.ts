@@ -77,6 +77,8 @@ declare module 'mp4box' {
 
   export interface VideoTrackOpts {
     timescale: number
+    duration?: number
+    type?: string
     width: number
     height: number
     brands: string[]
