@@ -304,16 +304,8 @@ export function encodeVideoTrack (
       // start encodeAudioTrack
       onTrackReady()
     }
-    const buf = new ArrayBuffer(chunk.byteLength)
-    chunk.copyTo(buf)
-    const dts = chunk.timestamp
-
-    mp4File.addSample(vTrackId, buf, {
-      duration: chunk.duration ?? 0,
-      dts,
-      cts: dts,
-      is_sync: chunk.type === 'key'
-    })
+    const s = chunk2MP4SampleOpts(chunk)
+    mp4File.addSample(vTrackId, s.data, s)
   })
 
   return encoder
@@ -365,15 +357,8 @@ function encodeAudioTrack (
   const encoder = new AudioEncoder({
     error: Log.error,
     output: chunk => {
-      const buf = new ArrayBuffer(chunk.byteLength)
-      chunk.copyTo(buf)
-      const dts = chunk.timestamp
-      mp4File.addSample(trackId, buf, {
-        duration: chunk.duration ?? 0,
-        dts,
-        cts: dts,
-        is_sync: chunk.type === 'key'
-      })
+      const s = chunk2MP4SampleOpts(chunk)
+      mp4File.addSample(trackId, s.data, s)
     }
   })
   encoder.configure({
@@ -512,8 +497,12 @@ export function parseVideoCodecDesc (track: TrakBoxParser): Uint8Array {
   throw Error('avcC, hvcC or VPX not found')
 }
 
-// todo: 替换已有代码
-function chunk2MP4SampleOpts (chunk: EncodedAudioChunk): SampleOpts & {
+/**
+ * EncodedAudioChunk | EncodedVideoChunk 转换为 MP4 addSample 需要的参数
+ */
+function chunk2MP4SampleOpts (
+  chunk: EncodedAudioChunk | EncodedVideoChunk
+): SampleOpts & {
   data: ArrayBuffer
 } {
   const buf = new ArrayBuffer(chunk.byteLength)
