@@ -53,8 +53,6 @@ export function demuxcode (
     audio: number
   }
 } {
-  const { file: mp4File, stop: stopReadStream } = stream2file(stream)
-
   let stopResetEndTimer = false
   const resetEndTimer = debounce(() => {
     if (stopResetEndTimer) return
@@ -83,43 +81,32 @@ export function demuxcode (
   let mp4Info: MP4Info | null = null
   let vTrackInfo: MP4VideoTrack | null = null
   let aTrackInfo: MP4AudioTrack | null = null
-  // todo: 用 demuxMP4 替代
-  mp4File.onReady = info => {
-    mp4Info = info
-    vTrackInfo = info.videoTracks[0]
-    if (vTrackInfo != null) {
-      const vTrack = mp4File.getTrackById(vTrackInfo.id)
-      // Generate and emit an appropriate VideoDecoderConfig.
-      const vdConf = {
-        codec: vTrackInfo.codec,
-        codedHeight: vTrackInfo.video.height,
-        codedWidth: vTrackInfo.video.width,
-        description: parseVideoCodecDesc(vTrack)
-      }
-      vdecoder.configure(vdConf)
-      mp4File.setExtractionOptions(vTrackInfo.id, 'video')
-    }
-
-    aTrackInfo = info.audioTracks[0]
-    if (opts.audio && aTrackInfo != null) {
-      const adConf = {
-        // description: trak.mdia.minf.stbl.stsd.entries[0].esds.esd.descs[0].descs[0].data;
-        codec: aTrackInfo.codec === 'mp4a' ? 'mp4a.40.2' : aTrackInfo.codec,
-        numberOfChannels: aTrackInfo.audio.channel_count,
-        sampleRate: aTrackInfo.audio.sample_rate
-      }
-      adecoder.configure(adConf)
-      mp4File.setExtractionOptions(aTrackInfo.id, 'audio')
-    }
-    mp4File.start()
-  }
 
   let totalVideoSamples: MP4Sample[] = []
   let totalAudioSamples: MP4Sample[] = []
   // todo: 大文件时需要流式加载
-  const resetReady = debounce(() => {
-    if (mp4Info != null) {
-      // Fragment mp4 中 duration 为 0，所以需要统计samples 的 duration
+  const { file: mp4File, stop: stopReadStream } = demuxMP4(stream, {
+    onReady: (file, info) => {
+      mp4Info = info
+      vTrackInfo = info.videoTracks[0]
+      aTrackInfo = info.audioTracks[0]
+      const { videoDecoderConf, audioDecoderConf } = extractFileConfig(
+        file,
+        info
+      )
+      if (videoDecoderConf != null) vdecoder.configure(videoDecoderConf)
+      if (opts.audio && audioDecoderConf != null)
+        adecoder.configure(audioDecoderConf)
+    },
+    onSamples (_, type, samples) {
+      if (type === 'video') {
+        totalVideoSamples = totalVideoSamples.concat(samples)
+      } else if (opts.audio && type === 'audio') {
+        totalAudioSamples = totalAudioSamples.concat(samples)
+      }
+    },
+    onEnded: () => {
+      if (mp4Info == null) throw Error('MP4 demux unready')
       // 注意：所有 samples 的 duration 累加，与解码后的 VideoFrame 累加 值接近，但不相等
       mp4Info.duration = totalVideoSamples.reduce(
         (acc, cur) => acc + cur.duration,
@@ -127,16 +114,7 @@ export function demuxcode (
       )
       cbs.onReady(mp4Info)
     }
-  }, 300)
-
-  mp4File.onSamples = (_, type, samples) => {
-    if (type === 'video') {
-      totalVideoSamples = totalVideoSamples.concat(samples)
-    } else if (type === 'audio') {
-      totalAudioSamples = totalAudioSamples.concat(samples)
-    }
-    resetReady()
-  }
+  })
 
   return {
     stop: () => {
@@ -472,7 +450,6 @@ export function debounce<F extends (...args: any[]) => any>(
 
   return function (this: any, ...rest) {
     self.clearTimeout(timer)
-    // todo: 性能优化，避免大量创建 timer
     timer = self.setTimeout(() => {
       func.apply(this, rest)
     }, wait)
@@ -565,17 +542,18 @@ function extractFileConfig (file: MP4File, info: MP4Info) {
       : vTrack.codec.startsWith('hvc1')
       ? { descKey: 'hevcDecoderConfigRecord', type: 'hvc1' }
       : { descKey: '', type: '' }
-    if (descKey === '') throw Error('Unsupported video codec')
-
-    rs.videoTrackConf = {
-      timescale: vTrack.timescale,
-      duration: vTrack.duration,
-      width: vTrack.video.width,
-      height: vTrack.video.height,
-      brands: info.brands,
-      type,
-      [descKey]: videoDesc
+    if (descKey !== '') {
+      rs.videoTrackConf = {
+        timescale: vTrack.timescale,
+        duration: vTrack.duration,
+        width: vTrack.video.width,
+        height: vTrack.video.height,
+        brands: info.brands,
+        type,
+        [descKey]: videoDesc
+      }
     }
+
     rs.videoDecoderConf = {
       codec: vTrack.codec,
       codedHeight: vTrack.video.height,
