@@ -752,7 +752,7 @@ function createMP4AudioSampleEncoder (
  * 混合mp4与音频文件，仅重编码音频
  * @returns
  */
-export async function mixinMP4AndAudio (
+export function mixinMP4AndAudio (
   mp4Stream: ReadableStream<Uint8Array>,
   audio: {
     stream: ReadableStream<Uint8Array>
@@ -772,7 +772,6 @@ export async function mixinMP4AndAudio (
     typeof createMP4AudioSampleEncoder
   > | null = null
 
-  const audioArray = await new Response(audio.stream).arrayBuffer()
   let inputAudioPCM: Float32Array[] = []
 
   let vTrackId = 0
@@ -791,7 +790,9 @@ export async function mixinMP4AndAudio (
           sampleRate: audioTrackConf.samplerate
         })
         inputAudioPCM = extractPCM4AudioBuffer(
-          await audioCtx.decodeAudioData(audioArray)
+          await audioCtx.decodeAudioData(
+            await new Response(audio.stream).arrayBuffer()
+          )
         )
       }
 
@@ -814,6 +815,7 @@ export async function mixinMP4AndAudio (
       // 1. 先解码mp4音频
       const mixiedPCM = (await audioSampleDecoder(samples)).map(ad => {
         const mp4AudioBuf = extractPCM4AudioData(ad)
+        // todo: 性能优化； 音频非循环，如果 inputAudioPCM 已消耗完则后续无需 重编码
         const inputAudioBuf = inputAudioPCM.map(chanBuf =>
           audio.loop
             ? ringSliceFloat32Array(

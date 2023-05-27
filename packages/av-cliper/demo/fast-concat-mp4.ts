@@ -14,13 +14,26 @@ document.querySelector('#fast-concat-mp4')?.addEventListener('click', () => {
 
 document.querySelector('#mixin-mp4-audio')?.addEventListener('click', () => {
   ;(async () => {
-    ;(
-      await mixinMP4AndAudio((await fetch('./public/video/webav1.mp4')).body!, {
-        stream: (await fetch('./public/audio/44.1kHz-2chan.mp3')).body!,
-        volume: 1,
-        loop: true
-      })
-    ).pipeTo(await createFileWriter('mp4'))
+    mixinMP4AndAudio((await fetch('./public/video/webav1.mp4')).body!, {
+      stream: (await fetch('./public/audio/44.1kHz-2chan.mp3')).body!,
+      volume: 1,
+      loop: true
+    }).pipeTo(await createFileWriter('mp4'))
+  })().catch(Log.error)
+})
+
+document.querySelector('#concat-and-mixin')?.addEventListener('click', () => {
+  ;(async () => {
+    const mp4Stream = fastConcatMP4([
+      (await fetch('./public/video/webav1.mp4')).body!,
+      (await fetch('./public/video/webav2.mp4')).body!
+    ])
+    const mp43Stream = mixinMP4AndAudio(mp4Stream, {
+      stream: (await fetch('./public/audio/44.1kHz-2chan.mp3')).body!,
+      volume: 1,
+      loop: false
+    })
+    mp43Stream.pipeTo(await createFileWriter('mp4'))
   })().catch(Log.error)
 })
 
