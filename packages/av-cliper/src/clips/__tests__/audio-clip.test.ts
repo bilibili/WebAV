@@ -11,7 +11,7 @@ beforeEach(() => {
 })
 
 test('AudioClip tick', async () => {
-  const clip = new AudioClip(new ArrayBuffer(0))
+  const clip = new AudioClip(new ReadableStream())
   await clip.ready
   expect(await clip.tick(0)).toEqual({
     audio: [new Float32Array(0), new Float32Array(0)],
@@ -36,7 +36,7 @@ test('AudioClip volume', async () => {
   AudioBufferMock.getChannelData.mockReturnValueOnce(
     new Float32Array(Array(DEFAULT_AUDIO_SAMPLE_RATE * 10).fill(1))
   )
-  const clip = new AudioClip(new ArrayBuffer(0), { volume: 0.1 })
+  const clip = new AudioClip(new ReadableStream(), { volume: 0.1 })
   await clip.ready
   const {
     audio: [chan0]
@@ -45,7 +45,7 @@ test('AudioClip volume', async () => {
 })
 
 test('AudioClip loop', async () => {
-  const clip = new AudioClip(new ArrayBuffer(0), { loop: true })
+  const clip = new AudioClip(new ReadableStream(), { loop: true })
   await clip.ready
   // 接近尾端
   await clip.tick(1e6 * 9)

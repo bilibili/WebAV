@@ -137,3 +137,17 @@ export function crtMSEvt4Offset (
   vi.spyOn(evt, 'offsetY', 'get').mockImplementation(() => offsetY)
   return evt
 }
+
+Object.assign(global, {
+  ReadableStream: vi.fn().mockImplementation(() => {
+    return Object.assign(Object.create(ReadableStream.prototype), {})
+  })
+})
+
+Object.assign(global, {
+  Response: vi.fn().mockImplementation(() => {
+    return Object.assign(Object.create(Response.prototype), {
+      arrayBuffer: vi.fn()
+    })
+  })
+})

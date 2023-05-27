@@ -57,7 +57,7 @@ document.querySelector('#decode-audio')?.addEventListener('click', () => {
     ).value
     // @ts-expect-error
     const resp1 = await fetch(audios[audioType])
-    const clip = new AudioClip(await resp1.arrayBuffer())
+    const clip = new AudioClip(resp1.body!)
     await clip.ready
     const ctx = new AudioContext()
     let time = 0

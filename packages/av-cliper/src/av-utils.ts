@@ -84,7 +84,7 @@ export async function decodeImg (
 }
 
 /**
- * 混合多个音轨的 PCM 数据
+ * 混合双通道音轨的 PCM 数据，并将多声道并排成一个 Float32Array 输出
  */
 export function mixPCM (audios: Float32Array[][]): Float32Array {
   const maxLen = Math.max(...audios.map(a => a[0]?.length ?? 0))
@@ -95,7 +95,7 @@ export function mixPCM (audios: Float32Array[][]): Float32Array {
     let chan1 = 0
     for (let trackIdx = 0; trackIdx < audios.length; trackIdx++) {
       chan0 += audios[trackIdx][0]?.[bufIdx] ?? 0
-      chan1 += audios[trackIdx][1]?.[bufIdx] ?? 0
+      chan1 += audios[trackIdx][1]?.[bufIdx] ?? chan0
     }
     data[bufIdx] = chan0
     data[bufIdx + maxLen] = chan1
@@ -148,4 +148,22 @@ export function sleep (time: number): Promise<void> {
   return new Promise(resolve => {
     setTimeout(resolve, time)
   })
+}
+
+/**
+ *  循环 即 环形取值，主要用于截取 PCM
+ */
+export function ringSliceFloat32Array (
+  data: Float32Array,
+  start: number,
+  end: number
+): Float32Array {
+  const cnt = end - start
+  const rs = new Float32Array(cnt)
+  let i = 0
+  while (i < cnt) {
+    rs[i] = data[(start + i) % data.length]
+    i += 1
+  }
+  return rs
 }

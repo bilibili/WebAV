@@ -28,6 +28,6 @@
     "vitest": "^0.29.7"
   },
   "dependencies": {
-    "mp4box": "^0.5.2"
+    "mp4box": "hughfenghen/mp4box.js"
   }
 }

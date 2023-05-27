@@ -1,4 +1,4 @@
-import { extractPCM4AudioBuffer } from '../av-utils'
+import { extractPCM4AudioBuffer, ringSliceFloat32Array } from '../av-utils'
 import { Log } from '../log'
 import { DEFAULT_AUDIO_SAMPLE_RATE, IClip } from './iclip'
 
@@ -26,14 +26,17 @@ export class AudioClip implements IClip {
 
   #opts
 
-  constructor (buf: ArrayBuffer, opts?: { loop?: boolean; volume?: number }) {
+  constructor (
+    stream: ReadableStream<Uint8Array>,
+    opts?: { loop?: boolean; volume?: number }
+  ) {
     this.#opts = {
       loop: false,
       volume: 1,
       ...opts
     }
 
-    this.ready = this.#init(AudioClip.ctx, buf).then(() => ({
+    this.ready = this.#init(AudioClip.ctx, stream).then(() => ({
       // audio 没有宽高，无需绘制
       width: 0,
       height: 0
@@ -42,9 +45,10 @@ export class AudioClip implements IClip {
 
   async #init (
     ctx: OfflineAudioContext | AudioContext,
-    buf: ArrayBuffer
+    stream: ReadableStream<Uint8Array>
   ): Promise<void> {
     const tStart = performance.now()
+    const buf = await new Response(stream).arrayBuffer()
     const audioBuf = await ctx.decodeAudioData(buf)
     Log.info(
       'Audio clip decoded complete:',
@@ -104,22 +108,4 @@ export class AudioClip implements IClip {
     this.#chan1Buf = new Float32Array(0)
     Log.info('---- audioclip destroy ----')
   }
-}
-
-/**
- *  循环 即 环形取值
- */
-function ringSliceFloat32Array (
-  data: Float32Array,
-  start: number,
-  end: number
-): Float32Array {
-  const cnt = end - start
-  const rs = new Float32Array(cnt)
-  let i = 0
-  while (i < cnt) {
-    rs[i] = data[(start + i) % data.length]
-    i += 1
-  }
-  return rs
 }

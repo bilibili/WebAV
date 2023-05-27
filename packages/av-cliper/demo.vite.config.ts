@@ -6,7 +6,8 @@ export default defineConfig({
     rollupOptions: {
       input: {
         'concat-media': resolve(__dirname, 'demo/concat-media.html'),
-        'decode-media': resolve(__dirname, 'demo/decode-media.html')
+        'decode-media': resolve(__dirname, 'demo/decode-media.html'),
+        'fast-concat-mp4': resolve(__dirname, 'demo/fast-concat-mp4.html')
       }
     },
     outDir: 'demo-dist'
