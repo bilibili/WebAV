@@ -1,6 +1,6 @@
 {
   "name": "@webav/av-canvas",
-  "version": "0.1.8",
+  "version": "0.1.9",
   "private": false,
   "repository": "https://github.com/hughfenghen/WebAV",
   "type": "module",
@@ -28,6 +28,6 @@
     "vitest": "^0.29.7"
   },
   "dependencies": {
-    "@webav/av-cliper": "^0.1.8"
+    "@webav/av-cliper": "^0.1.9"
   }
 }
