@@ -1,5 +1,6 @@
-import { decodeImg } from '../src/av-utils'
+import { decodeImg, sleep } from '../src/av-utils'
 import { AudioClip, DEFAULT_AUDIO_SAMPLE_RATE, MP4Clip } from '../src/clips'
+import { EmbedSubtitles } from '../src/clips/embed-subtitles'
 import { Log } from '../src/log'
 
 const cvs = document.querySelector('canvas') as HTMLCanvasElement
@@ -119,6 +120,41 @@ document.querySelector('#decode-video')?.addEventListener('click', () => {
     }
     clip.destroy()
   })().catch(Log.error)
+})
+
+const subtitles = {
+  'test-sample.srt': './public/subtitles/test-sample.srt'
+}
+document.querySelector('#decode-subtitles')?.addEventListener('click', () => {
+  ;(async () => {
+    stopImg()
+    const subtitlesType = (
+      document.querySelector(
+        'input[name=subtitles-type]:checked'
+      ) as HTMLInputElement
+    ).value
+
+    // @ts-expect-error
+    const resp1 = await fetch(subtitles[subtitlesType])
+
+    const es = new EmbedSubtitles(await resp1.text(), {
+      fontSize: 80,
+      color: 'yellow'
+    })
+
+    let time = 0
+    while (time < 20 * 1e6) {
+      const { state, video } = await es.tick(time)
+      if (state === 'done') break
+      ctx.clearRect(0, 0, cvs.width, cvs.height)
+      ctx.drawImage(video!, 0, 0)
+      video?.close()
+      time += 33000
+      await sleep(10)
+    }
+    console.log('decode subtitles done')
+    es.destroy()
+  })()
 })
 
 // 测试解码、重编码性能
