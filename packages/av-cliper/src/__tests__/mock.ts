@@ -151,3 +151,40 @@ Object.assign(global, {
     })
   })
 })
+
+export const OffscreenCanvasRenderingContext2DMock = {
+  fillText: vi.fn(),
+  clearRect: vi.fn(),
+  fillStyle: ''
+}
+
+Object.assign(global, {
+  OffscreenCanvasRenderingContext2D: vi.fn().mockImplementation(() => {
+    return Object.assign(
+      Object.create(OffscreenCanvasRenderingContext2D.prototype),
+      OffscreenCanvasRenderingContext2DMock
+    )
+  })
+})
+
+Object.assign(global, {
+  OffscreenCanvas: vi.fn().mockImplementation(() => {
+    return Object.assign(Object.create(OffscreenCanvas.prototype), {
+      getContext: () => new OffscreenCanvasRenderingContext2D()
+    })
+  })
+})
+
+Object.assign(global, {
+  VideoFrame: vi.fn().mockImplementation((a, b) => {
+    const that = Object.assign(
+      Object.create(VideoFrame.prototype),
+      {
+        clone: () => ({ ...that }),
+        close: vi.fn()
+      },
+      b
+    )
+    return that
+  })
+})
