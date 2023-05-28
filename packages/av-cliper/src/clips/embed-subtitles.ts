@@ -4,6 +4,8 @@ interface IEmbedSubtitlesOpts {
   color: string
   type: 'srt'
   fontSize: number
+  padding: number
+  videoWidth: number
 }
 
 export class EmbedSubtitles implements IClip {
@@ -16,9 +18,11 @@ export class EmbedSubtitles implements IClip {
   }> = []
 
   #opts: IEmbedSubtitlesOpts = {
-    color: '#FFF',
+    color: '#000',
     type: 'srt',
-    fontSize: 24
+    fontSize: 50,
+    videoWidth: 1280,
+    padding: 10
   }
 
   #cvs: OffscreenCanvas
@@ -34,13 +38,50 @@ export class EmbedSubtitles implements IClip {
     }))
     if (this.#subtitles.length === 0) throw Error('No subtitles content')
 
-    this.#opts = Object.assign(this.#opts, opts)
-    this.#cvs = new OffscreenCanvas(1280, 720)
+    this.#opts = Object.assign(this.#opts, opts, {
+      // 未配置padding，默认 字体 20%
+      padding: opts?.padding ?? (opts?.fontSize ?? 50) * 0.2
+    })
+
+    this.#cvs = new OffscreenCanvas(
+      this.#opts.videoWidth,
+      this.#opts.fontSize + this.#opts.padding * 2
+    )
     this.#ctx = this.#cvs.getContext('2d')!
-    this.#ctx.fillStyle = this.#opts.color
+    this.#ctx.font = `${this.#opts.fontSize}px serif`
+    this.#ctx.textAlign = 'center'
+    this.#ctx.textBaseline = 'top'
 
     // 字幕的宽高 由内容决定
-    this.ready = Promise.resolve({ width: 0, height: 0 })
+    this.ready = Promise.resolve({
+      width: this.#cvs.width,
+      height: this.#cvs.height
+    })
+  }
+
+  #renderTxt (txt: string) {
+    const { width, height } = this.#cvs
+    this.#ctx.clearRect(0, 0, width, height)
+    this.#ctx.globalAlpha = 0.6
+    // 测试canvas背景
+    // this.#ctx.fillStyle = 'red'
+    // this.#ctx.fillRect(0, 0, this.#cvs.width, this.#cvs.height)
+
+    const { padding, color } = this.#opts
+
+    const txtMeas = this.#ctx.measureText(txt)
+    const centerY = width / 2
+    // 字幕背景
+    this.#ctx.fillStyle = '#000'
+    this.#ctx.fillRect(
+      centerY - txtMeas.actualBoundingBoxLeft - padding,
+      0,
+      txtMeas.width + padding,
+      height
+    )
+    this.#ctx.fillStyle = color
+    this.#ctx.globalAlpha = 1
+    this.#ctx.fillText(txt, centerY, padding)
   }
 
   async tick (time: number): Promise<{
@@ -76,7 +117,7 @@ export class EmbedSubtitles implements IClip {
       return { video: vf.clone(), state: 'success' }
     }
 
-    this.#ctx.fillText(it.text, 0, 0)
+    this.#renderTxt(it.text)
 
     const vf = new VideoFrame(this.#cvs, {
       timestamp: time,
@@ -85,10 +126,7 @@ export class EmbedSubtitles implements IClip {
     this.#lastVF?.close()
     this.#lastVF = vf
 
-    return {
-      video: vf.clone(),
-      state: 'success'
-    }
+    return { video: vf.clone(), state: 'success' }
   }
 
   destroy () {
@@ -111,7 +149,7 @@ function srtTimeToSeconds (time: string) {
 
 function parseSrtLine (line: string) {
   const match = line.match(
-    /(\d{2}:\d{2}:\d{2},\d{3}) --> (\d{2}:\d{2}:\d{2},\d{3})\n((?:.|\n)*)/m
+    /(\d{2}:\d{2}:\d{2},\d{3}) --> (\d{2}:\d{2}:\d{2},\d{3})\s+((?:.|\n)*)/m
   )
 
   if (match == null) throw Error(`line format error: ${line}`)
@@ -119,6 +157,7 @@ function parseSrtLine (line: string) {
   return {
     start: srtTimeToSeconds(match[1]),
     end: srtTimeToSeconds(match[2]),
+    // fixme: 换行字幕没有第二行
     text: match[3].trim()
   }
 }
@@ -127,8 +166,8 @@ function parseSrt (srt: string) {
   const lines = srt
     .trim()
     // 第一个序号和换行符
-    .replace(/\d+\n/, '')
-    .split(/\n\n\d+\n/g)
+    .replace(/\d+\s*\n/, '')
+    .split(/\s+\d+\s+/g)
 
   return lines.map(line => parseSrtLine(line))
 }
