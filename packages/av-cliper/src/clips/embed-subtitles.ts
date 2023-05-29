@@ -20,10 +20,10 @@ export class EmbedSubtitles implements IClip {
   }> = []
 
   #opts: Required<IEmbedSubtitlesOpts> = {
-    color: '#000',
+    color: '#FFF',
     textBgColor: null,
     type: 'srt',
-    fontSize: 50,
+    fontSize: 30,
     fontFamily: 'Microsoft YaHei',
     videoWidth: 1280,
     videoHeight: 720
@@ -37,7 +37,7 @@ export class EmbedSubtitles implements IClip {
   #lineHeight = 0
   #linePadding = 0
 
-  constructor (content: string, opts?: IEmbedSubtitlesOpts) {
+  constructor (content: string, opts: IEmbedSubtitlesOpts) {
     this.#subtitles = parseSrt(content).map(({ start, end, text }) => ({
       start: start * 1e6,
       end: end * 1e6,
@@ -48,7 +48,7 @@ export class EmbedSubtitles implements IClip {
     this.#opts = Object.assign(this.#opts, opts)
     // 如果需要绘制背景，则需要给文字添加边距
     this.#linePadding =
-      opts?.textBgColor == null ? 0 : (opts?.fontSize ?? 50) * 0.2
+      opts.textBgColor == null ? 0 : (opts.fontSize ?? 50) * 0.2
 
     const { fontSize, fontFamily, videoWidth, videoHeight } = this.#opts
     this.#lineHeight = fontSize + this.#linePadding * 2
