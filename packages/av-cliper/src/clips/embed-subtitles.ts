@@ -1,11 +1,13 @@
 import { IClip } from './iclip'
 
 interface IEmbedSubtitlesOpts {
-  color: string
-  type: 'srt'
-  fontSize: number
-  padding: number
+  color?: string
+  textBgColor?: string | null
+  type?: 'srt'
+  fontFamily?: string
+  fontSize?: number
   videoWidth: number
+  videoHeight: number
 }
 
 export class EmbedSubtitles implements IClip {
@@ -17,12 +19,14 @@ export class EmbedSubtitles implements IClip {
     text: string
   }> = []
 
-  #opts: IEmbedSubtitlesOpts = {
+  #opts: Required<IEmbedSubtitlesOpts> = {
     color: '#000',
+    textBgColor: null,
     type: 'srt',
     fontSize: 50,
+    fontFamily: 'Microsoft YaHei',
     videoWidth: 1280,
-    padding: 10
+    videoHeight: 720
   }
 
   #cvs: OffscreenCanvas
@@ -30,7 +34,10 @@ export class EmbedSubtitles implements IClip {
 
   #lastVF: VideoFrame | null = null
 
-  constructor (content: string, opts?: Partial<IEmbedSubtitlesOpts>) {
+  #lineHeight = 0
+  #linePadding = 0
+
+  constructor (content: string, opts?: IEmbedSubtitlesOpts) {
     this.#subtitles = parseSrt(content).map(({ start, end, text }) => ({
       start: start * 1e6,
       end: end * 1e6,
@@ -38,50 +45,67 @@ export class EmbedSubtitles implements IClip {
     }))
     if (this.#subtitles.length === 0) throw Error('No subtitles content')
 
-    this.#opts = Object.assign(this.#opts, opts, {
-      // 未配置padding，默认 字体 20%
-      padding: opts?.padding ?? (opts?.fontSize ?? 50) * 0.2
-    })
+    this.#opts = Object.assign(this.#opts, opts)
+    // 如果需要绘制背景，则需要给文字添加边距
+    this.#linePadding =
+      opts?.textBgColor == null ? 0 : (opts?.fontSize ?? 50) * 0.2
 
-    this.#cvs = new OffscreenCanvas(
-      this.#opts.videoWidth,
-      this.#opts.fontSize + this.#opts.padding * 2
-    )
+    const { fontSize, fontFamily, videoWidth, videoHeight } = this.#opts
+    this.#lineHeight = fontSize + this.#linePadding * 2
+    this.#cvs = new OffscreenCanvas(videoWidth, videoHeight)
     this.#ctx = this.#cvs.getContext('2d')!
-    this.#ctx.font = `${this.#opts.fontSize}px serif`
+    this.#ctx.font = `${fontSize}px ${fontFamily}`
     this.#ctx.textAlign = 'center'
     this.#ctx.textBaseline = 'top'
 
     // 字幕的宽高 由内容决定
     this.ready = Promise.resolve({
-      width: this.#cvs.width,
-      height: this.#cvs.height
+      width: videoWidth,
+      height: videoHeight
     })
   }
 
   #renderTxt (txt: string) {
+    const lines = txt
+      .split('\n')
+      .reverse()
+      .map(t => t.trim())
+
     const { width, height } = this.#cvs
     this.#ctx.clearRect(0, 0, width, height)
     this.#ctx.globalAlpha = 0.6
     // 测试canvas背景
-    // this.#ctx.fillStyle = 'red'
-    // this.#ctx.fillRect(0, 0, this.#cvs.width, this.#cvs.height)
+    this.#ctx.fillStyle = 'red'
+    this.#ctx.fillRect(0, 0, this.#cvs.width, this.#cvs.height)
 
-    const { padding, color } = this.#opts
+    const { color, fontSize, textBgColor } = this.#opts
 
-    const txtMeas = this.#ctx.measureText(txt)
-    const centerY = width / 2
-    // 字幕背景
-    this.#ctx.fillStyle = '#000'
-    this.#ctx.fillRect(
-      centerY - txtMeas.actualBoundingBoxLeft - padding,
-      0,
-      txtMeas.width + padding,
-      height
-    )
-    this.#ctx.fillStyle = color
-    this.#ctx.globalAlpha = 1
-    this.#ctx.fillText(txt, centerY, padding)
+    let offsetBottom = fontSize * 0.5
+    for (const line of lines) {
+      const txtMeas = this.#ctx.measureText(line)
+      const centerY = width / 2
+      if (textBgColor != null) {
+        // 字幕背景
+        this.#ctx.fillStyle = textBgColor
+        this.#ctx.globalAlpha = 0.6
+        this.#ctx.fillRect(
+          centerY - txtMeas.actualBoundingBoxLeft - this.#linePadding,
+          height - offsetBottom - this.#lineHeight,
+          txtMeas.width + this.#linePadding * 2,
+          this.#lineHeight
+        )
+      }
+
+      this.#ctx.fillStyle = color
+      this.#ctx.globalAlpha = 1
+      this.#ctx.fillText(
+        line,
+        centerY,
+        height - offsetBottom - this.#lineHeight + this.#linePadding
+      )
+
+      offsetBottom += this.#lineHeight + fontSize * 0.2
+    }
   }
 
   async tick (time: number): Promise<{
@@ -149,7 +173,7 @@ function srtTimeToSeconds (time: string) {
 
 function parseSrtLine (line: string) {
   const match = line.match(
-    /(\d{2}:\d{2}:\d{2},\d{3}) --> (\d{2}:\d{2}:\d{2},\d{3})\s+((?:.|\n)*)/m
+    /(\d{2}:\d{2}:\d{2},\d{3}) --> (\d{2}:\d{2}:\d{2},\d{3})(?:\r|\n)+((?:.|(?:\r|\n))*)/m
   )
 
   if (match == null) throw Error(`line format error: ${line}`)
@@ -163,11 +187,12 @@ function parseSrtLine (line: string) {
 }
 
 function parseSrt (srt: string) {
+  // fixme: 当某行字幕全是数字时，解析结果错误
   const lines = srt
     .trim()
     // 第一个序号和换行符
-    .replace(/\d+\s*\n/, '')
-    .split(/\s+\d+\s+/g)
+    .replace(/\d+(?:\r|\n)*/, '')
+    .split(/(?:\r|\n)+\d+(?:\r|\n)+/g)
 
   return lines.map(line => parseSrtLine(line))
 }
