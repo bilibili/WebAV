@@ -89,7 +89,7 @@ export class Combinator {
     this.#comItems.sort((a, b) => a.sprite.zIndex - b.sprite.zIndex)
   }
 
-  output (): ReadableStream<ArrayBuffer> {
+  output (): ReadableStream<Uint8Array> {
     if (this.#comItems.length === 0) throw Error('No clip added')
 
     const runState = {
