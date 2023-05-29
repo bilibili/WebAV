@@ -3,6 +3,7 @@ import { Combinator } from '../src/combinator'
 import { Log } from '../src/log'
 import { OffscreenSprite } from '../src/offscreen-sprite'
 import { renderTxt2ImgBitmap } from '../src/dom-utils'
+import { EmbedSubtitles } from '../src/clips/embed-subtitles'
 
 const cvs = document.querySelector('canvas') as HTMLCanvasElement
 const ctx = cvs.getContext('2d')!
@@ -124,6 +125,25 @@ document.querySelector('#gif-m4a')?.addEventListener('click', () => {
     )
     const resp2 = await fetch('./public/audio/44.1kHz-2chan.m4a')
     const spr2 = new OffscreenSprite('s2', new AudioClip(resp2.body!))
+    const com = new Combinator({ width: 1280, height: 720 })
+    await com.add(spr1, { duration: 10, offset: 0 })
+    await com.add(spr2, { duration: 10, offset: 0 })
+    await com.output().pipeTo(await createFileWriter('mp4'))
+  })()
+})
+
+document.querySelector('#mp4-srt')?.addEventListener('click', () => {
+  ;(async () => {
+    const resp1 = await fetch('./public/video/0.mp4')
+    const spr1 = new OffscreenSprite('s1', new MP4Clip(resp1.body!))
+    const resp2 = await fetch('./public/subtitles/test-sample.srt')
+    const spr2 = new OffscreenSprite(
+      's2',
+      new EmbedSubtitles(await resp2.text(), {
+        videoWidth: 1280,
+        videoHeight: 720
+      })
+    )
     const com = new Combinator({ width: 1280, height: 720 })
     await com.add(spr1, { duration: 10, offset: 0 })
     await com.add(spr2, { duration: 10, offset: 0 })
