@@ -44,7 +44,10 @@ const txt = `
 `
 
 test('EmbedSubtitles', async () => {
-  const es = new EmbedSubtitles(txt, {})
+  const es = new EmbedSubtitles(txt, {
+    videoWidth: 1280,
+    videoHeight: 720
+  })
   const vf0 = (await es.tick(0)).video
   // 第一个字幕还未显示出来
   expect(vf0?.timestamp).toBe(0)
