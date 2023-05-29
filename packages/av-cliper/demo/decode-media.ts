@@ -138,7 +138,10 @@ document.querySelector('#decode-subtitles')?.addEventListener('click', () => {
     const resp1 = await fetch(subtitles[subtitlesType])
 
     const es = new EmbedSubtitles(await resp1.text(), {
-      fontSize: 80,
+      videoWidth: 1280,
+      videoHeight: 720,
+      fontSize: 40,
+      textBgColor: '#000000',
       color: 'yellow'
     })
 
