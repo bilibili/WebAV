@@ -1,6 +1,6 @@
 import { decodeImg, sleep } from '../src/av-utils'
 import { AudioClip, DEFAULT_AUDIO_SAMPLE_RATE, MP4Clip } from '../src/clips'
-import { EmbedSubtitles } from '../src/clips/embed-subtitles'
+import { EmbedSubtitlesClip } from '../src/clips/embed-subtitles-clip'
 import { Log } from '../src/log'
 
 const cvs = document.querySelector('canvas') as HTMLCanvasElement
@@ -137,7 +137,7 @@ document.querySelector('#decode-subtitles')?.addEventListener('click', () => {
     // @ts-expect-error
     const resp1 = await fetch(subtitles[subtitlesType])
 
-    const es = new EmbedSubtitles(await resp1.text(), {
+    const es = new EmbedSubtitlesClip(await resp1.text(), {
       videoWidth: 1280,
       videoHeight: 720,
       fontSize: 40,

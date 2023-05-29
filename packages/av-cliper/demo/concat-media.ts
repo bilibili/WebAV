@@ -3,7 +3,7 @@ import { Combinator } from '../src/combinator'
 import { Log } from '../src/log'
 import { OffscreenSprite } from '../src/offscreen-sprite'
 import { renderTxt2ImgBitmap } from '../src/dom-utils'
-import { EmbedSubtitles } from '../src/clips/embed-subtitles'
+import { EmbedSubtitlesClip } from '../src/clips/embed-subtitles-clip'
 
 const cvs = document.querySelector('canvas') as HTMLCanvasElement
 const ctx = cvs.getContext('2d')!
@@ -139,7 +139,7 @@ document.querySelector('#mp4-srt')?.addEventListener('click', () => {
     const resp2 = await fetch('./public/subtitles/test-sample.srt')
     const spr2 = new OffscreenSprite(
       's2',
-      new EmbedSubtitles(await resp2.text(), {
+      new EmbedSubtitlesClip(await resp2.text(), {
         videoWidth: 1280,
         videoHeight: 720
       })

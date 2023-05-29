@@ -10,7 +10,7 @@ interface IEmbedSubtitlesOpts {
   videoHeight: number
 }
 
-export class EmbedSubtitles implements IClip {
+export class EmbedSubtitlesClip implements IClip {
   ready: Promise<{ width: number; height: number }>
 
   #subtitles: Array<{
