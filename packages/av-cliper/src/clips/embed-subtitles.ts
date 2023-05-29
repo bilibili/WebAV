@@ -72,34 +72,46 @@ export class EmbedSubtitles implements IClip {
       .map(t => t.trim())
 
     const { width, height } = this.#cvs
-    this.#ctx.clearRect(0, 0, width, height)
-    this.#ctx.globalAlpha = 0.6
-    // 测试canvas背景
-    this.#ctx.fillStyle = 'red'
-    this.#ctx.fillRect(0, 0, this.#cvs.width, this.#cvs.height)
 
     const { color, fontSize, textBgColor } = this.#opts
+    const ctx = this.#ctx
+
+    ctx.clearRect(0, 0, width, height)
+    ctx.globalAlpha = 0.6
+    // 测试canvas背景
+    // ctx.fillStyle = 'red'
+    // ctx.fillRect(0, 0, this.#cvs.width, this.#cvs.height)
 
     let offsetBottom = fontSize * 0.5
-    for (const line of lines) {
-      const txtMeas = this.#ctx.measureText(line)
+    for (const lineStr of lines) {
+      const txtMeas = ctx.measureText(lineStr)
       const centerY = width / 2
       if (textBgColor != null) {
+        ctx.shadowOffsetX = 0
+        ctx.shadowOffsetY = 0
+        ctx.shadowBlur = 0
         // 字幕背景
-        this.#ctx.fillStyle = textBgColor
-        this.#ctx.globalAlpha = 0.6
-        this.#ctx.fillRect(
+        ctx.fillStyle = textBgColor
+        ctx.globalAlpha = 0.5
+        ctx.fillRect(
           centerY - txtMeas.actualBoundingBoxLeft - this.#linePadding,
           height - offsetBottom - this.#lineHeight,
           txtMeas.width + this.#linePadding * 2,
           this.#lineHeight
         )
+      } else {
       }
 
-      this.#ctx.fillStyle = color
-      this.#ctx.globalAlpha = 1
-      this.#ctx.fillText(
-        line,
+      ctx.shadowColor = '#000'
+      ctx.shadowOffsetX = 2
+      ctx.shadowOffsetY = 2
+      ctx.shadowBlur = 2
+
+      ctx.globalAlpha = 1
+
+      ctx.fillStyle = color
+      ctx.fillText(
+        lineStr,
         centerY,
         height - offsetBottom - this.#lineHeight + this.#linePadding
       )
