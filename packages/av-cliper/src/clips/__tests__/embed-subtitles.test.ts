@@ -1,6 +1,6 @@
 import { expect, test } from 'vitest'
 import '../../__tests__/mock'
-import { EmbedSubtitles } from '../embed-subtitles'
+import { EmbedSubtitlesClip } from '../embed-subtitles-clip'
 
 const txt = `
 
@@ -44,7 +44,7 @@ const txt = `
 `
 
 test('EmbedSubtitles', async () => {
-  const es = new EmbedSubtitles(txt, {
+  const es = new EmbedSubtitlesClip(txt, {
     videoWidth: 1280,
     videoHeight: 720
   })
