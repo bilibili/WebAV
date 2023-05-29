@@ -141,7 +141,7 @@ document.querySelector('#decode-subtitles')?.addEventListener('click', () => {
       videoWidth: 1280,
       videoHeight: 720,
       fontSize: 40,
-      textBgColor: '#000000',
+      // textBgColor: '#000000',
       color: 'yellow'
     })
 
