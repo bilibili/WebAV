@@ -1,5 +1,6 @@
 export * from './dom-utils'
 export * from './av-utils'
+export * from './mp4-utils'
 
 export * from './rect'
 export { MP4Clip, AudioClip, ImgClip } from './clips'
