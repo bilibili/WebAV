@@ -96,7 +96,7 @@ export function demuxcode (
 
       cbs.onReady(info)
     },
-    onSamples (id, type, samples) {
+    onSamples (_, type, samples) {
       for (let i = 0; i < samples.length; i += 1) {
         const s = samples[i]
         if (firstDecodeVideo && s.is_sync) lastVideoKeyChunkIdx = i
@@ -119,8 +119,6 @@ export function demuxcode (
           }
         }
       }
-
-      mp4File.releaseUsedSamples(id, samples.length)
     },
     onEnded: () => {
       if (mp4Info == null) throw Error('MP4 demux unready')
@@ -461,7 +459,10 @@ function demuxMP4 (
 ) {
   const { file, stop } = stream2file(stream)
 
-  file.onSamples = cbs.onSamples
+  file.onSamples = (id, type, samples) => {
+    cbs.onSamples(id, type, samples)
+    file.releaseUsedSamples(id, samples.length)
+  }
 
   file.onReady = async info => {
     await cbs.onReady(file, info)
