@@ -210,6 +210,7 @@ declare module 'mp4box' {
 
     addTrack: (opts: VideoTrackOpts | AudioTrackOpts) => number
     addSample: (trackId: number, buf: ArrayBuffer, sample: SampleOpts) => void
+    releaseUsedSamples(id: number, usedCount: number): void
 
     getTrackById: (id: number) => TrakBoxParser
     setExtractionOptions: (
