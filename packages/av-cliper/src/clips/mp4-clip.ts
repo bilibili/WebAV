@@ -16,6 +16,7 @@ export class MP4Clip implements IClip {
   ready: Promise<{ width: number; height: number }>
 
   #destroyed = false
+  #decodeEnded = false
 
   #meta = {
     // 微秒
@@ -37,7 +38,11 @@ export class MP4Clip implements IClip {
 
   constructor (
     rs: ReadableStream<Uint8Array>,
-    opts: { audio: boolean | { volume: number } } = { audio: true }
+    opts: {
+      audio?: boolean | { volume: number }
+      start?: number
+      end?: number
+    } = {}
   ) {
     this.ready = new Promise(resolve => {
       let lastVf: VideoFrame | null = null
@@ -47,13 +52,17 @@ export class MP4Clip implements IClip {
           : 1
       this.#demuxcoder = demuxcode(
         rs,
-        { audio: opts.audio !== false },
+        {
+          audio: opts.audio !== false,
+          start: (opts.start ?? 0) * 1e6,
+          end: (opts.end ?? Infinity) * 1e6
+        },
         {
           onReady: info => {
             this.#hasAudioTrack = info.audioTracks.length > 0
             const videoTrack = info.videoTracks[0]
             this.#meta = {
-              duration: (info.duration / info.timescale) * 1e6,
+              duration: 0,
               width: videoTrack.track_width,
               height: videoTrack.track_height,
               audioSampleRate: DEFAULT_AUDIO_SAMPLE_RATE,
@@ -64,7 +73,6 @@ export class MP4Clip implements IClip {
               width: videoTrack.track_width,
               height: videoTrack.track_height
             })
-            this.#demuxcoder?.seek(0)
           },
           onVideoOutput: vf => {
             this.#videoFrames.push(vf)
@@ -74,6 +82,7 @@ export class MP4Clip implements IClip {
             this.#audioData2PCMBuf(ad)
           },
           onComplete: () => {
+            this.#decodeEnded = true
             Log.info('MP4Clip decode complete')
             if (lastVf == null) throw Error('mp4 parse error, no video frame')
             this.#meta.duration = lastVf.timestamp + (lastVf.duration ?? 0)
@@ -135,7 +144,8 @@ export class MP4Clip implements IClip {
     if (this.#videoFrames.length === 0) {
       if (
         this.#destroyed ||
-        this.#demuxcoder?.getDecodeQueueSize().video === 0
+        (this.#decodeEnded &&
+          this.#demuxcoder?.getDecodeQueueSize().video === 0)
       ) {
         return null
       }
@@ -189,7 +199,7 @@ export class MP4Clip implements IClip {
     state: 'success' | 'done'
   }> {
     if (time < this.#ts) throw Error('time not allow rollback')
-    if (time >= this.#meta.duration) {
+    if (this.#decodeEnded && time >= this.#meta.duration) {
       return { audio: [], state: 'done' }
     }
 
