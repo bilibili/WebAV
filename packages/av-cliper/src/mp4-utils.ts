@@ -38,7 +38,7 @@ interface IWorkerOpts {
 
 export function demuxcode (
   stream: ReadableStream<Uint8Array>,
-  opts: { audio: boolean },
+  opts: { audio: boolean; start: number; end: number },
   cbs: {
     onReady: (info: MP4Info) => void
     onVideoOutput: (vf: VideoFrame) => void
@@ -46,7 +46,6 @@ export function demuxcode (
     onComplete: () => void
   }
 ): {
-  seek: (time: number) => void
   stop: () => void
   getDecodeQueueSize: () => {
     video: number
@@ -79,17 +78,14 @@ export function demuxcode (
   })
 
   let mp4Info: MP4Info | null = null
-  let vTrackInfo: MP4VideoTrack | null = null
-  let aTrackInfo: MP4AudioTrack | null = null
 
-  let totalVideoSamples: MP4Sample[] = []
-  let totalAudioSamples: MP4Sample[] = []
   // todo: 大文件时需要流式加载
+  // 第一个解码的 sample（EncodedVideoChunk） 必须是关键帧（is_sync）
+  let firstDecodeVideo = true
+  let lastVideoKeyChunkIdx = 0
   const { file: mp4File, stop: stopReadStream } = demuxMP4(stream, {
     onReady: (file, info) => {
       mp4Info = info
-      vTrackInfo = info.videoTracks[0]
-      aTrackInfo = info.audioTracks[0]
       const { videoDecoderConf, audioDecoderConf } = extractFileConfig(
         file,
         info
@@ -97,22 +93,35 @@ export function demuxcode (
       if (videoDecoderConf != null) vdecoder.configure(videoDecoderConf)
       if (opts.audio && audioDecoderConf != null)
         adecoder.configure(audioDecoderConf)
+
+      cbs.onReady(info)
     },
     onSamples (_, type, samples) {
-      if (type === 'video') {
-        totalVideoSamples = totalVideoSamples.concat(samples)
-      } else if (opts.audio && type === 'audio') {
-        totalAudioSamples = totalAudioSamples.concat(samples)
+      for (let i = 0; i < samples.length; i += 1) {
+        const s = samples[i]
+        if (firstDecodeVideo && s.is_sync) lastVideoKeyChunkIdx = i
+
+        const cts = (1e6 * s.cts) / s.timescale
+        if (cts >= opts.start && cts <= opts.end) {
+          if (type === 'video') {
+            if (firstDecodeVideo && !s.is_sync) {
+              // 首次解码需要从 key chunk 开始
+              firstDecodeVideo = false
+              for (let j = lastVideoKeyChunkIdx; j < i; j++) {
+                vdecoder.decode(
+                  new EncodedVideoChunk(mp4Sample2ChunkOpts(samples[j]))
+                )
+              }
+            }
+            vdecoder.decode(new EncodedVideoChunk(mp4Sample2ChunkOpts(s)))
+          } else if (type === 'audio') {
+            adecoder.decode(new EncodedAudioChunk(mp4Sample2ChunkOpts(s)))
+          }
+        }
       }
     },
     onEnded: () => {
       if (mp4Info == null) throw Error('MP4 demux unready')
-      // 注意：所有 samples 的 duration 累加，与解码后的 VideoFrame 累加 值接近，但不相等
-      mp4Info.duration = totalVideoSamples.reduce(
-        (acc, cur) => acc + cur.duration,
-        0
-      )
-      cbs.onReady(mp4Info)
     }
   })
 
@@ -120,74 +129,16 @@ export function demuxcode (
     stop: () => {
       stopResetEndTimer = true
       mp4File.stop()
-      vdecoder.close()
-      adecoder.close()
+      if (vdecoder.state !== 'closed') vdecoder.close()
+      if (adecoder.state !== 'closed') adecoder.close()
       stopReadStream()
       stream.cancel()
     },
     getDecodeQueueSize: () => ({
       video: vdecoder.decodeQueueSize,
       audio: adecoder.decodeQueueSize
-    }),
-    seek: time => {
-      if (vTrackInfo != null) {
-        const startIdx = findStartSampleIdx(
-          totalVideoSamples,
-          time * vTrackInfo.timescale
-        )
-        // samples 全部 推入解码器，解码器有维护队列
-        const samples = totalVideoSamples.slice(startIdx)
-        samples.forEach(s => {
-          vdecoder.decode(
-            new EncodedVideoChunk({
-              type: s.is_sync ? 'key' : 'delta',
-              timestamp: (1e6 * s.cts) / s.timescale,
-              duration: (1e6 * s.duration) / s.timescale,
-              data: s.data
-            })
-          )
-        })
-      }
-      if (opts.audio && aTrackInfo != null) {
-        const startIdx = findStartSampleIdx(
-          totalAudioSamples,
-          time * aTrackInfo.timescale
-        )
-        // samples 全部 推入解码器，解码器有维护队列
-        const samples = totalAudioSamples.slice(startIdx)
-        samples.forEach(s => {
-          adecoder.decode(
-            new EncodedAudioChunk({
-              type: s.is_sync ? 'key' : 'delta',
-              timestamp: (1e6 * s.cts) / s.timescale,
-              duration: (1e6 * s.duration) / s.timescale,
-              data: s.data
-            })
-          )
-        })
-      }
-    }
+    })
   }
-}
-
-/**
- * 找到最近的 关键帧 索引
- */
-function findStartSampleIdx (samples: MP4Sample[], time: number): number {
-  const endIdx = samples.findIndex(s => s.cts >= time)
-  const targetSamp = samples[endIdx]
-
-  if (targetSamp == null) throw Error('Not found frame')
-  let startIdx = 0
-  if (!targetSamp.is_sync) {
-    startIdx = endIdx - 1
-    while (true) {
-      if (startIdx <= 0) break
-      if (samples[startIdx].is_sync) break
-      startIdx -= 1
-    }
-  }
-  return startIdx
 }
 
 export function recodemux (opts: IWorkerOpts): {
@@ -852,4 +803,15 @@ export function mixinMP4AndAudio (
   })
 
   return outStream
+}
+
+function mp4Sample2ChunkOpts (
+  s: MP4Sample
+): EncodedAudioChunkInit | EncodedVideoChunkInit {
+  return {
+    type: (s.is_sync ? 'key' : 'delta') as EncodedVideoChunkType,
+    timestamp: (1e6 * s.cts) / s.timescale,
+    duration: (1e6 * s.duration) / s.timescale,
+    data: s.data
+  }
 }
