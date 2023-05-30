@@ -70,7 +70,7 @@ export class Combinator {
         sampleSize: 16,
         channelCount: 2
       },
-      bitrate: 1_500_000
+      bitrate: 2_000_000
     })
   }
 

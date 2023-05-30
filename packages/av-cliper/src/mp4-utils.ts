@@ -302,7 +302,7 @@ function createVideoEncoder (
   encoder.configure({
     codec: 'avc1.42E01F',
     framerate: videoOpts.expectFPS,
-    hardwareAcceleration: 'prefer-hardware',
+    // hardwareAcceleration: 'prefer-hardware',
     // 码率
     bitrate: opts.bitrate,
     width: videoOpts.width,
