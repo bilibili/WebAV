@@ -14,6 +14,7 @@ interface IComItem {
 interface ICombinatorOpts {
   width: number
   height: number
+  bitrate?: number
   bgColor?: string
 }
 
@@ -70,7 +71,7 @@ export class Combinator {
         sampleSize: 16,
         channelCount: 2
       },
-      bitrate: 2_000_000
+      bitrate: opts.bitrate ?? 2_000_000
     })
   }
 
