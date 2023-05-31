@@ -78,7 +78,6 @@ export function demuxcode (
 
   let mp4Info: MP4Info | null = null
 
-  // todo: 大文件时需要流式加载
   // 第一个解码的 sample（EncodedVideoChunk） 必须是关键帧（is_sync）
   let firstDecodeVideo = true
   let lastVideoKeyChunkIdx = 0
@@ -130,22 +129,10 @@ export function demuxcode (
             }
           }
           mp4File?.releaseUsedSamples(curId, samples.length)
-
-          if (vdecoder.decodeQueueSize > 100 && !paused) {
-            paused = true
-            streamReaderCtrl.pause()
-          }
         }
       }
     }
   )
-  let paused = false
-  vdecoder.ondequeue = () => {
-    if (vdecoder.decodeQueueSize <= 100 && paused) {
-      paused = false
-      streamReaderCtrl.run()
-    }
-  }
   // const { file: mp4File, stop: stopReadStream } = demuxMP4(stream, {
   //   onReady: (file, info) => {
   //     mp4Info = info
@@ -209,6 +196,7 @@ export function recodemux (opts: IWorkerOpts): {
   close: TCleanFn
   mp4file: MP4File
   progress: number
+  getEecodeQueueSize: () => { video: number; audio: number }
   onEnded?: TCleanFn
 } {
   const mp4file = mp4box.createFile()
@@ -258,6 +246,10 @@ export function recodemux (opts: IWorkerOpts): {
         checkEnded()
       }
     },
+    getEecodeQueueSize: () => ({
+      video: vEncoder.encodeQueueSize,
+      audio: aEncoder?.encodeQueueSize ?? 0
+    }),
     close: () => {
       clearInterval(endCheckTimer)
       vEncoder.flush().catch(Log.error)

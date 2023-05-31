@@ -1,7 +1,7 @@
 import { OffscreenSprite } from './offscreen-sprite'
 import { file2stream, recodemux } from './mp4-utils'
 import { Log } from './log'
-import { mixPCM } from './av-utils'
+import { mixPCM, sleep } from './av-utils'
 import { EventTool } from './event-tool'
 import { DEFAULT_AUDIO_SAMPLE_RATE } from './clips'
 
@@ -186,6 +186,8 @@ export class Combinator {
       ctx.clearRect(0, 0, width, height)
 
       frameCnt += 1
+      // VideoFrame 非常占用 GPU 显存，避免显存压力过大，稍等一下整体性能更优
+      if (this.#remux.getEecodeQueueSize().video > 100) await sleep(5)
     }
 
     this.#comItems.forEach(it => it.sprite.destroy())
