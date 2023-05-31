@@ -66,14 +66,12 @@ export function demuxcode (
   const vdecoder = new VideoDecoder({
     output: vf => {
       cbs.onVideoOutput(vf)
-      resetEndTimer()
     },
     error: Log.error
   })
   const adecoder = new AudioDecoder({
     output: audioData => {
       cbs.onAudioOutput(audioData)
-      resetEndTimer()
     },
     error: Log.error
   })
@@ -84,56 +82,119 @@ export function demuxcode (
   // 第一个解码的 sample（EncodedVideoChunk） 必须是关键帧（is_sync）
   let firstDecodeVideo = true
   let lastVideoKeyChunkIdx = 0
-  const { file: mp4File, stop: stopReadStream } = demuxMP4(stream, {
-    onReady: (file, info) => {
-      mp4Info = info
-      const { videoDecoderConf, audioDecoderConf } = extractFileConfig(
-        file,
-        info
-      )
-      if (videoDecoderConf != null) vdecoder.configure(videoDecoderConf)
-      if (opts.audio && audioDecoderConf != null)
-        adecoder.configure(audioDecoderConf)
+  let mp4File: MP4File | null = null
+  const streamReaderCtrl = autoReadStream(
+    stream.pipeThrough(new SampleTransform()),
+    {
+      onDone: () => {
+        if (mp4Info == null) throw Error('MP4 demux unready')
+        resetEndTimer()
+      },
+      onChunk: ({ chunkType, data }) => {
+        if (chunkType === 'ready') {
+          mp4File = data.file
+          mp4Info = data.info
+          const { videoDecoderConf, audioDecoderConf } = extractFileConfig(
+            data.file,
+            data.info
+          )
+          if (videoDecoderConf != null) vdecoder.configure(videoDecoderConf)
+          if (opts.audio && audioDecoderConf != null)
+            adecoder.configure(audioDecoderConf)
 
-      cbs.onReady(info)
-    },
-    onSamples (_, type, samples) {
-      for (let i = 0; i < samples.length; i += 1) {
-        const s = samples[i]
-        if (firstDecodeVideo && s.is_sync) lastVideoKeyChunkIdx = i
+          cbs.onReady(data.info)
+          return
+        }
+        if (chunkType === 'samples') {
+          const { id: curId, type, samples } = data
+          for (let i = 0; i < samples.length; i += 1) {
+            const s = samples[i]
+            if (firstDecodeVideo && s.is_sync) lastVideoKeyChunkIdx = i
 
-        const cts = (1e6 * s.cts) / s.timescale
-        if (cts >= opts.start && cts <= opts.end) {
-          if (type === 'video') {
-            if (firstDecodeVideo && !s.is_sync) {
-              // 首次解码需要从 key chunk 开始
-              firstDecodeVideo = false
-              for (let j = lastVideoKeyChunkIdx; j < i; j++) {
-                vdecoder.decode(
-                  new EncodedVideoChunk(mp4Sample2ChunkOpts(samples[j]))
-                )
+            const cts = (1e6 * s.cts) / s.timescale
+            if (cts >= opts.start && cts <= opts.end) {
+              if (type === 'video') {
+                if (firstDecodeVideo && !s.is_sync) {
+                  // 首次解码需要从 key chunk 开始
+                  firstDecodeVideo = false
+                  for (let j = lastVideoKeyChunkIdx; j < i; j++) {
+                    vdecoder.decode(
+                      new EncodedVideoChunk(sample2ChunkOpts(samples[j]))
+                    )
+                  }
+                }
+                vdecoder.decode(new EncodedVideoChunk(sample2ChunkOpts(s)))
+              } else if (type === 'audio') {
+                adecoder.decode(new EncodedAudioChunk(sample2ChunkOpts(s)))
               }
             }
-            vdecoder.decode(new EncodedVideoChunk(mp4Sample2ChunkOpts(s)))
-          } else if (type === 'audio') {
-            adecoder.decode(new EncodedAudioChunk(mp4Sample2ChunkOpts(s)))
+          }
+          mp4File?.releaseUsedSamples(curId, samples.length)
+
+          if (vdecoder.decodeQueueSize > 100 && !paused) {
+            paused = true
+            streamReaderCtrl.pause()
           }
         }
       }
-    },
-    onEnded: () => {
-      if (mp4Info == null) throw Error('MP4 demux unready')
     }
-  })
+  )
+  let paused = false
+  vdecoder.ondequeue = () => {
+    if (vdecoder.decodeQueueSize <= 100 && paused) {
+      paused = false
+      streamReaderCtrl.run()
+    }
+  }
+  // const { file: mp4File, stop: stopReadStream } = demuxMP4(stream, {
+  //   onReady: (file, info) => {
+  //     mp4Info = info
+  //     const { videoDecoderConf, audioDecoderConf } = extractFileConfig(
+  //       file,
+  //       info
+  //     )
+  //     if (videoDecoderConf != null) vdecoder.configure(videoDecoderConf)
+  //     if (opts.audio && audioDecoderConf != null)
+  //       adecoder.configure(audioDecoderConf)
+
+  //     cbs.onReady(info)
+  //   },
+  //   onSamples (_, type, samples) {
+  //     for (let i = 0; i < samples.length; i += 1) {
+  //       const s = samples[i]
+  //       if (firstDecodeVideo && s.is_sync) lastVideoKeyChunkIdx = i
+
+  //       const cts = (1e6 * s.cts) / s.timescale
+  //       if (cts >= opts.start && cts <= opts.end) {
+  //         if (type === 'video') {
+  //           if (firstDecodeVideo && !s.is_sync) {
+  //             // 首次解码需要从 key chunk 开始
+  //             firstDecodeVideo = false
+  //             for (let j = lastVideoKeyChunkIdx; j < i; j++) {
+  //               vdecoder.decode(
+  //                 new EncodedVideoChunk(sample2ChunkOpts(samples[j]))
+  //               )
+  //             }
+  //           }
+  //           vdecoder.decode(new EncodedVideoChunk(sample2ChunkOpts(s)))
+  //         } else if (type === 'audio') {
+  //           adecoder.decode(new EncodedAudioChunk(sample2ChunkOpts(s)))
+  //         }
+  //       }
+  //     }
+  //   },
+  //   onEnded: () => {
+  //     if (mp4Info == null) throw Error('MP4 demux unready')
+  //   }
+  // })
 
   return {
     stop: () => {
       stopResetEndTimer = true
-      mp4File.stop()
+      mp4File?.stop()
       if (vdecoder.state !== 'closed') vdecoder.close()
       if (adecoder.state !== 'closed') adecoder.close()
-      stopReadStream()
-      stream.cancel()
+      streamReaderCtrl.stop()
     },
     getDecodeQueueSize: () => ({
       video: vdecoder.decodeQueueSize,
@@ -332,6 +393,7 @@ export function stream2file (stream: ReadableStream<Uint8Array>): {
     stop: () => {
       stoped = true
       reader.releaseLock()
+      stream.cancel()
     }
   }
 }
@@ -346,7 +408,7 @@ export class SampleTransform {
         data: { info: MP4Info; file: MP4File }
       }
     | {
-        chunkType: 'sample'
+        chunkType: 'samples'
         data: { id: number; type: 'video' | 'audio'; samples: MP4Sample[] }
       }
   >
@@ -363,10 +425,12 @@ export class SampleTransform {
         start: ctrl => {
           file.onReady = info => {
             const vTrackId = info.videoTracks[0]?.id
-            if (vTrackId != null) file.setExtractionOptions(vTrackId, 'video')
+            if (vTrackId != null)
+              file.setExtractionOptions(vTrackId, 'video', { nbSamples: 100 })
 
             const aTrackId = info.audioTracks[0]?.id
-            if (aTrackId != null) file.setExtractionOptions(aTrackId, 'audio')
+            if (aTrackId != null)
+              file.setExtractionOptions(aTrackId, 'audio', { nbSamples: 100 })
 
             ctrl.enqueue({ chunkType: 'ready', data: { info, file } })
             file.start()
@@ -374,7 +438,7 @@ export class SampleTransform {
 
           file.onSamples = (id, type, samples) => {
             ctrl.enqueue({
-              chunkType: 'sample',
+              chunkType: 'samples',
               data: { id, type, samples }
             })
             outCtrlDesiredSize = ctrl.desiredSize ?? 0
@@ -649,7 +713,7 @@ export function fastConcatMP4 (streams: ReadableStream<Uint8Array>[]) {
               if (aTrackId === 0 && audioTrackConf != null) {
                 aTrackId = outfile.addTrack(audioTrackConf)
               }
-            } else if (chunkType === 'sample') {
+            } else if (chunkType === 'samples') {
               const { id: curId, type, samples } = data
               const trackId = type === 'video' ? vTrackId : aTrackId
               const offsetDTS = type === 'video' ? vDTS : aDTS
@@ -891,7 +955,7 @@ export function mixinMP4AndAudio (
   return outStream
 }
 
-function mp4Sample2ChunkOpts (
+function sample2ChunkOpts (
   s: MP4Sample
 ): EncodedAudioChunkInit | EncodedVideoChunkInit {
   return {

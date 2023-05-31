@@ -176,18 +176,36 @@ export function autoReadStream<ST extends ReadableStream> (
   }
 ) {
   const reader = stream.getReader()
+  let stoped = false
+  let paused = false
   async function run () {
     while (true) {
+      if (stoped) return
+
       const { value, done } = await reader.read()
       if (done) {
         cbs.onDone()
         return
       }
       cbs.onChunk(value)
+
+      while (paused) await sleep(5)
     }
   }
 
-  run().catch(err => {
-    throw err
-  })
+  run()
+
+  return {
+    stop: () => {
+      stoped = true
+      reader.releaseLock()
+      stream.cancel()
+    },
+    run: () => {
+      paused = false
+    },
+    pause: () => {
+      paused = true
+    }
+  }
 }
