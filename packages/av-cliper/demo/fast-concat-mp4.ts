@@ -42,7 +42,7 @@ async function createFileWriter (
 ): Promise<FileSystemWritableFileStream> {
   // @ts-expect-error
   const fileHandle = await window.showSaveFilePicker({
-    suggestedName: `WebAv-export.${extName}`
+    suggestedName: `WebAv-export-${Date.now()}.${extName}`
   })
   return fileHandle.createWritable()
 }
