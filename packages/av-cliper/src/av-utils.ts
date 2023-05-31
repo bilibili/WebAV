@@ -167,3 +167,27 @@ export function ringSliceFloat32Array (
   }
   return rs
 }
+
+export function autoReadStream<ST extends ReadableStream> (
+  stream: ST,
+  cbs: {
+    onChunk: ST extends ReadableStream<infer DT> ? (chunk: DT) => void : never
+    onDone: () => void
+  }
+) {
+  const reader = stream.getReader()
+  async function run () {
+    while (true) {
+      const { value, done } = await reader.read()
+      if (done) {
+        cbs.onDone()
+        return
+      }
+      cbs.onChunk(value)
+    }
+  }
+
+  run().catch(err => {
+    throw err
+  })
+}

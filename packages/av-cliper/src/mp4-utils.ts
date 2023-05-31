@@ -12,6 +12,7 @@ import mp4box, {
 import { Log } from './log'
 import { AudioTrackOpts } from 'mp4box'
 import {
+  autoReadStream,
   extractPCM4AudioData,
   mixPCM,
   ringSliceFloat32Array,
@@ -335,6 +336,82 @@ export function stream2file (stream: ReadableStream<Uint8Array>): {
   }
 }
 
+/**
+ * 将原始字节流转换成 MP4Sample 流
+ */
+export class SampleTransform {
+  readable: ReadableStream<
+    | {
+        chunkType: 'ready'
+        data: { info: MP4Info; file: MP4File }
+      }
+    | {
+        chunkType: 'sample'
+        data: { id: number; type: 'video' | 'audio'; samples: MP4Sample[] }
+      }
+  >
+
+  writable: WritableStream<Uint8Array>
+
+  #inputBufOffset = 0
+
+  constructor () {
+    const file = mp4box.createFile()
+    let outCtrlDesiredSize = 0
+    this.readable = new ReadableStream(
+      {
+        start: ctrl => {
+          file.onReady = info => {
+            const vTrackId = info.videoTracks[0]?.id
+            if (vTrackId != null) file.setExtractionOptions(vTrackId, 'video')
+
+            const aTrackId = info.audioTracks[0]?.id
+            if (aTrackId != null) file.setExtractionOptions(aTrackId, 'audio')
+
+            ctrl.enqueue({ chunkType: 'ready', data: { info, file } })
+            file.start()
+          }
+
+          file.onSamples = (id, type, samples) => {
+            ctrl.enqueue({
+              chunkType: 'sample',
+              data: { id, type, samples }
+            })
+            outCtrlDesiredSize = ctrl.desiredSize ?? 0
+          }
+          file.onFlush = () => {
+            ctrl.close()
+          }
+        },
+        pull: ctrl => {
+          outCtrlDesiredSize = ctrl.desiredSize ?? 0
+        }
+      },
+      {
+        highWaterMark: 1
+      }
+    )
+
+    this.writable = new WritableStream({
+      write: async ui8Arr => {
+        const inputBuf = ui8Arr.buffer as MP4ArrayBuffer
+        inputBuf.fileStart = this.#inputBufOffset
+        this.#inputBufOffset += inputBuf.byteLength
+        file.appendBuffer(inputBuf)
+
+        // 等待输出的数据被消费，最多有1000个sample
+        while (outCtrlDesiredSize < 0) {
+          await sleep(outCtrlDesiredSize * -1)
+        }
+      },
+      close: () => {
+        file.flush()
+        file.onFlush?.()
+      }
+    })
+  }
+}
+
 export function file2stream (
   file: MP4File,
   timeSlice: number,
@@ -556,41 +633,47 @@ export function fastConcatMP4 (streams: ReadableStream<Uint8Array>[]) {
     let lastASamp: any = null
     for (const stream of streams) {
       await new Promise<void>(async resolve => {
-        demuxMP4(stream, {
-          onReady: (file, info) => {
-            const { videoTrackConf, audioTrackConf } = extractFileConfig(
-              file,
-              info
-            )
-            if (vTrackId === 0 && videoTrackConf != null) {
-              vTrackId = outfile.addTrack(videoTrackConf)
-            }
-            if (aTrackId === 0 && audioTrackConf != null) {
-              aTrackId = outfile.addTrack(audioTrackConf)
-            }
-          },
-          onSamples: (_, type, samples) => {
-            const id = type === 'video' ? vTrackId : aTrackId
-            const offsetDTS = type === 'video' ? vDTS : aDTS
-            const offsetCTS = type === 'video' ? vCTS : aCTS
-            samples.forEach(s => {
-              outfile.addSample(id, s.data, {
-                duration: s.duration,
-                dts: s.dts + offsetDTS,
-                cts: s.cts + offsetCTS,
-                is_sync: s.is_sync
-              })
-            })
+        let curFile: MP4File | null = null
+        autoReadStream(stream.pipeThrough(new SampleTransform()), {
+          onDone: resolve,
+          onChunk: ({ chunkType, data }) => {
+            if (chunkType === 'ready') {
+              const { videoTrackConf, audioTrackConf } = extractFileConfig(
+                data.file,
+                data.info
+              )
+              curFile = data.file
+              if (vTrackId === 0 && videoTrackConf != null) {
+                vTrackId = outfile.addTrack(videoTrackConf)
+              }
+              if (aTrackId === 0 && audioTrackConf != null) {
+                aTrackId = outfile.addTrack(audioTrackConf)
+              }
+            } else if (chunkType === 'sample') {
+              const { id: curId, type, samples } = data
+              const trackId = type === 'video' ? vTrackId : aTrackId
+              const offsetDTS = type === 'video' ? vDTS : aDTS
+              const offsetCTS = type === 'video' ? vCTS : aCTS
 
-            const lastSamp = samples.at(-1)
-            if (lastSamp == null) return
-            if (type === 'video') {
-              lastVSamp = lastSamp
-            } else if (type === 'audio') {
-              lastASamp = lastSamp
+              samples.forEach(s => {
+                outfile.addSample(trackId, s.data, {
+                  duration: s.duration,
+                  dts: s.dts + offsetDTS,
+                  cts: s.cts + offsetCTS,
+                  is_sync: s.is_sync
+                })
+              })
+              curFile?.releaseUsedSamples(curId, samples.length)
+
+              const lastSamp = samples.at(-1)
+              if (lastSamp == null) return
+              if (type === 'video') {
+                lastVSamp = lastSamp
+              } else if (type === 'audio') {
+                lastASamp = lastSamp
+              }
             }
-          },
-          onEnded: resolve
+          }
         })
       })
       if (lastVSamp != null) {
