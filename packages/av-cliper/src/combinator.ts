@@ -194,6 +194,7 @@ export class Combinator {
   }
 
   #updateProgress (mixinState: { progress: number }): () => void {
+    // fixme: 进度值错误
     const timer = setInterval(() => {
       this.#evtTool.emit(
         'OutputProgress',
