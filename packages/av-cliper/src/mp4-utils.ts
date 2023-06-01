@@ -1,10 +1,8 @@
 import mp4box, {
   MP4ArrayBuffer,
-  MP4AudioTrack,
   MP4File,
   MP4Info,
   MP4Sample,
-  MP4VideoTrack,
   SampleOpts,
   TrakBoxParser,
   VideoTrackOpts
@@ -82,14 +80,14 @@ export function demuxcode (
   let firstDecodeVideo = true
   let lastVideoKeyChunkIdx = 0
   let mp4File: MP4File | null = null
-  const streamReaderCtrl = autoReadStream(
+  const stopReadStream = autoReadStream(
     stream.pipeThrough(new SampleTransform()),
     {
       onDone: () => {
         if (mp4Info == null) throw Error('MP4 demux unready')
         resetEndTimer()
       },
-      onChunk: ({ chunkType, data }) => {
+      onChunk: async ({ chunkType, data }) => {
         if (chunkType === 'ready') {
           mp4File = data.file
           mp4Info = data.info
@@ -129,51 +127,12 @@ export function demuxcode (
             }
           }
           mp4File?.releaseUsedSamples(curId, samples.length)
+          // 解码压力过大时，延迟读取数据
+          while (vdecoder.decodeQueueSize > 100) await sleep(5)
         }
       }
     }
   )
-  // const { file: mp4File, stop: stopReadStream } = demuxMP4(stream, {
-  //   onReady: (file, info) => {
-  //     mp4Info = info
-  //     const { videoDecoderConf, audioDecoderConf } = extractFileConfig(
-  //       file,
-  //       info
-  //     )
-  //     if (videoDecoderConf != null) vdecoder.configure(videoDecoderConf)
-  //     if (opts.audio && audioDecoderConf != null)
-  //       adecoder.configure(audioDecoderConf)
-
-  //     cbs.onReady(info)
-  //   },
-  //   onSamples (_, type, samples) {
-  //     for (let i = 0; i < samples.length; i += 1) {
-  //       const s = samples[i]
-  //       if (firstDecodeVideo && s.is_sync) lastVideoKeyChunkIdx = i
-
-  //       const cts = (1e6 * s.cts) / s.timescale
-  //       if (cts >= opts.start && cts <= opts.end) {
-  //         if (type === 'video') {
-  //           if (firstDecodeVideo && !s.is_sync) {
-  //             // 首次解码需要从 key chunk 开始
-  //             firstDecodeVideo = false
-  //             for (let j = lastVideoKeyChunkIdx; j < i; j++) {
-  //               vdecoder.decode(
-  //                 new EncodedVideoChunk(sample2ChunkOpts(samples[j]))
-  //               )
-  //             }
-  //           }
-  //           vdecoder.decode(new EncodedVideoChunk(sample2ChunkOpts(s)))
-  //         } else if (type === 'audio') {
-  //           adecoder.decode(new EncodedAudioChunk(sample2ChunkOpts(s)))
-  //         }
-  //       }
-  //     }
-  //   },
-  //   onEnded: () => {
-  //     if (mp4Info == null) throw Error('MP4 demux unready')
-  //   }
-  // })
 
   return {
     stop: () => {
@@ -181,7 +140,7 @@ export function demuxcode (
       mp4File?.stop()
       if (vdecoder.state !== 'closed') vdecoder.close()
       if (adecoder.state !== 'closed') adecoder.close()
-      streamReaderCtrl.stop()
+      stopReadStream()
     },
     getDecodeQueueSize: () => ({
       video: vdecoder.decodeQueueSize,
@@ -412,56 +371,63 @@ export class SampleTransform {
   constructor () {
     const file = mp4box.createFile()
     let outCtrlDesiredSize = 0
-    this.readable = new ReadableStream(
-      {
-        start: ctrl => {
-          file.onReady = info => {
-            const vTrackId = info.videoTracks[0]?.id
-            if (vTrackId != null)
-              file.setExtractionOptions(vTrackId, 'video', { nbSamples: 100 })
+    let streamCancelled = false
+    this.readable = new ReadableStream({
+      start: ctrl => {
+        file.onReady = info => {
+          const vTrackId = info.videoTracks[0]?.id
+          if (vTrackId != null)
+            file.setExtractionOptions(vTrackId, 'video', { nbSamples: 100 })
 
-            const aTrackId = info.audioTracks[0]?.id
-            if (aTrackId != null)
-              file.setExtractionOptions(aTrackId, 'audio', { nbSamples: 100 })
+          const aTrackId = info.audioTracks[0]?.id
+          if (aTrackId != null)
+            file.setExtractionOptions(aTrackId, 'audio', { nbSamples: 100 })
 
-            ctrl.enqueue({ chunkType: 'ready', data: { info, file } })
-            file.start()
-          }
+          ctrl.enqueue({ chunkType: 'ready', data: { info, file } })
+          file.start()
+        }
 
-          file.onSamples = (id, type, samples) => {
-            ctrl.enqueue({
-              chunkType: 'samples',
-              data: { id, type, samples }
-            })
-            outCtrlDesiredSize = ctrl.desiredSize ?? 0
-          }
-          file.onFlush = () => {
-            ctrl.close()
-          }
-        },
-        pull: ctrl => {
+        file.onSamples = (id, type, samples) => {
+          ctrl.enqueue({
+            chunkType: 'samples',
+            data: { id, type, samples }
+          })
           outCtrlDesiredSize = ctrl.desiredSize ?? 0
         }
+
+        file.onFlush = () => {
+          ctrl.close()
+        }
       },
-      {
-        highWaterMark: 1
+      pull: ctrl => {
+        outCtrlDesiredSize = ctrl.desiredSize ?? 0
+      },
+      cancel: () => {
+        file.stop()
+        streamCancelled = true
       }
-    )
+    })
 
     this.writable = new WritableStream({
       write: async ui8Arr => {
+        if (streamCancelled) {
+          this.writable.abort()
+          return
+        }
+
         const inputBuf = ui8Arr.buffer as MP4ArrayBuffer
         inputBuf.fileStart = this.#inputBufOffset
         this.#inputBufOffset += inputBuf.byteLength
         file.appendBuffer(inputBuf)
 
-        // 等待输出的数据被消费，最多有1000个sample
+        // 等待输出的数据被消费
         while (outCtrlDesiredSize < 0) {
           await sleep(outCtrlDesiredSize * -1)
         }
       },
       close: () => {
         file.flush()
+        file.stop()
         file.onFlush?.()
       }
     })
@@ -486,6 +452,8 @@ export function file2stream (
     if (sendedBoxIdx >= boxes.length) return null
     for (let i = sendedBoxIdx; i < boxes.length; i++) {
       boxes[i].write(ds)
+      // // @ts-expect-error 释放已使用的 mdat box 空间
+      // if (boxes[i].data != null) boxes[i].data = null
     }
     sendedBoxIdx = boxes.length
     return new Uint8Array(ds.buffer)
@@ -692,7 +660,7 @@ export function fastConcatMP4 (streams: ReadableStream<Uint8Array>[]) {
         let curFile: MP4File | null = null
         autoReadStream(stream.pipeThrough(new SampleTransform()), {
           onDone: resolve,
-          onChunk: ({ chunkType, data }) => {
+          onChunk: async ({ chunkType, data }) => {
             if (chunkType === 'ready') {
               const { videoTrackConf, audioTrackConf } = extractFileConfig(
                 data.file,

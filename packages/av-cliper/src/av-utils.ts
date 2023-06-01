@@ -1,5 +1,7 @@
 // 能同时在 worker 和主线程中运行的工具函数
 
+import { Log } from './log'
+
 export function concatFloat32Array (bufs: Float32Array[]): Float32Array {
   const rs = new Float32Array(
     bufs.map(buf => buf.length).reduce((a, b) => a + b)
@@ -171,41 +173,32 @@ export function ringSliceFloat32Array (
 export function autoReadStream<ST extends ReadableStream> (
   stream: ST,
   cbs: {
-    onChunk: ST extends ReadableStream<infer DT> ? (chunk: DT) => void : never
+    onChunk: ST extends ReadableStream<infer DT>
+      ? (chunk: DT) => Promise<void>
+      : never
     onDone: () => void
   }
 ) {
-  const reader = stream.getReader()
   let stoped = false
-  let paused = false
   async function run () {
-    while (true) {
-      if (stoped) return
+    const reader = stream.getReader()
 
+    while (!stoped) {
       const { value, done } = await reader.read()
       if (done) {
         cbs.onDone()
         return
       }
-      cbs.onChunk(value)
-
-      while (paused) await sleep(5)
+      await cbs.onChunk(value)
     }
+
+    reader.releaseLock()
+    await stream.cancel()
   }
 
-  run()
+  run().catch(Log.error)
 
-  return {
-    stop: () => {
-      stoped = true
-      reader.releaseLock()
-      stream.cancel()
-    },
-    run: () => {
-      paused = false
-    },
-    pause: () => {
-      paused = true
-    }
+  return () => {
+    stoped = true
   }
 }
