@@ -372,41 +372,47 @@ export class SampleTransform {
     const file = mp4box.createFile()
     let outCtrlDesiredSize = 0
     let streamCancelled = false
-    this.readable = new ReadableStream({
-      start: ctrl => {
-        file.onReady = info => {
-          const vTrackId = info.videoTracks[0]?.id
-          if (vTrackId != null)
-            file.setExtractionOptions(vTrackId, 'video', { nbSamples: 100 })
+    this.readable = new ReadableStream(
+      {
+        start: ctrl => {
+          file.onReady = info => {
+            const vTrackId = info.videoTracks[0]?.id
+            if (vTrackId != null)
+              file.setExtractionOptions(vTrackId, 'video', { nbSamples: 100 })
 
-          const aTrackId = info.audioTracks[0]?.id
-          if (aTrackId != null)
-            file.setExtractionOptions(aTrackId, 'audio', { nbSamples: 100 })
+            const aTrackId = info.audioTracks[0]?.id
+            if (aTrackId != null)
+              file.setExtractionOptions(aTrackId, 'audio', { nbSamples: 100 })
 
-          ctrl.enqueue({ chunkType: 'ready', data: { info, file } })
-          file.start()
-        }
+            ctrl.enqueue({ chunkType: 'ready', data: { info, file } })
+            file.start()
+          }
 
-        file.onSamples = (id, type, samples) => {
-          ctrl.enqueue({
-            chunkType: 'samples',
-            data: { id, type, samples }
-          })
+          file.onSamples = (id, type, samples) => {
+            ctrl.enqueue({
+              chunkType: 'samples',
+              data: { id, type, samples }
+            })
+            outCtrlDesiredSize = ctrl.desiredSize ?? 0
+          }
+
+          file.onFlush = () => {
+            ctrl.close()
+          }
+        },
+        pull: ctrl => {
           outCtrlDesiredSize = ctrl.desiredSize ?? 0
-        }
-
-        file.onFlush = () => {
-          ctrl.close()
+        },
+        cancel: () => {
+          file.stop()
+          streamCancelled = true
         }
       },
-      pull: ctrl => {
-        outCtrlDesiredSize = ctrl.desiredSize ?? 0
-      },
-      cancel: () => {
-        file.stop()
-        streamCancelled = true
+      {
+        // 每条消息 100 个 samples
+        highWaterMark: 2
       }
-    })
+    )
 
     this.writable = new WritableStream({
       write: async ui8Arr => {
@@ -421,9 +427,7 @@ export class SampleTransform {
         file.appendBuffer(inputBuf)
 
         // 等待输出的数据被消费
-        while (outCtrlDesiredSize < 0) {
-          await sleep(outCtrlDesiredSize * -1)
-        }
+        while (outCtrlDesiredSize < 0) await sleep(5)
       },
       close: () => {
         file.flush()
