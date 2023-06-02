@@ -150,7 +150,7 @@ export class MP4Clip implements IClip {
         return null
       }
 
-      await sleep(1)
+      await sleep(50)
       return this.#nextVideo(time)
     }
 
@@ -177,7 +177,7 @@ export class MP4Clip implements IClip {
       !this.#destroyed &&
       this.#demuxcoder?.getDecodeQueueSize().audio !== 0
     ) {
-      await sleep(1)
+      await sleep(50)
       return this.#nextAudio(deltaTime)
     }
 
