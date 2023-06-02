@@ -696,22 +696,22 @@ function createMP4AudioSampleDecoder (
   let lock = false
 
   let cacheAD: AudioData[] = []
-  const adecoder = new AudioDecoder({
+  const adEcoder = new AudioDecoder({
     output: ad => {
       cacheAD.push(ad)
     },
     error: Log.error
   })
-  adecoder.configure(adConf)
+  adEcoder.configure(adConf)
 
   return async (ss: MP4Sample[]) => {
-    while (lock || adecoder.decodeQueueSize > 0) {
+    while (lock || adEcoder.decodeQueueSize > 0) {
       await sleep(1)
     }
     lock = true
 
     ss.forEach(s => {
-      adecoder.decode(
+      adEcoder.decode(
         new EncodedAudioChunk({
           type: s.is_sync ? 'key' : 'delta',
           timestamp: (1e6 * s.cts) / s.timescale,
@@ -721,9 +721,11 @@ function createMP4AudioSampleDecoder (
       )
     })
 
-    while (adecoder.decodeQueueSize > 0) {
+    while (adEcoder.decodeQueueSize > 0) {
       await sleep(1)
     }
+    await adEcoder.flush()
+
     const rs = cacheAD
     cacheAD = []
     lock = false
@@ -773,6 +775,8 @@ function createMP4AudioSampleEncoder (
     while (cacheChunk.length === 0 || adEncoder.encodeQueueSize > 0) {
       await sleep(1)
     }
+    await adEncoder.flush()
+
     const rs = cacheChunk.map(chunk => chunk2MP4SampleOpts(chunk))
     cacheChunk = []
     lock = false
@@ -809,6 +813,8 @@ export function mixinMP4AndAudio (
   let vTrackId = 0
   let aTrackId = 0
   let audioOffset = 0
+  let mp4HasAudio = true
+  let sampleRate = 48000
   autoReadStream(mp4Stream.pipeThrough(new SampleTransform()), {
     onChunk: async ({ chunkType, data }) => {
       if (chunkType === 'ready') {
@@ -817,77 +823,119 @@ export function mixinMP4AndAudio (
         if (vTrackId === 0 && videoTrackConf != null) {
           vTrackId = outfile.addTrack(videoTrackConf)
         }
-        if (aTrackId === 0 && audioTrackConf != null) {
-          aTrackId = outfile.addTrack(audioTrackConf)
-          const audioCtx = new AudioContext({
-            sampleRate: audioTrackConf.samplerate
-          })
-          inputAudioPCM = extractPCM4AudioBuffer(
-            await audioCtx.decodeAudioData(
-              await new Response(audio.stream).arrayBuffer()
-            )
-          )
-        }
 
-        if (audioDecoderConf == null) throw Error('mp4 not have audio track')
-        audioSampleDecoder = createMP4AudioSampleDecoder(audioDecoderConf)
-        audioSampleEncoder = createMP4AudioSampleEncoder(audioDecoderConf)
+        const safeAudioTrackConf = audioTrackConf ?? {
+          timescale: 1e6,
+          samplerate: sampleRate,
+          channel_count: 2,
+          hdlr: 'soun',
+          name: 'SoundHandler',
+          type: 'mp4a'
+        }
+        if (aTrackId === 0) {
+          aTrackId = outfile.addTrack(safeAudioTrackConf)
+          sampleRate = audioTrackConf?.samplerate ?? sampleRate
+          mp4HasAudio = audioTrackConf == null ? false : true
+        }
+        const audioCtx = new AudioContext({ sampleRate })
+        inputAudioPCM = extractPCM4AudioBuffer(
+          await audioCtx.decodeAudioData(
+            await new Response(audio.stream).arrayBuffer()
+          )
+        )
+
+        if (audioDecoderConf != null) {
+          audioSampleDecoder = createMP4AudioSampleDecoder(audioDecoderConf)
+        }
+        audioSampleEncoder = createMP4AudioSampleEncoder(
+          audioDecoderConf ?? {
+            codec:
+              safeAudioTrackConf.type === 'mp4a'
+                ? 'mp4a.40.2'
+                : safeAudioTrackConf.type,
+            numberOfChannels: safeAudioTrackConf.channel_count,
+            sampleRate: safeAudioTrackConf.samplerate
+          }
+        )
       } else if (chunkType === 'samples') {
         const { id, type, samples } = data
         if (type === 'video') {
           samples.forEach(s => outfile.addSample(id, s.data, s))
+
+          if (!mp4HasAudio) await addInputAudio2Track(samples)
           return
         }
 
-        // todo: 处理 mp4 无音轨场景
-        if (type !== 'audio') return
-        if (audioSampleDecoder == null || audioSampleEncoder == null) {
-          throw Error('Audio codec not created')
-        }
-
-        // 1. 先解码mp4音频
-        const mixiedPCM = (await audioSampleDecoder(samples)).map(ad => {
-          const mp4AudioBuf = extractPCM4AudioData(ad)
-          // todo: 性能优化； 音频非循环，如果 inputAudioPCM 已消耗完则后续无需 重编码
-          const inputAudioBuf = inputAudioPCM.map(chanBuf =>
-            audio.loop
-              ? ringSliceFloat32Array(
-                  chanBuf,
-                  audioOffset,
-                  audioOffset + mp4AudioBuf[0].length
-                )
-              : chanBuf.slice(audioOffset, audioOffset + mp4AudioBuf[0].length)
-          )
-
-          if (audio.volume !== 1) {
-            for (const buf of inputAudioBuf)
-              for (let i = 0; i < buf.length; i++) buf[i] *= audio.volume
-          }
-
-          audioOffset += mp4AudioBuf[0].length
-          // 2. 混合输入的音频
-          return {
-            pcm: mixinPCM([mp4AudioBuf, inputAudioBuf]),
-            ts: ad.timestamp
-          }
-        })
-
-        if (audioSampleEncoder == null) return
-        await Promise.all(
-          // 3. 重编码音频
-          mixiedPCM.map(async ({ pcm, ts }) =>
-            (
-              await audioSampleEncoder?.(pcm, ts)
-            )?.forEach(s => {
-              // 4. 添加到 mp4 音轨
-              outfile.addSample(aTrackId, s.data, s)
-            })
-          )
-        )
+        if (type === 'audio') await mixinAudioSampleAndInputPCM(samples)
       }
     },
     onDone: stopOut
   })
+
+  function getInputAudioSlice (len: number) {
+    const rs = inputAudioPCM.map(chanBuf =>
+      audio.loop
+        ? ringSliceFloat32Array(chanBuf, audioOffset, audioOffset + len)
+        : chanBuf.slice(audioOffset, audioOffset + len)
+    )
+    audioOffset += len
+
+    if (audio.volume !== 1) {
+      for (const buf of rs)
+        for (let i = 0; i < buf.length; i++) buf[i] *= audio.volume
+    }
+
+    return rs
+  }
+
+  async function addInputAudio2Track (vdieoSamples: MP4Sample[]) {
+    const firstSamp = vdieoSamples[0]
+    const lastSamp = vdieoSamples[vdieoSamples.length - 1]
+    const pcmLength = Math.floor(
+      ((lastSamp.cts + lastSamp.duration - firstSamp.cts) /
+        lastSamp.timescale) *
+        sampleRate
+    )
+    const audioDataBuf = mixinPCM([getInputAudioSlice(pcmLength)])
+    if (audioDataBuf.length === 0) return
+    ;(
+      await audioSampleEncoder?.(
+        audioDataBuf,
+        (firstSamp.cts / firstSamp.timescale) * 1e6
+      )
+    )?.forEach(s => {
+      outfile.addSample(aTrackId, s.data, s)
+    })
+  }
+
+  async function mixinAudioSampleAndInputPCM (samples: MP4Sample[]) {
+    if (audioSampleDecoder == null) return
+    // 1. 先解码mp4音频
+    const mixiedPCM = (await audioSampleDecoder(samples)).map(ad => {
+      const mp4AudioBuf = extractPCM4AudioData(ad)
+      // todo: 性能优化； 音频非循环，如果 inputAudioPCM 已消耗完则后续无需 重编码
+      const inputAudioBuf = getInputAudioSlice(mp4AudioBuf[0].length)
+
+      // 2. 混合输入的音频
+      return {
+        pcm: mixinPCM([mp4AudioBuf, inputAudioBuf]),
+        ts: ad.timestamp
+      }
+    })
+
+    if (audioSampleEncoder == null) return
+    await Promise.all(
+      // 3. 重编码音频
+      mixiedPCM.map(async ({ pcm, ts }) =>
+        (
+          await audioSampleEncoder?.(pcm, ts)
+        )?.forEach(s => {
+          // 4. 添加到 mp4 音轨
+          outfile.addSample(aTrackId, s.data, s)
+        })
+      )
+    )
+  }
 
   return outStream
 }
