@@ -187,7 +187,14 @@ export class Combinator {
 
       frameCnt += 1
       // VideoFrame 非常占用 GPU 显存，避免显存压力过大，稍等一下整体性能更优
-      if (this.#remux.getEecodeQueueSize().video > 100) await sleep(5)
+      if (this.#remux.getEecodeQueueSize() > 150) {
+        while (true) {
+          const qSize = this.#remux.getEecodeQueueSize()
+          if (qSize < 50) break
+          // 根据大小动态调整等待时间，减少 while 循环次数
+          await sleep(qSize)
+        }
+      }
     }
 
     this.#comItems.forEach(it => it.sprite.destroy())
