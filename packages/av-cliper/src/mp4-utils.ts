@@ -128,7 +128,14 @@ export function demuxcode (
           }
           mp4File?.releaseUsedSamples(curId, samples.length)
           // 解码压力过大时，延迟读取数据
-          while (vdecoder.decodeQueueSize > 100) await sleep(5)
+          if (vdecoder.decodeQueueSize > 150) {
+            while (true) {
+              const qSize = vdecoder.decodeQueueSize
+              if (qSize < 50) break
+              // 根据大小动态调整等待时间，减少 while 循环次数
+              await sleep(qSize)
+            }
+          }
         }
       }
     }
@@ -155,7 +162,7 @@ export function recodemux (opts: IWorkerOpts): {
   close: TCleanFn
   mp4file: MP4File
   progress: number
-  getEecodeQueueSize: () => { video: number; audio: number }
+  getEecodeQueueSize: () => number
   onEnded?: TCleanFn
 } {
   const mp4file = mp4box.createFile()
@@ -205,10 +212,7 @@ export function recodemux (opts: IWorkerOpts): {
         checkEnded()
       }
     },
-    getEecodeQueueSize: () => ({
-      video: vEncoder.encodeQueueSize,
-      audio: aEncoder?.encodeQueueSize ?? 0
-    }),
+    getEecodeQueueSize: () => vEncoder.encodeQueueSize,
     close: () => {
       clearInterval(endCheckTimer)
       vEncoder.flush().catch(Log.error)
