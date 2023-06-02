@@ -201,12 +201,13 @@ export class Combinator {
   }
 
   #updateProgress (mixinState: { progress: number }): () => void {
-    // fixme: 进度值错误
+    let lastVal = 0
     const timer = setInterval(() => {
-      this.#evtTool.emit(
-        'OutputProgress',
+      lastVal = Math.max(
+        lastVal,
         mixinState.progress * 0.5 + this.#remux.progress * 0.5
       )
+      this.#evtTool.emit('OutputProgress', lastVal)
     }, 500)
     return () => {
       clearInterval(timer)
