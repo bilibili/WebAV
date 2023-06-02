@@ -88,7 +88,7 @@ export async function decodeImg (
 /**
  * 混合双通道音轨的 PCM 数据，并将多声道并排成一个 Float32Array 输出
  */
-export function mixPCM (audios: Float32Array[][]): Float32Array {
+export function mixinPCM (audios: Float32Array[][]): Float32Array {
   const maxLen = Math.max(...audios.map(a => a[0]?.length ?? 0))
   const data = new Float32Array(maxLen * 2)
 

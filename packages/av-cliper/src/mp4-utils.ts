@@ -12,7 +12,7 @@ import { AudioTrackOpts } from 'mp4box'
 import {
   autoReadStream,
   extractPCM4AudioData,
-  mixPCM,
+  mixinPCM,
   ringSliceFloat32Array,
   sleep
 } from './av-utils'
@@ -867,7 +867,7 @@ export function mixinMP4AndAudio (
           audioOffset += mp4AudioBuf[0].length
           // 2. 混合输入的音频
           return {
-            pcm: mixPCM([mp4AudioBuf, inputAudioBuf]),
+            pcm: mixinPCM([mp4AudioBuf, inputAudioBuf]),
             ts: ad.timestamp
           }
         })

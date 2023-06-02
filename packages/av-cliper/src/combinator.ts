@@ -1,7 +1,7 @@
 import { OffscreenSprite } from './offscreen-sprite'
 import { file2stream, recodemux } from './mp4-utils'
 import { Log } from './log'
-import { mixPCM, sleep } from './av-utils'
+import { mixinPCM, sleep } from './av-utils'
 import { EventTool } from './event-tool'
 import { DEFAULT_AUDIO_SAMPLE_RATE } from './clips'
 
@@ -161,7 +161,7 @@ export class Combinator {
           createAudioPlaceholder(ts, timeSlice, DEFAULT_AUDIO_SAMPLE_RATE)
         )
       } else {
-        const data = mixPCM(audios)
+        const data = mixinPCM(audios)
         this.#remux.encodeAudio(
           new AudioData({
             timestamp: ts,
