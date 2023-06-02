@@ -431,7 +431,7 @@ export class SampleTransform {
         file.appendBuffer(inputBuf)
 
         // 等待输出的数据被消费
-        while (outCtrlDesiredSize < 0) await sleep(5)
+        while (outCtrlDesiredSize < 0) await sleep(50)
       },
       close: () => {
         file.flush()
