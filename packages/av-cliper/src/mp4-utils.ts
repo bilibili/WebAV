@@ -340,6 +340,8 @@ export function stream2file (stream: ReadableStream<Uint8Array>): {
       chunkOffset += chunk.byteLength
       file.appendBuffer(chunk)
     }
+    reader.releaseLock()
+    stream.cancel()
   }
   readFile().catch(Log.error)
 
@@ -347,8 +349,6 @@ export function stream2file (stream: ReadableStream<Uint8Array>): {
     file,
     stop: () => {
       stoped = true
-      reader.releaseLock()
-      stream.cancel()
     }
   }
 }
