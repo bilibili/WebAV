@@ -1,7 +1,7 @@
 import { OffscreenSprite } from './offscreen-sprite'
 import { file2stream, recodemux } from './mp4-utils'
 import { Log } from './log'
-import { mixPCM } from './av-utils'
+import { mixPCM, sleep } from './av-utils'
 import { EventTool } from './event-tool'
 import { DEFAULT_AUDIO_SAMPLE_RATE } from './clips'
 
@@ -186,17 +186,28 @@ export class Combinator {
       ctx.clearRect(0, 0, width, height)
 
       frameCnt += 1
+      // VideoFrame 非常占用 GPU 显存，避免显存压力过大，稍等一下整体性能更优
+      if (this.#remux.getEecodeQueueSize() > 150) {
+        while (true) {
+          const qSize = this.#remux.getEecodeQueueSize()
+          if (qSize < 50) break
+          // 根据大小动态调整等待时间，减少 while 循环次数
+          await sleep(qSize)
+        }
+      }
     }
 
     this.#comItems.forEach(it => it.sprite.destroy())
   }
 
   #updateProgress (mixinState: { progress: number }): () => void {
+    let lastVal = 0
     const timer = setInterval(() => {
-      this.#evtTool.emit(
-        'OutputProgress',
+      lastVal = Math.max(
+        lastVal,
         mixinState.progress * 0.5 + this.#remux.progress * 0.5
       )
+      this.#evtTool.emit('OutputProgress', lastVal)
     }, 500)
     return () => {
       clearInterval(timer)

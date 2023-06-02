@@ -1,10 +1,8 @@
 import mp4box, {
   MP4ArrayBuffer,
-  MP4AudioTrack,
   MP4File,
   MP4Info,
   MP4Sample,
-  MP4VideoTrack,
   SampleOpts,
   TrakBoxParser,
   VideoTrackOpts
@@ -12,6 +10,7 @@ import mp4box, {
 import { Log } from './log'
 import { AudioTrackOpts } from 'mp4box'
 import {
+  autoReadStream,
   extractPCM4AudioData,
   mixPCM,
   ringSliceFloat32Array,
@@ -38,7 +37,7 @@ interface IWorkerOpts {
 
 export function demuxcode (
   stream: ReadableStream<Uint8Array>,
-  opts: { audio: boolean },
+  opts: { audio: boolean; start: number; end: number },
   cbs: {
     onReady: (info: MP4Info) => void
     onVideoOutput: (vf: VideoFrame) => void
@@ -46,7 +45,6 @@ export function demuxcode (
     onComplete: () => void
   }
 ): {
-  seek: (time: number) => void
   stop: () => void
   getDecodeQueueSize: () => {
     video: number
@@ -66,128 +64,96 @@ export function demuxcode (
   const vdecoder = new VideoDecoder({
     output: vf => {
       cbs.onVideoOutput(vf)
-      resetEndTimer()
     },
     error: Log.error
   })
   const adecoder = new AudioDecoder({
     output: audioData => {
       cbs.onAudioOutput(audioData)
-      resetEndTimer()
     },
     error: Log.error
   })
 
   let mp4Info: MP4Info | null = null
-  let vTrackInfo: MP4VideoTrack | null = null
-  let aTrackInfo: MP4AudioTrack | null = null
 
-  let totalVideoSamples: MP4Sample[] = []
-  let totalAudioSamples: MP4Sample[] = []
-  // todo: 大文件时需要流式加载
-  const { file: mp4File, stop: stopReadStream } = demuxMP4(stream, {
-    onReady: (file, info) => {
-      mp4Info = info
-      vTrackInfo = info.videoTracks[0]
-      aTrackInfo = info.audioTracks[0]
-      const { videoDecoderConf, audioDecoderConf } = extractFileConfig(
-        file,
-        info
-      )
-      if (videoDecoderConf != null) vdecoder.configure(videoDecoderConf)
-      if (opts.audio && audioDecoderConf != null)
-        adecoder.configure(audioDecoderConf)
-    },
-    onSamples (_, type, samples) {
-      if (type === 'video') {
-        totalVideoSamples = totalVideoSamples.concat(samples)
-      } else if (opts.audio && type === 'audio') {
-        totalAudioSamples = totalAudioSamples.concat(samples)
+  // 第一个解码的 sample（EncodedVideoChunk） 必须是关键帧（is_sync）
+  let firstDecodeVideo = true
+  let lastVideoKeyChunkIdx = 0
+  let mp4File: MP4File | null = null
+  const stopReadStream = autoReadStream(
+    stream.pipeThrough(new SampleTransform()),
+    {
+      onDone: () => {
+        if (mp4Info == null) throw Error('MP4 demux unready')
+        resetEndTimer()
+      },
+      onChunk: async ({ chunkType, data }) => {
+        if (chunkType === 'ready') {
+          mp4File = data.file
+          mp4Info = data.info
+          const { videoDecoderConf, audioDecoderConf } = extractFileConfig(
+            data.file,
+            data.info
+          )
+          if (videoDecoderConf != null) vdecoder.configure(videoDecoderConf)
+          if (opts.audio && audioDecoderConf != null)
+            adecoder.configure(audioDecoderConf)
+
+          cbs.onReady(data.info)
+          return
+        }
+        if (chunkType === 'samples') {
+          const { id: curId, type, samples } = data
+          for (let i = 0; i < samples.length; i += 1) {
+            const s = samples[i]
+            if (firstDecodeVideo && s.is_sync) lastVideoKeyChunkIdx = i
+
+            const cts = (1e6 * s.cts) / s.timescale
+            if (cts >= opts.start && cts <= opts.end) {
+              if (type === 'video') {
+                if (firstDecodeVideo && !s.is_sync) {
+                  // 首次解码需要从 key chunk 开始
+                  firstDecodeVideo = false
+                  for (let j = lastVideoKeyChunkIdx; j < i; j++) {
+                    vdecoder.decode(
+                      new EncodedVideoChunk(sample2ChunkOpts(samples[j]))
+                    )
+                  }
+                }
+                vdecoder.decode(new EncodedVideoChunk(sample2ChunkOpts(s)))
+              } else if (type === 'audio') {
+                adecoder.decode(new EncodedAudioChunk(sample2ChunkOpts(s)))
+              }
+            }
+          }
+          mp4File?.releaseUsedSamples(curId, samples.length)
+          // 解码压力过大时，延迟读取数据
+          if (vdecoder.decodeQueueSize > 150) {
+            while (true) {
+              const qSize = vdecoder.decodeQueueSize
+              if (qSize < 50) break
+              // 根据大小动态调整等待时间，减少 while 循环次数
+              await sleep(qSize)
+            }
+          }
+        }
       }
-    },
-    onEnded: () => {
-      if (mp4Info == null) throw Error('MP4 demux unready')
-      // 注意：所有 samples 的 duration 累加，与解码后的 VideoFrame 累加 值接近，但不相等
-      mp4Info.duration = totalVideoSamples.reduce(
-        (acc, cur) => acc + cur.duration,
-        0
-      )
-      cbs.onReady(mp4Info)
     }
-  })
+  )
 
   return {
     stop: () => {
       stopResetEndTimer = true
-      mp4File.stop()
-      vdecoder.close()
-      adecoder.close()
+      mp4File?.stop()
+      if (vdecoder.state !== 'closed') vdecoder.close()
+      if (adecoder.state !== 'closed') adecoder.close()
       stopReadStream()
-      stream.cancel()
     },
     getDecodeQueueSize: () => ({
       video: vdecoder.decodeQueueSize,
       audio: adecoder.decodeQueueSize
-    }),
-    seek: time => {
-      if (vTrackInfo != null) {
-        const startIdx = findStartSampleIdx(
-          totalVideoSamples,
-          time * vTrackInfo.timescale
-        )
-        // samples 全部 推入解码器，解码器有维护队列
-        const samples = totalVideoSamples.slice(startIdx)
-        samples.forEach(s => {
-          vdecoder.decode(
-            new EncodedVideoChunk({
-              type: s.is_sync ? 'key' : 'delta',
-              timestamp: (1e6 * s.cts) / s.timescale,
-              duration: (1e6 * s.duration) / s.timescale,
-              data: s.data
-            })
-          )
-        })
-      }
-      if (opts.audio && aTrackInfo != null) {
-        const startIdx = findStartSampleIdx(
-          totalAudioSamples,
-          time * aTrackInfo.timescale
-        )
-        // samples 全部 推入解码器，解码器有维护队列
-        const samples = totalAudioSamples.slice(startIdx)
-        samples.forEach(s => {
-          adecoder.decode(
-            new EncodedAudioChunk({
-              type: s.is_sync ? 'key' : 'delta',
-              timestamp: (1e6 * s.cts) / s.timescale,
-              duration: (1e6 * s.duration) / s.timescale,
-              data: s.data
-            })
-          )
-        })
-      }
-    }
+    })
   }
-}
-
-/**
- * 找到最近的 关键帧 索引
- */
-function findStartSampleIdx (samples: MP4Sample[], time: number): number {
-  const endIdx = samples.findIndex(s => s.cts >= time)
-  const targetSamp = samples[endIdx]
-
-  if (targetSamp == null) throw Error('Not found frame')
-  let startIdx = 0
-  if (!targetSamp.is_sync) {
-    startIdx = endIdx - 1
-    while (true) {
-      if (startIdx <= 0) break
-      if (samples[startIdx].is_sync) break
-      startIdx -= 1
-    }
-  }
-  return startIdx
 }
 
 export function recodemux (opts: IWorkerOpts): {
@@ -196,6 +162,7 @@ export function recodemux (opts: IWorkerOpts): {
   close: TCleanFn
   mp4file: MP4File
   progress: number
+  getEecodeQueueSize: () => number
   onEnded?: TCleanFn
 } {
   const mp4file = mp4box.createFile()
@@ -245,6 +212,7 @@ export function recodemux (opts: IWorkerOpts): {
         checkEnded()
       }
     },
+    getEecodeQueueSize: () => vEncoder.encodeQueueSize,
     close: () => {
       clearInterval(endCheckTimer)
       vEncoder.flush().catch(Log.error)
@@ -380,7 +348,97 @@ export function stream2file (stream: ReadableStream<Uint8Array>): {
     stop: () => {
       stoped = true
       reader.releaseLock()
+      stream.cancel()
     }
+  }
+}
+
+/**
+ * 将原始字节流转换成 MP4Sample 流
+ */
+export class SampleTransform {
+  readable: ReadableStream<
+    | {
+        chunkType: 'ready'
+        data: { info: MP4Info; file: MP4File }
+      }
+    | {
+        chunkType: 'samples'
+        data: { id: number; type: 'video' | 'audio'; samples: MP4Sample[] }
+      }
+  >
+
+  writable: WritableStream<Uint8Array>
+
+  #inputBufOffset = 0
+
+  constructor () {
+    const file = mp4box.createFile()
+    let outCtrlDesiredSize = 0
+    let streamCancelled = false
+    this.readable = new ReadableStream(
+      {
+        start: ctrl => {
+          file.onReady = info => {
+            const vTrackId = info.videoTracks[0]?.id
+            if (vTrackId != null)
+              file.setExtractionOptions(vTrackId, 'video', { nbSamples: 100 })
+
+            const aTrackId = info.audioTracks[0]?.id
+            if (aTrackId != null)
+              file.setExtractionOptions(aTrackId, 'audio', { nbSamples: 100 })
+
+            ctrl.enqueue({ chunkType: 'ready', data: { info, file } })
+            file.start()
+          }
+
+          file.onSamples = (id, type, samples) => {
+            ctrl.enqueue({
+              chunkType: 'samples',
+              data: { id, type, samples }
+            })
+            outCtrlDesiredSize = ctrl.desiredSize ?? 0
+          }
+
+          file.onFlush = () => {
+            ctrl.close()
+          }
+        },
+        pull: ctrl => {
+          outCtrlDesiredSize = ctrl.desiredSize ?? 0
+        },
+        cancel: () => {
+          file.stop()
+          streamCancelled = true
+        }
+      },
+      {
+        // 每条消息 100 个 samples
+        highWaterMark: 2
+      }
+    )
+
+    this.writable = new WritableStream({
+      write: async ui8Arr => {
+        if (streamCancelled) {
+          this.writable.abort()
+          return
+        }
+
+        const inputBuf = ui8Arr.buffer as MP4ArrayBuffer
+        inputBuf.fileStart = this.#inputBufOffset
+        this.#inputBufOffset += inputBuf.byteLength
+        file.appendBuffer(inputBuf)
+
+        // 等待输出的数据被消费
+        while (outCtrlDesiredSize < 0) await sleep(50)
+      },
+      close: () => {
+        file.flush()
+        file.stop()
+        file.onFlush?.()
+      }
+    })
   }
 }
 
@@ -402,6 +460,8 @@ export function file2stream (
     if (sendedBoxIdx >= boxes.length) return null
     for (let i = sendedBoxIdx; i < boxes.length; i++) {
       boxes[i].write(ds)
+      // // @ts-expect-error 释放已使用的 mdat box 空间
+      // if (boxes[i].data != null) boxes[i].data = null
     }
     sendedBoxIdx = boxes.length
     return new Uint8Array(ds.buffer)
@@ -508,7 +568,10 @@ function demuxMP4 (
 ) {
   const { file, stop } = stream2file(stream)
 
-  file.onSamples = cbs.onSamples
+  file.onSamples = (id, type, samples) => {
+    cbs.onSamples(id, type, samples)
+    file.releaseUsedSamples(id, samples.length)
+  }
 
   file.onReady = async info => {
     await cbs.onReady(file, info)
@@ -602,41 +665,47 @@ export function fastConcatMP4 (streams: ReadableStream<Uint8Array>[]) {
     let lastASamp: any = null
     for (const stream of streams) {
       await new Promise<void>(async resolve => {
-        demuxMP4(stream, {
-          onReady: (file, info) => {
-            const { videoTrackConf, audioTrackConf } = extractFileConfig(
-              file,
-              info
-            )
-            if (vTrackId === 0 && videoTrackConf != null) {
-              vTrackId = outfile.addTrack(videoTrackConf)
-            }
-            if (aTrackId === 0 && audioTrackConf != null) {
-              aTrackId = outfile.addTrack(audioTrackConf)
-            }
-          },
-          onSamples: (_, type, samples) => {
-            const id = type === 'video' ? vTrackId : aTrackId
-            const offsetDTS = type === 'video' ? vDTS : aDTS
-            const offsetCTS = type === 'video' ? vCTS : aCTS
-            samples.forEach(s => {
-              outfile.addSample(id, s.data, {
-                duration: s.duration,
-                dts: s.dts + offsetDTS,
-                cts: s.cts + offsetCTS,
-                is_sync: s.is_sync
-              })
-            })
+        let curFile: MP4File | null = null
+        autoReadStream(stream.pipeThrough(new SampleTransform()), {
+          onDone: resolve,
+          onChunk: async ({ chunkType, data }) => {
+            if (chunkType === 'ready') {
+              const { videoTrackConf, audioTrackConf } = extractFileConfig(
+                data.file,
+                data.info
+              )
+              curFile = data.file
+              if (vTrackId === 0 && videoTrackConf != null) {
+                vTrackId = outfile.addTrack(videoTrackConf)
+              }
+              if (aTrackId === 0 && audioTrackConf != null) {
+                aTrackId = outfile.addTrack(audioTrackConf)
+              }
+            } else if (chunkType === 'samples') {
+              const { id: curId, type, samples } = data
+              const trackId = type === 'video' ? vTrackId : aTrackId
+              const offsetDTS = type === 'video' ? vDTS : aDTS
+              const offsetCTS = type === 'video' ? vCTS : aCTS
 
-            const lastSamp = samples.at(-1)
-            if (lastSamp == null) return
-            if (type === 'video') {
-              lastVSamp = lastSamp
-            } else if (type === 'audio') {
-              lastASamp = lastSamp
+              samples.forEach(s => {
+                outfile.addSample(trackId, s.data, {
+                  duration: s.duration,
+                  dts: s.dts + offsetDTS,
+                  cts: s.cts + offsetCTS,
+                  is_sync: s.is_sync
+                })
+              })
+              curFile?.releaseUsedSamples(curId, samples.length)
+
+              const lastSamp = samples.at(-1)
+              if (lastSamp == null) return
+              if (type === 'video') {
+                lastVSamp = lastSamp
+              } else if (type === 'audio') {
+                lastASamp = lastSamp
+              }
             }
-          },
-          onEnded: resolve
+          }
         })
       })
       if (lastVSamp != null) {
@@ -852,4 +921,15 @@ export function mixinMP4AndAudio (
   })
 
   return outStream
+}
+
+function sample2ChunkOpts (
+  s: MP4Sample
+): EncodedAudioChunkInit | EncodedVideoChunkInit {
+  return {
+    type: (s.is_sync ? 'key' : 'delta') as EncodedVideoChunkType,
+    timestamp: (1e6 * s.cts) / s.timescale,
+    duration: (1e6 * s.duration) / s.timescale,
+    data: s.data
+  }
 }

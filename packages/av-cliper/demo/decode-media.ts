@@ -105,7 +105,7 @@ document.querySelector('#decode-video')?.addEventListener('click', () => {
     ).value
     // @ts-expect-error
     const resp1 = await fetch(videos[videoType])
-    const clip = new MP4Clip(resp1.body!)
+    const clip = new MP4Clip(resp1.body!, { start: 1, end: 8 })
     await clip.ready
     let time = 0
     while (true) {
