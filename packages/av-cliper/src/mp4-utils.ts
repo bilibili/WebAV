@@ -554,42 +554,6 @@ function chunk2MP4SampleOpts (
   }
 }
 
-function demuxMP4 (
-  stream: ReadableStream,
-  cbs: {
-    onReady: (file: MP4File, info: MP4Info) => void | Promise<void>
-    onEnded?: () => void
-    onSamples: (
-      id: number,
-      type: 'video' | 'audio',
-      samples: MP4Sample[]
-    ) => void
-  }
-) {
-  const { file, stop } = stream2file(stream)
-
-  file.onSamples = (id, type, samples) => {
-    cbs.onSamples(id, type, samples)
-    file.releaseUsedSamples(id, samples.length)
-  }
-
-  file.onReady = async info => {
-    await cbs.onReady(file, info)
-
-    const vTrackId = info.videoTracks[0]?.id
-    if (vTrackId != null) file.setExtractionOptions(vTrackId, 'video')
-
-    const aTrackId = info.audioTracks[0]?.id
-    if (aTrackId != null) file.setExtractionOptions(aTrackId, 'audio')
-
-    file.start()
-  }
-
-  file.onFlush = cbs.onEnded
-
-  return { file, stop }
-}
-
 function extractFileConfig (file: MP4File, info: MP4Info) {
   const vTrack = info.videoTracks[0]
   const rs: {
@@ -831,7 +795,6 @@ export function mixinMP4AndAudio (
 ) {
   const outfile = mp4box.createFile()
   const { stream: outStream, stop: stopOut } = file2stream(outfile, 500)
-  const mixEnded = debounce(stopOut, 300)
 
   let audioSampleDecoder: ReturnType<
     typeof createMP4AudioSampleDecoder
@@ -846,78 +809,84 @@ export function mixinMP4AndAudio (
   let vTrackId = 0
   let aTrackId = 0
   let audioOffset = 0
-  demuxMP4(mp4Stream, {
-    onReady: async (file, info) => {
-      const { videoTrackConf, audioTrackConf, audioDecoderConf } =
-        extractFileConfig(file, info)
-      if (vTrackId === 0 && videoTrackConf != null) {
-        vTrackId = outfile.addTrack(videoTrackConf)
-      }
-      if (aTrackId === 0 && audioTrackConf != null) {
-        aTrackId = outfile.addTrack(audioTrackConf)
-        const audioCtx = new AudioContext({
-          sampleRate: audioTrackConf.samplerate
+  autoReadStream(mp4Stream.pipeThrough(new SampleTransform()), {
+    onChunk: async ({ chunkType, data }) => {
+      if (chunkType === 'ready') {
+        const { videoTrackConf, audioTrackConf, audioDecoderConf } =
+          extractFileConfig(data.file, data.info)
+        if (vTrackId === 0 && videoTrackConf != null) {
+          vTrackId = outfile.addTrack(videoTrackConf)
+        }
+        if (aTrackId === 0 && audioTrackConf != null) {
+          aTrackId = outfile.addTrack(audioTrackConf)
+          const audioCtx = new AudioContext({
+            sampleRate: audioTrackConf.samplerate
+          })
+          inputAudioPCM = extractPCM4AudioBuffer(
+            await audioCtx.decodeAudioData(
+              await new Response(audio.stream).arrayBuffer()
+            )
+          )
+        }
+
+        if (audioDecoderConf == null) throw Error('mp4 not have audio track')
+        audioSampleDecoder = createMP4AudioSampleDecoder(audioDecoderConf)
+        audioSampleEncoder = createMP4AudioSampleEncoder(audioDecoderConf)
+      } else if (chunkType === 'samples') {
+        const { id, type, samples } = data
+        if (type === 'video') {
+          samples.forEach(s => outfile.addSample(id, s.data, s))
+          return
+        }
+
+        // todo: 处理 mp4 无音轨场景
+        if (type !== 'audio') return
+        if (audioSampleDecoder == null || audioSampleEncoder == null) {
+          throw Error('Audio codec not created')
+        }
+
+        // 1. 先解码mp4音频
+        const mixiedPCM = (await audioSampleDecoder(samples)).map(ad => {
+          const mp4AudioBuf = extractPCM4AudioData(ad)
+          // todo: 性能优化； 音频非循环，如果 inputAudioPCM 已消耗完则后续无需 重编码
+          const inputAudioBuf = inputAudioPCM.map(chanBuf =>
+            audio.loop
+              ? ringSliceFloat32Array(
+                  chanBuf,
+                  audioOffset,
+                  audioOffset + mp4AudioBuf[0].length
+                )
+              : chanBuf.slice(audioOffset, audioOffset + mp4AudioBuf[0].length)
+          )
+
+          if (audio.volume !== 1) {
+            for (const buf of inputAudioBuf)
+              for (let i = 0; i < buf.length; i++) buf[i] *= audio.volume
+          }
+
+          audioOffset += mp4AudioBuf[0].length
+          // 2. 混合输入的音频
+          return {
+            pcm: mixPCM([mp4AudioBuf, inputAudioBuf]),
+            ts: ad.timestamp
+          }
         })
-        inputAudioPCM = extractPCM4AudioBuffer(
-          await audioCtx.decodeAudioData(
-            await new Response(audio.stream).arrayBuffer()
+
+        if (audioSampleEncoder == null) return
+        await Promise.all(
+          // 3. 重编码音频
+          mixiedPCM.map(async ({ pcm, ts }) =>
+            (
+              await audioSampleEncoder?.(pcm, ts)
+            )?.forEach(s => {
+              // 4. 添加到 mp4 音轨
+              outfile.addSample(aTrackId, s.data, s)
+            })
           )
         )
       }
-
-      if (audioDecoderConf == null) throw Error('mp4 not have audio track')
-      audioSampleDecoder = createMP4AudioSampleDecoder(audioDecoderConf)
-      audioSampleEncoder = createMP4AudioSampleEncoder(audioDecoderConf)
     },
-    onSamples: async (id, type, samples) => {
-      if (type === 'video') {
-        samples.forEach(s => outfile.addSample(id, s.data, s))
-        return
-      }
-
-      // todo: 处理 mp4 无音轨场景
-      if (type !== 'audio') return
-      if (audioSampleDecoder == null || audioSampleEncoder == null) {
-        throw Error('Audio codec not created')
-      }
-
-      // 1. 先解码mp4音频
-      const mixiedPCM = (await audioSampleDecoder(samples)).map(ad => {
-        const mp4AudioBuf = extractPCM4AudioData(ad)
-        // todo: 性能优化； 音频非循环，如果 inputAudioPCM 已消耗完则后续无需 重编码
-        const inputAudioBuf = inputAudioPCM.map(chanBuf =>
-          audio.loop
-            ? ringSliceFloat32Array(
-                chanBuf,
-                audioOffset,
-                audioOffset + mp4AudioBuf[0].length
-              )
-            : chanBuf.slice(audioOffset, audioOffset + mp4AudioBuf[0].length)
-        )
-
-        if (audio.volume !== 1) {
-          for (const buf of inputAudioBuf)
-            for (let i = 0; i < buf.length; i++) buf[i] *= audio.volume
-        }
-
-        audioOffset += mp4AudioBuf[0].length
-        // 2. 混合输入的音频
-        return {
-          pcm: mixPCM([mp4AudioBuf, inputAudioBuf]),
-          ts: ad.timestamp
-        }
-      })
-
-      if (audioSampleEncoder == null) return
-      mixiedPCM.forEach(async ({ pcm, ts }) => {
-        // 3. 重编码音频
-        ;(await audioSampleEncoder?.(pcm, ts))?.forEach(s => {
-          // 4. 添加到 mp4 音轨
-          outfile.addSample(aTrackId, s.data, s)
-        })
-        mixEnded()
-      })
-    }
+    onDone: stopOut
   })
 
   return outStream
