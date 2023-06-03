@@ -695,17 +695,17 @@ function createMP4AudioSampleDecoder (
   adConf: Parameters<AudioDecoder['configure']>[0]
 ) {
   let cacheAD: AudioData[] = []
-  const adEcoder = new AudioDecoder({
+  const adDecoder = new AudioDecoder({
     output: ad => {
       cacheAD.push(ad)
     },
     error: Log.error
   })
-  adEcoder.configure(adConf)
+  adDecoder.configure(adConf)
 
   return async (ss: MP4Sample[]) => {
     ss.forEach(s => {
-      adEcoder.decode(
+      adDecoder.decode(
         new EncodedAudioChunk({
           type: s.is_sync ? 'key' : 'delta',
           timestamp: (1e6 * s.cts) / s.timescale,
@@ -715,7 +715,7 @@ function createMP4AudioSampleDecoder (
       )
     })
 
-    await adEcoder.flush()
+    await adDecoder.flush()
 
     const rs = cacheAD
     cacheAD = []
