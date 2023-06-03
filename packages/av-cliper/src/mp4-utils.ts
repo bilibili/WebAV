@@ -724,13 +724,15 @@ function createMP4AudioSampleDecoder (
   }
 }
 
+// 音频编码与解码API有很大区别，
+// 是因为编码中途调用 AudioEncoder.flush ，会导致声音听起来卡顿
 function createMP4AudioSampleEncoder (
-  aeConf: Parameters<AudioEncoder['configure']>[0]
+  aeConf: Parameters<AudioEncoder['configure']>[0],
+  onOutput: (s: ReturnType<typeof chunk2MP4SampleOpts>) => void
 ) {
-  let cacheChunk: EncodedAudioChunk[] = []
   const adEncoder = new AudioEncoder({
     output: chunk => {
-      cacheChunk.push(chunk)
+      onOutput(chunk2MP4SampleOpts(chunk))
     },
     error: Log.error
   })
@@ -740,32 +742,22 @@ function createMP4AudioSampleEncoder (
     sampleRate: aeConf.sampleRate,
     numberOfChannels: aeConf.numberOfChannels
   })
-  return async (
-    data: Float32Array,
-    ts: number
-  ): Promise<ReturnType<typeof chunk2MP4SampleOpts>[]> => {
-    adEncoder.encode(
-      new AudioData({
-        timestamp: ts,
-        numberOfChannels: aeConf.numberOfChannels,
-        numberOfFrames: data.length / aeConf.numberOfChannels,
-        sampleRate: aeConf.sampleRate,
-        format: 'f32-planar',
-        data
-      })
-    )
-
-    // fixme：flush 会导致声音卡顿
-    await adEncoder.flush()
-    // while (cacheChunk.length === 0 || adEncoder.encodeQueueSize > 0) {
-    //   await sleep(1)
-    // }
-    // console.log(55555, cacheChunk, data.length)
-
-    const rs = cacheChunk.map(chunk => chunk2MP4SampleOpts(chunk))
-    cacheChunk = []
-
-    return rs
+  return {
+    encode: async (data: Float32Array, ts: number) => {
+      adEncoder.encode(
+        new AudioData({
+          timestamp: ts,
+          numberOfChannels: aeConf.numberOfChannels,
+          numberOfFrames: data.length / aeConf.numberOfChannels,
+          sampleRate: aeConf.sampleRate,
+          format: 'f32-planar',
+          data
+        })
+      )
+    },
+    flush: async () => {
+      await adEncoder.flush()
+    }
   }
 }
 
@@ -839,7 +831,8 @@ export function mixinMP4AndAudio (
                 : safeAudioTrackConf.type,
             numberOfChannels: safeAudioTrackConf.channel_count,
             sampleRate: safeAudioTrackConf.samplerate
-          }
+          },
+          s => outfile.addSample(aTrackId, s.data, s)
         )
       } else if (chunkType === 'samples') {
         const { id, type, samples } = data
@@ -853,7 +846,10 @@ export function mixinMP4AndAudio (
         if (type === 'audio') await mixinAudioSampleAndInputPCM(samples)
       }
     },
-    onDone: stopOut
+    onDone: async () => {
+      await audioSampleEncoder?.flush()
+      stopOut()
+    }
   })
 
   function getInputAudioSlice (len: number) {
@@ -882,14 +878,10 @@ export function mixinMP4AndAudio (
     )
     const audioDataBuf = mixinPCM([getInputAudioSlice(pcmLength)])
     if (audioDataBuf.length === 0) return
-    ;(
-      await audioSampleEncoder?.(
-        audioDataBuf,
-        (firstSamp.cts / firstSamp.timescale) * 1e6
-      )
-    )?.forEach(s => {
-      outfile.addSample(aTrackId, s.data, s)
-    })
+    audioSampleEncoder?.encode(
+      audioDataBuf,
+      (firstSamp.cts / firstSamp.timescale) * 1e6
+    )
   }
 
   async function mixinAudioSampleAndInputPCM (samples: MP4Sample[]) {
@@ -914,15 +906,11 @@ export function mixinMP4AndAudio (
     const firstSamp = samples[0]
 
     // 3. 重编码音频
-    ;(
-      await audioSampleEncoder?.(
-        // 2. 混合输入的音频
-        mixinPCM([mp4AudioPCM, inputAudioPCM]),
-        (firstSamp.cts / firstSamp.timescale) * 1e6
-      )
+    audioSampleEncoder?.encode(
+      // 2. 混合输入的音频
+      mixinPCM([mp4AudioPCM, inputAudioPCM]),
+      (firstSamp.cts / firstSamp.timescale) * 1e6
     )
-      // 4. 添加到 mp4 音轨
-      ?.forEach(s => outfile.addSample(aTrackId, s.data, s))
   }
 
   return outStream
