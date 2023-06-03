@@ -8,14 +8,11 @@ interface IAnimationOpts {
 
 type TAnimateProps = IRectBaseProps & { opacity: number }
 
-export type TAnimationKeyFrame = Array<[
-  number,
-  Partial<TAnimateProps>
-]>
+export type TAnimationKeyFrame = Array<[number, Partial<TAnimateProps>]>
 
-type TKeyFrameOpts = Partial<Record<
-  `${number}%` | 'from' | 'to', Partial<TAnimateProps>
->>
+type TKeyFrameOpts = Partial<
+  Record<`${number}%` | 'from' | 'to', Partial<TAnimateProps>>
+>
 
 export abstract class BaseSprite {
   rect = new Rect()
@@ -41,15 +38,19 @@ export abstract class BaseSprite {
   render (
     ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D
   ): void {
-    // todo: clip
-    const { rect: { center, angle } } = this
+    const {
+      rect: { center, angle }
+    } = this
     ctx.setTransform(
       // 水平 缩放、倾斜
-      this.flip === 'horizontal' ? -1 : 1, 0,
+      this.flip === 'horizontal' ? -1 : 1,
+      0,
       // 垂直 倾斜、缩放
-      0, this.flip === 'vertical' ? -1 : 1,
+      0,
+      this.flip === 'vertical' ? -1 : 1,
       // 坐标原点偏移 x y
-      center.x, center.y
+      center.x,
+      center.y
     )
     // 任意方向翻转，旋转角度转为负值，才能与控制点同步
     ctx.rotate((this.flip == null ? 1 : -1) * angle)
@@ -58,14 +59,13 @@ export abstract class BaseSprite {
   }
 
   setAnimation (keyFrame: TKeyFrameOpts, opts: IAnimationOpts): void {
-    this.#animatKeyFrame = Object.entries(keyFrame)
-      .map(([k, val]) => {
-        const numK = ({ from: 0, to: 100 })[k] ?? Number(k.slice(0, -1))
-        if (isNaN(numK) || numK > 100 || numK < 0) {
-          throw Error('keyFrame must between 0~100')
-        }
-        return [numK / 100, val]
-      }) as TAnimationKeyFrame
+    this.#animatKeyFrame = Object.entries(keyFrame).map(([k, val]) => {
+      const numK = { from: 0, to: 100 }[k] ?? Number(k.slice(0, -1))
+      if (isNaN(numK) || numK > 100 || numK < 0) {
+        throw Error('keyFrame must between 0~100')
+      }
+      return [numK / 100, val]
+    }) as TAnimationKeyFrame
     this.#animatOpts = Object.assign({}, this.#animatOpts, {
       duration: opts.duration * 1e6,
       delay: (opts.delay ?? 0) * 1e6,
@@ -78,7 +78,8 @@ export abstract class BaseSprite {
       this.#animatKeyFrame == null ||
       this.#animatOpts == null ||
       time < this.#animatOpts.delay
-    ) return
+    )
+      return
     // todo: delay, other timing-function
     const updateProps = linearTimeFn(
       time,
@@ -101,7 +102,7 @@ export abstract class BaseSprite {
     }
   }
 
-  abstract destroy (): void
+  abstract destroy(): void
 }
 
 export function linearTimeFn (
@@ -125,7 +126,8 @@ export function linearTimeFn (
 
   const rs: Partial<TAnimateProps> = {}
   // 介于两个Frame状态间的进度
-  const stateProcess = (process - startState[0]) / (nextState[0] - startState[0])
+  const stateProcess =
+    (process - startState[0]) / (nextState[0] - startState[0])
   for (const prop in nextFrame) {
     const p = prop as keyof TAnimateProps
     if (startFrame[p] == null) continue

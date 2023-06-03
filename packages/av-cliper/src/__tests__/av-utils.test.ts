@@ -1,6 +1,6 @@
 import { test, expect } from 'vitest'
 import './mock'
-import { concatFloat32Array, mixPCM } from '../av-utils'
+import { concatFloat32Array, mixinPCM } from '../av-utils'
 
 test('concatArrayBuffer', () => {
   expect(
@@ -12,11 +12,11 @@ test('mixPCM', () => {
   const wav1 = new Float32Array([1, 1, 1])
   const wav2 = new Float32Array([2, 2, 2, 2, 2])
 
-  expect(mixPCM([[], [wav2, wav2]])).toEqual(
+  expect(mixinPCM([[wav2, wav2]])).toEqual(
     new Float32Array([2, 2, 2, 2, 2, 2, 2, 2, 2, 2])
   )
   expect(
-    mixPCM([
+    mixinPCM([
       [wav1, wav1],
       [wav2, wav2]
     ])

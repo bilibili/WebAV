@@ -14,7 +14,7 @@ document.querySelector('#fast-concat-mp4')?.addEventListener('click', () => {
 
 document.querySelector('#mixin-mp4-audio')?.addEventListener('click', () => {
   ;(async () => {
-    mixinMP4AndAudio((await fetch('./public/video/webav1.mp4')).body!, {
+    mixinMP4AndAudio((await fetch('./public/video/0.mp4')).body!, {
       stream: (await fetch('./public/audio/44.1kHz-2chan.mp3')).body!,
       volume: 1,
       loop: true
@@ -33,7 +33,9 @@ document.querySelector('#concat-and-mixin')?.addEventListener('click', () => {
       volume: 1,
       loop: false
     })
-    mp43Stream.pipeTo(await createFileWriter('mp4'))
+    console.time('cost:')
+    await mp43Stream.pipeTo(await createFileWriter('mp4'))
+    console.timeEnd('cost:')
   })().catch(Log.error)
 })
 
