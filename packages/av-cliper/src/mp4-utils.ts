@@ -721,9 +721,6 @@ function createMP4AudioSampleDecoder (
       )
     })
 
-    while (adEcoder.decodeQueueSize > 0) {
-      await sleep(1)
-    }
     await adEcoder.flush()
 
     const rs = cacheAD
@@ -772,9 +769,6 @@ function createMP4AudioSampleEncoder (
       })
     )
 
-    while (cacheChunk.length === 0 || adEncoder.encodeQueueSize > 0) {
-      await sleep(1)
-    }
     await adEncoder.flush()
 
     const rs = cacheChunk.map(chunk => chunk2MP4SampleOpts(chunk))
