@@ -11,6 +11,7 @@ import { Log } from './log'
 import { AudioTrackOpts } from 'mp4box'
 import {
   autoReadStream,
+  concatFloat32Array,
   extractPCM4AudioData,
   mixinPCM,
   ringSliceFloat32Array,
@@ -693,8 +694,6 @@ export function fastConcatMP4 (streams: ReadableStream<Uint8Array>[]) {
 function createMP4AudioSampleDecoder (
   adConf: Parameters<AudioDecoder['configure']>[0]
 ) {
-  let lock = false
-
   let cacheAD: AudioData[] = []
   const adEcoder = new AudioDecoder({
     output: ad => {
@@ -705,11 +704,6 @@ function createMP4AudioSampleDecoder (
   adEcoder.configure(adConf)
 
   return async (ss: MP4Sample[]) => {
-    while (lock || adEcoder.decodeQueueSize > 0) {
-      await sleep(1)
-    }
-    lock = true
-
     ss.forEach(s => {
       adEcoder.decode(
         new EncodedAudioChunk({
@@ -725,7 +719,6 @@ function createMP4AudioSampleDecoder (
 
     const rs = cacheAD
     cacheAD = []
-    lock = false
 
     return rs
   }
@@ -734,8 +727,6 @@ function createMP4AudioSampleDecoder (
 function createMP4AudioSampleEncoder (
   aeConf: Parameters<AudioEncoder['configure']>[0]
 ) {
-  let lock = false
-
   let cacheChunk: EncodedAudioChunk[] = []
   const adEncoder = new AudioEncoder({
     output: chunk => {
@@ -753,11 +744,6 @@ function createMP4AudioSampleEncoder (
     data: Float32Array,
     ts: number
   ): Promise<ReturnType<typeof chunk2MP4SampleOpts>[]> => {
-    while (lock || adEncoder.encodeQueueSize > 0) {
-      await sleep(1)
-    }
-    lock = true
-
     adEncoder.encode(
       new AudioData({
         timestamp: ts,
@@ -769,11 +755,15 @@ function createMP4AudioSampleEncoder (
       })
     )
 
+    // fixme：flush 会导致声音卡顿
     await adEncoder.flush()
+    // while (cacheChunk.length === 0 || adEncoder.encodeQueueSize > 0) {
+    //   await sleep(1)
+    // }
+    // console.log(55555, cacheChunk, data.length)
 
     const rs = cacheChunk.map(chunk => chunk2MP4SampleOpts(chunk))
     cacheChunk = []
-    lock = false
 
     return rs
   }
@@ -904,31 +894,35 @@ export function mixinMP4AndAudio (
 
   async function mixinAudioSampleAndInputPCM (samples: MP4Sample[]) {
     if (audioSampleDecoder == null) return
+
     // 1. 先解码mp4音频
-    const mixiedPCM = (await audioSampleDecoder(samples)).map(ad => {
-      const mp4AudioBuf = extractPCM4AudioData(ad)
-      // todo: 性能优化； 音频非循环，如果 inputAudioPCM 已消耗完则后续无需 重编码
-      const inputAudioBuf = getInputAudioSlice(mp4AudioBuf[0].length)
-
-      // 2. 混合输入的音频
-      return {
-        pcm: mixinPCM([mp4AudioBuf, inputAudioBuf]),
-        ts: ad.timestamp
+    // [[chan0, chan1], [chan0, chan1]...]
+    const tinySlicePCM = (await audioSampleDecoder(samples)).map(
+      extractPCM4AudioData
+    )
+    // [[chan0, chan0...], [chan1, chan1...]]
+    const chanListPCM: Float32Array[][] = []
+    for (let i = 0; i < tinySlicePCM.length; i += 1) {
+      for (let j = 0; j < tinySlicePCM[i].length; j += 1) {
+        if (chanListPCM[j] == null) chanListPCM[j] = []
+        chanListPCM[j].push(tinySlicePCM[i][j])
       }
-    })
+    }
+    // [chan0, chan1]
+    const mp4AudioPCM = chanListPCM.map(chanBuf => concatFloat32Array(chanBuf))
+    const inputAudioPCM = getInputAudioSlice(mp4AudioPCM[0].length)
+    const firstSamp = samples[0]
 
-    if (audioSampleEncoder == null) return
-    await Promise.all(
-      // 3. 重编码音频
-      mixiedPCM.map(async ({ pcm, ts }) =>
-        (
-          await audioSampleEncoder?.(pcm, ts)
-        )?.forEach(s => {
-          // 4. 添加到 mp4 音轨
-          outfile.addSample(aTrackId, s.data, s)
-        })
+    // 3. 重编码音频
+    ;(
+      await audioSampleEncoder?.(
+        // 2. 混合输入的音频
+        mixinPCM([mp4AudioPCM, inputAudioPCM]),
+        (firstSamp.cts / firstSamp.timescale) * 1e6
       )
     )
+      // 4. 添加到 mp4 音轨
+      ?.forEach(s => outfile.addSample(aTrackId, s.data, s))
   }
 
   return outStream
