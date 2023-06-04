@@ -13,11 +13,11 @@ import {
   autoReadStream,
   concatFloat32Array,
   extractPCM4AudioData,
+  extractPCM4AudioBuffer,
   mixinPCM,
   ringSliceFloat32Array,
   sleep
 } from './av-utils'
-import { extractPCM4AudioBuffer } from './av-utils'
 
 type TCleanFn = () => void
 
