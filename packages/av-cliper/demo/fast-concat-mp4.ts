@@ -9,21 +9,21 @@ document.querySelector('#fast-concat-mp4')?.addEventListener('click', () => {
       (await fetch('./public/video/webav2.mp4')).body!,
       (await fetch('./public/video/webav3.mp4')).body!
     ])
-    await playOutputStream(stream)
+    playOutputStream(stream)
   })().catch(Log.error)
 })
 
 document.querySelector('#mixin-mp4-audio')?.addEventListener('click', () => {
   ;(async () => {
     const outStream = mixinMP4AndAudio(
-      (await fetch('./public/video/webav0.mp4')).body!,
+      (await fetch('./public/video/0.mp4')).body!,
       {
         stream: (await fetch('./public/audio/44.1kHz-2chan.mp3')).body!,
         volume: 1,
         loop: true
       }
     )
-    await playOutputStream(outStream)
+    playOutputStream(outStream)
   })().catch(Log.error)
 })
 
@@ -38,6 +38,6 @@ document.querySelector('#concat-and-mixin')?.addEventListener('click', () => {
       volume: 1,
       loop: false
     })
-    await playOutputStream(mp43Stream)
+    playOutputStream(mp43Stream)
   })().catch(Log.error)
 })

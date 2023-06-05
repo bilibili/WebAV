@@ -1,4 +1,4 @@
-export async function playOutputStream (stream: ReadableStream) {
+export function playOutputStream (stream: ReadableStream) {
   const container = document.createElement('div')
   document.body.appendChild(container)
 
@@ -15,27 +15,21 @@ export async function playOutputStream (stream: ReadableStream) {
     display: block;
   `
 
-  let timeStart = performance.now()
-  videoEl.src = URL.createObjectURL(await new Response(stream).blob())
-  stateEl.textContent = `cost: ${Math.round(performance.now() - timeStart)}ms`
+  const downloadBtn = createDownloadBtn(videoEl.src)
+  async function load () {
+    let timeStart = performance.now()
+    videoEl.src = URL.createObjectURL(await new Response(stream).blob())
+    stateEl.textContent = `cost: ${Math.round(performance.now() - timeStart)}ms`
+    downloadBtn.style.visibility = 'visible'
+  }
+  load().catch(console.error)
 
   const closeEl = document.createElement('button')
   closeEl.textContent = 'close'
   closeEl.style.marginRight = '16px'
 
-  const downloadEl = document.createElement('button')
-  downloadEl.textContent = 'download'
-  downloadEl.onclick = () => {
-    const aEl = document.createElement('a')
-    document.body.appendChild(aEl)
-    aEl.setAttribute('href', videoEl.src)
-    aEl.setAttribute('download', `WebAv-export-${Date.now()}.mp4`)
-    aEl.setAttribute('target', '_self')
-    aEl.click()
-  }
-
   container.appendChild(closeEl)
-  container.appendChild(downloadEl)
+  container.appendChild(downloadBtn)
   container.appendChild(videoEl)
 
   const close = () => {
@@ -44,5 +38,25 @@ export async function playOutputStream (stream: ReadableStream) {
   }
   closeEl.onclick = close
 
-  return close
+  return {
+    close,
+    updateState: (desc: string) => {
+      stateEl.textContent = desc
+    }
+  }
+}
+
+function createDownloadBtn (url: string) {
+  const downloadEl = document.createElement('button')
+  downloadEl.textContent = 'download'
+  downloadEl.onclick = () => {
+    const aEl = document.createElement('a')
+    document.body.appendChild(aEl)
+    aEl.setAttribute('href', url)
+    aEl.setAttribute('download', `WebAv-export-${Date.now()}.mp4`)
+    aEl.setAttribute('target', '_self')
+    aEl.click()
+  }
+  downloadEl.style.visibility = 'visible'
+  return downloadEl
 }

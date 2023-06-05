@@ -4,9 +4,11 @@ import { Log } from '../src/log'
 import { OffscreenSprite } from '../src/offscreen-sprite'
 import { renderTxt2ImgBitmap } from '../src/dom-utils'
 import { EmbedSubtitlesClip } from '../src/clips/embed-subtitles-clip'
+import { playOutputStream } from './play-video'
 
 const cvs = document.querySelector('canvas') as HTMLCanvasElement
 const ctx = cvs.getContext('2d')!
+cvs.style.display = 'none'
 
 document.querySelector('#mp4-mp4')?.addEventListener('click', () => {
   ;(async () => {
@@ -57,13 +59,16 @@ document.querySelector('#mp4-mp4')?.addEventListener('click', () => {
       height: 720,
       bgColor: 'white'
     })
+
     await com.add(spr4, { offset: 0, duration: 5 })
     await com.add(spr1, { offset: 0, duration: 35 })
     await com.add(spr3, { offset: 35, duration: 3 })
+
+    const { updateState } = playOutputStream(com.output())
     com.on('OutputProgress', v => {
       console.log('----- progress:', v)
+      updateState(`progress: ${Math.round(v * 100)}%`)
     })
-    await com.output().pipeTo(await createFileWriter('mp4'))
   })().catch(Log.error)
 })
 
@@ -90,10 +95,12 @@ document.querySelector('#mp4-mp3')?.addEventListener('click', () => {
     })
     await com.add(spr1, { offset: 0, duration: 1 * 60 })
     await com.add(spr2, { offset: 0, duration: 1 * 60 })
+
+    const { updateState } = playOutputStream(com.output())
     com.on('OutputProgress', v => {
       console.log('----- progress:', v)
+      updateState(`progress: ${Math.round(v * 100)}%`)
     })
-    await com.output().pipeTo(await createFileWriter('mp4'))
   })().catch(Log.error)
 })
 
@@ -113,7 +120,12 @@ document.querySelector('#mix-audio')?.addEventListener('click', () => {
     })
     await com.add(spr1, { offset: 0, duration: 5 })
     await com.add(spr2, { offset: 0, duration: 3 })
-    await com.output().pipeTo(await createFileWriter('mp4'))
+
+    const { updateState } = playOutputStream(com.output())
+    com.on('OutputProgress', v => {
+      console.log('----- progress:', v)
+      updateState(`progress: ${Math.round(v * 100)}%`)
+    })
   })().catch(Log.error)
 })
 
@@ -129,7 +141,12 @@ document.querySelector('#gif-m4a')?.addEventListener('click', () => {
     const com = new Combinator({ width: 1280, height: 720 })
     await com.add(spr1, { duration: 10, offset: 0 })
     await com.add(spr2, { duration: 10, offset: 0 })
-    await com.output().pipeTo(await createFileWriter('mp4'))
+
+    const { updateState } = playOutputStream(com.output())
+    com.on('OutputProgress', v => {
+      console.log('----- progress:', v)
+      updateState(`progress: ${Math.round(v * 100)}%`)
+    })
   })()
 })
 
@@ -148,36 +165,11 @@ document.querySelector('#mp4-srt')?.addEventListener('click', () => {
     const com = new Combinator({ width: 1280, height: 720 })
     await com.add(spr1, { duration: 10, offset: 0 })
     await com.add(spr2, { duration: 10, offset: 0 })
-    await com.output().pipeTo(await createFileWriter('mp4'))
+
+    const { updateState } = playOutputStream(com.output())
+    com.on('OutputProgress', v => {
+      console.log('----- progress:', v)
+      updateState(`progress: ${Math.round(v * 100)}%`)
+    })
   })()
 })
-
-async function createFileWriter (
-  extName: string
-): Promise<FileSystemWritableFileStream> {
-  // @ts-expect-error
-  const fileHandle = await window.showSaveFilePicker({
-    suggestedName: `WebAv-export-${Date.now()}.${extName}`
-  })
-  return fileHandle.createWritable()
-}
-
-// const com1 = new Combinator({
-//   width: 1280,
-//   height: 720
-// })
-
-// com1.add(spr1, { offset: 0, duration: 3 })
-// com1.add(spr2, { offset: 3, duration: 3 })
-// com1.add(spr3, { offset: 0, duration: 6 })
-
-// // ========
-
-// const com2 = new Combinator({
-//   width: 1280,
-//   height: 720
-// })
-// com2.add(spr1, { position: 'static' })
-// com2.add(spr2, { position: 'static' })
-// com2.add(spr3, { position: 'static' })
-// com2.add(spr4, { offset: 0 })
