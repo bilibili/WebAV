@@ -10,14 +10,21 @@ const cvs = document.querySelector('canvas') as HTMLCanvasElement
 const ctx = cvs.getContext('2d')!
 cvs.style.display = 'none'
 
+const resourceEl = document.querySelector('#resource')!
+
 document.querySelector('#mp4-mp4')?.addEventListener('click', () => {
   ;(async () => {
-    const resp1 = await fetch('./public/video/0.mp4')
+    const resList = ['./public/video/0.mp4', './public/img/bangni.png']
+    resourceEl.innerHTML = resList
+      .map(str => `<a href="${str}" target="_blank">${str}</>`)
+      .join('<br/>')
+
+    const resp1 = await fetch(resList[0])
     const spr1 = new OffscreenSprite(
       'spr1',
       new MP4Clip(resp1.body as ReadableStream)
     )
-    const resp3 = await fetch('./public/img/bangni.png')
+    const resp3 = await fetch(resList[1])
     const spr3 = new OffscreenSprite(
       'spr3',
       new ImgClip(await createImageBitmap(await resp3.blob()))
@@ -74,14 +81,18 @@ document.querySelector('#mp4-mp4')?.addEventListener('click', () => {
 
 document.querySelector('#mp4-mp3')?.addEventListener('click', () => {
   ;(async () => {
+    const resList = ['./public/video/0.mp4', './public/audio/16kHz-1chan.mp3']
+    resourceEl.innerHTML = resList
+      .map(str => `<a href="${str}" target="_blank">${str}</>`)
+      .join('<br/>')
     // const resp1 = await fetch('./public/video/pri-bunny_avc_frag.mp4')
-    const resp1 = await fetch('./public/video/0.mp4')
+    const resp1 = await fetch(resList[0])
     const spr1 = new OffscreenSprite(
       'spr1',
       new MP4Clip(resp1.body as ReadableStream)
     )
 
-    const resp2 = await fetch('./public/audio/16kHz-1chan.mp3')
+    const resp2 = await fetch(resList[1])
     const spr2 = new OffscreenSprite(
       'spr2',
       new AudioClip(resp2.body!, {
@@ -106,8 +117,15 @@ document.querySelector('#mp4-mp3')?.addEventListener('click', () => {
 
 document.querySelector('#mix-audio')?.addEventListener('click', () => {
   ;(async () => {
-    const resp1 = await fetch('./public/audio/44.1kHz-2chan.m4a')
-    const resp2 = await fetch('./public/audio/16kHz-1chan.mp3')
+    const resList = [
+      './public/audio/44.1kHz-2chan.m4a',
+      './public/audio/16kHz-1chan.mp3'
+    ]
+    resourceEl.innerHTML = resList
+      .map(str => `<a href="${str}" target="_blank">${str}</>`)
+      .join('<br/>')
+    const resp1 = await fetch(resList[0])
+    const resp2 = await fetch(resList[1])
     const spr1 = new OffscreenSprite(
       '1',
       new AudioClip(resp1.body!, { volume: 0.5 })
@@ -131,12 +149,20 @@ document.querySelector('#mix-audio')?.addEventListener('click', () => {
 
 document.querySelector('#gif-m4a')?.addEventListener('click', () => {
   ;(async () => {
-    const resp1 = await fetch('./public/img/animated.gif')
+    const resList = [
+      './public/img/animated.gif',
+      './public/audio/44.1kHz-2chan.m4a'
+    ]
+    resourceEl.innerHTML = resList
+      .map(str => `<a href="${str}" target="_blank">${str}</>`)
+      .join('<br/>')
+
+    const resp1 = await fetch(resList[0])
     const spr1 = new OffscreenSprite(
       's1',
       new ImgClip({ type: 'image/gif', stream: resp1.body! })
     )
-    const resp2 = await fetch('./public/audio/44.1kHz-2chan.m4a')
+    const resp2 = await fetch(resList[1])
     const spr2 = new OffscreenSprite('s2', new AudioClip(resp2.body!))
     const com = new Combinator({ width: 1280, height: 720 })
     await com.add(spr1, { duration: 10, offset: 0 })
@@ -152,9 +178,16 @@ document.querySelector('#gif-m4a')?.addEventListener('click', () => {
 
 document.querySelector('#mp4-srt')?.addEventListener('click', () => {
   ;(async () => {
-    const resp1 = await fetch('./public/video/0.mp4')
+    const resList = [
+      './public/video/0.mp4',
+      './public/subtitles/test-sample.srt'
+    ]
+    resourceEl.innerHTML = resList
+      .map(str => `<a href="${str}" target="_blank">${str}</>`)
+      .join('<br/>')
+    const resp1 = await fetch(resList[0])
     const spr1 = new OffscreenSprite('s1', new MP4Clip(resp1.body!))
-    const resp2 = await fetch('./public/subtitles/test-sample.srt')
+    const resp2 = await fetch(resList[1])
     const spr2 = new OffscreenSprite(
       's2',
       new EmbedSubtitlesClip(await resp2.text(), {
