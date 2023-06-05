@@ -1,5 +1,6 @@
 import { Log } from '../src/log'
 import { fastConcatMP4, mixinMP4AndAudio } from '../src/mp4-utils'
+import { playOutputStream } from './play-video'
 
 document.querySelector('#fast-concat-mp4')?.addEventListener('click', () => {
   ;(async () => {
@@ -8,17 +9,21 @@ document.querySelector('#fast-concat-mp4')?.addEventListener('click', () => {
       (await fetch('./public/video/webav2.mp4')).body!,
       (await fetch('./public/video/webav3.mp4')).body!
     ])
-    stream.pipeTo(await createFileWriter('mp4'))
+    await playOutputStream(stream)
   })().catch(Log.error)
 })
 
 document.querySelector('#mixin-mp4-audio')?.addEventListener('click', () => {
   ;(async () => {
-    mixinMP4AndAudio((await fetch('./public/video/0.mp4')).body!, {
-      stream: (await fetch('./public/audio/44.1kHz-2chan.mp3')).body!,
-      volume: 1,
-      loop: true
-    }).pipeTo(await createFileWriter('mp4'))
+    const outStream = mixinMP4AndAudio(
+      (await fetch('./public/video/webav0.mp4')).body!,
+      {
+        stream: (await fetch('./public/audio/44.1kHz-2chan.mp3')).body!,
+        volume: 1,
+        loop: true
+      }
+    )
+    await playOutputStream(outStream)
   })().catch(Log.error)
 })
 
@@ -33,18 +38,6 @@ document.querySelector('#concat-and-mixin')?.addEventListener('click', () => {
       volume: 1,
       loop: false
     })
-    console.time('cost:')
-    await mp43Stream.pipeTo(await createFileWriter('mp4'))
-    console.timeEnd('cost:')
+    await playOutputStream(mp43Stream)
   })().catch(Log.error)
 })
-
-async function createFileWriter (
-  extName: string
-): Promise<FileSystemWritableFileStream> {
-  // @ts-expect-error
-  const fileHandle = await window.showSaveFilePicker({
-    suggestedName: `WebAv-export-${Date.now()}.${extName}`
-  })
-  return fileHandle.createWritable()
-}
