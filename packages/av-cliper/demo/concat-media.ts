@@ -13,7 +13,7 @@ const resourceEl = document.querySelector('#resource')!
 
 document.querySelector('#mp4-mp4')?.addEventListener('click', () => {
   ;(async () => {
-    const resList = ['./public/video/0.mp4', './public/img/bangni.png']
+    const resList = ['./public/video/0.mp4', './public/img/bunny.png']
     resourceEl.innerHTML = resList
       .map(str => `<a href="${str}" target="_blank">${str}</>`)
       .join('<br/>')
