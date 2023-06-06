@@ -2,6 +2,9 @@
 
 import { Log } from './log'
 
+/**
+ * 合并（串联）多个 Float32Array，通常用于合并 PCM 数据
+ */
 export function concatFloat32Array (bufs: Float32Array[]): Float32Array {
   const rs = new Float32Array(
     bufs.map(buf => buf.length).reduce((a, b) => a + b)
@@ -14,6 +17,24 @@ export function concatFloat32Array (bufs: Float32Array[]): Float32Array {
   }
 
   return rs
+}
+
+/**
+ * 将小片段的 PCM 合并成一个大片段
+ * @param fragments 小片段 PCM，子元素是不同声道的原始 PCM 数据
+ */
+export function concatFragmentPCM (fragments: Float32Array[][]): Float32Array[] {
+  // fragments: [[chan0, chan1], [chan0, chan1]...]
+  // chanListPCM: [[chan0, chan0...], [chan1, chan1...]]
+  const chanListPCM: Float32Array[][] = []
+  for (let i = 0; i < fragments.length; i += 1) {
+    for (let j = 0; j < fragments[i].length; j += 1) {
+      if (chanListPCM[j] == null) chanListPCM[j] = []
+      chanListPCM[j].push(fragments[i][j])
+    }
+  }
+  // [bigChan0, bigChan1]
+  return chanListPCM.map(concatFloat32Array)
 }
 
 /**

@@ -1,6 +1,6 @@
 import { beforeEach, expect, test } from 'vitest'
 import { AudioBufferMock } from '../../__tests__/mock'
-import { AudioClip, DEFAULT_AUDIO_SAMPLE_RATE } from '..'
+import { AudioClip, DEFAULT_AUDIO_SAMPLE_RATE, concatAudioClip } from '..'
 
 beforeEach(() => {
   AudioBufferMock.duration = 10
@@ -54,4 +54,18 @@ test('AudioClip loop', async () => {
     audio: [chan0]
   } = await clip.tick(1e6 * 11)
   expect(chan0.length).toBe(DEFAULT_AUDIO_SAMPLE_RATE * 2)
+})
+
+test('concatAudioClip', async () => {
+  const clip1 = new AudioClip(new ReadableStream())
+  const clip2 = new AudioClip(new ReadableStream())
+
+  // 两个clip 各10s，合成后总长度 20s
+  const clip = await concatAudioClip([clip1, clip2])
+  const { audio, state: s1 } = await clip.tick(19 * 1e6)
+  expect(s1).toBe('success')
+  expect(audio.length).toBe(2)
+
+  const { state: s2 } = await clip.tick(21 * 1e6)
+  expect(s2).toBe('done')
 })
