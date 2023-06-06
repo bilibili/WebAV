@@ -1,6 +1,6 @@
 import { test, expect } from 'vitest'
 import './mock'
-import { concatFloat32Array, concatFragmentPCM, mixinPCM } from '../av-utils'
+import { concatFloat32Array, concatPCMFragments, mixinPCM } from '../av-utils'
 
 test('concatArrayBuffer', () => {
   expect(
@@ -27,7 +27,7 @@ test('concatFragmentPCM', () => {
   const chan0 = new Float32Array([0, 0, 0])
   const chan1 = new Float32Array([1, 1, 1])
   expect(
-    concatFragmentPCM([
+    concatPCMFragments([
       // 立体声（双声道）PCM片段
       [chan0, chan1],
       [chan0, chan1]

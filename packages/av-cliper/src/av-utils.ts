@@ -23,7 +23,9 @@ export function concatFloat32Array (bufs: Float32Array[]): Float32Array {
  * 将小片段的 PCM 合并成一个大片段
  * @param fragments 小片段 PCM，子元素是不同声道的原始 PCM 数据
  */
-export function concatFragmentPCM (fragments: Float32Array[][]): Float32Array[] {
+export function concatPCMFragments (
+  fragments: Float32Array[][]
+): Float32Array[] {
   // fragments: [[chan0, chan1], [chan0, chan1]...]
   // chanListPCM: [[chan0, chan0...], [chan1, chan1...]]
   const chanListPCM: Float32Array[][] = []

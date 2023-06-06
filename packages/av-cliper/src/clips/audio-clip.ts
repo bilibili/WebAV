@@ -1,5 +1,5 @@
 import {
-  concatFragmentPCM,
+  concatPCMFragments,
   extractPCM4AudioBuffer,
   ringSliceFloat32Array
 } from '../av-utils'
@@ -127,7 +127,7 @@ export async function concatAudioClip (
     await clip.ready
     bufs.push(clip.getPCMData())
   }
-  return new AudioClip(concatFragmentPCM(bufs), opts)
+  return new AudioClip(concatPCMFragments(bufs), opts)
 }
 
 async function parseStream2PCM (

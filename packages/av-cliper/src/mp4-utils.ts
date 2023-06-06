@@ -11,12 +11,12 @@ import { Log } from './log'
 import { AudioTrackOpts } from 'mp4box'
 import {
   autoReadStream,
-  concatFloat32Array,
   extractPCM4AudioData,
   extractPCM4AudioBuffer,
   mixinPCM,
   ringSliceFloat32Array,
-  sleep
+  sleep,
+  concatPCMFragments
 } from './av-utils'
 
 type TCleanFn = () => void
@@ -889,19 +889,11 @@ export function mixinMP4AndAudio (
 
     // 1. 先解码mp4音频
     // [[chan0, chan1], [chan0, chan1]...]
-    const tinySlicePCM = (await audioSampleDecoder(samples)).map(
+    const pcmFragments = (await audioSampleDecoder(samples)).map(
       extractPCM4AudioData
     )
-    // [[chan0, chan0...], [chan1, chan1...]]
-    const chanListPCM: Float32Array[][] = []
-    for (let i = 0; i < tinySlicePCM.length; i += 1) {
-      for (let j = 0; j < tinySlicePCM[i].length; j += 1) {
-        if (chanListPCM[j] == null) chanListPCM[j] = []
-        chanListPCM[j].push(tinySlicePCM[i][j])
-      }
-    }
     // [chan0, chan1]
-    const mp4AudioPCM = chanListPCM.map(chanBuf => concatFloat32Array(chanBuf))
+    const mp4AudioPCM = concatPCMFragments(pcmFragments)
     const inputAudioPCM = getInputAudioSlice(mp4AudioPCM[0].length)
     const firstSamp = samples[0]
 
