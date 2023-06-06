@@ -1,4 +1,4 @@
-import { AudioClip, ImgClip, MP4Clip } from '../src/clips'
+import { AudioClip, ImgClip, MP4Clip, concatAudioClip } from '../src/clips'
 import { Combinator } from '../src/combinator'
 import { Log } from '../src/log'
 import { OffscreenSprite } from '../src/offscreen-sprite'
@@ -6,9 +6,8 @@ import { renderTxt2ImgBitmap } from '../src/dom-utils'
 import { EmbedSubtitlesClip } from '../src/clips/embed-subtitles-clip'
 import { playOutputStream } from './play-video'
 
-const cvs = document.querySelector('canvas') as HTMLCanvasElement
-const ctx = cvs.getContext('2d')!
-cvs.style.display = 'none'
+// const cvs = document.querySelector('canvas') as HTMLCanvasElement
+// const ctx = cvs.getContext('2d')!
 
 const resourceEl = document.querySelector('#resource')!
 
@@ -132,12 +131,37 @@ document.querySelector('#mix-audio')?.addEventListener('click', () => {
     )
     const spr2 = new OffscreenSprite('2', new AudioClip(resp2.body!))
 
-    const com = new Combinator({
-      width: 1280,
-      height: 720
-    })
+    const com = new Combinator({ width: 1280, height: 720 })
     await com.add(spr1, { offset: 0, duration: 5 })
-    await com.add(spr2, { offset: 0, duration: 3 })
+    await com.add(spr2, { offset: 0, duration: 4 })
+
+    const { updateState } = playOutputStream(com.output())
+    com.on('OutputProgress', v => {
+      console.log('----- progress:', v)
+      updateState(`progress: ${Math.round(v * 100)}%`)
+    })
+  })().catch(Log.error)
+})
+
+document.querySelector('#concat-audio')?.addEventListener('click', () => {
+  ;(async () => {
+    const resList = [
+      './public/audio/16kHz-1chan.mp3',
+      './public/audio/44.1kHz-2chan.m4a'
+    ]
+    resourceEl.innerHTML = resList
+      .map(str => `<a href="${str}" target="_blank">${str}</>`)
+      .join('<br/>')
+
+    const clip = await concatAudioClip(
+      await Promise.all(
+        resList.map(async url => new AudioClip((await fetch(url)).body!))
+      )
+    )
+    const spr1 = new OffscreenSprite('1', clip)
+
+    const com = new Combinator({ width: 1280, height: 720 })
+    await com.add(spr1, { offset: 0, duration: 30 })
 
     const { updateState } = playOutputStream(com.output())
     com.on('OutputProgress', v => {

@@ -112,6 +112,7 @@ export class MP4Clip implements IClip {
         pcmArr[1] ?? pcmArr[0]
       ])
     }
+    // todo: 频繁合并PCM（内存释放分配），可能有性能优化空间
     return (ad: AudioData) => {
       needResample = ad.sampleRate !== DEFAULT_AUDIO_SAMPLE_RATE
 
