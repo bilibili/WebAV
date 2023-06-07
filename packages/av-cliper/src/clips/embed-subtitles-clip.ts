@@ -11,7 +11,7 @@ interface IEmbedSubtitlesOpts {
 }
 
 export class EmbedSubtitlesClip implements IClip {
-  ready: Promise<{ width: number; height: number }>
+  ready: IClip['ready']
 
   #subtitles: Array<{
     start: number
@@ -58,10 +58,11 @@ export class EmbedSubtitlesClip implements IClip {
     this.#ctx.textAlign = 'center'
     this.#ctx.textBaseline = 'top'
 
-    // 字幕的宽高 由内容决定
+    // 字幕的宽高 由视频画面内容决定
     this.ready = Promise.resolve({
       width: videoWidth,
-      height: videoHeight
+      height: videoHeight,
+      duration: this.#subtitles.at(-1)?.end ?? 0
     })
   }
 

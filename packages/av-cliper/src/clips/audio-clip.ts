@@ -14,7 +14,7 @@ interface IAudioClipOpts {
 export class AudioClip implements IClip {
   static ctx = new AudioContext({ sampleRate: DEFAULT_AUDIO_SAMPLE_RATE })
 
-  ready: Promise<{ width: number; height: number }>
+  ready: IClip['ready']
 
   #meta = {
     // 微秒
@@ -49,7 +49,8 @@ export class AudioClip implements IClip {
     this.ready = this.#init(dataSource).then(() => ({
       // audio 没有宽高，无需绘制
       width: 0,
-      height: 0
+      height: 0,
+      duration: opts.loop ? Infinity : this.#meta.duration
     }))
   }
 

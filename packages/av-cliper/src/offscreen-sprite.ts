@@ -9,12 +9,18 @@ export class OffscreenSprite extends BaseSprite {
   // 保持最近一帧，若 clip 在当前帧无数据，则绘制最近一帧
   #lastVf: VideoFrame | ImageBitmap | null = null
 
+  /**
+   * 在视频帧的持续时长
+   */
+  duration = Infinity
+
   constructor (name: string, clip: IClip) {
     super(name)
     this.#clip = clip
-    this.ready = clip.ready.then(({ width, height }) => {
+    this.ready = clip.ready.then(({ width, height, duration }) => {
       this.rect.w = width
       this.rect.h = height
+      this.duration = duration
     })
   }
 

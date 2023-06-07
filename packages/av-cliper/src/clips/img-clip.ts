@@ -3,7 +3,7 @@ import { Log } from '../log'
 import { IClip } from './iclip'
 
 export class ImgClip implements IClip {
-  ready: Promise<{ width: number; height: number }>
+  ready: IClip['ready']
 
   #meta = {
     // 微秒
@@ -25,13 +25,15 @@ export class ImgClip implements IClip {
       this.#meta.height = dataSource.height
       this.ready = Promise.resolve({
         width: dataSource.width,
-        height: dataSource.height
+        height: dataSource.height,
+        duration: Infinity
       })
     } else {
       this.ready = this.#gifInit(dataSource.stream, dataSource.type).then(
         () => ({
           width: this.#meta.width,
-          height: this.#meta.height
+          height: this.#meta.height,
+          duration: Infinity
         })
       )
     }

@@ -13,7 +13,7 @@ export class MP4Clip implements IClip {
 
   #ts = 0
 
-  ready: Promise<{ width: number; height: number }>
+  ready: IClip['ready']
 
   #destroyed = false
   #decodeEnded = false
@@ -71,7 +71,12 @@ export class MP4Clip implements IClip {
             Log.info('MP4Clip info:', info)
             resolve({
               width: videoTrack.track_width,
-              height: videoTrack.track_height
+              height: videoTrack.track_height,
+              duration:
+                // fragment mp4 的duration 在 onComplete 回调中才知道
+                videoTrack.duration === 0
+                  ? -1
+                  : (videoTrack.duration / videoTrack.timescale) * 1e6
             })
           },
           onVideoOutput: vf => {

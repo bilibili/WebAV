@@ -91,7 +91,7 @@ export class Combinator {
     this.#comItems.push({
       sprite,
       offset: opts.offset * 1e6,
-      duration: opts.duration == null ? -1 : opts.duration * 1e6,
+      duration: opts.duration == null ? sprite.duration : opts.duration * 1e6,
       main: opts.main ?? false
     })
     this.#comItems.sort((a, b) => a.sprite.zIndex - b.sprite.zIndex)
@@ -100,11 +100,27 @@ export class Combinator {
   output (): ReadableStream<Uint8Array> {
     if (this.#comItems.length === 0) throw Error('No clip added')
 
+    const mainItem = this.#comItems.find(it => it.main)
+    // 最大时间，优先取 main sprite，不存在则取最大值
+    const maxTime =
+      mainItem != null
+        ? mainItem.offset + mainItem.duration
+        : Math.max(...this.#comItems.map(it => it.offset + it.duration))
+
+    if (maxTime === Infinity) {
+      throw Error(
+        'Unable to determine the end time, please specify a main sprite, or limit the duration of ImgClip, AudioCli'
+      )
+    }
+    if (maxTime === -1) {
+      Log.warn("Unable to determine the end time, process value don't update")
+    }
+
     const runState = {
       cancel: false,
       progress: 0
     }
-    this.#run(runState).catch(Log.error)
+    this.#run(runState, maxTime).catch(Log.error)
 
     const stopProg = this.#updateProgress(runState)
     this.#remux.onEnded = () => {
@@ -127,18 +143,17 @@ export class Combinator {
     return stream
   }
 
-  async #run (state: { cancel: boolean; progress: number }): Promise<void> {
+  async #run (
+    state: { cancel: boolean; progress: number },
+    maxTime: number
+  ): Promise<void> {
     // 33ms ≈ 30FPS
     const timeSlice = 33 * 1000
-    const maxTime = Math.max(
-      ...this.#comItems.map(it => it.offset + it.duration)
-    )
 
     let frameCnt = 0
     const { width, height } = this.#cvs
     const ctx = this.#ctx
     let ts = 0
-    // while (ts <= maxTime) {
     while (true) {
       state.progress = ts / maxTime
       if (state.cancel || this.#comItems.length === 0) {
