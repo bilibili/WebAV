@@ -103,8 +103,8 @@ document.querySelector('#mp4-mp3')?.addEventListener('click', () => {
       width: 1280,
       height: 720
     })
-    await com.add(spr1, { offset: 0, main: true })
-    await com.add(spr2, { offset: 0 })
+    await com.add(spr1, { main: true })
+    await com.add(spr2)
 
     com.on('OutputProgress', v => {
       console.log('----- progress:', v)

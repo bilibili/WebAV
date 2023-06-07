@@ -83,14 +83,14 @@ export class Combinator {
 
   async add (
     sprite: OffscreenSprite,
-    opts: { offset: number; duration?: number; main?: boolean }
+    opts: { offset?: number; duration?: number; main?: boolean } = {}
   ): Promise<void> {
     Log.info('Combinator add sprite:', sprite.name)
     await sprite.ready
     Log.info('Combinator add sprite ready:', sprite.name)
     this.#comItems.push({
       sprite,
-      offset: opts.offset * 1e6,
+      offset: (opts.offset ?? 0) * 1e6,
       duration: opts.duration == null ? sprite.duration : opts.duration * 1e6,
       main: opts.main ?? false
     })
