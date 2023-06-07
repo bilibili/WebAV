@@ -12,19 +12,21 @@ document.querySelector('#fast-concat-mp4')?.addEventListener('click', () => {
     const stream = fastConcatMP4(
       await Promise.all(resList.map(async url => (await fetch(url)).body!))
     )
-    playOutputStream(stream, resList, document.body)
+    const { loadStream } = playOutputStream(resList, document.body)
+    await loadStream(stream)
   })().catch(Log.error)
 })
 
 document.querySelector('#mixin-mp4-audio')?.addEventListener('click', () => {
   ;(async () => {
     const resList = ['./public/video/0.mp4', './public/audio/44.1kHz-2chan.mp3']
-    const outStream = mixinMP4AndAudio((await fetch(resList[0])).body!, {
+    const stream = mixinMP4AndAudio((await fetch(resList[0])).body!, {
       stream: (await fetch(resList[1])).body!,
       volume: 1,
       loop: true
     })
-    playOutputStream(outStream, resList, document.body)
+    const { loadStream } = playOutputStream(resList, document.body)
+    await loadStream(stream)
   })().catch(Log.error)
 })
 
@@ -39,11 +41,12 @@ document.querySelector('#concat-and-mixin')?.addEventListener('click', () => {
       (await fetch(resList[0])).body!,
       (await fetch(resList[1])).body!
     ])
-    const mp43Stream = mixinMP4AndAudio(mp4Stream, {
+    const stream = mixinMP4AndAudio(mp4Stream, {
       stream: (await fetch(resList[2])).body!,
       volume: 1,
       loop: false
     })
-    playOutputStream(mp43Stream, resList, document.body)
+    const { loadStream } = playOutputStream(resList, document.body)
+    await loadStream(stream)
   })().catch(Log.error)
 })

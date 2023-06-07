@@ -1,14 +1,10 @@
-export function playOutputStream (
-  stream: ReadableStream,
-  resourceList: string[],
-  attachEl: Element
-) {
+export function playOutputStream (resourceList: string[], attachEl: Element) {
   const container = document.createElement('div')
   attachEl.appendChild(container)
 
   const resourceEl = document.createElement('div')
   resourceEl.innerHTML =
-    `Load resource:<br/>` +
+    `Resource:<br/>` +
     resourceList
       .map(str => `<a href="${str}" target="_blank">${str}</>`)
       .join('<br/>')
@@ -27,21 +23,14 @@ export function playOutputStream (
     display: block;
   `
 
-  const downloadBtn = createDownloadBtn(videoEl.src)
-  async function load () {
-    let timeStart = performance.now()
-    videoEl.src = URL.createObjectURL(await new Response(stream).blob())
-    stateEl.textContent = `cost: ${Math.round(performance.now() - timeStart)}ms`
-    downloadBtn.style.visibility = 'visible'
-  }
-  load().catch(console.error)
+  const btnContiner = document.createElement('div')
+  container.appendChild(btnContiner)
 
   const closeEl = document.createElement('button')
   closeEl.textContent = 'close'
   closeEl.style.marginRight = '16px'
 
-  container.appendChild(closeEl)
-  container.appendChild(downloadBtn)
+  btnContiner.appendChild(closeEl)
   container.appendChild(videoEl)
 
   const close = () => {
@@ -51,7 +40,15 @@ export function playOutputStream (
   closeEl.onclick = close
 
   return {
-    close,
+    loadStream: async (stream: ReadableStream) => {
+      let timeStart = performance.now()
+      videoEl.src = URL.createObjectURL(await new Response(stream).blob())
+      stateEl.textContent = `cost: ${Math.round(
+        performance.now() - timeStart
+      )}ms`
+
+      btnContiner.appendChild(createDownloadBtn(videoEl.src))
+    },
     updateState: (desc: string) => {
       stateEl.textContent = desc
     }
@@ -69,6 +66,5 @@ function createDownloadBtn (url: string) {
     aEl.setAttribute('target', '_self')
     aEl.click()
   }
-  downloadEl.style.visibility = 'visible'
   return downloadEl
 }
