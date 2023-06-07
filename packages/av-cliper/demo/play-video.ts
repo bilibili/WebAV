@@ -1,9 +1,21 @@
-export function playOutputStream (stream: ReadableStream) {
+export function playOutputStream (
+  stream: ReadableStream,
+  resourceList: string[],
+  attachEl: Element
+) {
   const container = document.createElement('div')
-  document.body.appendChild(container)
+  attachEl.appendChild(container)
+
+  const resourceEl = document.createElement('div')
+  resourceEl.innerHTML =
+    `Load resource:<br/>` +
+    resourceList
+      .map(str => `<a href="${str}" target="_blank">${str}</>`)
+      .join('<br/>')
+  container.appendChild(resourceEl)
 
   const stateEl = document.createElement('div')
-  stateEl.textContent = 'processing...'
+  stateEl.textContent = 'loading...'
   container.appendChild(stateEl)
 
   const videoEl = document.createElement('video')
