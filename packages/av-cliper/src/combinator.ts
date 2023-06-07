@@ -9,6 +9,12 @@ interface IComItem {
   offset: number
   duration: number
   sprite: OffscreenSprite
+  /**
+   * main 资源时间结束时会终结合并流程；
+   * 比如合并 mp4（main） + mp3 + img， 所有资源可以缺省持续时间（duration）；
+   * mp4（main）时间终点会终结合并流程
+   */
+  main: boolean
 }
 
 interface ICombinatorOpts {
@@ -77,7 +83,7 @@ export class Combinator {
 
   async add (
     sprite: OffscreenSprite,
-    opts: { offset: number; duration?: number }
+    opts: { offset: number; duration?: number; main?: boolean }
   ): Promise<void> {
     Log.info('Combinator add sprite:', sprite.name)
     await sprite.ready
@@ -85,7 +91,8 @@ export class Combinator {
     this.#comItems.push({
       sprite,
       offset: opts.offset * 1e6,
-      duration: opts.duration == null ? -1 : opts.duration * 1e6
+      duration: opts.duration == null ? -1 : opts.duration * 1e6,
+      main: opts.main ?? false
     })
     this.#comItems.sort((a, b) => a.sprite.zIndex - b.sprite.zIndex)
   }
@@ -131,9 +138,13 @@ export class Combinator {
     const { width, height } = this.#cvs
     const ctx = this.#ctx
     let ts = 0
-    while (ts <= maxTime) {
+    // while (ts <= maxTime) {
+    while (true) {
       state.progress = ts / maxTime
-      if (state.cancel) break
+      if (state.cancel || this.#comItems.length === 0) {
+        this.#comItems.forEach(it => it.sprite.destroy())
+        return
+      }
 
       ctx.fillStyle = this.#opts.bgColor
       ctx.fillRect(0, 0, width, height)
@@ -142,19 +153,28 @@ export class Combinator {
       for (let i = 0; i < this.#comItems.length; i++) {
         const it = this.#comItems[i]
         if (ts < it.offset) continue
-        // 超过设定时间，主动掐断
-        if (it.duration > 0 && ts > it.offset + it.duration) {
-          it.sprite.destroy()
-          this.#comItems.splice(i, 1)
-          continue
-        }
 
         ctx.save()
-        audios.push(await it.sprite.offscreenRender(ctx, ts - it.offset))
+        const { audio, done } = await it.sprite.offscreenRender(
+          ctx,
+          ts - it.offset
+        )
+        audios.push(audio)
         ctx.restore()
+
+        // 超过设定时间主动掐断，或资源结束
+        if ((it.duration > 0 && ts > it.offset + it.duration) || done) {
+          if (it.main) {
+            this.#comItems.forEach(it => it.sprite.destroy())
+            return
+          }
+
+          it.sprite.destroy()
+          this.#comItems.splice(i, 1)
+        }
       }
 
-      Log.debug('combinator run, ts:', ts, ' audio track count:', audios.length)
+      // Log.debug('combinator run, ts:', ts, ' audio track count:', audios.length)
       if (audios.flat().every(a => a.length === 0)) {
         // 当前时刻无音频时，使用无声音频占位，否则会导致后续音频播放时间偏差
         this.#remux.encodeAudio(
@@ -196,8 +216,6 @@ export class Combinator {
         }
       }
     }
-
-    this.#comItems.forEach(it => it.sprite.destroy())
   }
 
   #updateProgress (mixinState: { progress: number }): () => void {

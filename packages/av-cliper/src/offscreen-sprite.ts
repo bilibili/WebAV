@@ -21,12 +21,20 @@ export class OffscreenSprite extends BaseSprite {
   async offscreenRender (
     ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D,
     time: number
-  ): Promise<Float32Array[]> {
+  ): Promise<{
+    audio: Float32Array[]
+    done: boolean
+  }> {
     this.animate(time)
     super.render(ctx)
     const { w, h } = this.rect
     const { video, audio, state } = await this.#clip.tick(time)
-    if (state === 'done') return audio ?? []
+    if (state === 'done') {
+      return {
+        audio: audio ?? [],
+        done: true
+      }
+    }
 
     const imgSource = video ?? this.#lastVf
     if (imgSource != null) {
@@ -38,7 +46,10 @@ export class OffscreenSprite extends BaseSprite {
       this.#lastVf = video
     }
 
-    return audio ?? []
+    return {
+      audio: audio ?? [],
+      done: false
+    }
   }
 
   destroy (): void {
