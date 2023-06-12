@@ -103,7 +103,7 @@ document.querySelector('#mp4-mp3')?.addEventListener('click', () => {
       width: 1280,
       height: 720
     })
-    await com.add(spr1, { main: true })
+    await com.add(spr1, { duration: 10, main: true })
     await com.add(spr2)
 
     com.on('OutputProgress', v => {
