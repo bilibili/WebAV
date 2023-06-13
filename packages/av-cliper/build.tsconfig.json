@@ -19,6 +19,7 @@
     "noUnusedParameters": true,
     "noImplicitReturns": true,
     "declaration": true,
+    "emitDeclarationOnly": true,
     "skipLibCheck": true
   },
   "include": [

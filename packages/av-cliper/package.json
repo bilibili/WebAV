@@ -10,7 +10,7 @@
     "dev": "vite demo --host 0.0.0.0",
     "test": "vitest",
     "test:coverage": "vitest run --coverage",
-    "build": "rimraf dist && tsc -p build.tsconfig.json --outDir dist",
+    "build": "vite build && tsc -p build.tsconfig.json --outDir dist",
     "build:dev": "rimraf dist && tsc -p build.tsconfig.json --outDir dist --watch",
     "build:demo": "rimraf demo-dist && vite build -c demo.vite.config.ts && cp -r demo/public demo-dist/demo",
     "prepublishOnly": "yarn build",
