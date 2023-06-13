@@ -2,7 +2,7 @@ export interface IRecorderConf {
   width?: number
   height?: number
   expectFPS?: number
-  audioCodec?: 'opus' | 'aac'
+  audioCodec?: 'aac'
   /* 码率 */
   bitrate?: number
 }

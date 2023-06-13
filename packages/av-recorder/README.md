@@ -19,8 +19,6 @@ const mediaStream = await navigator.mediaDevices.getUserMedia({
 const recorder = new AVRecorder(mediaStream, {
   width: 1280,
   height: 720,
-  // aac or opus (default)
-  audioCodec: 'aac'
 })
 await recorder.start()
 
