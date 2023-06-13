@@ -32,7 +32,7 @@ interface IWorkerOpts {
     sampleRate: number
     sampleSize: number
     channelCount: number
-  }
+  } | null
   bitrate: number
 }
 
@@ -174,7 +174,12 @@ export function recodemux (opts: IWorkerOpts): {
     video: false
   }
   const vEncoder = encodeVideoTrack(opts, mp4file, stateSync)
-  const aEncoder = encodeAudioTrack(opts.audio, mp4file, stateSync)
+  let aEncoder: AudioEncoder | null = null
+  if (opts.audio == null) {
+    stateSync.audio = true
+  } else {
+    aEncoder = encodeAudioTrack(opts.audio, mp4file, stateSync)
+  }
 
   let maxSize = 0
   let endCheckTimer = 0
@@ -200,6 +205,7 @@ export function recodemux (opts: IWorkerOpts): {
       checkEnded()
     },
     encodeAudio: ad => {
+      if (aEncoder == null) return
       aEncoder.encode(ad)
       ad.close()
       checkEnded()

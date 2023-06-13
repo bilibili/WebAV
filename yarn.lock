@@ -5213,9 +5213,9 @@ move-concurrently@^1.0.1:
     rimraf "^2.5.4"
     run-queue "^1.0.3"
 
-mp4box@^0.5.2, mp4box@hughfenghen/mp4box.js:
+mp4box@hughfenghen/mp4box.js:
   version "0.5.2"
-  resolved "https://codeload.github.com/hughfenghen/mp4box.js/tar.gz/5c0e7cb10fed8a8ab3ec8cd47e571559ed0eac2c"
+  resolved "https://codeload.github.com/hughfenghen/mp4box.js/tar.gz/a8e8e2bff86d515d1c0c1da006e1d18543d3f0e1"
 
 ms@2.0.0:
   version "2.0.0"

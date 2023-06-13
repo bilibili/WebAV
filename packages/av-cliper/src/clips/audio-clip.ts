@@ -12,7 +12,7 @@ interface IAudioClipOpts {
 }
 
 export class AudioClip implements IClip {
-  static ctx = new AudioContext({ sampleRate: DEFAULT_AUDIO_SAMPLE_RATE })
+  static ctx: AudioContext | null = null
 
   ready: IClip['ready']
 
@@ -57,6 +57,12 @@ export class AudioClip implements IClip {
   async #init (
     dataSource: ReadableStream<Uint8Array> | Float32Array[]
   ): Promise<void> {
+    if (AudioClip.ctx == null) {
+      AudioClip.ctx = new AudioContext({
+        sampleRate: DEFAULT_AUDIO_SAMPLE_RATE
+      })
+    }
+
     const tStart = performance.now()
     const pcm =
       dataSource instanceof ReadableStream
