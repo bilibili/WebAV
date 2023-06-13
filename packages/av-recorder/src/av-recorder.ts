@@ -4,8 +4,12 @@ import { EWorkerMsg, IRecorderConf, IStream, IWorkerOpts } from './types'
 type TState = 'inactive' | 'recording' | 'paused'
 export class AVRecorder {
   #state: TState = 'inactive'
-  get state (): 'inactive' | 'recording' | 'paused' { return this.#state }
-  set state (_: TState) { throw new Error('state is readonly') }
+  get state (): 'inactive' | 'recording' | 'paused' {
+    return this.#state
+  }
+  set state (_: TState) {
+    throw new Error('state is readonly')
+  }
 
   #ms
 
@@ -22,7 +26,7 @@ export class AVRecorder {
       height: 720,
       bitrate: 1_500_000,
       expectFPS: 30,
-      audioCodec: 'opus',
+      audioCodec: 'aac',
       ...conf
     }
   }
@@ -70,12 +74,15 @@ export class AVRecorder {
       streams
     }
 
-    worker.postMessage({
-      type: EWorkerMsg.Start,
-      data: workerOpts
-    }, Object.values(streams))
+    worker.postMessage(
+      {
+        type: EWorkerMsg.Start,
+        data: workerOpts
+      },
+      Object.values(streams)
+    )
 
-    return await new Promise<void>((resolve) => {
+    return await new Promise<void>(resolve => {
       worker.addEventListener('message', (evt: MessageEvent) => {
         const { type, data } = evt.data
         switch (type) {
@@ -95,7 +102,7 @@ export class AVRecorder {
     if (worker == null) return
 
     worker.postMessage({ type: EWorkerMsg.Stop })
-    return await new Promise<void>((resolve) => {
+    return await new Promise<void>(resolve => {
       worker.addEventListener('message', (evt: MessageEvent) => {
         const { type } = evt.data
         switch (type) {

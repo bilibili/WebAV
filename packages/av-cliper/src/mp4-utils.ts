@@ -32,7 +32,7 @@ interface IWorkerOpts {
     sampleRate: number
     sampleSize: number
     channelCount: number
-  }
+  } | null
   bitrate: number
 }
 
@@ -168,18 +168,18 @@ export function recodemux (opts: IWorkerOpts): {
 } {
   const mp4file = mp4box.createFile()
 
+  // 音视频轨道必须同时创建, 保存在 moov 中
+  const stateSync = {
+    audio: false,
+    video: false
+  }
+  const vEncoder = encodeVideoTrack(opts, mp4file, stateSync)
   let aEncoder: AudioEncoder | null = null
-  let audioDataCache: AudioData[] = []
-  const vEncoder = encodeVideoTrack(opts, mp4file, () => {
-    // 音视频轨道必须同时创建, 保存在 moov 中
-    // 创建视频轨道需要 encdoer output 的 meta 数据, 所以音频轨道需要等待视频轨道
-    aEncoder = encodeAudioTrack(opts.audio, mp4file)
-    audioDataCache.forEach(ad => {
-      aEncoder?.encode(ad)
-      ad.close()
-    })
-    audioDataCache = []
-  })
+  if (opts.audio == null) {
+    stateSync.audio = true
+  } else {
+    aEncoder = encodeAudioTrack(opts.audio, mp4file, stateSync)
+  }
 
   let maxSize = 0
   let endCheckTimer = 0
@@ -205,13 +205,10 @@ export function recodemux (opts: IWorkerOpts): {
       checkEnded()
     },
     encodeAudio: ad => {
-      if (aEncoder == null) {
-        audioDataCache.push(ad)
-      } else {
-        aEncoder.encode(ad)
-        ad.close()
-        checkEnded()
-      }
+      if (aEncoder == null) return
+      aEncoder.encode(ad)
+      ad.close()
+      checkEnded()
     },
     getEecodeQueueSize: () => vEncoder.encodeQueueSize,
     close: () => {
@@ -228,10 +225,10 @@ export function recodemux (opts: IWorkerOpts): {
   return rs
 }
 
-export function encodeVideoTrack (
+function encodeVideoTrack (
   opts: IWorkerOpts,
   mp4File: MP4File,
-  onTrackReady: TCleanFn
+  stateSync: { audio: boolean; video: boolean }
 ): VideoEncoder {
   const videoTrackOpts = {
     // 微秒
@@ -243,16 +240,27 @@ export function encodeVideoTrack (
   }
 
   let vTrackId: number
+  let cache: EncodedVideoChunk[] = []
   const encoder = createVideoEncoder(opts, (chunk, meta) => {
     if (vTrackId == null && meta != null) {
       videoTrackOpts.avcDecoderConfigRecord = meta.decoderConfig?.description
       vTrackId = mp4File.addTrack(videoTrackOpts)
-
-      // start encodeAudioTrack
-      onTrackReady()
+      stateSync.video = true
     }
-    const s = chunk2MP4SampleOpts(chunk)
-    mp4File.addSample(vTrackId, s.data, s)
+
+    if (stateSync.audio) {
+      if (cache.length > 0) {
+        cache.forEach(c => {
+          const s = chunk2MP4SampleOpts(c)
+          mp4File.addSample(vTrackId, s.data, s)
+        })
+        cache = []
+      }
+      const s = chunk2MP4SampleOpts(chunk)
+      mp4File.addSample(vTrackId, s.data, s)
+    } else {
+      cache.push(chunk)
+    }
   })
 
   return encoder
@@ -288,7 +296,8 @@ function createVideoEncoder (
 
 function encodeAudioTrack (
   audioOpts: NonNullable<IWorkerOpts['audio']>,
-  mp4File: MP4File
+  mp4File: MP4File,
+  stateSync: { video: boolean; audio: boolean }
 ): AudioEncoder {
   const audioTrackOpts = {
     timescale: 1e6,
@@ -300,12 +309,32 @@ function encodeAudioTrack (
     type: audioOpts.codec === 'aac' ? 'mp4a' : 'Opus'
   }
 
-  const trackId = mp4File.addTrack(audioTrackOpts)
+  let trackId = 0
+  let cache: EncodedAudioChunk[] = []
   const encoder = new AudioEncoder({
     error: Log.error,
-    output: chunk => {
-      const s = chunk2MP4SampleOpts(chunk)
-      mp4File.addSample(trackId, s.data, s)
+    output: (chunk, meta) => {
+      if (trackId === 0 && meta.decoderConfig?.description != null) {
+        trackId = mp4File.addTrack({
+          ...audioTrackOpts,
+          description: createESDSBox(meta.decoderConfig?.description)
+        })
+        stateSync.audio = true
+      }
+
+      if (stateSync.video) {
+        if (cache.length > 0) {
+          cache.forEach(c => {
+            const s = chunk2MP4SampleOpts(c)
+            mp4File.addSample(trackId, s.data, s)
+          })
+          cache = []
+        }
+        const s = chunk2MP4SampleOpts(chunk)
+        mp4File.addSample(trackId, s.data, s)
+      } else {
+        cache.push(chunk)
+      }
     }
   })
   encoder.configure({
@@ -917,4 +946,51 @@ function sample2ChunkOpts (
     duration: (1e6 * s.duration) / s.timescale,
     data: s.data
   }
+}
+
+function createESDSBox (config: ArrayBuffer | ArrayBufferView) {
+  const configlen = config.byteLength
+  const buf = new Uint8Array([
+    0x00, // version 0
+    0x00,
+    0x00,
+    0x00, // flags
+
+    0x03, // descriptor_type
+    0x17 + configlen, // length
+    0x00,
+    // 0x01, // es_id
+    0x02, // es_id
+    0x00, // stream_priority
+
+    0x04, // descriptor_type
+    0x12 + configlen, // length
+    0x40, // codec : mpeg4_audio
+    0x15, // stream_type
+    0x00,
+    0x00,
+    0x00, // buffer_size
+    0x00,
+    0x00,
+    0x00,
+    0x00, // maxBitrate
+    0x00,
+    0x00,
+    0x00,
+    0x00, // avgBitrate
+
+    0x05, // descriptor_type
+
+    configlen,
+    ...new Uint8Array(config instanceof ArrayBuffer ? config : config.buffer),
+
+    0x06,
+    0x01,
+    0x02
+  ])
+
+  const esdsBox = new mp4box.BoxParser.esdsBox(buf.byteLength)
+  esdsBox.hdr_size = 0
+  esdsBox.parse(new mp4box.DataStream(buf, 0, mp4box.DataStream.BIG_ENDIAN))
+  return esdsBox
 }

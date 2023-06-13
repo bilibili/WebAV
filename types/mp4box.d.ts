@@ -63,7 +63,7 @@ declare module 'mp4box' {
     END_ENDIAN: unknown
     prototype: DataStream
     new (
-      size?: number,
+      size?: number | ArrayBufferView,
       byteOffset?: number,
       // @ts-expect-error
       endianness?: DataStream.BIG_ENDIAN | DataStream.END_ENDIAN
@@ -93,6 +93,7 @@ declare module 'mp4box' {
     samplerate: number
     channel_count: number
     samplesize?: number
+    description?: BoxParser
     hdlr: string
     name: string
     type: string
@@ -123,8 +124,10 @@ declare module 'mp4box' {
   interface BoxParser {
     boxes: BoxParser[]
     size: number
+    hdr_size: number
     start: number
     type: string
+    parse: (stream: DataStream) => void
   }
 
   export interface TrakBoxParser extends BoxParser {
@@ -148,6 +151,18 @@ declare module 'mp4box' {
   interface STBLBoxParser extends BoxParser {
     type: 'stbl'
     stsd: STSDBoxParser
+  }
+
+  interface ESDBoxParser extends BoxParser {
+    tag: number
+  }
+
+  interface ESDSBoxParser extends BoxParser {
+    type: 'esds'
+    version: number
+    flags: number
+    esd: ESDBoxParser
+    new (size: number): ESDSBoxParser
   }
 
   type STSDBoxParser = Omit<
@@ -237,12 +252,21 @@ declare module 'mp4box' {
     onFlush?: () => void
   }
 
+  interface MPEG4DescriptorParser {
+    new (): MPEG4DescriptorParser
+    parseOneDescriptor(stream: DataStream): ESDBoxParser
+  }
+
   export function createFile(): MP4File
 
   const DefExp: {
     MP4File: MP4File
     createFile: () => MP4File
+    BoxParser: {
+      esdsBox: ESDSBoxParser
+    }
     DataStream: typeof DataStream
+    MPEG4DescriptorParser: MPEG4DescriptorParser
     Log: {
       debug: () => void
       setLogLevel: (fn: () => void) => void

@@ -13,8 +13,7 @@ document.querySelector('#startRecod')?.addEventListener('click', () => {
 
     recorder = new AVRecorder(mediaStream, {
       width: 1280,
-      height: 720,
-      audioCodec: 'aac'
+      height: 720
     })
     await recorder.start()
 
@@ -29,7 +28,9 @@ document.querySelector('#stopRecod')?.addEventListener('click', () => {
   })().catch(console.error)
 })
 
-async function createFileWriter (extName: string): Promise<FileSystemWritableFileStream> {
+async function createFileWriter (
+  extName: string
+): Promise<FileSystemWritableFileStream> {
   const fileHandle = await window.showSaveFilePicker({
     suggestedName: `WebAv-export-${Date.now()}.${extName}`
   })
