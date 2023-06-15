@@ -5214,8 +5214,8 @@ move-concurrently@^1.0.1:
     run-queue "^1.0.3"
 
 mp4box@hughfenghen/mp4box.js:
-  version "0.5.2"
-  resolved "https://codeload.github.com/hughfenghen/mp4box.js/tar.gz/a8e8e2bff86d515d1c0c1da006e1d18543d3f0e1"
+  version "0.5.3-fenghen"
+  resolved "https://codeload.github.com/hughfenghen/mp4box.js/tar.gz/9e06b3c7075c1fc1c6c0af23fac61fe54576504c"
 
 ms@2.0.0:
   version "2.0.0"
