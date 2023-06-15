@@ -7,11 +7,12 @@ document.querySelector('#startRecod')?.addEventListener('click', () => {
       video: true,
       audio: true
     })
+    const recodeMS = mediaStream.clone()
     const vEl = document.querySelector('video') as HTMLVideoElement
     vEl.srcObject = mediaStream
     vEl.play().catch(console.error)
 
-    recorder = new AVRecorder(mediaStream, {
+    recorder = new AVRecorder(recodeMS, {
       width: 1280,
       height: 720
     })
