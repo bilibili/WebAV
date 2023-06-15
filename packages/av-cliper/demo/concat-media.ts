@@ -13,7 +13,7 @@ const playerContiner = document.querySelector('#player-continer')!
 
 document.querySelector('#mp4-img')?.addEventListener('click', evt => {
   ;(async () => {
-    const resList = ['./public/video/0.mp4', './public/img/bunny.png']
+    const resList = ['./public/video/webav1.mp4', './public/img/bunny.png']
     const { updateState, loadStream } = playOutputStream(
       resList,
       playerContiner
@@ -81,7 +81,10 @@ document.querySelector('#mp4-img')?.addEventListener('click', evt => {
 
 document.querySelector('#mp4-mp3')?.addEventListener('click', () => {
   ;(async () => {
-    const resList = ['./public/video/0.mp4', './public/audio/16kHz-1chan.mp3']
+    const resList = [
+      './public/video/webav1.mp4',
+      './public/audio/44.1kHz-2chan.mp3'
+    ]
     const { updateState, loadStream } = playOutputStream(
       resList,
       playerContiner
@@ -207,7 +210,7 @@ document.querySelector('#gif-m4a')?.addEventListener('click', () => {
 document.querySelector('#mp4-srt')?.addEventListener('click', () => {
   ;(async () => {
     const resList = [
-      './public/video/0.mp4',
+      './public/video/webav1.mp4',
       './public/subtitles/test-sample.srt'
     ]
     const { updateState, loadStream } = playOutputStream(

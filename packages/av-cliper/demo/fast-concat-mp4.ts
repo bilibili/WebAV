@@ -19,7 +19,10 @@ document.querySelector('#fast-concat-mp4')?.addEventListener('click', () => {
 
 document.querySelector('#mixin-mp4-audio')?.addEventListener('click', () => {
   ;(async () => {
-    const resList = ['./public/video/0.mp4', './public/audio/44.1kHz-2chan.mp3']
+    const resList = [
+      './public/video/webav1.mp4',
+      './public/audio/44.1kHz-2chan.mp3'
+    ]
     const stream = mixinMP4AndAudio((await fetch(resList[0])).body!, {
       stream: (await fetch(resList[1])).body!,
       volume: 1,

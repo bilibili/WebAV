@@ -246,6 +246,7 @@ function encodeVideoTrack (
       videoTrackOpts.avcDecoderConfigRecord = meta.decoderConfig?.description
       vTrackId = mp4File.addTrack(videoTrackOpts)
       stateSync.video = true
+      Log.info('VideoEncoder, video track ready')
     }
 
     if (stateSync.audio) {
@@ -320,6 +321,7 @@ function encodeAudioTrack (
           description: createESDSBox(meta.decoderConfig?.description)
         })
         stateSync.audio = true
+        Log.info('AudioEncoder, audio track ready')
       }
 
       if (stateSync.video) {
