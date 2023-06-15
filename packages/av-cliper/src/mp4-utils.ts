@@ -239,26 +239,26 @@ function encodeVideoTrack (
     avcDecoderConfigRecord: null as AllowSharedBufferSource | undefined | null
   }
 
-  let vTrackId: number
+  let trackId: number
   let cache: EncodedVideoChunk[] = []
   const encoder = createVideoEncoder(opts, (chunk, meta) => {
-    if (vTrackId == null && meta != null) {
+    if (trackId == null && meta != null) {
       videoTrackOpts.avcDecoderConfigRecord = meta.decoderConfig?.description
-      vTrackId = mp4File.addTrack(videoTrackOpts)
+      trackId = mp4File.addTrack(videoTrackOpts)
       stateSync.video = true
-      Log.info('VideoEncoder, video track ready')
+      Log.info('VideoEncoder, video track ready, trackId:', trackId)
     }
 
     if (stateSync.audio) {
       if (cache.length > 0) {
         cache.forEach(c => {
           const s = chunk2MP4SampleOpts(c)
-          mp4File.addSample(vTrackId, s.data, s)
+          mp4File.addSample(trackId, s.data, s)
         })
         cache = []
       }
       const s = chunk2MP4SampleOpts(chunk)
-      mp4File.addSample(vTrackId, s.data, s)
+      mp4File.addSample(trackId, s.data, s)
     } else {
       cache.push(chunk)
     }
@@ -321,7 +321,7 @@ function encodeAudioTrack (
           description: createESDSBox(meta.decoderConfig?.description)
         })
         stateSync.audio = true
-        Log.info('AudioEncoder, audio track ready')
+        Log.info('AudioEncoder, audio track ready, trackId:', trackId)
       }
 
       if (stateSync.video) {
