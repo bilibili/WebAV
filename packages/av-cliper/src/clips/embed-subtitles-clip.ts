@@ -6,6 +6,15 @@ interface IEmbedSubtitlesOpts {
   type?: 'srt'
   fontFamily?: string
   fontSize?: number
+  stroke?: {
+    color: string
+  }
+  textShadow?: {
+    offsetX: number
+    offsetY: number
+    blur: number
+    color: string
+  }
   videoWidth: number
   videoHeight: number
 }
@@ -24,7 +33,16 @@ export class EmbedSubtitlesClip implements IClip {
     textBgColor: null,
     type: 'srt',
     fontSize: 30,
-    fontFamily: 'Microsoft YaHei',
+    fontFamily: 'Noto Sans SC',
+    stroke: {
+      color: '#000'
+    },
+    textShadow: {
+      offsetX: 2,
+      offsetY: 2,
+      blur: 4,
+      color: '#000'
+    },
     videoWidth: 1280,
     videoHeight: 720
   }
@@ -74,7 +92,7 @@ export class EmbedSubtitlesClip implements IClip {
 
     const { width, height } = this.#cvs
 
-    const { color, fontSize, textBgColor } = this.#opts
+    const { color, fontSize, textBgColor, textShadow, stroke } = this.#opts
     const ctx = this.#ctx
 
     ctx.clearRect(0, 0, width, height)
@@ -86,7 +104,7 @@ export class EmbedSubtitlesClip implements IClip {
     let offsetBottom = fontSize * 0.5
     for (const lineStr of lines) {
       const txtMeas = ctx.measureText(lineStr)
-      const centerY = width / 2
+      const centerX = width / 2
       if (textBgColor != null) {
         ctx.shadowOffsetX = 0
         ctx.shadowOffsetY = 0
@@ -95,7 +113,7 @@ export class EmbedSubtitlesClip implements IClip {
         ctx.fillStyle = textBgColor
         ctx.globalAlpha = 0.5
         ctx.fillRect(
-          centerY - txtMeas.actualBoundingBoxLeft - this.#linePadding,
+          centerX - txtMeas.actualBoundingBoxLeft - this.#linePadding,
           height - offsetBottom - this.#lineHeight,
           txtMeas.width + this.#linePadding * 2,
           this.#lineHeight
@@ -103,17 +121,27 @@ export class EmbedSubtitlesClip implements IClip {
       } else {
       }
 
-      ctx.shadowColor = '#000'
-      ctx.shadowOffsetX = 2
-      ctx.shadowOffsetY = 2
-      ctx.shadowBlur = 2
+      ctx.shadowColor = textShadow.color
+      ctx.shadowOffsetX = textShadow.offsetX
+      ctx.shadowOffsetY = textShadow.offsetY
+      ctx.shadowBlur = textShadow.blur
 
       ctx.globalAlpha = 1
+
+      if (stroke != null) {
+        ctx.lineWidth = fontSize / 6
+        ctx.strokeStyle = stroke.color
+        ctx.strokeText(
+          lineStr,
+          centerX,
+          height - offsetBottom - this.#lineHeight + this.#linePadding
+        )
+      }
 
       ctx.fillStyle = color
       ctx.fillText(
         lineStr,
-        centerY,
+        centerX,
         height - offsetBottom - this.#lineHeight + this.#linePadding
       )
 

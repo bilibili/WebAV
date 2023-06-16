@@ -225,7 +225,18 @@ document.querySelector('#mp4-srt')?.addEventListener('click', () => {
       's2',
       new EmbedSubtitlesClip(await resp2.text(), {
         videoWidth: 1280,
-        videoHeight: 720
+        videoHeight: 720,
+        fontSize: 44,
+        fontFamily: 'Noto Sans SC',
+        stroke: {
+          color: '#000'
+        },
+        textShadow: {
+          offsetX: 2,
+          offsetY: 2,
+          blur: 4,
+          color: 'rgba(0,0,0,0.25)'
+        }
       })
     )
     const com = new Combinator({ width: 1280, height: 720 })
