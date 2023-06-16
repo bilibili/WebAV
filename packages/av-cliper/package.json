@@ -11,7 +11,7 @@
     "test": "vitest",
     "test:coverage": "vitest run --coverage",
     "build": "vite build && tsc -p build.tsconfig.json --outDir dist",
-    "build:dev": "rimraf dist && tsc -p build.tsconfig.json --outDir dist --watch",
+    "build:dev": "rimraf dist && concurrently --kill-others \"vite build --watch\" \"tsc -p build.tsconfig.json --outDir dist --watch\"",
     "build:demo": "rimraf demo-dist && vite build -c demo.vite.config.ts && cp -r demo/public demo-dist/demo",
     "prepublishOnly": "yarn build",
     "preview": "vite preview"
@@ -22,6 +22,7 @@
   "devDependencies": {
     "@types/dom-webcodecs": "^0.1.7",
     "@vitest/coverage-istanbul": "^0.29.8",
+    "concurrently": "^8.2.0",
     "jsdom": "^21.1.1",
     "typescript": "^4.9.3",
     "vite": "^4.2.0",

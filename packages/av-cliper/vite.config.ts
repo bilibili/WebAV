@@ -10,6 +10,7 @@ export default defineConfig({
   build: {
     target: 'esnext',
     minify: false,
+    emptyOutDir: false,
     lib: {
       entry: resolve(__dirname, 'src/index.ts'),
       formats: ['es'],
