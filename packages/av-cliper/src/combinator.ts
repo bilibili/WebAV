@@ -116,26 +116,32 @@ export class Combinator {
       Log.warn("Unable to determine the end time, process value don't update")
     }
 
-    const runState = {
-      cancel: false,
-      progress: 0
-    }
-    this.#run(runState, maxTime).catch(Log.error)
+    let remuxEndTimer = 0
+    const stopReCodeMux = this.#run(
+      maxTime,
+      prog => {
+        this.#evtTool.emit('OutputProgress', prog)
+      },
+      () => {
+        remuxEndTimer = setInterval(() => {
+          if (this.#remux.getEecodeQueueSize() === 0) {
+            clearInterval(remuxEndTimer)
+            Log.info('===== output ended ======')
+            this.#closeOutStream?.()
+            console.timeEnd('cost')
+            this.#evtTool.emit('OutputProgress', 1)
+          }
+        }, 100)
+      }
+    )
 
-    const stopProg = this.#updateProgress(runState)
-    this.#remux.onEnded = () => {
-      Log.info('===== output ended ======')
-      this.#closeOutStream?.()
-      console.timeEnd('cost')
-      stopProg()
-    }
     const { stream, stop: closeOutStream } = file2stream(
       this.#remux.mp4file,
       500,
       () => {
-        runState.cancel = true
+        clearInterval(remuxEndTimer)
+        stopReCodeMux()
         this.#remux.close()
-        stopProg()
       }
     )
     this.#closeOutStream = closeOutStream
@@ -143,109 +149,125 @@ export class Combinator {
     return stream
   }
 
-  async #run (
-    state: { cancel: boolean; progress: number },
-    maxTime: number
-  ): Promise<void> {
-    // 33ms ≈ 30FPS
-    const timeSlice = 33 * 1000
+  #run (
+    maxTime: number,
+    onprogress: (prog: number) => void,
+    onEnded: () => void
+  ): () => void {
+    let inputProgress = 0
+    let stoped = false
 
-    let frameCnt = 0
-    const { width, height } = this.#cvs
-    const ctx = this.#ctx
-    let ts = 0
-    while (true) {
-      state.progress = ts / maxTime
-      if (state.cancel || this.#comItems.length === 0) {
-        this.#comItems.forEach(it => it.sprite.destroy())
-        return
-      }
+    const _run = async () => {
+      // 33ms ≈ 30FPS
+      const timeSlice = 33 * 1000
 
-      ctx.fillStyle = this.#opts.bgColor
-      ctx.fillRect(0, 0, width, height)
+      let frameCnt = 0
+      const { width, height } = this.#cvs
+      const ctx = this.#ctx
+      let ts = 0
+      while (true) {
+        inputProgress = ts / maxTime
+        if (stoped || this.#comItems.length === 0) {
+          this.#comItems.forEach(it => it.sprite.destroy())
+          exit()
+          onEnded()
+          return
+        }
 
-      const audios: Float32Array[][] = []
-      for (let i = 0; i < this.#comItems.length; i++) {
-        const it = this.#comItems[i]
-        if (ts < it.offset) continue
+        ctx.fillStyle = this.#opts.bgColor
+        ctx.fillRect(0, 0, width, height)
 
-        ctx.save()
-        const { audio, done } = await it.sprite.offscreenRender(
-          ctx,
-          ts - it.offset
-        )
-        audios.push(audio)
-        ctx.restore()
+        const audios: Float32Array[][] = []
+        for (let i = 0; i < this.#comItems.length; i++) {
+          const it = this.#comItems[i]
+          if (ts < it.offset) continue
 
-        // 超过设定时间主动掐断，或资源结束
-        if ((it.duration > 0 && ts > it.offset + it.duration) || done) {
-          if (it.main) {
-            this.#comItems.forEach(it => it.sprite.destroy())
-            return
+          ctx.save()
+          const { audio, done } = await it.sprite.offscreenRender(
+            ctx,
+            ts - it.offset
+          )
+          audios.push(audio)
+          ctx.restore()
+
+          // 超过设定时间主动掐断，或资源结束
+          if ((it.duration > 0 && ts > it.offset + it.duration) || done) {
+            if (it.main) {
+              this.#comItems.forEach(it => it.sprite.destroy())
+              exit()
+              onEnded()
+              return
+            }
+
+            it.sprite.destroy()
+            this.#comItems.splice(i, 1)
           }
-
-          it.sprite.destroy()
-          this.#comItems.splice(i, 1)
         }
-      }
 
-      // Log.debug('combinator run, ts:', ts, ' audio track count:', audios.length)
-      if (audios.flat().every(a => a.length === 0)) {
-        // 当前时刻无音频时，使用无声音频占位，否则会导致后续音频播放时间偏差
-        this.#remux.encodeAudio(
-          createAudioPlaceholder(ts, timeSlice, DEFAULT_AUDIO_SAMPLE_RATE)
-        )
-      } else {
-        const data = mixinPCM(audios)
-        this.#remux.encodeAudio(
-          new AudioData({
-            timestamp: ts,
-            numberOfChannels: 2,
-            numberOfFrames: data.length / 2,
-            sampleRate: DEFAULT_AUDIO_SAMPLE_RATE,
-            format: 'f32-planar',
-            data
-          })
-        )
-      }
-      const vf = new VideoFrame(this.#cvs, {
-        duration: timeSlice,
-        timestamp: ts
-      })
-      ts += timeSlice
+        // Log.debug('combinator run, ts:', ts, ' audio track count:', audios.length)
+        if (audios.flat().every(a => a.length === 0)) {
+          // 当前时刻无音频时，使用无声音频占位，否则会导致后续音频播放时间偏差
+          this.#remux.encodeAudio(
+            createAudioPlaceholder(ts, timeSlice, DEFAULT_AUDIO_SAMPLE_RATE)
+          )
+        } else {
+          const data = mixinPCM(audios)
+          this.#remux.encodeAudio(
+            new AudioData({
+              timestamp: ts,
+              numberOfChannels: 2,
+              numberOfFrames: data.length / 2,
+              sampleRate: DEFAULT_AUDIO_SAMPLE_RATE,
+              format: 'f32-planar',
+              data
+            })
+          )
+        }
+        const vf = new VideoFrame(this.#cvs, {
+          duration: timeSlice,
+          timestamp: ts
+        })
+        ts += timeSlice
 
-      this.#remux.encodeVideo(vf, {
-        keyFrame: frameCnt % 150 === 0
-      })
-      ctx.resetTransform()
-      ctx.clearRect(0, 0, width, height)
+        this.#remux.encodeVideo(vf, {
+          keyFrame: frameCnt % 150 === 0
+        })
+        ctx.resetTransform()
+        ctx.clearRect(0, 0, width, height)
 
-      frameCnt += 1
-      // VideoFrame 非常占用 GPU 显存，避免显存压力过大，稍等一下整体性能更优
-      if (this.#remux.getEecodeQueueSize() > 150) {
-        while (true) {
-          const qSize = this.#remux.getEecodeQueueSize()
-          if (qSize < 50) break
-          // 根据大小动态调整等待时间，减少 while 循环次数
-          await sleep(qSize)
+        frameCnt += 1
+        // VideoFrame 非常占用 GPU 显存，避免显存压力过大，稍等一下整体性能更优
+        if (this.#remux.getEecodeQueueSize() > 150) {
+          while (true) {
+            const qSize = this.#remux.getEecodeQueueSize()
+            if (qSize < 50) break
+            // 根据大小动态调整等待时间，减少 while 循环次数
+            await sleep(qSize)
+          }
         }
       }
     }
-  }
 
-  #updateProgress (mixinState: { progress: number }): () => void {
-    let lastVal = 0
-    const timer = setInterval(() => {
-      lastVal = Math.max(
-        lastVal,
-        mixinState.progress * 0.5 + this.#remux.progress * 0.5
-      )
-      this.#evtTool.emit('OutputProgress', lastVal)
+    _run().catch(Log.error)
+
+    let maxEncodeQSize = 0
+    let outProgress = 0
+    // 避免 进度值 回退
+    let lastProg = 0
+    const outProgTimer = setInterval(() => {
+      const s = this.#remux.getEecodeQueueSize()
+      maxEncodeQSize = Math.max(maxEncodeQSize, s)
+      outProgress = s / maxEncodeQSize
+      lastProg = Math.max(outProgress * 0.5 + inputProgress * 0.5, lastProg)
+      onprogress(lastProg)
     }, 500)
-    return () => {
-      clearInterval(timer)
-      this.#evtTool.emit('OutputProgress', 1)
+
+    function exit () {
+      clearInterval(outProgTimer)
+      stoped = true
     }
+
+    return exit
   }
 }
 

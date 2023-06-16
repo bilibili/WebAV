@@ -162,9 +162,7 @@ export function recodemux (opts: IWorkerOpts): {
   encodeAudio: (data: AudioData) => void
   close: TCleanFn
   mp4file: MP4File
-  progress: number
   getEecodeQueueSize: () => number
-  onEnded?: TCleanFn
 } {
   const mp4file = mp4box.createFile()
 
@@ -182,47 +180,25 @@ export function recodemux (opts: IWorkerOpts): {
   }
 
   let maxSize = 0
-  let endCheckTimer = 0
-  let started = false
-  function checkEnded () {
-    if (started) return
-    started = true
-    endCheckTimer = setInterval(() => {
-      rs.progress = 1 - vEncoder.encodeQueueSize / maxSize
-      if (vEncoder.encodeQueueSize === 0) {
-        clearInterval(endCheckTimer)
-        rs.onEnded?.()
-      }
-    }, 100)
-  }
-
-  const rs: ReturnType<typeof recodemux> = {
+  return {
     encodeVideo: (vf, opts) => {
       vEncoder.encode(vf, opts)
       vf.close()
 
       if (vEncoder.encodeQueueSize > maxSize) maxSize = vEncoder.encodeQueueSize
-      checkEnded()
     },
     encodeAudio: ad => {
       if (aEncoder == null) return
       aEncoder.encode(ad)
       ad.close()
-      checkEnded()
     },
     getEecodeQueueSize: () => vEncoder.encodeQueueSize,
     close: () => {
-      clearInterval(endCheckTimer)
-      vEncoder.flush().catch(Log.error)
       vEncoder.close()
-      aEncoder?.flush().catch(Log.error)
       aEncoder?.close()
     },
-    mp4file,
-    progress: 0
+    mp4file
   }
-
-  return rs
 }
 
 function encodeVideoTrack (

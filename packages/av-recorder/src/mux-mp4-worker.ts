@@ -1,6 +1,6 @@
 import mp4box from 'mp4box'
 import { autoReadStream, file2stream, recodemux } from '@webav/av-cliper'
-import { TAsyncClearFn, TClearFn, EWorkerMsg, IWorkerOpts } from './types'
+import { TClearFn, EWorkerMsg, IWorkerOpts } from './types'
 
 if (import.meta.env.DEV) {
   mp4box.Log.setLogLevel(mp4box.Log.debug)
@@ -14,7 +14,7 @@ enum State {
 
 let STATE = State.Preparing
 
-let clear: TAsyncClearFn | null = null
+let clear: TClearFn | null = null
 self.onmessage = async (evt: MessageEvent) => {
   const { type, data } = evt.data
 
@@ -35,22 +35,22 @@ self.onmessage = async (evt: MessageEvent) => {
   }
 }
 
-function init (opts: IWorkerOpts, onEnded: TClearFn): TAsyncClearFn {
+function init (opts: IWorkerOpts, onEnded: TClearFn): TClearFn {
   let stopEncodeVideo: TClearFn | null = null
   let stopEncodeAudio: TClearFn | null = null
 
-  // opts.audio = null
   const recoder = recodemux({
     video: opts.video,
     audio: opts.audio,
     bitrate: opts.bitrate ?? 2_000_000
   })
-  recoder.onEnded = onEnded
 
+  let stoped = false
   if (opts.streams.video != null) {
     const encode = encodeVideoFrame(opts.video.expectFPS, recoder.encodeVideo)
     stopEncodeVideo = autoReadStream(opts.streams.video, {
       onChunk: async vf => {
+        if (stoped) return
         encode(vf)
       },
       onDone: () => {}
@@ -60,6 +60,7 @@ function init (opts: IWorkerOpts, onEnded: TClearFn): TAsyncClearFn {
   if (opts.audio != null && opts.streams.audio != null) {
     stopEncodeAudio = autoReadStream(opts.streams.audio, {
       onChunk: async ad => {
+        if (stoped) return
         recoder.encodeAudio(ad)
       },
       onDone: () => {}
@@ -69,7 +70,10 @@ function init (opts: IWorkerOpts, onEnded: TClearFn): TAsyncClearFn {
   const { stream, stop: stopStream } = file2stream(
     recoder.mp4file,
     opts.timeSlice,
-    onEnded
+    () => {
+      exit()
+      onEnded()
+    }
   )
   self.postMessage(
     {
@@ -80,11 +84,16 @@ function init (opts: IWorkerOpts, onEnded: TClearFn): TAsyncClearFn {
     [stream]
   )
 
-  return async () => {
+  function exit () {
+    stoped = true
+
     stopEncodeVideo?.()
     stopEncodeAudio?.()
+    recoder.close()
     stopStream()
   }
+
+  return exit
 }
 
 function encodeVideoFrame (expectFPS: number, encode: VideoEncoder['encode']) {
