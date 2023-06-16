@@ -489,11 +489,14 @@ export function file2stream (
   const deltaBuf = (): Uint8Array | null => {
     const ds = new mp4box.DataStream()
     ds.endianness = mp4box.DataStream.BIG_ENDIAN
-    if (sendedBoxIdx >= boxes.length) return null
+
+    if (boxes.length < 4 || sendedBoxIdx >= boxes.length) return null
+    // boxes.length >= 4 表示完成了 ftyp moov，且有了第一个 moof mdat
+    // 避免moov未完成时写入文件，导致文件无法被识别
     for (let i = sendedBoxIdx; i < boxes.length; i++) {
       boxes[i].write(ds)
-      // // @ts-expect-error 释放已使用的 mdat box 空间
-      // if (boxes[i].data != null) boxes[i].data = null
+      // @ts-expect-error 释放已使用的 mdat box 空间
+      if (boxes[i].data != null) boxes[i].data = null
     }
     sendedBoxIdx = boxes.length
     return new Uint8Array(ds.buffer)
