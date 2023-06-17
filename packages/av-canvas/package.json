@@ -1,6 +1,6 @@
 {
   "name": "@webav/av-canvas",
-  "version": "0.1.23",
+  "version": "0.1.24",
   "private": false,
   "repository": "https://github.com/hughfenghen/WebAV",
   "type": "module",
@@ -21,13 +21,13 @@
   "devDependencies": {
     "@types/wicg-file-system-access": "^2020.9.6",
     "@vitest/coverage-istanbul": "^0.29.8",
-    "@webav/av-recorder": "^0.1.23",
+    "@webav/av-recorder": "^0.1.24",
     "jsdom": "^21.1.1",
     "typescript": "^4.9.3",
     "vite": "^4.2.0",
     "vitest": "^0.29.7"
   },
   "dependencies": {
-    "@webav/av-cliper": "^0.1.23"
+    "@webav/av-cliper": "^0.1.24"
   }
 }
