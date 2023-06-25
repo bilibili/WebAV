@@ -156,6 +156,7 @@ export const OffscreenCanvasRenderingContext2DMock = {
   fillText: vi.fn(),
   clearRect: vi.fn(),
   measureText: vi.fn().mockReturnValue({}),
+  strokeText: vi.fn(),
   fillStyle: ''
 }
 

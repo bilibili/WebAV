@@ -5,6 +5,9 @@ export default defineConfig({
     environment: 'jsdom',
     coverage: {
       provider: 'istanbul' // or 'c8'
+    },
+    onConsoleLog (msg) {
+      if (msg.includes('log test')) return false
     }
   },
   build: {
