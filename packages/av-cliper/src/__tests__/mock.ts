@@ -138,9 +138,25 @@ export function crtMSEvt4Offset (
   return evt
 }
 
+declare global {
+  interface ReadableStream<R = any> {
+    _ctrl: ReadableStreamController<R>
+  }
+}
+
 Object.assign(global, {
-  ReadableStream: vi.fn().mockImplementation(() => {
-    return Object.assign(Object.create(ReadableStream.prototype), {})
+  ReadableStream: vi.fn().mockImplementation(arg => {
+    const ctrl = {
+      enqueue: vi.fn(),
+      close: vi.fn()
+    }
+    arg?.start(ctrl)
+    return Object.assign(Object.create(ReadableStream.prototype), {
+      _ctrl: ctrl,
+      cancel: () => {
+        arg?.cancel()
+      }
+    })
   })
 })
 
