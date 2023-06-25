@@ -5,10 +5,10 @@ import mp4box, {
   MP4Sample,
   SampleOpts,
   TrakBoxParser,
-  VideoTrackOpts
+  VideoTrackOpts,
+  AudioTrackOpts
 } from 'mp4box'
 import { Log } from './log'
-import { AudioTrackOpts } from 'mp4box'
 import {
   autoReadStream,
   extractPCM4AudioData,
@@ -52,16 +52,6 @@ export function demuxcode (
     audio: number
   }
 } {
-  let stopResetEndTimer = false
-  const resetEndTimer = debounce(() => {
-    if (stopResetEndTimer) return
-    if (vdecoder.decodeQueueSize === 0 && adecoder.decodeQueueSize === 0) {
-      cbs.onComplete()
-    } else {
-      resetEndTimer()
-    }
-  }, 300)
-
   const vdecoder = new VideoDecoder({
     output: vf => {
       cbs.onVideoOutput(vf)
@@ -81,12 +71,22 @@ export function demuxcode (
   let firstDecodeVideo = true
   let lastVideoKeyChunkIdx = 0
   let mp4File: MP4File | null = null
+  let completeCheckTimer = 0
+
   const stopReadStream = autoReadStream(
     stream.pipeThrough(new SampleTransform()),
     {
       onDone: () => {
         if (mp4Info == null) throw Error('MP4 demux unready')
-        resetEndTimer()
+        completeCheckTimer = setInterval(() => {
+          if (
+            vdecoder.decodeQueueSize === 0 &&
+            adecoder.decodeQueueSize === 0
+          ) {
+            clearInterval(completeCheckTimer)
+            cbs.onComplete()
+          }
+        }, 100)
       },
       onChunk: async ({ chunkType, data }) => {
         if (chunkType === 'ready') {
@@ -144,7 +144,7 @@ export function demuxcode (
 
   return {
     stop: () => {
-      stopResetEndTimer = true
+      clearInterval(completeCheckTimer)
       mp4File?.stop()
       if (vdecoder.state !== 'closed') vdecoder.close()
       if (adecoder.state !== 'closed') adecoder.close()
@@ -364,7 +364,7 @@ export function stream2file (stream: ReadableStream<Uint8Array>): {
 /**
  * 将原始字节流转换成 MP4Sample 流
  */
-export class SampleTransform {
+class SampleTransform {
   readable: ReadableStream<
     | {
         chunkType: 'ready'
@@ -513,22 +513,8 @@ export function file2stream (
   }
 }
 
-export function debounce<F extends (...args: any[]) => any>(
-  func: F,
-  wait: number
-): (...rest: Parameters<F>) => void {
-  let timer = 0
-
-  return function (this: any, ...rest) {
-    self.clearTimeout(timer)
-    timer = self.setTimeout(() => {
-      func.apply(this, rest)
-    }, wait)
-  }
-}
-
 // track is H.264, H.265 or VPX.
-export function parseVideoCodecDesc (track: TrakBoxParser): Uint8Array {
+function parseVideoCodecDesc (track: TrakBoxParser): Uint8Array {
   for (const entry of track.mdia.minf.stbl.stsd.entries) {
     // @ts-expect-error
     const box = entry.avcC ?? entry.hvcC ?? entry.vpcC
