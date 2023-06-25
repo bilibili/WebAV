@@ -23,6 +23,29 @@ document.querySelector('#mp4-img')?.addEventListener('click', evt => {
       'spr1',
       new MP4Clip((await fetch(resList[0])).body!)
     )
+
+    const spr2 = new OffscreenSprite(
+      'spr4',
+      new ImgClip(
+        await renderTxt2ImgBitmap(
+          '水印',
+          `font-size:40px; color: white; text-shadow: 2px 2px 6px red;`
+        )
+      )
+    )
+    spr2.setAnimation(
+      {
+        '0%': { x: 0, y: 0 },
+        '25%': { x: 1200, y: 680 },
+        '50%': { x: 1200, y: 0 },
+        '75%': { x: 0, y: 680 },
+        '100%': { x: 0, y: 0 }
+      },
+      { duration: 4, iterCount: 1 }
+    )
+    spr2.zIndex = 10
+    spr2.opacity = 0.5
+
     const spr3 = new OffscreenSprite(
       'spr3',
       new ImgClip(
@@ -39,37 +62,15 @@ document.querySelector('#mp4-img')?.addEventListener('click', evt => {
       { duration: 3 }
     )
 
-    const spr4 = new OffscreenSprite(
-      'spr4',
-      new ImgClip(
-        await renderTxt2ImgBitmap(
-          '水印',
-          `font-size:40px; color: white; text-shadow: 2px 2px 6px red;`
-        )
-      )
-    )
-    spr4.setAnimation(
-      {
-        '0%': { x: 0, y: 0 },
-        '25%': { x: 1200, y: 680 },
-        '50%': { x: 1200, y: 0 },
-        '75%': { x: 0, y: 680 },
-        '100%': { x: 0, y: 0 }
-      },
-      { duration: 4, iterCount: 1 }
-    )
-    spr4.zIndex = 10
-    spr4.opacity = 0.5
-
     const com = new Combinator({
       width: 1280,
       height: 720,
       bgColor: 'white'
     })
 
-    await com.add(spr4, { offset: 0, duration: 5 })
-    await com.add(spr1, { offset: 0, duration: 35 })
-    await com.add(spr3, { offset: 35, duration: 3 })
+    await com.add(spr1, { offset: 0, duration: 20 })
+    await com.add(spr2, { offset: 0, duration: 5 })
+    await com.add(spr3, { offset: 20, duration: 3 })
 
     com.on('OutputProgress', v => {
       console.log('----- progress:', v)
