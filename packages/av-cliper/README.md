@@ -17,6 +17,7 @@ Source code: `./demo/*.ts`
 - `IClip`: Abstract encapsulation of resources, reading (`IClip.tick(time)`) raw data of resources by time slice, has been implemented for the `IClip` interface with: 
   - `MP4Clip, AudioClip, ImgClip, EmbedSubtitlesClip` (embedded SRT subtitles), these are the types of resources supported by `Combinator`  
 
+<hr />
 
 - `Combinator`： 视频合成器， add `OffscreenSprite`， ouput 视频流  
   - 目前仅支持输出 MP4,AAC 格式的二进制流
@@ -26,7 +27,7 @@ Source code: `./demo/*.ts`
 
 
 ## Usage
-**Two video overlays**
+**Two video overlays**  
 Re-encoding, output video formats is MP4(H264), AAC
 
 **两个视频叠加**  
