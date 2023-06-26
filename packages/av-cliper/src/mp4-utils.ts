@@ -97,41 +97,44 @@ export function demuxcode (
             data.info
           )
           if (videoDecoderConf != null) vdecoder.configure(videoDecoderConf)
-          if (opts.audio && audioDecoderConf != null)
+          if (opts.audio && audioDecoderConf != null) {
             adecoder.configure(audioDecoderConf)
+          }
 
           cbs.onReady(data.info)
           return
-        }
-        if (chunkType === 'samples') {
+        } else if (chunkType === 'samples') {
           const { id: curId, type, samples } = data
           for (let i = 0; i < samples.length; i += 1) {
             const s = samples[i]
             if (firstDecodeVideo && s.is_sync) lastVideoKeyChunkIdx = i
 
             const cts = (1e6 * s.cts) / s.timescale
-            if (cts >= opts.start && cts <= opts.end) {
-              if (type === 'video') {
-                if (firstDecodeVideo && !s.is_sync) {
-                  // 首次解码需要从 key chunk 开始
-                  firstDecodeVideo = false
-                  for (let j = lastVideoKeyChunkIdx; j < i; j++) {
-                    vdecoder.decode(
-                      new EncodedVideoChunk(sample2ChunkOpts(samples[j]))
-                    )
-                  }
+            // 跳过裁剪时间区间外的sample，无需解码
+            if (cts < opts.start || cts > opts.end) continue
+
+            if (type === 'video') {
+              if (firstDecodeVideo && !s.is_sync) {
+                // 首次解码需要从 key chunk 开始
+                firstDecodeVideo = false
+                for (let j = lastVideoKeyChunkIdx; j < i; j++) {
+                  vdecoder.decode(
+                    new EncodedVideoChunk(sample2ChunkOpts(samples[j]))
+                  )
                 }
-                vdecoder.decode(new EncodedVideoChunk(sample2ChunkOpts(s)))
-              } else if (type === 'audio') {
-                adecoder.decode(new EncodedAudioChunk(sample2ChunkOpts(s)))
               }
+              vdecoder.decode(new EncodedVideoChunk(sample2ChunkOpts(s)))
+            } else if (type === 'audio') {
+              adecoder.decode(new EncodedAudioChunk(sample2ChunkOpts(s)))
             }
           }
+          // 释放内存空间
           mp4File?.releaseUsedSamples(curId, samples.length)
+
+          const qSize = vdecoder.decodeQueueSize
           // 解码压力过大时，延迟读取数据
-          if (vdecoder.decodeQueueSize > 150) {
+          if (qSize > 150) {
             while (true) {
-              const qSize = vdecoder.decodeQueueSize
               if (qSize < 50) break
               // 根据大小动态调整等待时间，减少 while 循环次数
               await sleep(qSize)
