@@ -97,44 +97,46 @@ export function demuxcode (
             data.info
           )
           if (videoDecoderConf != null) vdecoder.configure(videoDecoderConf)
-          if (opts.audio && audioDecoderConf != null)
+          if (opts.audio && audioDecoderConf != null) {
             adecoder.configure(audioDecoderConf)
+          }
 
           cbs.onReady(data.info)
           return
-        }
-        if (chunkType === 'samples') {
+        } else if (chunkType === 'samples') {
           const { id: curId, type, samples } = data
           for (let i = 0; i < samples.length; i += 1) {
             const s = samples[i]
             if (firstDecodeVideo && s.is_sync) lastVideoKeyChunkIdx = i
 
             const cts = (1e6 * s.cts) / s.timescale
-            if (cts >= opts.start && cts <= opts.end) {
-              if (type === 'video') {
-                if (firstDecodeVideo && !s.is_sync) {
-                  // 首次解码需要从 key chunk 开始
-                  firstDecodeVideo = false
-                  for (let j = lastVideoKeyChunkIdx; j < i; j++) {
-                    vdecoder.decode(
-                      new EncodedVideoChunk(sample2ChunkOpts(samples[j]))
-                    )
-                  }
+            // 跳过裁剪时间区间外的sample，无需解码
+            if (cts < opts.start || cts > opts.end) continue
+
+            if (type === 'video') {
+              if (firstDecodeVideo && !s.is_sync) {
+                // 首次解码需要从 key chunk 开始
+                firstDecodeVideo = false
+                for (let j = lastVideoKeyChunkIdx; j < i; j++) {
+                  vdecoder.decode(
+                    new EncodedVideoChunk(sample2ChunkOpts(samples[j]))
+                  )
                 }
-                vdecoder.decode(new EncodedVideoChunk(sample2ChunkOpts(s)))
-              } else if (type === 'audio') {
-                adecoder.decode(new EncodedAudioChunk(sample2ChunkOpts(s)))
               }
+              vdecoder.decode(new EncodedVideoChunk(sample2ChunkOpts(s)))
+            } else if (type === 'audio') {
+              adecoder.decode(new EncodedAudioChunk(sample2ChunkOpts(s)))
             }
           }
+          // 释放内存空间
           mp4File?.releaseUsedSamples(curId, samples.length)
+
           // 解码压力过大时，延迟读取数据
           if (vdecoder.decodeQueueSize > 150) {
             while (true) {
-              const qSize = vdecoder.decodeQueueSize
-              if (qSize < 50) break
+              if (vdecoder.decodeQueueSize < 50) break
               // 根据大小动态调整等待时间，减少 while 循环次数
-              await sleep(qSize)
+              await sleep(vdecoder.decodeQueueSize)
             }
           }
         }
@@ -739,21 +741,51 @@ function createMP4AudioSampleEncoder (
     sampleRate: aeConf.sampleRate,
     numberOfChannels: aeConf.numberOfChannels
   })
+
+  // 保留一个音频数据，用于最后做声音淡出
+  let lastData: { data: Float32Array; ts: number } | null = null
+
+  function createAD (data: Float32Array, ts: number) {
+    return new AudioData({
+      timestamp: ts,
+      numberOfChannels: aeConf.numberOfChannels,
+      numberOfFrames: data.length / aeConf.numberOfChannels,
+      sampleRate: aeConf.sampleRate,
+      format: 'f32-planar',
+      data
+    })
+  }
   return {
     encode: async (data: Float32Array, ts: number) => {
-      adEncoder.encode(
-        new AudioData({
-          timestamp: ts,
-          numberOfChannels: aeConf.numberOfChannels,
-          numberOfFrames: data.length / aeConf.numberOfChannels,
-          sampleRate: aeConf.sampleRate,
-          format: 'f32-planar',
-          data
-        })
-      )
+      if (lastData != null) {
+        adEncoder.encode(createAD(lastData.data, lastData.ts))
+      }
+      lastData = { data, ts }
     },
     flush: async () => {
+      if (lastData != null) {
+        // 副作用修改数据
+        audioFade(lastData.data, aeConf.numberOfChannels, aeConf.sampleRate)
+        adEncoder.encode(createAD(lastData.data, lastData.ts))
+        lastData = null
+      }
       await adEncoder.flush()
+    }
+  }
+}
+
+/**
+ * 音频线性淡出，避免 POP 声
+ * 副作用调整音量值
+ */
+function audioFade (pcmData: Float32Array, chanCnt: number, sampleRate: number) {
+  const dataLen = pcmData.length - 1
+  // 避免超出边界，最长 500ms 的淡出时间
+  const fadeLen = Math.min(sampleRate / 2, dataLen)
+  for (let i = 0; i < fadeLen; i++) {
+    for (let j = 1; j <= chanCnt; j++) {
+      // 从尾部开始，调整每个声道音量值
+      pcmData[Math.floor(dataLen / j) - i] *= i / fadeLen
     }
   }
 }
