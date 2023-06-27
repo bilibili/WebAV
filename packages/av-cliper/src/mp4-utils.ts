@@ -741,21 +741,51 @@ function createMP4AudioSampleEncoder (
     sampleRate: aeConf.sampleRate,
     numberOfChannels: aeConf.numberOfChannels
   })
+
+  // 保留一个音频数据，用于最后做声音淡出
+  let lastData: { data: Float32Array; ts: number } | null = null
+
+  function createAD (data: Float32Array, ts: number) {
+    return new AudioData({
+      timestamp: ts,
+      numberOfChannels: aeConf.numberOfChannels,
+      numberOfFrames: data.length / aeConf.numberOfChannels,
+      sampleRate: aeConf.sampleRate,
+      format: 'f32-planar',
+      data
+    })
+  }
   return {
     encode: async (data: Float32Array, ts: number) => {
-      adEncoder.encode(
-        new AudioData({
-          timestamp: ts,
-          numberOfChannels: aeConf.numberOfChannels,
-          numberOfFrames: data.length / aeConf.numberOfChannels,
-          sampleRate: aeConf.sampleRate,
-          format: 'f32-planar',
-          data
-        })
-      )
+      if (lastData != null) {
+        adEncoder.encode(createAD(lastData.data, lastData.ts))
+      }
+      lastData = { data, ts }
     },
     flush: async () => {
+      if (lastData != null) {
+        // 副作用修改数据
+        audioFade(lastData.data, aeConf.numberOfChannels, aeConf.sampleRate)
+        adEncoder.encode(createAD(lastData.data, lastData.ts))
+        lastData = null
+      }
       await adEncoder.flush()
+    }
+  }
+}
+
+/**
+ * 音频线性淡出，避免 POP 声
+ * 副作用调整音量值
+ */
+function audioFade (pcmData: Float32Array, chanCnt: number, sampleRate: number) {
+  const dataLen = pcmData.length - 1
+  // 避免超出边界，最长 500ms 的淡出时间
+  const fadeLen = Math.min(sampleRate / 2, dataLen)
+  for (let i = 0; i < fadeLen; i++) {
+    for (let j = 1; j <= chanCnt; j++) {
+      // 从尾部开始，调整每个声道音量值
+      pcmData[Math.floor(dataLen / j) - i] *= i / fadeLen
     }
   }
 }
