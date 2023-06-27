@@ -166,13 +166,13 @@ export class Combinator {
       const ctx = this.#ctx
       let ts = 0
       while (true) {
-        inputProgress = ts / maxTime
-        if (stoped || this.#comItems.length === 0) {
+        if (stoped || ts > maxTime || this.#comItems.length === 0) {
           this.#comItems.forEach(it => it.sprite.destroy())
           exit()
           onEnded()
           return
         }
+        inputProgress = ts / maxTime
 
         ctx.fillStyle = this.#opts.bgColor
         ctx.fillRect(0, 0, width, height)
