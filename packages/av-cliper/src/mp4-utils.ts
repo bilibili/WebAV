@@ -131,13 +131,12 @@ export function demuxcode (
           // 释放内存空间
           mp4File?.releaseUsedSamples(curId, samples.length)
 
-          const qSize = vdecoder.decodeQueueSize
           // 解码压力过大时，延迟读取数据
-          if (qSize > 150) {
+          if (vdecoder.decodeQueueSize > 150) {
             while (true) {
-              if (qSize < 50) break
+              if (vdecoder.decodeQueueSize < 50) break
               // 根据大小动态调整等待时间，减少 while 循环次数
-              await sleep(qSize)
+              await sleep(vdecoder.decodeQueueSize)
             }
           }
         }
