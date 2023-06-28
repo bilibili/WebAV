@@ -1,5 +1,10 @@
-import { decodeImg, sleep } from '../src/av-utils'
-import { AudioClip, DEFAULT_AUDIO_SAMPLE_RATE, MP4Clip } from '../src/clips'
+import { autoReadStream, decodeImg, sleep } from '../src/av-utils'
+import {
+  AudioClip,
+  DEFAULT_AUDIO_SAMPLE_RATE,
+  MP4Clip,
+  WebMClip
+} from '../src/clips'
 import { EmbedSubtitlesClip } from '../src/clips/embed-subtitles-clip'
 import { Log } from '../src/log'
 
@@ -157,6 +162,15 @@ document.querySelector('#decode-subtitles')?.addEventListener('click', () => {
     }
     console.log('decode subtitles done')
     es.destroy()
+  })()
+})
+
+document.querySelector('#decode-webm')?.addEventListener('click', () => {
+  ;(async () => {
+    const webmClip = new WebMClip(
+      (await fetch('./public/video/ai-gen-vp9.webm')).body!
+    )
+    console.log(444, webmClip)
   })()
 })
 

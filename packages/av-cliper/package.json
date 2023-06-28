@@ -29,6 +29,8 @@
     "vitest": "^0.29.7"
   },
   "dependencies": {
-    "mp4box": "hughfenghen/mp4box.js"
+    "jswebm": "^0.1.2",
+    "mp4box": "hughfenghen/mp4box.js",
+    "ogv": "^1.8.9"
   }
 }
