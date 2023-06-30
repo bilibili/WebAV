@@ -6,11 +6,12 @@
   "type": "module",
   "types": "dist/index.d.ts",
   "module": "dist/index.js",
+  "main": "dist/av-canvas.umd.cjs",
   "scripts": {
     "dev": "vite demo",
     "test": "vitest",
     "test:coverage": "vitest run --coverage",
-    "build": "rimraf dist && tsc -p build.tsconfig.json --outDir dist",
+    "build": "vite build && tsc -p build.tsconfig.json --outDir dist",
     "build:demo": "rimraf demo-dist && vite build -c demo.vite.config.ts",
     "prepublishOnly": "yarn build",
     "preview": "vite preview"

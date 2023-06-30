@@ -11,7 +11,7 @@
     "dev": "vite demo",
     "test": "vitest",
     "test:coverage": "vitest run --coverage",
-    "build": "rimraf dist && vite build -c lib.vite.config.ts && tsc -p build.tsconfig.json ",
+    "build": "vite build && tsc -p build.tsconfig.json ",
     "build:demo": "rimraf demo-dist && vite build -c demo.vite.config.ts",
     "prepublishOnly": "yarn build",
     "preview": "vite preview"

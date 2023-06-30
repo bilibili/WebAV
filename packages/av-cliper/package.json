@@ -5,7 +5,8 @@
   "repository": "https://github.com/hughfenghen/WebAV",
   "type": "module",
   "types": "dist/index.d.ts",
-  "module": "dist/index.js",
+  "module": "dist/av-cliper.js",
+  "main": "dist/av-cliper.umd.cjs",
   "scripts": {
     "dev": "vite demo --host 0.0.0.0",
     "test": "vitest",
