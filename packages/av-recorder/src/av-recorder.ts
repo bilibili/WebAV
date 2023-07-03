@@ -24,7 +24,7 @@ export class AVRecorder {
     this.#conf = {
       width: 1280,
       height: 720,
-      bitrate: 1_500_000,
+      bitrate: 3_000_000,
       expectFPS: 30,
       audioCodec: 'aac',
       ...conf

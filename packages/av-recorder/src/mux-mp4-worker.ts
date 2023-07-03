@@ -42,7 +42,7 @@ function init (opts: IWorkerOpts, onEnded: TClearFn): TClearFn {
   const recoder = recodemux({
     video: opts.video,
     audio: opts.audio,
-    bitrate: opts.bitrate ?? 2_000_000
+    bitrate: opts.bitrate ?? 3_000_000
   })
 
   let stoped = false
