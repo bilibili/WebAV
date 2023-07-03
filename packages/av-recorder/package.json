@@ -1,6 +1,6 @@
 {
   "name": "@webav/av-recorder",
-  "version": "0.1.25",
+  "version": "0.1.26",
   "private": false,
   "repository": "https://github.com/hughfenghen/WebAV",
   "type": "module",
@@ -11,7 +11,7 @@
     "dev": "vite demo",
     "test": "vitest",
     "test:coverage": "vitest run --coverage",
-    "build": "rimraf dist && vite build -c lib.vite.config.ts && tsc -p build.tsconfig.json ",
+    "build": "vite build && tsc -p build.tsconfig.json ",
     "build:demo": "rimraf demo-dist && vite build -c demo.vite.config.ts",
     "prepublishOnly": "yarn build",
     "preview": "vite preview"
@@ -31,7 +31,7 @@
     "vitest": "^0.29.7"
   },
   "dependencies": {
-    "@webav/av-cliper": "^0.1.25",
+    "@webav/av-cliper": "^0.1.26",
     "fix-webm-duration": "^1.0.5",
     "mp4box": "hughfenghen/mp4box.js"
   }

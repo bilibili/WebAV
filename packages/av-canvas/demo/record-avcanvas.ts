@@ -1,4 +1,10 @@
-import { AVCanvas, AudioSprite, FontSprite, ImgSprite, VideoSprite } from '../src/index'
+import {
+  AVCanvas,
+  AudioSprite,
+  FontSprite,
+  ImgSprite,
+  VideoSprite
+} from '../src/index'
 import { AVRecorder } from '@webav/av-recorder'
 
 const avCvs = new AVCanvas(document.querySelector('#app') as HTMLElement, {
@@ -10,7 +16,6 @@ const avCvs = new AVCanvas(document.querySelector('#app') as HTMLElement, {
 })
 
 console.log({ avCvs })
-
 ;(async (): Promise<void> => {
   // const is = new ImgSprite('img', 'https://neo-pages.bilibili.com/bbfe/neo/assets/img/neo-pages-overview.48f7bb81.png')
   // await avCvs.spriteManager.addSprite(is)
@@ -44,12 +49,14 @@ document.querySelector('#display')?.addEventListener('click', () => {
 document.querySelector('#localImg')?.addEventListener('click', () => {
   ;(async () => {
     const [imgFH] = await (window as any).showOpenFilePicker({
-      types: [{
-        description: 'Images',
-        accept: {
-          'image/*': ['.png', '.gif', '.jpeg', '.jpg']
+      types: [
+        {
+          description: 'Images',
+          accept: {
+            'image/*': ['.png', '.gif', '.jpeg', '.jpg']
+          }
         }
-      }]
+      ]
     })
     const is = new ImgSprite('img', await imgFH.getFile())
     await avCvs.spriteManager.addSprite(is)
@@ -59,12 +66,14 @@ document.querySelector('#localImg')?.addEventListener('click', () => {
 document.querySelector('#localVideo')?.addEventListener('click', () => {
   ;(async () => {
     const [imgFH] = await (window as any).showOpenFilePicker({
-      types: [{
-        description: 'Video',
-        accept: {
-          'video/*': ['.webm', '.mp4']
+      types: [
+        {
+          description: 'Video',
+          accept: {
+            'video/*': ['.webm', '.mp4']
+          }
         }
-      }]
+      ]
     })
     const vs = new VideoSprite('vs', await imgFH.getFile())
     await avCvs.spriteManager.addSprite(vs)
@@ -74,12 +83,14 @@ document.querySelector('#localVideo')?.addEventListener('click', () => {
 document.querySelector('#localAudio')?.addEventListener('click', () => {
   ;(async () => {
     const [imgFH] = await (window as any).showOpenFilePicker({
-      types: [{
-        description: 'Audio',
-        accept: {
-          'audio/*': ['.mp3', '.wav', '.ogg']
+      types: [
+        {
+          description: 'Audio',
+          accept: {
+            'audio/*': ['.mp3', '.wav', '.ogg']
+          }
         }
-      }]
+      ]
     })
     const as = new AudioSprite('vs', await imgFH.getFile())
     await avCvs.spriteManager.addSprite(as)
@@ -98,8 +109,9 @@ document.querySelector('#startRecod')?.addEventListener('click', () => {
   ;(async () => {
     const writer = await createFileWriter('mp4')
     recorder = new AVRecorder(avCvs.captureStream(), {
-      width: 1280,
-      height: 720,
+      width: 1920,
+      height: 1080,
+      bitrate: 5e6,
       audioCodec: 'aac'
     })
     await recorder.start()
@@ -113,7 +125,9 @@ document.querySelector('#stopRecod')?.addEventListener('click', () => {
   })().catch(console.error)
 })
 
-async function createFileWriter (extName: string): Promise<FileSystemWritableFileStream> {
+async function createFileWriter (
+  extName: string
+): Promise<FileSystemWritableFileStream> {
   const fileHandle = await window.showSaveFilePicker({
     suggestedName: `WebAv-export-${Date.now()}.${extName}`
   })

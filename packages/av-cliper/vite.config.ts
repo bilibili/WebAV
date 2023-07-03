@@ -11,13 +11,10 @@ export default defineConfig({
     }
   },
   build: {
-    target: 'esnext',
-    minify: false,
-    emptyOutDir: false,
+    sourcemap: true,
     lib: {
       entry: resolve(__dirname, 'src/index.ts'),
-      formats: ['es'],
-      fileName: 'index'
+      name: 'av-cliper'
     }
   }
 })
