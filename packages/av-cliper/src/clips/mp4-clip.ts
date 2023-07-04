@@ -199,6 +199,10 @@ export class MP4Clip implements IClip {
     return audio
   }
 
+  // 默认直接返回
+  tickInterceptor: NonNullable<IClip['tickInterceptor']> = async (_, tickRet) =>
+    tickRet
+
   async tick (time: number): Promise<{
     video?: VideoFrame
     audio: Float32Array[]
@@ -206,7 +210,10 @@ export class MP4Clip implements IClip {
   }> {
     if (time < this.#ts) throw Error('time not allow rollback')
     if (this.#decodeEnded && time >= this.#meta.duration) {
-      return { audio: [], state: 'done' }
+      return await this.tickInterceptor<MP4Clip>(time, {
+        audio: [],
+        state: 'done'
+      })
     }
 
     const audio = this.#hasAudioTrack
@@ -215,10 +222,17 @@ export class MP4Clip implements IClip {
     const video = await this.#nextVideo(time)
     this.#ts = time
     if (video == null) {
-      return { audio, state: 'success' }
+      return await this.tickInterceptor<MP4Clip>(time, {
+        audio,
+        state: 'success'
+      })
     }
 
-    return { video, audio, state: 'success' }
+    return await this.tickInterceptor<MP4Clip>(time, {
+      video,
+      audio,
+      state: 'success'
+    })
   }
 
   destroy (): void {

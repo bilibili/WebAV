@@ -1,4 +1,5 @@
 import { decodeImg, sleep } from '../src/av-utils'
+import { createChromakey } from '../src/chromakey'
 import { AudioClip, DEFAULT_AUDIO_SAMPLE_RATE, MP4Clip } from '../src/clips'
 import { EmbedSubtitlesClip } from '../src/clips/embed-subtitles-clip'
 import { Log } from '../src/log'
@@ -160,57 +161,37 @@ document.querySelector('#decode-subtitles')?.addEventListener('click', () => {
   })()
 })
 
-// 测试解码、重编码性能
-// document.querySelector('#decode-video')?.addEventListener('click', () => {
-//   ;(async () => {
-//     const videoType = (
-//       document.querySelector(
-//         'input[name=video-type]:checked'
-//       ) as HTMLInputElement
-//     ).value
-//     // @ts-expect-error
-//     const resp1 = await fetch(videos[videoType])
-//     const clip = new MP4Clip(resp1.body!)
-//     await clip.ready
-//     let time = 0
-//     const cvs = new OffscreenCanvas(1280, 720)
-//     const ctx = cvs.getContext('2d')!
-//     const recoder = recodemux({
-//       video: {
-//         width: 1280,
-//         height: 720,
-//         expectFPS: 30
-//       },
-//       audio: {
-//         codec: 'aac',
-//         sampleRate: DEFAULT_AUDIO_SAMPLE_RATE,
-//         sampleSize: 16,
-//         channelCount: 2
-//       },
-//       bitrate: 1_500_000
-//     })
-//     console.time('decode')
-//     console.time('encode')
-//     while (time < 3 * 60 * 1e6) {
-//       const { state, video } = await clip.tick(time)
-//       if (state === 'done') break
-//       if (video != null && state === 'success') {
-//         // ctx.clearRect(0, 0, cvs.width, cvs.height)
-//         ctx.drawImage(video, 0, 0, video.codedWidth, video.codedHeight)
-//         recoder.encodeVideo(
-//           new VideoFrame(cvs, {
-//             duration: 33000,
-//             timestamp: time
-//           })
-//         )
-//         video.close()
-//       }
-//       time += 33 * 1000
-//     }
-//     console.timeEnd('decode')
-//     recoder.onEnded = () => {
-//       console.timeEnd('encode')
-//     }
-//     clip.destroy()
-//   })().catch(Log.error)
-// })
+document.querySelector('#chromakey')?.addEventListener('click', () => {
+  ;(async () => {
+    const clip = new MP4Clip(
+      (await fetch('./public/video/chromakey-test.mp4')).body!
+    )
+    const { width, height } = await clip.ready
+    const chromakey = createChromakey({
+      width,
+      height,
+      keyColor: [65, 249, 0]
+    })
+    clip.tickInterceptor = async (_, tickRet) => {
+      if (tickRet.video == null) return tickRet
+      return {
+        ...tickRet,
+        video: await chromakey(tickRet.video)
+      }
+    }
+    let time = 0
+    const timerId = setInterval(async () => {
+      const { state, video } = await clip.tick(time)
+      if (state === 'done') {
+        clearInterval(timerId)
+        clip.destroy()
+      }
+      if (video != null && state === 'success') {
+        ctx.clearRect(0, 0, cvs.width, cvs.height)
+        ctx.drawImage(video, 0, 0, video.codedWidth, video.codedHeight)
+        video.close()
+      }
+      time += 33000
+    }, 33.33)
+  })().catch(Log.error)
+})

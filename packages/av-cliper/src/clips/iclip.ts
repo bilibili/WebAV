@@ -9,6 +9,11 @@ export interface IClip {
     state: 'done' | 'success'
   }>
 
+  tickInterceptor?: <T extends IClip>(
+    tickTime: number,
+    tickRet: Awaited<ReturnType<T['tick']>>
+  ) => Promise<ReturnType<T['tick']>>
+
   ready: Promise<{ width: number; height: number; duration: number }>
 
   destroy: () => void

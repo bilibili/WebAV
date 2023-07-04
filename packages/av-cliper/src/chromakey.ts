@@ -157,11 +157,21 @@ export const createChromakey = (opts: {
 
   gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, 1)
 
-  return async (imgSource: VideoFrame | HTMLImageElement) => {
+  return async (imgSource: VideoFrame | ImageBitmap | HTMLImageElement) => {
     const tex = loadTexture(gl, imgSource)
     gl.activeTexture(gl.TEXTURE0)
     gl.bindTexture(gl.TEXTURE_2D, tex)
     gl.drawArrays(gl.TRIANGLES, 0, 6)
+
+    if (imgSource instanceof VideoFrame) {
+      const rs = new VideoFrame(cvs, {
+        alpha: 'keep',
+        timestamp: imgSource.timestamp,
+        duration: imgSource.duration ?? undefined
+      })
+      imgSource.close()
+      return rs
+    }
 
     return createImageBitmap(cvs)
   }
