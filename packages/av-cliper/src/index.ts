@@ -1,6 +1,7 @@
 export * from './dom-utils'
 export * from './av-utils'
 export * from './mp4-utils'
+export { createChromakey } from './chromakey'
 
 export * from './rect'
 export * from './clips'
