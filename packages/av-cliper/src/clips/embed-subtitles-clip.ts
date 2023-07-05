@@ -6,6 +6,8 @@ interface IEmbedSubtitlesOpts {
   type?: 'srt'
   fontFamily?: string
   fontSize?: number
+  // 字幕偏离底部的距离
+  bottomOffset?: number
   stroke?: {
     color: string
   }
@@ -33,6 +35,7 @@ export class EmbedSubtitlesClip implements IClip {
     textBgColor: null,
     type: 'srt',
     fontSize: 30,
+    bottomOffset: 30,
     fontFamily: 'Noto Sans SC',
     stroke: {
       color: '#000'
@@ -92,7 +95,8 @@ export class EmbedSubtitlesClip implements IClip {
 
     const { width, height } = this.#cvs
 
-    const { color, fontSize, textBgColor, textShadow, stroke } = this.#opts
+    const { color, fontSize, textBgColor, textShadow, stroke, bottomOffset } =
+      this.#opts
     const ctx = this.#ctx
 
     ctx.clearRect(0, 0, width, height)
@@ -101,7 +105,7 @@ export class EmbedSubtitlesClip implements IClip {
     // ctx.fillStyle = 'red'
     // ctx.fillRect(0, 0, this.#cvs.width, this.#cvs.height)
 
-    let offsetBottom = fontSize * 0.5
+    let bottomDistance = bottomOffset
     for (const lineStr of lines) {
       const txtMeas = ctx.measureText(lineStr)
       const centerX = width / 2
@@ -114,7 +118,7 @@ export class EmbedSubtitlesClip implements IClip {
         ctx.globalAlpha = 0.5
         ctx.fillRect(
           centerX - txtMeas.actualBoundingBoxLeft - this.#linePadding,
-          height - offsetBottom - this.#lineHeight,
+          height - bottomDistance - this.#lineHeight,
           txtMeas.width + this.#linePadding * 2,
           this.#lineHeight
         )
@@ -134,7 +138,7 @@ export class EmbedSubtitlesClip implements IClip {
         ctx.strokeText(
           lineStr,
           centerX,
-          height - offsetBottom - this.#lineHeight + this.#linePadding
+          height - bottomDistance - this.#lineHeight + this.#linePadding
         )
       }
 
@@ -142,10 +146,11 @@ export class EmbedSubtitlesClip implements IClip {
       ctx.fillText(
         lineStr,
         centerX,
-        height - offsetBottom - this.#lineHeight + this.#linePadding
+        height - bottomDistance - this.#lineHeight + this.#linePadding
       )
 
-      offsetBottom += this.#lineHeight + fontSize * 0.2
+      // 多行，底部偏移距离叠加
+      bottomDistance += this.#lineHeight + fontSize * 0.2
     }
   }
 
