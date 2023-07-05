@@ -130,15 +130,6 @@ export function demuxcode (
           }
           // 释放内存空间
           mp4File?.releaseUsedSamples(curId, samples.length)
-
-          // 解码压力过大时，延迟读取数据
-          if (vdecoder.decodeQueueSize > 150) {
-            while (true) {
-              if (vdecoder.decodeQueueSize < 50) break
-              // 根据大小动态调整等待时间，减少 while 循环次数
-              await sleep(vdecoder.decodeQueueSize)
-            }
-          }
         }
       }
     }
@@ -424,7 +415,7 @@ class SampleTransform {
       },
       {
         // 每条消息 100 个 samples
-        highWaterMark: 2
+        highWaterMark: 50
       }
     )
 
