@@ -179,9 +179,10 @@ export class MP4Clip implements IClip {
     if (frameCnt === 0) return []
     // 小心避免死循环
     if (
-      this.#audioChan0.length < frameCnt &&
-      !this.#destroyed &&
-      this.#demuxcoder?.getDecodeQueueSize().audio !== 0
+      this.#audioChan0.length === 0 ||
+      (this.#audioChan0.length < frameCnt &&
+        !this.#destroyed &&
+        this.#demuxcoder?.getDecodeQueueSize().audio !== 0)
     ) {
       await sleep(50)
       return this.#nextAudio(deltaTime)
