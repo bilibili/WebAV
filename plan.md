@@ -8,6 +8,7 @@ await com.add(spr1, { main: true })
 await com.add(spr2, { offset: 0, duration: 5 })
 await com.add(spr3, { offset: 0 })
 ```
+- gif+m4a 首次 gif 没有动画
 
 ## 项目优化
 - API 文档、视频
