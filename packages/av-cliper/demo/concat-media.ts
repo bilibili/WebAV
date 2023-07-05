@@ -253,7 +253,7 @@ document.querySelector('#mp4-srt')?.addEventListener('click', () => {
   })()
 })
 
-document.querySelector('#mp4-chromakey-srt')?.addEventListener('click', evt => {
+document.querySelector('#mp4-chromakey')?.addEventListener('click', () => {
   ;(async () => {
     const resList = [
       './public/video/chromakey-test.mp4',
