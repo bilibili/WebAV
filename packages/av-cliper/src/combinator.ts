@@ -250,7 +250,8 @@ export class Combinator {
 
     _run().catch(Log.error)
 
-    let maxEncodeQSize = 0
+    // 初始 1 避免 NaN
+    let maxEncodeQSize = 1
     let outProgress = 0
     // 避免 进度值 回退
     let lastProg = 0
