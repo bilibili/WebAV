@@ -268,8 +268,6 @@ document.querySelector('#mp4-chromakey-srt')?.addEventListener('click', evt => {
     const height = 720
 
     const chromakey = createChromakey({
-      width,
-      height,
       keyColor: [65, 249, 0]
     })
     const clip = new MP4Clip((await fetch(resList[0])).body!)

@@ -97,15 +97,11 @@ function loadTexture (gl: WebGLRenderingContext, img: TexImageSourceWebCodecs) {
   return texture
 }
 
-/**
- * 绿幕抠图
- * @param opts: { keyColor: [r, g, b], width, height }
- */
-export const createChromakey = (opts: {
+function initCvs (opts: {
   width: number
   height: number
   keyColor: [number, number, number]
-}) => {
+}) {
   const cvs = new OffscreenCanvas(opts.width, opts.height)
   const gl = cvs.getContext('webgl', {
     premultipliedAlpha: false,
@@ -157,7 +153,31 @@ export const createChromakey = (opts: {
 
   gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, 1)
 
+  return { cvs, gl }
+}
+
+/**
+ * 绿幕抠图
+ * @param opts: { keyColor: [r, g, b] }
+ */
+export const createChromakey = (opts: {
+  keyColor: [number, number, number]
+}) => {
+  let cvs: OffscreenCanvas | null = null
+  let gl: WebGLRenderingContext | null = null
+
   return async (imgSource: VideoFrame | ImageBitmap | HTMLImageElement) => {
+    if (cvs == null || gl == null) {
+      const [width, height] =
+        imgSource instanceof VideoFrame
+          ? [imgSource.codedWidth, imgSource.codedHeight]
+          : [imgSource.width, imgSource.height]
+      ;({ cvs, gl } = initCvs({
+        ...opts,
+        width,
+        height
+      }))
+    }
     const tex = loadTexture(gl, imgSource)
     gl.activeTexture(gl.TEXTURE0)
     gl.bindTexture(gl.TEXTURE_2D, tex)

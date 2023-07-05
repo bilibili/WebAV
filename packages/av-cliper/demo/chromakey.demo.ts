@@ -12,8 +12,6 @@ const ctx = cvs.getContext('2d', {
     img.onload = resolve
   })
   const chromakey = createChromakey({
-    width: cvs.width,
-    height: cvs.height,
     keyColor: [65, 249, 0]
   })
   console.time('cost')
