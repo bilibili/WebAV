@@ -5,6 +5,7 @@ import { OffscreenSprite } from '../src/offscreen-sprite'
 import { renderTxt2ImgBitmap } from '../src/dom-utils'
 import { EmbedSubtitlesClip } from '../src/clips/embed-subtitles-clip'
 import { playOutputStream } from './play-video'
+import { createChromakey } from '../src'
 
 // const cvs = document.querySelector('canvas') as HTMLCanvasElement
 // const ctx = cvs.getContext('2d')!
@@ -250,4 +251,62 @@ document.querySelector('#mp4-srt')?.addEventListener('click', () => {
     })
     await loadStream(com.output())
   })()
+})
+
+document.querySelector('#mp4-chromakey-srt')?.addEventListener('click', evt => {
+  ;(async () => {
+    const resList = [
+      './public/video/chromakey-test.mp4',
+      './public/img/bunny.png'
+    ]
+    const { updateState, loadStream } = playOutputStream(
+      resList,
+      playerContiner
+    )
+
+    const width = 1280
+    const height = 720
+
+    const chromakey = createChromakey({
+      width,
+      height,
+      keyColor: [65, 249, 0]
+    })
+    const clip = new MP4Clip((await fetch(resList[0])).body!)
+    clip.tickInterceptor = async (_, tickRet) => {
+      if (tickRet.video == null) return tickRet
+      return {
+        ...tickRet,
+        video: await chromakey(tickRet.video)
+      }
+    }
+
+    const spr1 = new OffscreenSprite('spr1', clip)
+    await spr1.ready
+    spr1.zIndex = 1
+    spr1.rect.x = (width - spr1.rect.w) / 2
+    spr1.rect.y = (height - spr1.rect.h) / 2
+
+    const spr2 = new OffscreenSprite(
+      'spr3',
+      new ImgClip(
+        await createImageBitmap(await (await fetch(resList[1])).blob())
+      )
+    )
+
+    const com = new Combinator({
+      width,
+      height,
+      bgColor: 'white'
+    })
+
+    await com.add(spr1, { main: true })
+    await com.add(spr2)
+
+    com.on('OutputProgress', v => {
+      console.log('----- progress:', v)
+      updateState(`progress: ${Math.round(v * 100)}%`)
+    })
+    await loadStream(com.output())
+  })().catch(Log.error)
 })
