@@ -19,4 +19,8 @@ export interface IClip {
   destroy: () => void
 }
 
-export const DEFAULT_AUDIO_SAMPLE_RATE = 48000
+export const DEFAULT_AUDIO_CONF = {
+  sampleRate: 48000,
+  channelCount: 2,
+  codec: 'mp4a.40.2'
+}

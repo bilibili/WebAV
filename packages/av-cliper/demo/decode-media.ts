@@ -1,6 +1,6 @@
 import { decodeImg, sleep } from '../src/av-utils'
 import { createChromakey } from '../src/chromakey'
-import { AudioClip, DEFAULT_AUDIO_SAMPLE_RATE, MP4Clip } from '../src/clips'
+import { AudioClip, DEFAULT_AUDIO_CONF, MP4Clip } from '../src/clips'
 import { EmbedSubtitlesClip } from '../src/clips/embed-subtitles-clip'
 import { Log } from '../src/log'
 
@@ -76,7 +76,7 @@ document.querySelector('#decode-audio')?.addEventListener('click', () => {
         return
       }
 
-      const buf = ctx.createBuffer(2, len, DEFAULT_AUDIO_SAMPLE_RATE)
+      const buf = ctx.createBuffer(2, len, DEFAULT_AUDIO_CONF.sampleRate)
       buf.copyToChannel(audio[0], 0)
       buf.copyToChannel(audio[1], 1)
       const source = ctx.createBufferSource()

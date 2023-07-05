@@ -18,6 +18,7 @@ import {
   sleep,
   concatPCMFragments
 } from './av-utils'
+import { DEFAULT_AUDIO_CONF } from './clips'
 
 type TCleanFn = () => void
 
@@ -317,7 +318,7 @@ function encodeAudioTrack (
     }
   })
   encoder.configure({
-    codec: audioOpts.codec === 'aac' ? 'mp4a.40.2' : 'opus',
+    codec: audioOpts.codec === 'aac' ? DEFAULT_AUDIO_CONF.codec : 'opus',
     sampleRate: audioOpts.sampleRate,
     numberOfChannels: audioOpts.channelCount,
     bitrate: 128_000
@@ -600,7 +601,7 @@ function extractFileConfig (file: MP4File, info: MP4Info) {
       type: aTrack.codec
     }
     rs.audioDecoderConf = {
-      codec: aTrack.codec === 'mp4a' ? 'mp4a.40.2' : aTrack.codec,
+      codec: aTrack.codec === 'mp4a' ? DEFAULT_AUDIO_CONF.codec : aTrack.codec,
       numberOfChannels: aTrack.audio.channel_count,
       sampleRate: aTrack.audio.sample_rate
     }
@@ -831,7 +832,7 @@ export function mixinMP4AndAudio (
         const safeAudioTrackConf = audioTrackConf ?? {
           timescale: 1e6,
           samplerate: sampleRate,
-          channel_count: 2,
+          channel_count: DEFAULT_AUDIO_CONF.channelCount,
           hdlr: 'soun',
           name: 'SoundHandler',
           type: 'mp4a'
@@ -855,7 +856,7 @@ export function mixinMP4AndAudio (
           audioDecoderConf ?? {
             codec:
               safeAudioTrackConf.type === 'mp4a'
-                ? 'mp4a.40.2'
+                ? DEFAULT_AUDIO_CONF.codec
                 : safeAudioTrackConf.type,
             numberOfChannels: safeAudioTrackConf.channel_count,
             sampleRate: safeAudioTrackConf.samplerate

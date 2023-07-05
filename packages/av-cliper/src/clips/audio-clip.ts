@@ -4,7 +4,7 @@ import {
   ringSliceFloat32Array
 } from '../av-utils'
 import { Log } from '../log'
-import { DEFAULT_AUDIO_SAMPLE_RATE, IClip } from './iclip'
+import { DEFAULT_AUDIO_CONF, IClip } from './iclip'
 
 interface IAudioClipOpts {
   loop?: boolean
@@ -59,7 +59,7 @@ export class AudioClip implements IClip {
   ): Promise<void> {
     if (AudioClip.ctx == null) {
       AudioClip.ctx = new AudioContext({
-        sampleRate: DEFAULT_AUDIO_SAMPLE_RATE
+        sampleRate: DEFAULT_AUDIO_CONF.sampleRate
       })
     }
 
@@ -77,7 +77,7 @@ export class AudioClip implements IClip {
         for (let i = 0; i < chan.length; i += 1) chan[i] *= volume
     }
 
-    this.#meta.duration = (pcm[0].length / DEFAULT_AUDIO_SAMPLE_RATE) * 1e6
+    this.#meta.duration = (pcm[0].length / DEFAULT_AUDIO_CONF.sampleRate) * 1e6
 
     this.#chan0Buf = pcm[0]
     // 单声道 转 立体声
@@ -102,7 +102,9 @@ export class AudioClip implements IClip {
     const deltaTime = time - this.#ts
     this.#ts = time
 
-    const frameCnt = Math.ceil(deltaTime * (DEFAULT_AUDIO_SAMPLE_RATE / 1e6))
+    const frameCnt = Math.ceil(
+      deltaTime * (DEFAULT_AUDIO_CONF.sampleRate / 1e6)
+    )
     const endIdx = this.#frameOffset + frameCnt
     const audio = this.#opts.loop
       ? [

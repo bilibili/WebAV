@@ -6,7 +6,7 @@ import {
 } from '../av-utils'
 import { Log } from '../log'
 import { demuxcode } from '../mp4-utils'
-import { DEFAULT_AUDIO_SAMPLE_RATE, IClip } from './iclip'
+import { DEFAULT_AUDIO_CONF, IClip } from './iclip'
 
 export class MP4Clip implements IClip {
   #videoFrames: VideoFrame[] = []
@@ -23,8 +23,8 @@ export class MP4Clip implements IClip {
     duration: 0,
     width: 0,
     height: 0,
-    audioSampleRate: DEFAULT_AUDIO_SAMPLE_RATE,
-    audioChanCount: 2
+    audioSampleRate: DEFAULT_AUDIO_CONF.sampleRate,
+    audioChanCount: DEFAULT_AUDIO_CONF.channelCount
   }
 
   #audioChan0 = new Float32Array(0)
@@ -65,8 +65,8 @@ export class MP4Clip implements IClip {
               duration: 0,
               width: videoTrack.track_width,
               height: videoTrack.track_height,
-              audioSampleRate: DEFAULT_AUDIO_SAMPLE_RATE,
-              audioChanCount: 2
+              audioSampleRate: DEFAULT_AUDIO_CONF.sampleRate,
+              audioChanCount: DEFAULT_AUDIO_CONF.channelCount
             }
             Log.info('MP4Clip info:', info)
             resolve({
@@ -108,8 +108,8 @@ export class MP4Clip implements IClip {
       chan1 = new Float32Array(0)
 
       const pcmArr = await audioResample(data, curRate, {
-        rate: DEFAULT_AUDIO_SAMPLE_RATE,
-        chanCount: 2
+        rate: DEFAULT_AUDIO_CONF.sampleRate,
+        chanCount: DEFAULT_AUDIO_CONF.channelCount
       })
       this.#audioChan0 = concatFloat32Array([this.#audioChan0, pcmArr[0]])
       this.#audioChan1 = concatFloat32Array([
@@ -119,7 +119,7 @@ export class MP4Clip implements IClip {
     }
     // todo: 频繁合并PCM（内存释放分配），可能有性能优化空间
     return (ad: AudioData) => {
-      needResample = ad.sampleRate !== DEFAULT_AUDIO_SAMPLE_RATE
+      needResample = ad.sampleRate !== DEFAULT_AUDIO_CONF.sampleRate
 
       const pcmArr = extractPCM4AudioData(ad)
       let curRate = ad.sampleRate

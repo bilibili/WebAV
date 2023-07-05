@@ -1,12 +1,12 @@
 import { beforeEach, expect, test } from 'vitest'
 import { AudioBufferMock } from '../../__tests__/mock'
-import { AudioClip, DEFAULT_AUDIO_SAMPLE_RATE, concatAudioClip } from '..'
+import { AudioClip, DEFAULT_AUDIO_CONF, concatAudioClip } from '..'
 
 beforeEach(() => {
   AudioBufferMock.duration = 10
   // duration 10s
   AudioBufferMock.getChannelData.mockReturnValue(
-    new Float32Array(DEFAULT_AUDIO_SAMPLE_RATE * 10)
+    new Float32Array(DEFAULT_AUDIO_CONF.sampleRate * 10)
   )
 })
 
@@ -24,8 +24,8 @@ test('AudioClip tick', async () => {
     state: s1
   } = await clip.tick(1000 * 30 * 2)
   expect(s1).toBe('success')
-  expect(chan0.length).toBe((DEFAULT_AUDIO_SAMPLE_RATE / 1e3) * 30)
-  expect(chan1.length).toBe((DEFAULT_AUDIO_SAMPLE_RATE / 1e3) * 30)
+  expect(chan0.length).toBe((DEFAULT_AUDIO_CONF.sampleRate / 1e3) * 30)
+  expect(chan1.length).toBe((DEFAULT_AUDIO_CONF.sampleRate / 1e3) * 30)
 
   // 取第 11s 的数据
   const { state: s2 } = await clip.tick(1e6 * 11)
@@ -34,7 +34,7 @@ test('AudioClip tick', async () => {
 
 test('AudioClip volume', async () => {
   AudioBufferMock.getChannelData.mockReturnValueOnce(
-    new Float32Array(Array(DEFAULT_AUDIO_SAMPLE_RATE * 10).fill(1))
+    new Float32Array(Array(DEFAULT_AUDIO_CONF.sampleRate * 10).fill(1))
   )
   const clip = new AudioClip(new ReadableStream(), { volume: 0.1 })
   await clip.ready
@@ -53,7 +53,7 @@ test('AudioClip loop', async () => {
   const {
     audio: [chan0]
   } = await clip.tick(1e6 * 11)
-  expect(chan0.length).toBe(DEFAULT_AUDIO_SAMPLE_RATE * 2)
+  expect(chan0.length).toBe(DEFAULT_AUDIO_CONF.sampleRate * 2)
 })
 
 test('concatAudioClip', async () => {

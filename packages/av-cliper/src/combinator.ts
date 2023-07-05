@@ -3,7 +3,7 @@ import { file2stream, recodemux } from './mp4-utils'
 import { Log } from './log'
 import { mixinPCM, sleep } from './av-utils'
 import { EventTool } from './event-tool'
-import { DEFAULT_AUDIO_SAMPLE_RATE } from './clips'
+import { DEFAULT_AUDIO_CONF } from './clips'
 
 interface IComItem {
   offset: number
@@ -25,7 +25,7 @@ interface ICombinatorOpts {
 }
 
 export class Combinator {
-  static isSupported (): boolean {
+  static async isSupported (): Promise<boolean> {
     return (
       self.OffscreenCanvas != null &&
       self.OfflineAudioContext != null &&
@@ -34,7 +34,14 @@ export class Combinator {
       self.VideoFrame != null &&
       self.AudioEncoder != null &&
       self.AudioDecoder != null &&
-      self.AudioData != null
+      self.AudioData != null &&
+      (
+        await AudioEncoder.isConfigSupported({
+          codec: DEFAULT_AUDIO_CONF.codec,
+          sampleRate: DEFAULT_AUDIO_CONF.sampleRate,
+          numberOfChannels: DEFAULT_AUDIO_CONF.channelCount
+        })
+      ).supported
     )
   }
 
@@ -73,9 +80,9 @@ export class Combinator {
       },
       audio: {
         codec: 'aac',
-        sampleRate: DEFAULT_AUDIO_SAMPLE_RATE,
+        sampleRate: DEFAULT_AUDIO_CONF.sampleRate,
         sampleSize: 16,
-        channelCount: 2
+        channelCount: DEFAULT_AUDIO_CONF.channelCount
       },
       bitrate: opts.bitrate ?? 2_000_000
     })
@@ -208,16 +215,16 @@ export class Combinator {
         if (audios.flat().every(a => a.length === 0)) {
           // 当前时刻无音频时，使用无声音频占位，否则会导致后续音频播放时间偏差
           this.#remux.encodeAudio(
-            createAudioPlaceholder(ts, timeSlice, DEFAULT_AUDIO_SAMPLE_RATE)
+            createAudioPlaceholder(ts, timeSlice, DEFAULT_AUDIO_CONF.sampleRate)
           )
         } else {
           const data = mixinPCM(audios)
           this.#remux.encodeAudio(
             new AudioData({
               timestamp: ts,
-              numberOfChannels: 2,
+              numberOfChannels: DEFAULT_AUDIO_CONF.channelCount,
               numberOfFrames: data.length / 2,
-              sampleRate: DEFAULT_AUDIO_SAMPLE_RATE,
+              sampleRate: DEFAULT_AUDIO_CONF.sampleRate,
               format: 'f32-planar',
               data
             })
@@ -280,7 +287,7 @@ function createAudioPlaceholder (
   const frameCnt = Math.floor((sampleRate * duration) / 1e6)
   return new AudioData({
     timestamp: ts,
-    numberOfChannels: 2,
+    numberOfChannels: DEFAULT_AUDIO_CONF.channelCount,
     numberOfFrames: frameCnt,
     sampleRate: sampleRate,
     format: 'f32-planar',
