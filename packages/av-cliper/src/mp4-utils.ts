@@ -73,6 +73,7 @@ export function demuxcode (
   let mp4File: MP4File | null = null
   let completeCheckTimer = 0
 
+  let firstVideoSamp = true
   const stopReadStream = autoReadStream(
     stream.pipeThrough(new SampleTransform()),
     {
@@ -114,6 +115,13 @@ export function demuxcode (
             if (cts < opts.start || cts > opts.end) continue
 
             if (type === 'video') {
+              if (firstVideoSamp && i === 0 && s.cts !== 0) {
+                // 兼容某些视频首帧 有偏移
+                s.cts = 0
+                firstVideoSamp = false
+              } else {
+                firstVideoSamp = true
+              }
               if (firstDecodeVideo && !s.is_sync) {
                 // 首次解码需要从 key chunk 开始
                 firstDecodeVideo = false
