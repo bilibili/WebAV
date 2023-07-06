@@ -6,6 +6,9 @@
   "useWorkspaces": true,
   "version": "0.1.31",
   "command": {
+    "publish": {
+      "registry": "https://registry.npmjs.org"
+    },
     "version": {
       "message": "version: %s",
       "allowBranch": "main"
