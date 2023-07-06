@@ -119,6 +119,7 @@ export class Combinator {
         'Unable to determine the end time, please specify a main sprite, or limit the duration of ImgClip, AudioCli'
       )
     }
+    // 主视频（main）的 videoTrack duration 值为 0
     if (maxTime === -1) {
       Log.warn("Unable to determine the end time, process value don't update")
     }
@@ -173,7 +174,11 @@ export class Combinator {
       const ctx = this.#ctx
       let ts = 0
       while (true) {
-        if (stoped || ts > maxTime || this.#comItems.length === 0) {
+        if (
+          stoped ||
+          (maxTime === -1 ? false : ts > maxTime) ||
+          this.#comItems.length === 0
+        ) {
           this.#comItems.forEach(it => it.sprite.destroy())
           exit()
           onEnded()

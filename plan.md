@@ -2,12 +2,6 @@
 
 ## Bugs
 - AVCanvas 首次录制，生成的文件是0字节
-- Combinator 结束时间可能错误
-```ts
-await com.add(spr1, { main: true })
-await com.add(spr2, { offset: 0, duration: 5 })
-await com.add(spr3, { offset: 0 })
-```
 - gif+m4a 首次 gif 没有动画
 
 ## 项目优化

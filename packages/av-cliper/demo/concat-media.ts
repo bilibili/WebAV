@@ -69,9 +69,9 @@ document.querySelector('#mp4-img')?.addEventListener('click', evt => {
       bgColor: 'white'
     })
 
-    await com.add(spr1, { offset: 0, duration: 20 })
+    await com.add(spr1, { main: true })
     await com.add(spr2, { offset: 0, duration: 5 })
-    await com.add(spr3, { offset: 20, duration: 3 })
+    await com.add(spr3)
 
     com.on('OutputProgress', v => {
       console.log('----- progress:', v)
