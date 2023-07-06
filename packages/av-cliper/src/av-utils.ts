@@ -88,22 +88,14 @@ export async function decodeImg (
     type,
     data: stream
   }
-
   const imageDecoder = new ImageDecoder(init)
-  const rs: VideoFrame[] = []
-  const { image, complete } = await imageDecoder.decode({ frameIndex: 0 })
-  rs.push(image)
+  await imageDecoder.completed
 
   let frameCnt = imageDecoder.tracks.selectedTrack?.frameCount ?? 1
-  if (complete && frameCnt === 1) return rs
 
-  let i = 1
-  while (i < frameCnt) {
-    const { image } = await imageDecoder.decode({ frameIndex: i })
-    // frameCnt 可能会逐渐增加
-    frameCnt = imageDecoder.tracks.selectedTrack?.frameCount ?? i
-    i += 1
-    rs.push(image)
+  const rs: VideoFrame[] = []
+  for (let i = 0; i < frameCnt; i += 1) {
+    rs.push((await imageDecoder.decode({ frameIndex: i })).image)
   }
   return rs
 }

@@ -2,7 +2,6 @@
 
 ## Bugs
 - AVCanvas 首次录制，生成的文件是0字节
-- gif+m4a 首次 gif 没有动画
 
 ## 项目优化
 - API 文档、视频
