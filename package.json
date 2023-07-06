@@ -8,6 +8,7 @@
   },
   "scripts": {
     "build": "lerna run build",
+    "publish:all": "lerna publish from-package --no-private",
     "prebuild:demo": "yarn build",
     "build:demo": "lerna run build:demo",
     "postbuild:demo": "rimraf demo-dist && mkdir demo-dist && cp -r packages/**/demo-dist/* ./demo-dist"
