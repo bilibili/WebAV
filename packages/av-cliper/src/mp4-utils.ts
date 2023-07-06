@@ -598,7 +598,7 @@ function extractFileConfig (file: MP4File, info: MP4Info) {
       samplesize: aTrack.audio.sample_size,
       hdlr: 'soun',
       name: 'SoundHandler',
-      type: aTrack.codec
+      type: aTrack.codec.startsWith('mp4a') ? 'mp4a' : aTrack.codec
     }
     rs.audioDecoderConf = {
       codec: aTrack.codec === 'mp4a' ? DEFAULT_AUDIO_CONF.codec : aTrack.codec,
