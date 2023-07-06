@@ -1,7 +1,13 @@
 name: Publish Package to npmjs
+
 on:
-  release:
-    types: [published]
+  push:
+    branches:
+      - main  # 或者您要触发部署的分支名称
+
+    # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+
 jobs:
   build:
     runs-on: ubuntu-latest
