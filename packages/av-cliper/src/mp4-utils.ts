@@ -601,7 +601,9 @@ function extractFileConfig (file: MP4File, info: MP4Info) {
       type: aTrack.codec.startsWith('mp4a') ? 'mp4a' : aTrack.codec
     }
     rs.audioDecoderConf = {
-      codec: aTrack.codec === 'mp4a' ? DEFAULT_AUDIO_CONF.codec : aTrack.codec,
+      codec: aTrack.codec.startsWith('mp4a')
+        ? DEFAULT_AUDIO_CONF.codec
+        : aTrack.codec,
       numberOfChannels: aTrack.audio.channel_count,
       sampleRate: aTrack.audio.sample_rate
     }
