@@ -22,17 +22,25 @@ const fragmentShader = `
   }
 
   void main() {
+    // 从贴图获取源像素
     vec4 srcColor = texture2D(u_texture, v_texCoord);
+    // 源像素 RGB 转换为 YUV
     vec2 srcCC = RGBToCC(srcColor);
+    // 目标颜色转换为 YUV
     vec2 keyCC = RGBToCC(keyRGBA);
 
+    // 计算距离
     float mask = sqrt(pow(keyCC.x - srcCC.x, 2.0) + pow(keyCC.y - srcCC.y, 2.0));
+    // 对距离值在range中进行平滑映射取值
     mask = smoothstep(range.x, range.y, mask);
 
+    // 低于range下限
     if (mask == 0.0) { discard; }
+    // 超过range上限
     else if (mask == 1.0) { gl_FragColor = srcColor; }
+    // 处于range之中
     else {
-      // 人物边缘混合了绿幕颜色的源像素，需要减去绿幕颜色，让边界更自然
+      // 某些源像素（如头发边缘）混合了绿幕颜色，需要减去绿幕颜色，否则边缘会有绿斑
       gl_FragColor = max(srcColor - (1.0 - mask) * keyRGBA, 0.0);
     }
   }

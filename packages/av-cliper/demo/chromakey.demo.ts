@@ -15,7 +15,6 @@ const ctx = cvs.getContext('2d', {
     keyColor: [65, 249, 0]
   })
   console.time('cost')
-  // for (let i = 0; i < 10; i++)
   ctx.drawImage(await chromakey(img), 0, 0, cvs.width, cvs.height)
   console.timeEnd('cost')
 })()
