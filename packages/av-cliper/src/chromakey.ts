@@ -90,7 +90,7 @@ function loadShader (gl: WebGLRenderingContext, type: number, source: string) {
   return shader
 }
 
-function loadTexture (gl: WebGLRenderingContext, img: TexImageSourceWebCodecs) {
+function loadTexture (gl: WebGLRenderingContext, img: TImgSource) {
   var texture = gl.createTexture()
   if (texture == null) throw Error('Could not create texture')
 
@@ -109,6 +109,7 @@ function initCvs (opts: {
   width: number
   height: number
   keyColor: [number, number, number]
+  range: [number, number]
 }) {
   const cvs = new OffscreenCanvas(opts.width, opts.height)
   const gl = cvs.getContext('webgl', {
@@ -125,7 +126,7 @@ function initCvs (opts: {
     ...opts.keyColor.map(v => v / 255),
     1.0
   ])
-  gl.uniform2fv(gl.getUniformLocation(shaderProgram, 'range'), [0.2, 0.48])
+  gl.uniform2fv(gl.getUniformLocation(shaderProgram, 'range'), opts.range)
 
   const posBuffer = gl.createBuffer()
   gl.bindBuffer(gl.ARRAY_BUFFER, posBuffer)
@@ -164,28 +165,53 @@ function initCvs (opts: {
   return { cvs, gl }
 }
 
+type TImgSource =
+  | HTMLVideoElement
+  | HTMLCanvasElement
+  | ImageBitmap
+  | OffscreenCanvas
+  | VideoFrame
+
+function getSourceWH (imgSource: TImgSource) {
+  return imgSource instanceof VideoFrame
+    ? { width: imgSource.codedWidth, height: imgSource.codedHeight }
+    : { width: imgSource.width, height: imgSource.height }
+}
+
+function getKeyColor (imgSource: TImgSource) {
+  const cvs = new OffscreenCanvas(1, 1)
+  const ctx = cvs.getContext('2d')!
+  ctx.drawImage(imgSource, 0, 0)
+  const {
+    data: [r, g, b]
+  } = ctx.getImageData(0, 0, 1, 1)
+  return [r, g, b] as [number, number, number]
+}
+
 /**
  * 绿幕抠图
- * @param opts: { keyColor: [r, g, b] }
+ * @param opts?: { keyColor?: [r, g, b], range?: [number, number] }
  */
-export const createChromakey = (opts: {
-  keyColor: [number, number, number]
-}) => {
+export const createChromakey = (
+  opts: {
+    keyColor?: [number, number, number]
+    range?: [number, number]
+  } = {}
+) => {
   let cvs: OffscreenCanvas | null = null
   let gl: WebGLRenderingContext | null = null
+  let keyC = opts.keyColor
 
-  return async (imgSource: VideoFrame | ImageBitmap | HTMLImageElement) => {
+  return async (imgSource: TImgSource) => {
     if (cvs == null || gl == null) {
-      const [width, height] =
-        imgSource instanceof VideoFrame
-          ? [imgSource.codedWidth, imgSource.codedHeight]
-          : [imgSource.width, imgSource.height]
+      if (keyC == null) keyC = getKeyColor(imgSource)
       ;({ cvs, gl } = initCvs({
-        ...opts,
-        width,
-        height
+        ...getSourceWH(imgSource),
+        keyColor: keyC,
+        range: opts.range ?? [0.2, 0.5]
       }))
     }
+
     const tex = loadTexture(gl, imgSource)
     gl.activeTexture(gl.TEXTURE0)
     gl.bindTexture(gl.TEXTURE_2D, tex)

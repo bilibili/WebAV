@@ -267,9 +267,7 @@ document.querySelector('#mp4-chromakey')?.addEventListener('click', () => {
     const width = 1280
     const height = 720
 
-    const chromakey = createChromakey({
-      keyColor: [65, 249, 0]
-    })
+    const chromakey = createChromakey()
     const clip = new MP4Clip((await fetch(resList[0])).body!)
     clip.tickInterceptor = async (_, tickRet) => {
       if (tickRet.video == null) return tickRet
