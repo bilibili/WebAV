@@ -22,15 +22,16 @@ This is an experimental project that tries to provide an easy-to-use API for pro
   录制 MediaStream，导出 MP4 流。  
 
 ## Features
-- 画布 [AVCanvas](packages/av-canvas/README.md)
-  - 移动、旋转、翻转、等比缩放、变形
-  - 媒体来源：摄像头、麦克风、分享屏幕
-  - 资源类型：视频、音频、图片、文字
 - 音视频剪辑 [AVCliper](packages/av-cliper/README.md)
   - mp4、mp3、图片、文字 按时间线合成 
   - 嵌入 SRT 字幕
   - 视频消音、音频混流、音量控制、音频循环、音频重采样
+  - 视频逐帧处理，内置 绿幕抠图
   - 动画：x, y, w, h, opacity, angle
+- 画布 [AVCanvas](packages/av-canvas/README.md)
+  - 移动、旋转、翻转、等比缩放、变形
+  - 媒体来源：摄像头、麦克风、分享屏幕
+  - 资源类型：视频、音频、图片、文字
 - 录制 [AVRecorder](packages/av-recorder/README.md)
   - 从 MediaStream、AVCanvas 中录制视频
 
