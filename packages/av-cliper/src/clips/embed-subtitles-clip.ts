@@ -217,28 +217,47 @@ function srtTimeToSeconds (time: string) {
   return hours * 60 * 60 + minutes * 60 + seconds + milliseconds / 1000
 }
 
-function parseSrtLine (line: string) {
-  const match = line.match(
-    /(\d{2}:\d{2}:\d{2},\d{3}) --> (\d{2}:\d{2}:\d{2},\d{3})(?:\r|\n)+((?:.|(?:\r|\n))*)/m
-  )
-
-  if (match == null) throw Error(`line format error: ${line}`)
-
-  return {
-    start: srtTimeToSeconds(match[1]),
-    end: srtTimeToSeconds(match[2]),
-    // fixme: 换行字幕没有第二行
-    text: match[3].trim()
-  }
-}
-
 function parseSrt (srt: string) {
-  // fixme: 当某行字幕全是数字时，解析结果错误
-  const lines = srt
-    .trim()
-    // 第一个序号和换行符
-    .replace(/\d+(?:\r|\n)*/, '')
-    .split(/(?:\r|\n)+\d+(?:\r|\n)+/g)
+  return (
+    srt
+      .split(/\r|\n/)
+      .map(s => s.trim())
+      .filter(str => str.length > 0)
+      // 匹配时间戳标记行，匹配失败的为字幕内容
+      .map(s => ({
+        lineStr: s,
+        match: s.match(
+          /(\d{2}:\d{2}:\d{2},\d{3}) --> (\d{2}:\d{2}:\d{2},\d{3})/
+        )
+      }))
+      // 过滤掉时间上一行的数字标记
+      .filter(
+        ({ lineStr }, idx, source) =>
+          !(/^\d+$/.test(lineStr) && source[idx + 1]?.match != null)
+      )
+      // 按时间标记行聚合，拼接字幕内容到 text 字段
+      .reduce(
+        (acc, { lineStr, match }) => {
+          if (match == null) {
+            const last = acc.at(-1)
+            if (last == null) return acc
 
-  return lines.map(line => parseSrtLine(line))
+            last.text += last.text.length === 0 ? lineStr : `\n${lineStr}`
+          } else {
+            acc.push({
+              start: srtTimeToSeconds(match[1]),
+              end: srtTimeToSeconds(match[2]),
+              text: ''
+            })
+          }
+
+          return acc
+        },
+        [] as Array<{
+          start: number
+          end: number
+          text: string
+        }>
+      )
+  )
 }

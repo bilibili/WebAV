@@ -2,7 +2,7 @@ import { expect, test } from 'vitest'
 import '../../__tests__/mock'
 import { EmbedSubtitlesClip } from '../embed-subtitles-clip'
 
-const txt = `
+const txt1 = `
 
 1
 00:00:00,341 --> 00:00:03,218
@@ -44,7 +44,7 @@ const txt = `
 `
 
 test('EmbedSubtitles', async () => {
-  const es = new EmbedSubtitlesClip(txt, {
+  const es = new EmbedSubtitlesClip(txt1, {
     videoWidth: 1280,
     videoHeight: 720
   })
@@ -61,4 +61,22 @@ test('EmbedSubtitles', async () => {
   // 100s 超出字幕时间
   const { state } = await es.tick(100 * 1e6)
   expect(state).toBe('done')
+})
+
+const txt2 = `
+1
+00:00:00,341 --> 00:00:03,218
+111
+测试样本1-3s
+
+`
+test('EmbedSubtitles digital', async () => {
+  const es = new EmbedSubtitlesClip(txt2, {
+    videoWidth: 1280,
+    videoHeight: 720
+  })
+  const vf1 = (await es.tick(342000)).video
+  // 显示第一个字幕
+  expect(vf1?.timestamp).toBe(342000)
+  expect(vf1?.duration).toBe(3218000 - 342000)
 })
