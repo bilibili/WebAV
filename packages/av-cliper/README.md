@@ -127,11 +127,22 @@ const spr2 = new OffscreenSprite(
 
 await com.add(spr1, { main: true })
 await com.add(spr2)
+```
 
-com.on('OutputProgress', v => {
-  console.log('----- progress:', v)
-})
-// com.output() return a ReadableStream, upload or save to disk
+**video frame interceptor(eg: chromakey)**  
+**视频帧拦截器(示例：绿幕抠图)**  
+```ts
+import { createChromakey } from '@webav/av-cliper'
+
+const chromakey = createChromakey()
+const clip = new MP4Clip((await fetch('./public/video/chromakey-test.mp4')).body!)
+clip.tickInterceptor = async (_, tickRet) => {
+  if (tickRet.video == null) return tickRet
+  return {
+    ...tickRet,
+    video: await chromakey(tickRet.video)
+  }
+}
 ```
 
 *images, subtitles are relatively simple, for examples please see the demo code, `. /demo/*.ts`*  
