@@ -154,6 +154,7 @@ export function recodemux (opts: IWorkerOpts): {
   encodeVideo: (frame: VideoFrame, options?: VideoEncoderEncodeOptions) => void
   encodeAudio: (data: AudioData) => void
   close: TCleanFn
+  flush: () => Promise<void>
   mp4file: MP4File
   getEecodeQueueSize: () => number
 } {
@@ -186,6 +187,10 @@ export function recodemux (opts: IWorkerOpts): {
       ad.close()
     },
     getEecodeQueueSize: () => vEncoder.encodeQueueSize,
+    flush: async () => {
+      await Promise.all([vEncoder.flush(), aEncoder?.flush()])
+      return
+    },
     close: () => {
       vEncoder.close()
       aEncoder?.close()

@@ -124,22 +124,17 @@ export class Combinator {
       Log.warn("Unable to determine the end time, process value don't update")
     }
 
-    let remuxEndTimer = 0
     const stopReCodeMux = this.#run(
       maxTime,
       prog => {
         this.#evtTool.emit('OutputProgress', prog)
       },
-      () => {
-        remuxEndTimer = setInterval(() => {
-          if (this.#remux.getEecodeQueueSize() === 0) {
-            clearInterval(remuxEndTimer)
-            Log.info('===== output ended ======')
-            this.#closeOutStream?.()
-            console.timeEnd('cost')
-            this.#evtTool.emit('OutputProgress', 1)
-          }
-        }, 100)
+      async () => {
+        await this.#remux.flush()
+        Log.info('===== output ended ======')
+        this.#closeOutStream?.()
+        console.timeEnd('cost')
+        this.#evtTool.emit('OutputProgress', 1)
       }
     )
 
@@ -147,7 +142,6 @@ export class Combinator {
       this.#remux.mp4file,
       500,
       () => {
-        clearInterval(remuxEndTimer)
         stopReCodeMux()
         this.#remux.close()
       }
@@ -160,7 +154,7 @@ export class Combinator {
   #run (
     maxTime: number,
     onprogress: (prog: number) => void,
-    onEnded: () => void
+    onEnded: () => Promise<void>
   ): () => void {
     let inputProgress = 0
     let stoped = false
@@ -181,7 +175,7 @@ export class Combinator {
         ) {
           this.#comItems.forEach(it => it.sprite.destroy())
           exit()
-          onEnded()
+          await onEnded()
           return
         }
         inputProgress = ts / maxTime
@@ -207,7 +201,7 @@ export class Combinator {
             if (it.main) {
               this.#comItems.forEach(it => it.sprite.destroy())
               exit()
-              onEnded()
+              await onEnded()
               return
             }
 
