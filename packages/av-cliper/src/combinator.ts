@@ -228,7 +228,7 @@ export class Combinator {
             new AudioData({
               timestamp: ts,
               numberOfChannels: DEFAULT_AUDIO_CONF.channelCount,
-              numberOfFrames: data.length / 2,
+              numberOfFrames: data.length / DEFAULT_AUDIO_CONF.channelCount,
               sampleRate: DEFAULT_AUDIO_CONF.sampleRate,
               format: 'f32-planar',
               data

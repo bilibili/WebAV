@@ -23,6 +23,15 @@ test('mixinPCM', () => {
   ).toEqual(new Float32Array([3, 3, 3, 2, 2, 3, 3, 3, 2, 2]))
 })
 
+test('mixinPCM empty track', () => {
+  expect(
+    mixinPCM([
+      [new Float32Array([2, 2, 2, 2, 2]), new Float32Array([0, 0, 0, 0, 0])],
+      []
+    ])
+  ).toEqual(new Float32Array([2, 2, 2, 2, 2, 0, 0, 0, 0, 0]))
+})
+
 test('concatFragmentPCM', () => {
   const chan0 = new Float32Array([0, 0, 0])
   const chan1 = new Float32Array([1, 1, 1])

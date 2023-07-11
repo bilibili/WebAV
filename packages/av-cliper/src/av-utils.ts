@@ -112,8 +112,11 @@ export function mixinPCM (audios: Float32Array[][]): Float32Array {
     let chan0 = 0
     let chan1 = 0
     for (let trackIdx = 0; trackIdx < audios.length; trackIdx++) {
-      chan0 += audios[trackIdx][0]?.[bufIdx] ?? 0
-      chan1 += audios[trackIdx][1]?.[bufIdx] ?? chan0
+      const _c0 = audios[trackIdx][0]?.[bufIdx] ?? 0
+      // 如果是单声道 PCM，第二声道复用第一声道数据
+      const _c1 = audios[trackIdx][1]?.[bufIdx] ?? _c0
+      chan0 += _c0
+      chan1 += _c1
     }
     data[bufIdx] = chan0
     data[bufIdx + maxLen] = chan1
