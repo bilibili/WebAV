@@ -72,23 +72,15 @@ export function demuxcode (
   let firstDecodeVideo = true
   let lastVideoKeyChunkIdx = 0
   let mp4File: MP4File | null = null
-  let completeCheckTimer = 0
 
   let firstVideoSamp = true
   const stopReadStream = autoReadStream(
     stream.pipeThrough(new SampleTransform()),
     {
-      onDone: () => {
+      onDone: async () => {
         if (mp4Info == null) throw Error('MP4 demux unready')
-        completeCheckTimer = setInterval(() => {
-          if (
-            vdecoder.decodeQueueSize === 0 &&
-            adecoder.decodeQueueSize === 0
-          ) {
-            clearInterval(completeCheckTimer)
-            cbs.onComplete()
-          }
-        }, 100)
+        await Promise.all([vdecoder.flush(), adecoder.flush()])
+        cbs.onComplete()
       },
       onChunk: async ({ chunkType, data }) => {
         if (chunkType === 'ready') {
@@ -146,7 +138,6 @@ export function demuxcode (
 
   return {
     stop: () => {
-      clearInterval(completeCheckTimer)
       mp4File?.stop()
       if (vdecoder.state !== 'closed') vdecoder.close()
       if (adecoder.state !== 'closed') adecoder.close()
