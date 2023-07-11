@@ -148,11 +148,7 @@ export class MP4Clip implements IClip {
 
   async #nextVideo (time: number): Promise<VideoFrame | null> {
     if (this.#videoFrames.length === 0) {
-      if (
-        this.#destroyed ||
-        (this.#decodeEnded &&
-          this.#demuxcoder?.getDecodeQueueSize().video === 0)
-      ) {
+      if (this.#destroyed || this.#decodeEnded) {
         return null
       }
 
@@ -179,10 +175,9 @@ export class MP4Clip implements IClip {
     if (frameCnt === 0) return []
     // 小心避免死循环
     if (
-      this.#audioChan0.length === 0 ||
-      (this.#audioChan0.length < frameCnt &&
-        !this.#destroyed &&
-        this.#demuxcoder?.getDecodeQueueSize().audio !== 0)
+      !this.#decodeEnded &&
+      !this.#destroyed &&
+      this.#audioChan0.length < frameCnt
     ) {
       await sleep(50)
       return this.#nextAudio(deltaTime)
@@ -242,8 +237,8 @@ export class MP4Clip implements IClip {
       this.#ts,
       ', remainder frame count:',
       this.#videoFrames.length,
-      ', decoderQueueSzie:',
-      this.#demuxcoder?.getDecodeQueueSize()
+      ', decodeEnded:',
+      this.#decodeEnded
     )
     this.#destroyed = true
     this.#demuxcoder?.stop()

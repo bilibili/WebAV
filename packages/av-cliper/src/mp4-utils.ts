@@ -48,10 +48,6 @@ export function demuxcode (
   }
 ): {
   stop: () => void
-  getDecodeQueueSize: () => {
-    video: number
-    audio: number
-  }
 } {
   const vdecoder = new VideoDecoder({
     output: vf => {
@@ -142,11 +138,7 @@ export function demuxcode (
       if (vdecoder.state !== 'closed') vdecoder.close()
       if (adecoder.state !== 'closed') adecoder.close()
       stopReadStream()
-    },
-    getDecodeQueueSize: () => ({
-      video: vdecoder.decodeQueueSize,
-      audio: adecoder.decodeQueueSize
-    })
+    }
   }
 }
 
