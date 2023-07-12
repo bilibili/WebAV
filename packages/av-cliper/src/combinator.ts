@@ -36,7 +36,7 @@ export class Combinator {
       self.AudioDecoder != null &&
       self.AudioData != null &&
       ((
-        await VideoEncoder.isConfigSupported({
+        await self.VideoEncoder.isConfigSupported({
           codec: 'avc1.4D0032',
           width: 1280,
           height: 720
@@ -44,7 +44,7 @@ export class Combinator {
       ).supported ??
         false) &&
       (
-        await AudioEncoder.isConfigSupported({
+        await self.AudioEncoder.isConfigSupported({
           codec: DEFAULT_AUDIO_CONF.codec,
           sampleRate: DEFAULT_AUDIO_CONF.sampleRate,
           numberOfChannels: DEFAULT_AUDIO_CONF.channelCount
