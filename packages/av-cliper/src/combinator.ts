@@ -35,6 +35,14 @@ export class Combinator {
       self.AudioEncoder != null &&
       self.AudioDecoder != null &&
       self.AudioData != null &&
+      ((
+        await VideoEncoder.isConfigSupported({
+          codec: 'avc1.4D0032',
+          width: 1280,
+          height: 720
+        })
+      ).supported ??
+        false) &&
       (
         await AudioEncoder.isConfigSupported({
           codec: DEFAULT_AUDIO_CONF.codec,
