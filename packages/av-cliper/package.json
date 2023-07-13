@@ -1,6 +1,6 @@
 {
   "name": "@webav/av-cliper",
-  "version": "0.1.39",
+  "version": "0.1.40",
   "private": false,
   "repository": "https://github.com/hughfenghen/WebAV",
   "type": "module",

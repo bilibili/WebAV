@@ -1,6 +1,6 @@
 {
   "name": "@webav/av-recorder",
-  "version": "0.1.39",
+  "version": "0.1.40",
   "private": false,
   "repository": "https://github.com/hughfenghen/WebAV",
   "type": "module",
@@ -31,7 +31,7 @@
     "vitest": "^0.29.7"
   },
   "dependencies": {
-    "@webav/av-cliper": "^0.1.39",
+    "@webav/av-cliper": "^0.1.40",
     "fix-webm-duration": "^1.0.5",
     "mp4box": "hughfenghen/mp4box.js"
   }
