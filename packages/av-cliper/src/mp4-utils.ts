@@ -19,6 +19,7 @@ import {
   concatPCMFragments
 } from './av-utils'
 import { DEFAULT_AUDIO_CONF } from './clips'
+import { EventTool } from './event-tool'
 
 type TCleanFn = () => void
 
@@ -161,16 +162,15 @@ export function recodemux (opts: IWorkerOpts): {
   const mp4file = mp4box.createFile()
 
   // 音视频轨道必须同时创建, 保存在 moov 中
-  const stateSync = {
-    audio: false,
-    video: false
-  }
-  const vEncoder = encodeVideoTrack(opts, mp4file, stateSync)
+  const avSyncEvtTool = new EventTool<
+    Record<'VideoReady' | 'AudioReady', () => void>
+  >()
+  const vEncoder = encodeVideoTrack(opts, mp4file, avSyncEvtTool)
   let aEncoder: AudioEncoder | null = null
   if (opts.audio == null) {
-    stateSync.audio = true
+    avSyncEvtTool.emit('AudioReady')
   } else {
-    aEncoder = encodeAudioTrack(opts.audio, mp4file, stateSync)
+    aEncoder = encodeAudioTrack(opts.audio, mp4file, avSyncEvtTool)
   }
 
   let maxSize = 0
@@ -205,7 +205,7 @@ export function recodemux (opts: IWorkerOpts): {
 function encodeVideoTrack (
   opts: IWorkerOpts,
   mp4File: MP4File,
-  stateSync: { audio: boolean; video: boolean }
+  avSyncEvtTool: EventTool<Record<'VideoReady' | 'AudioReady', () => void>>
 ): VideoEncoder {
   const videoTrackOpts = {
     // 微秒
@@ -218,22 +218,24 @@ function encodeVideoTrack (
 
   let trackId: number
   let cache: EncodedVideoChunk[] = []
+  let audioReady = false
+  avSyncEvtTool.once('AudioReady', () => {
+    audioReady = true
+    cache.forEach(c => {
+      const s = chunk2MP4SampleOpts(c)
+      mp4File.addSample(trackId, s.data, s)
+    })
+    cache = []
+  })
   const encoder = createVideoEncoder(opts, (chunk, meta) => {
     if (trackId == null && meta != null) {
       videoTrackOpts.avcDecoderConfigRecord = meta.decoderConfig?.description
       trackId = mp4File.addTrack(videoTrackOpts)
-      stateSync.video = true
+      avSyncEvtTool.emit('VideoReady')
       Log.info('VideoEncoder, video track ready, trackId:', trackId)
     }
 
-    if (stateSync.audio) {
-      if (cache.length > 0) {
-        cache.forEach(c => {
-          const s = chunk2MP4SampleOpts(c)
-          mp4File.addSample(trackId, s.data, s)
-        })
-        cache = []
-      }
+    if (audioReady) {
       const s = chunk2MP4SampleOpts(chunk)
       mp4File.addSample(trackId, s.data, s)
     } else {
@@ -275,7 +277,7 @@ function createVideoEncoder (
 function encodeAudioTrack (
   audioOpts: NonNullable<IWorkerOpts['audio']>,
   mp4File: MP4File,
-  stateSync: { video: boolean; audio: boolean }
+  avSyncEvtTool: EventTool<Record<'VideoReady' | 'AudioReady', () => void>>
 ): AudioEncoder {
   const audioTrackOpts = {
     timescale: 1e6,
@@ -289,6 +291,16 @@ function encodeAudioTrack (
 
   let trackId = 0
   let cache: EncodedAudioChunk[] = []
+  let videoReady = false
+  avSyncEvtTool.once('VideoReady', () => {
+    videoReady = true
+    cache.forEach(c => {
+      const s = chunk2MP4SampleOpts(c)
+      mp4File.addSample(trackId, s.data, s)
+    })
+    cache = []
+  })
+
   const encoder = new AudioEncoder({
     error: Log.error,
     output: (chunk, meta) => {
@@ -297,18 +309,11 @@ function encodeAudioTrack (
           ...audioTrackOpts,
           description: createESDSBox(meta.decoderConfig?.description)
         })
-        stateSync.audio = true
+        avSyncEvtTool.emit('AudioReady')
         Log.info('AudioEncoder, audio track ready, trackId:', trackId)
       }
 
-      if (stateSync.video) {
-        if (cache.length > 0) {
-          cache.forEach(c => {
-            const s = chunk2MP4SampleOpts(c)
-            mp4File.addSample(trackId, s.data, s)
-          })
-          cache = []
-        }
+      if (videoReady) {
         const s = chunk2MP4SampleOpts(chunk)
         mp4File.addSample(trackId, s.data, s)
       } else {
