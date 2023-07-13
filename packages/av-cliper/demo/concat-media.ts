@@ -77,7 +77,7 @@ document.querySelector('#mp4-img')?.addEventListener('click', evt => {
       console.log('----- progress:', v)
       updateState(`progress: ${Math.round(v * 100)}%`)
     })
-    await loadStream(com.output())
+    await loadStream(com.output(), com)
   })().catch(Log.error)
 })
 
@@ -115,7 +115,7 @@ document.querySelector('#mp4-mp3')?.addEventListener('click', () => {
       console.log('----- progress:', v)
       updateState(`progress: ${Math.round(v * 100)}%`)
     })
-    await loadStream(com.output())
+    await loadStream(com.output(), com)
   })().catch(Log.error)
 })
 
@@ -146,7 +146,7 @@ document.querySelector('#mix-audio')?.addEventListener('click', () => {
       console.log('----- progress:', v)
       updateState(`progress: ${Math.round(v * 100)}%`)
     })
-    await loadStream(com.output())
+    await loadStream(com.output(), com)
   })().catch(Log.error)
 })
 
@@ -175,7 +175,7 @@ document.querySelector('#concat-audio')?.addEventListener('click', () => {
       console.log('----- progress:', v)
       updateState(`progress: ${Math.round(v * 100)}%`)
     })
-    await loadStream(com.output())
+    await loadStream(com.output(), com)
   })().catch(Log.error)
 })
 
@@ -205,7 +205,7 @@ document.querySelector('#gif-m4a')?.addEventListener('click', () => {
       console.log('----- progress:', v)
       updateState(`progress: ${Math.round(v * 100)}%`)
     })
-    await loadStream(com.output())
+    await loadStream(com.output(), com)
   })()
 })
 
@@ -249,7 +249,7 @@ document.querySelector('#mp4-srt')?.addEventListener('click', () => {
       console.log('----- progress:', v)
       updateState(`progress: ${Math.round(v * 100)}%`)
     })
-    await loadStream(com.output())
+    await loadStream(com.output(), com)
   })()
 })
 
@@ -303,6 +303,6 @@ document.querySelector('#mp4-chromakey')?.addEventListener('click', () => {
       console.log('----- progress:', v)
       updateState(`progress: ${Math.round(v * 100)}%`)
     })
-    await loadStream(com.output())
+    await loadStream(com.output(), com)
   })().catch(Log.error)
 })

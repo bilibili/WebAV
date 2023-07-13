@@ -1,3 +1,5 @@
+import { Combinator } from '../src'
+
 export function playOutputStream (resourceList: string[], attachEl: Element) {
   const container = document.createElement('div')
   attachEl.appendChild(container)
@@ -33,16 +35,21 @@ export function playOutputStream (resourceList: string[], attachEl: Element) {
   btnContiner.appendChild(closeEl)
   container.appendChild(videoEl)
 
-  const close = () => {
-    container.remove()
-    URL.revokeObjectURL(videoEl.src)
-  }
-  closeEl.onclick = close
-
   return {
-    loadStream: async (stream: ReadableStream) => {
+    loadStream: async (stream: ReadableStream, com?: Combinator) => {
+      let closed = false
+      closeEl.onclick = () => {
+        closed = true
+        com?.destroy()
+        container.remove()
+        URL.revokeObjectURL(videoEl.src)
+      }
+
       let timeStart = performance.now()
-      videoEl.src = URL.createObjectURL(await new Response(stream).blob())
+      const src = await new Response(stream).blob()
+      if (closed) return
+
+      videoEl.src = URL.createObjectURL(src)
       stateEl.textContent = `cost: ${Math.round(
         performance.now() - timeStart
       )}ms`
