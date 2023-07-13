@@ -75,8 +75,12 @@ export function demuxcode (
     {
       onDone: async () => {
         if (mp4Info == null) throw Error('MP4 demux unready')
-        await Promise.all([vdecoder.flush(), adecoder.flush()])
-        cbs.onComplete()
+        try {
+          await Promise.all([vdecoder.flush(), adecoder.flush()])
+          cbs.onComplete()
+        } catch (err) {
+          Log.error(err)
+        }
       },
       onChunk: async ({ chunkType, data }) => {
         if (chunkType === 'ready') {
@@ -132,12 +136,16 @@ export function demuxcode (
     }
   )
 
+  let stoped = false
   return {
     stop: () => {
+      if (stoped) return
+      stoped = true
+
       mp4File?.stop()
-      if (vdecoder.state === 'configured') vdecoder.close()
-      if (adecoder.state === 'configured') adecoder.close()
       stopReadStream()
+      vdecoder.close()
+      adecoder.close()
     }
   }
 }
@@ -187,8 +195,8 @@ export function recodemux (opts: IWorkerOpts): {
       return
     },
     close: () => {
-      vEncoder.close()
-      aEncoder?.close()
+      if (vEncoder.state === 'configured') vEncoder.close()
+      if (aEncoder?.state === 'configured') aEncoder.close()
     },
     mp4file
   }
@@ -504,6 +512,7 @@ export function file2stream (
   return {
     stream,
     stop: () => {
+      if (stoped) return
       stoped = true
       exit?.()
     }

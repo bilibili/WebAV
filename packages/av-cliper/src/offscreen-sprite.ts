@@ -14,6 +14,8 @@ export class OffscreenSprite extends BaseSprite {
    */
   duration = Infinity
 
+  #destroyed = false
+
   constructor (name: string, clip: IClip) {
     super(name)
     this.#clip = clip
@@ -59,6 +61,9 @@ export class OffscreenSprite extends BaseSprite {
   }
 
   destroy (): void {
+    if (this.#destroyed) return
+    this.#destroyed = true
+
     Log.info(`OffscreenSprite ${this.name} destroy`)
     this.#lastVf?.close()
     this.#lastVf = null

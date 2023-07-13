@@ -59,7 +59,8 @@ export class Combinator {
 
   #ctx
 
-  #closeOutStream: (() => void) | null = null
+  // 中断输出
+  #stopOutput: (() => void) | null = null
 
   #remux
 
@@ -140,23 +141,28 @@ export class Combinator {
       async () => {
         await this.#remux.flush()
         Log.info('===== output ended ======')
-        this.#closeOutStream?.()
+        closeOutStream()
         console.timeEnd('cost')
         this.#evtTool.emit('OutputProgress', 1)
       }
     )
 
+    this.#stopOutput = () => {
+      stopReCodeMux()
+      this.#remux.close()
+      closeOutStream()
+    }
     const { stream, stop: closeOutStream } = file2stream(
       this.#remux.mp4file,
       500,
-      () => {
-        stopReCodeMux()
-        this.#remux.close()
-      }
+      this.#stopOutput
     )
-    this.#closeOutStream = closeOutStream
 
     return stream
+  }
+
+  destroy () {
+    this.#stopOutput?.()
   }
 
   #run (
@@ -191,7 +197,7 @@ export class Combinator {
         ctx.fillRect(0, 0, width, height)
 
         const audios: Float32Array[][] = []
-        for (let i = 0; i < this.#comItems.length; i++) {
+        for (let i = 0; !stoped && i < this.#comItems.length; i++) {
           const it = this.#comItems[i]
           if (ts < it.offset) continue
 
