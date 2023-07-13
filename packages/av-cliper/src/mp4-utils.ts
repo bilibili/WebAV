@@ -135,8 +135,8 @@ export function demuxcode (
   return {
     stop: () => {
       mp4File?.stop()
-      if (vdecoder.state !== 'closed') vdecoder.close()
-      if (adecoder.state !== 'closed') adecoder.close()
+      if (vdecoder.state === 'configured') vdecoder.close()
+      if (adecoder.state === 'configured') adecoder.close()
       stopReadStream()
     }
   }
@@ -180,7 +180,10 @@ export function recodemux (opts: IWorkerOpts): {
     },
     getEecodeQueueSize: () => vEncoder.encodeQueueSize,
     flush: async () => {
-      await Promise.all([vEncoder.flush(), aEncoder?.flush()])
+      await Promise.all([
+        vEncoder.state === 'configured' ? vEncoder.flush() : null,
+        aEncoder?.state === 'configured' ? aEncoder.flush() : null
+      ])
       return
     },
     close: () => {
@@ -470,26 +473,29 @@ export function file2stream (
   }
 
   let stoped = false
+  let canceled = false
   let exit: TCleanFn | null = null
   const stream = new ReadableStream({
     start (ctrl) {
       timerId = self.setInterval(() => {
         const d = deltaBuf()
-        if (d != null) ctrl.enqueue(d)
+        if (d != null && !canceled) ctrl.enqueue(d)
       }, timeSlice)
 
       exit = () => {
         clearInterval(timerId)
         file.flush()
         const d = deltaBuf()
-        if (d != null) ctrl.enqueue(d)
-        ctrl.close()
+        if (d != null && !canceled) ctrl.enqueue(d)
+
+        if (!canceled) ctrl.close()
       }
 
       // 安全起见，检测如果start触发时已经 stoped
       if (stoped) exit()
     },
     cancel () {
+      canceled = true
       clearInterval(timerId)
       onCancel?.()
     }

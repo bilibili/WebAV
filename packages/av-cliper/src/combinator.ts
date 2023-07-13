@@ -181,7 +181,6 @@ export class Combinator {
           (maxTime === -1 ? false : ts > maxTime) ||
           this.#comItems.length === 0
         ) {
-          this.#comItems.forEach(it => it.sprite.destroy())
           exit()
           await onEnded()
           return
@@ -207,7 +206,6 @@ export class Combinator {
           // 超过设定时间主动掐断，或资源结束
           if ((it.duration > 0 && ts > it.offset + it.duration) || done) {
             if (it.main) {
-              this.#comItems.forEach(it => it.sprite.destroy())
               exit()
               await onEnded()
               return
@@ -217,6 +215,8 @@ export class Combinator {
             this.#comItems.splice(i, 1)
           }
         }
+
+        if (stoped) return
 
         // Log.debug('combinator run, ts:', ts, ' audio track count:', audios.length)
         if (audios.flat().every(a => a.length === 0)) {
@@ -277,9 +277,10 @@ export class Combinator {
       onprogress(lastProg)
     }, 500)
 
-    function exit () {
-      clearInterval(outProgTimer)
+    const exit = () => {
       stoped = true
+      clearInterval(outProgTimer)
+      this.#comItems.forEach(it => it.sprite.destroy())
     }
 
     return exit
