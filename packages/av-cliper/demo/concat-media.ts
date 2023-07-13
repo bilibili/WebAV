@@ -5,14 +5,14 @@ import { OffscreenSprite } from '../src/offscreen-sprite'
 import { renderTxt2ImgBitmap } from '../src/dom-utils'
 import { EmbedSubtitlesClip } from '../src/clips/embed-subtitles-clip'
 import { playOutputStream } from './play-video'
-import { createChromakey } from '../src'
+import { createChromakey, fastConcatMP4 } from '../src'
 
 // const cvs = document.querySelector('canvas') as HTMLCanvasElement
 // const ctx = cvs.getContext('2d')!
 
 const playerContiner = document.querySelector('#player-continer')!
 
-document.querySelector('#mp4-img')?.addEventListener('click', evt => {
+document.querySelector('#mp4-img')?.addEventListener('click', () => {
   ;(async () => {
     const resList = ['./public/video/webav1.mp4', './public/img/bunny.png']
     const { updateState, loadStream } = playOutputStream(
@@ -304,5 +304,55 @@ document.querySelector('#mp4-chromakey')?.addEventListener('click', () => {
       updateState(`progress: ${Math.round(v * 100)}%`)
     })
     await loadStream(com.output(), com)
+  })().catch(Log.error)
+})
+
+document.querySelector('#complex')?.addEventListener('click', () => {
+  ;(async () => {
+    const mp4List = [
+      './public/video/123.mp4',
+      './public/video/223.mp4',
+      './public/video/323.mp4'
+    ]
+
+    const width = 1280
+    const height = 720
+
+    const chromakey = createChromakey()
+
+    const coms = (
+      await Promise.all(mp4List.map(async vurl => (await fetch(vurl)).body!))
+    )
+      .map(sbody => {
+        const clip = new MP4Clip(sbody)
+        clip.tickInterceptor = async (_, tickRet) => {
+          // console.log(2222, _, tickRet)
+          if (tickRet.video == null) return tickRet
+          return {
+            ...tickRet,
+            video: await chromakey(tickRet.video)
+          }
+        }
+        return clip
+      })
+      .map(clip => new OffscreenSprite('spr', clip))
+      .map(async spr => {
+        const com = new Combinator({ width, height })
+        const imgSpr = new OffscreenSprite(
+          'spr3',
+          new ImgClip(
+            await createImageBitmap(
+              await (await fetch('./public/img/bunny.png')).blob()
+            )
+          )
+        )
+        await com.add(imgSpr)
+        await com.add(spr, { main: true })
+        return com.output()
+      })
+
+    const { loadStream } = playOutputStream(mp4List, playerContiner)
+
+    await loadStream(fastConcatMP4(await Promise.all(coms)))
   })().catch(Log.error)
 })
