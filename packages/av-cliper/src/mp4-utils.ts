@@ -683,12 +683,12 @@ export function fastConcatMP4 (streams: ReadableStream<Uint8Array>[]) {
         })
       })
       if (lastVSamp != null) {
-        vDTS = lastVSamp.dts
-        vCTS = lastVSamp.cts
+        vDTS += lastVSamp.dts
+        vCTS += lastVSamp.cts
       }
       if (lastASamp != null) {
-        aDTS = lastASamp.dts
-        aCTS = lastASamp.cts
+        aDTS += lastASamp.dts
+        aCTS += lastASamp.cts
       }
     }
 
