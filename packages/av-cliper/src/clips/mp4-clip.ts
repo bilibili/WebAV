@@ -83,9 +83,7 @@ export class MP4Clip implements IClip {
             this.#videoFrames.push(vf)
             lastVf = vf
           },
-          onAudioOutput: async ad => {
-            this.#audioData2PCMBuf(ad)
-          },
+          onAudioOutput: this.#audioData2PCMBuf,
           onComplete: () => {
             this.#decodeEnded = true
             Log.info('MP4Clip decode complete')
@@ -98,44 +96,29 @@ export class MP4Clip implements IClip {
   }
 
   #audioData2PCMBuf = (() => {
-    let chan0 = new Float32Array(0)
-    let chan1 = new Float32Array(0)
-
-    let needResample = true
-    const flushResampleData = async (curRate: number) => {
-      const data = [chan0, chan1]
-      chan0 = new Float32Array(0)
-      chan1 = new Float32Array(0)
-
-      const pcmArr = await audioResample(data, curRate, {
-        rate: DEFAULT_AUDIO_CONF.sampleRate,
-        chanCount: DEFAULT_AUDIO_CONF.channelCount
-      })
-      this.#audioChan0 = concatFloat32Array([this.#audioChan0, pcmArr[0]])
+    const resampleQ = createPromiseQueue<Float32Array[]>(resampedPCM => {
+      this.#audioChan0 = concatFloat32Array([this.#audioChan0, resampedPCM[0]])
       this.#audioChan1 = concatFloat32Array([
         this.#audioChan1,
-        pcmArr[1] ?? pcmArr[0]
+        resampedPCM[1] ?? resampedPCM[0]
       ])
-    }
-    // todo: 频繁合并PCM（内存释放分配），可能有性能优化空间
-    return (ad: AudioData) => {
-      needResample = ad.sampleRate !== DEFAULT_AUDIO_CONF.sampleRate
+    })
 
+    return (ad: AudioData) => {
       const pcmArr = extractPCM4AudioData(ad)
-      let curRate = ad.sampleRate
-      ad.close()
+      // 音量调节
       if (this.#volume !== 1) {
         for (const pcm of pcmArr)
           for (let i = 0; i < pcm.length; i++) pcm[i] *= this.#volume
       }
 
-      if (needResample) {
-        chan0 = concatFloat32Array([chan0, pcmArr[0]])
-        chan1 = concatFloat32Array([chan1, pcmArr[1] ?? pcmArr[0]])
-        if (chan0.length >= curRate / 5) {
-          // 累计 200ms 的音频数据再进行采样，过短可能导致声音有卡顿
-          flushResampleData(curRate).catch(Log.error)
-        }
+      if (ad.sampleRate !== DEFAULT_AUDIO_CONF.sampleRate) {
+        resampleQ(() =>
+          audioResample(pcmArr, ad.sampleRate, {
+            rate: DEFAULT_AUDIO_CONF.sampleRate,
+            chanCount: DEFAULT_AUDIO_CONF.channelCount
+          })
+        )
       } else {
         this.#audioChan0 = concatFloat32Array([this.#audioChan0, pcmArr[0]])
         this.#audioChan1 = concatFloat32Array([
@@ -143,6 +126,8 @@ export class MP4Clip implements IClip {
           pcmArr[1] ?? pcmArr[0]
         ])
       }
+
+      ad.close()
     }
   })()
 
@@ -244,5 +229,34 @@ export class MP4Clip implements IClip {
     this.#demuxcoder?.stop()
     this.#videoFrames.forEach(f => f.close())
     this.#videoFrames = []
+  }
+}
+
+// 并行执行任务，但按顺序emit结果
+function createPromiseQueue<T extends any> (onResult: (data: T) => void) {
+  const rsCache: T[] = []
+  let waitingIdx = 0
+
+  function updateRs (rs: T, emitIdx: number) {
+    rsCache[emitIdx] = rs
+    emitRs()
+  }
+
+  function emitRs () {
+    const rs = rsCache[waitingIdx]
+    if (rs == null) return
+    onResult(rs)
+
+    waitingIdx += 1
+    emitRs()
+  }
+
+  let addIdx = 0
+  return (task: () => Promise<T>) => {
+    const emitIdx = addIdx
+    addIdx += 1
+    task()
+      .then(rs => updateRs(rs, emitIdx))
+      .catch(err => updateRs(err, emitIdx))
   }
 }
