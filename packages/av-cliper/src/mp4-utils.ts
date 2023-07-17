@@ -75,16 +75,19 @@ export function demuxcode (
     stream.pipeThrough(new SampleTransform()),
     {
       onDone: async () => {
+        Log.info('demuxcode stream done')
         if (mp4Info == null) throw Error('MP4 demux unready')
         try {
           await Promise.all([vdecoder.flush(), adecoder.flush()])
+          Log.info('demuxcode decode done')
           cbs.onComplete()
         } catch (err) {
-          Log.error(err)
+          Log.info(err)
         }
       },
       onChunk: async ({ chunkType, data }) => {
         if (chunkType === 'ready') {
+          Log.info('demuxcode chunk ready')
           mp4File = data.file
           mp4Info = data.info
           const { videoDecoderConf, audioDecoderConf } = extractFileConfig(
@@ -624,6 +627,7 @@ function extractFileConfig (file: MP4File, info: MP4Info) {
  * 属性包括（不限于）：音视频编码格式、分辨率、采样率
  */
 export function fastConcatMP4 (streams: ReadableStream<Uint8Array>[]) {
+  Log.info('fastConcatMP4, streams len:', streams.length)
   const outfile = mp4box.createFile()
   const { stream, stop: stopOutStream } = file2stream(outfile, 500, () => {})
 
@@ -812,6 +816,11 @@ export function mixinMP4AndAudio (
     loop: boolean
   }
 ) {
+  Log.info('mixinMP4AndAudio, opts:', {
+    volume: audio.volume,
+    loop: audio.loop
+  })
+
   const outfile = mp4box.createFile()
   const { stream: outStream, stop: stopOut } = file2stream(outfile, 500)
 
