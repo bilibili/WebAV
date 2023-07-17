@@ -80,7 +80,6 @@ export class Combinator {
     this.#ctx = ctx
     this.#opts = Object.assign({ bgColor: '#000' }, opts)
 
-    console.time('cost')
     this.#remux = recodemux({
       video: {
         width,
@@ -136,13 +135,13 @@ export class Combinator {
     const stopReCodeMux = this.#run(
       maxTime,
       prog => {
+        Log.debug('OutputProgress:', prog)
         this.#evtTool.emit('OutputProgress', prog)
       },
       async () => {
         await this.#remux.flush()
         Log.info('===== output ended ======')
         closeOutStream()
-        console.timeEnd('cost')
         this.#evtTool.emit('OutputProgress', 1)
       }
     )

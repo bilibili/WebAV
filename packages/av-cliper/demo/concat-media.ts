@@ -15,10 +15,7 @@ const playerContiner = document.querySelector('#player-continer')!
 document.querySelector('#mp4-img')?.addEventListener('click', () => {
   ;(async () => {
     const resList = ['./public/video/webav1.mp4', './public/img/bunny.png']
-    const { updateState, loadStream } = playOutputStream(
-      resList,
-      playerContiner
-    )
+    const { loadStream } = playOutputStream(resList, playerContiner)
 
     const spr1 = new OffscreenSprite(
       'spr1',
@@ -73,10 +70,6 @@ document.querySelector('#mp4-img')?.addEventListener('click', () => {
     await com.add(spr2, { offset: 0, duration: 5 })
     await com.add(spr3)
 
-    com.on('OutputProgress', v => {
-      console.log('----- progress:', v)
-      updateState(`progress: ${Math.round(v * 100)}%`)
-    })
     await loadStream(com.output(), com)
   })().catch(Log.error)
 })
@@ -87,10 +80,7 @@ document.querySelector('#mp4-mp3')?.addEventListener('click', () => {
       './public/video/webav1.mp4',
       './public/audio/44.1kHz-2chan.mp3'
     ]
-    const { updateState, loadStream } = playOutputStream(
-      resList,
-      playerContiner
-    )
+    const { loadStream } = playOutputStream(resList, playerContiner)
 
     // const resp1 = await fetch('./public/video/pri-bunny_avc_frag.mp4')
     const resp1 = await fetch(resList[0])
@@ -111,10 +101,6 @@ document.querySelector('#mp4-mp3')?.addEventListener('click', () => {
     await com.add(spr1, { duration: 10, main: true })
     await com.add(spr2)
 
-    com.on('OutputProgress', v => {
-      console.log('----- progress:', v)
-      updateState(`progress: ${Math.round(v * 100)}%`)
-    })
     await loadStream(com.output(), com)
   })().catch(Log.error)
 })
@@ -125,10 +111,7 @@ document.querySelector('#mix-audio')?.addEventListener('click', () => {
       './public/audio/44.1kHz-2chan.m4a',
       './public/audio/16kHz-1chan.mp3'
     ]
-    const { updateState, loadStream } = playOutputStream(
-      resList,
-      playerContiner
-    )
+    const { loadStream } = playOutputStream(resList, playerContiner)
 
     const resp1 = await fetch(resList[0])
     const resp2 = await fetch(resList[1])
@@ -142,10 +125,6 @@ document.querySelector('#mix-audio')?.addEventListener('click', () => {
     await com.add(spr1, { offset: 0, duration: 5 })
     await com.add(spr2, { offset: 0, duration: 4 })
 
-    com.on('OutputProgress', v => {
-      console.log('----- progress:', v)
-      updateState(`progress: ${Math.round(v * 100)}%`)
-    })
     await loadStream(com.output(), com)
   })().catch(Log.error)
 })
@@ -156,10 +135,7 @@ document.querySelector('#concat-audio')?.addEventListener('click', () => {
       './public/audio/16kHz-1chan.mp3',
       './public/audio/44.1kHz-2chan.m4a'
     ]
-    const { updateState, loadStream } = playOutputStream(
-      resList,
-      playerContiner
-    )
+    const { loadStream } = playOutputStream(resList, playerContiner)
 
     const clip = await concatAudioClip(
       await Promise.all(
@@ -171,10 +147,6 @@ document.querySelector('#concat-audio')?.addEventListener('click', () => {
     const com = new Combinator({ width: 1280, height: 720 })
     await com.add(spr1, { offset: 0, duration: 30 })
 
-    com.on('OutputProgress', v => {
-      console.log('----- progress:', v)
-      updateState(`progress: ${Math.round(v * 100)}%`)
-    })
     await loadStream(com.output(), com)
   })().catch(Log.error)
 })
@@ -185,10 +157,7 @@ document.querySelector('#gif-m4a')?.addEventListener('click', () => {
       './public/img/animated.gif',
       './public/audio/44.1kHz-2chan.m4a'
     ]
-    const { updateState, loadStream } = playOutputStream(
-      resList,
-      playerContiner
-    )
+    const { loadStream } = playOutputStream(resList, playerContiner)
 
     const resp1 = await fetch(resList[0])
     const spr1 = new OffscreenSprite(
@@ -201,10 +170,6 @@ document.querySelector('#gif-m4a')?.addEventListener('click', () => {
     await com.add(spr1, { duration: 10, offset: 0 })
     await com.add(spr2, { duration: 10, offset: 0 })
 
-    com.on('OutputProgress', v => {
-      console.log('----- progress:', v)
-      updateState(`progress: ${Math.round(v * 100)}%`)
-    })
     await loadStream(com.output(), com)
   })()
 })
@@ -215,10 +180,7 @@ document.querySelector('#mp4-srt')?.addEventListener('click', () => {
       './public/video/webav1.mp4',
       './public/subtitles/test-sample.srt'
     ]
-    const { updateState, loadStream } = playOutputStream(
-      resList,
-      playerContiner
-    )
+    const { loadStream } = playOutputStream(resList, playerContiner)
 
     const resp1 = await fetch(resList[0])
     const spr1 = new OffscreenSprite('s1', new MP4Clip(resp1.body!))
@@ -245,10 +207,6 @@ document.querySelector('#mp4-srt')?.addEventListener('click', () => {
     await com.add(spr1, { duration: 10, offset: 0 })
     await com.add(spr2, { duration: 10, offset: 0 })
 
-    com.on('OutputProgress', v => {
-      console.log('----- progress:', v)
-      updateState(`progress: ${Math.round(v * 100)}%`)
-    })
     await loadStream(com.output(), com)
   })()
 })
@@ -259,10 +217,7 @@ document.querySelector('#mp4-chromakey')?.addEventListener('click', () => {
       './public/video/chromakey-test.mp4',
       './public/img/bunny.png'
     ]
-    const { updateState, loadStream } = playOutputStream(
-      resList,
-      playerContiner
-    )
+    const { loadStream } = playOutputStream(resList, playerContiner)
 
     const width = 1280
     const height = 720
@@ -299,10 +254,6 @@ document.querySelector('#mp4-chromakey')?.addEventListener('click', () => {
     await com.add(spr1, { main: true })
     await com.add(spr2)
 
-    com.on('OutputProgress', v => {
-      console.log('----- progress:', v)
-      updateState(`progress: ${Math.round(v * 100)}%`)
-    })
     await loadStream(com.output(), com)
   })().catch(Log.error)
 })

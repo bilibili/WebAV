@@ -35,6 +35,7 @@ export function playOutputStream (resourceList: string[], attachEl: Element) {
   btnContiner.appendChild(closeEl)
   container.appendChild(videoEl)
 
+  let timeStart = performance.now()
   return {
     loadStream: async (stream: ReadableStream, com?: Combinator) => {
       let closed = false
@@ -45,7 +46,6 @@ export function playOutputStream (resourceList: string[], attachEl: Element) {
         URL.revokeObjectURL(videoEl.src)
       }
 
-      let timeStart = performance.now()
       const src = await new Response(stream).blob()
       if (closed) return
 
@@ -55,9 +55,11 @@ export function playOutputStream (resourceList: string[], attachEl: Element) {
       )}ms`
 
       btnContiner.appendChild(createDownloadBtn(videoEl.src))
-    },
-    updateState: (desc: string) => {
-      stateEl.textContent = desc
+
+      com?.on('OutputProgress', v => {
+        console.log('----- progress:', v)
+        stateEl.textContent = `progress: ${Math.round(v * 100)}%`
+      })
     }
   }
 }
