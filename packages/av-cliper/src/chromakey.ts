@@ -168,6 +168,7 @@ function initCvs (opts: {
 type TImgSource =
   | HTMLVideoElement
   | HTMLCanvasElement
+  | HTMLImageElement
   | ImageBitmap
   | OffscreenCanvas
   | VideoFrame
