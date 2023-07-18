@@ -1,7 +1,7 @@
 import { OffscreenSprite } from './offscreen-sprite'
 import { file2stream, recodemux } from './mp4-utils'
 import { Log } from './log'
-import { mixinPCM, sleep } from './av-utils'
+import { mixinPCM, sleep, throttle } from './av-utils'
 import { EventTool } from './event-tool'
 import { DEFAULT_AUDIO_CONF } from './clips'
 
@@ -25,6 +25,35 @@ interface ICombinatorOpts {
 }
 
 let COM_ID = 0
+
+let TOTAL_COM_ENCODE_QSIZE = new Map<Combinator, () => number>()
+/**
+ * 控制全局 encode queue size
+ * 避免多个 Combinator 并行，导致显存溢出
+ */
+const encoderIdle = (() => {
+  let totalQSize = 0
+
+  const updateQS = throttle(() => {
+    let ts = 0
+    for (const getQSize of TOTAL_COM_ENCODE_QSIZE.values()) {
+      ts += getQSize()
+    }
+    totalQSize = ts
+  }, 10)
+
+  return async function encoderIdle () {
+    updateQS()
+    if (totalQSize > 100) {
+      // VideoFrame 非常占用 GPU 显存，避免显存压力过大，稍等一下整体性能更优
+      await sleep(totalQSize)
+      updateQS()
+      if (totalQSize < 50) return
+
+      await encoderIdle()
+    }
+  }
+})()
 
 export class Combinator {
   static async isSupported (): Promise<boolean> {
@@ -100,6 +129,8 @@ export class Combinator {
       },
       bitrate: opts.bitrate ?? 2_000_000
     })
+
+    TOTAL_COM_ENCODE_QSIZE.set(this, this.#remux.getEecodeQueueSize)
   }
 
   async add (
@@ -166,7 +197,7 @@ export class Combinator {
     const { stream, stop: closeOutStream } = file2stream(
       this.#remux.mp4file,
       500,
-      this.#stopOutput
+      this.destroy
     )
 
     return stream
@@ -176,6 +207,7 @@ export class Combinator {
     if (this.#destroyed) return
     this.#destroyed = true
 
+    TOTAL_COM_ENCODE_QSIZE.delete(this)
     this.#stopOutput?.()
     this.#evtTool.destroy()
   }
@@ -270,15 +302,8 @@ export class Combinator {
         ctx.clearRect(0, 0, width, height)
 
         frameCnt += 1
-        // VideoFrame 非常占用 GPU 显存，避免显存压力过大，稍等一下整体性能更优
-        if (this.#remux.getEecodeQueueSize() > 150) {
-          while (true) {
-            const qSize = this.#remux.getEecodeQueueSize()
-            if (qSize < 50) break
-            // 根据大小动态调整等待时间，减少 while 循环次数
-            await sleep(qSize)
-          }
-        }
+
+        await encoderIdle()
       }
     }
 

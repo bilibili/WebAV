@@ -221,3 +221,19 @@ export function autoReadStream<ST extends ReadableStream> (
     stoped = true
   }
 }
+
+/**
+ * 函数节流
+ */
+export function throttle<F extends (...args: any[]) => any>(
+  func: F,
+  wait: number
+): (...rest: Parameters<F>) => undefined | ReturnType<F> {
+  let lastTime: number
+  return function (this: any, ...rest) {
+    if (lastTime == null || performance.now() - lastTime > wait) {
+      lastTime = performance.now()
+      return func.apply(this, rest)
+    }
+  }
+}
