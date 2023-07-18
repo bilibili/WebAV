@@ -217,6 +217,7 @@ export class MP4Clip implements IClip {
   }
 
   destroy (): void {
+    if (this.#destroyed) return
     Log.info(
       'MP4Clip destroy, ts:',
       this.#ts,
@@ -226,6 +227,7 @@ export class MP4Clip implements IClip {
       this.#decodeEnded
     )
     this.#destroyed = true
+
     this.#demuxcoder?.stop()
     this.#videoFrames.forEach(f => f.close())
     this.#videoFrames = []

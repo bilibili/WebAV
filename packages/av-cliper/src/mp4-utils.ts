@@ -716,24 +716,29 @@ function createMP4AudioSampleDecoder (
   })
   adDecoder.configure(adConf)
 
-  return async (ss: MP4Sample[]) => {
-    ss.forEach(s => {
-      adDecoder.decode(
-        new EncodedAudioChunk({
-          type: s.is_sync ? 'key' : 'delta',
-          timestamp: (1e6 * s.cts) / s.timescale,
-          duration: (1e6 * s.duration) / s.timescale,
-          data: s.data
-        })
-      )
-    })
+  return {
+    decode: async (ss: MP4Sample[]) => {
+      ss.forEach(s => {
+        adDecoder.decode(
+          new EncodedAudioChunk({
+            type: s.is_sync ? 'key' : 'delta',
+            timestamp: (1e6 * s.cts) / s.timescale,
+            duration: (1e6 * s.duration) / s.timescale,
+            data: s.data
+          })
+        )
+      })
 
-    await adDecoder.flush()
+      await adDecoder.flush()
 
-    const rs = cacheAD
-    cacheAD = []
+      const rs = cacheAD
+      cacheAD = []
 
-    return rs
+      return rs
+    },
+    close: () => {
+      adDecoder.close()
+    }
   }
 }
 
@@ -776,7 +781,7 @@ function createMP4AudioSampleEncoder (
       }
       lastData = { data, ts }
     },
-    flush: async () => {
+    stop: async () => {
       if (lastData != null) {
         // 副作用修改数据
         audioFade(lastData.data, aeConf.numberOfChannels, aeConf.sampleRate)
@@ -784,6 +789,7 @@ function createMP4AudioSampleEncoder (
         lastData = null
       }
       await adEncoder.flush()
+      adEncoder.close()
     }
   }
 }
@@ -840,6 +846,11 @@ export function mixinMP4AndAudio (
   let mp4HasAudio = true
   let sampleRate = 48000
   autoReadStream(mp4Stream.pipeThrough(new SampleTransform()), {
+    onDone: async () => {
+      await audioSampleEncoder?.stop()
+      audioSampleDecoder?.close()
+      stopOut()
+    },
     onChunk: async ({ chunkType, data }) => {
       if (chunkType === 'ready') {
         const { videoTrackConf, audioTrackConf, audioDecoderConf } =
@@ -893,10 +904,6 @@ export function mixinMP4AndAudio (
 
         if (type === 'audio') await mixinAudioSampleAndInputPCM(samples)
       }
-    },
-    onDone: async () => {
-      await audioSampleEncoder?.flush()
-      stopOut()
     }
   })
 
@@ -937,7 +944,7 @@ export function mixinMP4AndAudio (
 
     // 1. 先解码mp4音频
     // [[chan0, chan1], [chan0, chan1]...]
-    const pcmFragments = (await audioSampleDecoder(samples)).map(
+    const pcmFragments = (await audioSampleDecoder.decode(samples)).map(
       extractPCM4AudioData
     )
     // [chan0, chan1]

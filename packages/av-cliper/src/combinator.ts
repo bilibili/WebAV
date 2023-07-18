@@ -53,6 +53,8 @@ export class Combinator {
     )
   }
 
+  #destroyed = false
+
   #comItems: IComItem[] = []
 
   #cvs
@@ -141,8 +143,8 @@ export class Combinator {
       async () => {
         await this.#remux.flush()
         Log.info('===== output ended ======')
-        closeOutStream()
         this.#evtTool.emit('OutputProgress', 1)
+        this.destroy()
       }
     )
 
@@ -161,7 +163,11 @@ export class Combinator {
   }
 
   destroy () {
+    if (this.#destroyed) return
+    this.#destroyed = true
+
     this.#stopOutput?.()
+    this.#evtTool.destroy()
   }
 
   #run (
@@ -283,6 +289,7 @@ export class Combinator {
     }, 500)
 
     const exit = () => {
+      if (stoped) return
       stoped = true
       clearInterval(outProgTimer)
       this.#comItems.forEach(it => it.sprite.destroy())
