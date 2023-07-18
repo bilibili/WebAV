@@ -24,6 +24,8 @@ interface ICombinatorOpts {
   bgColor?: string
 }
 
+let COM_ID = 0
+
 export class Combinator {
   static async isSupported (): Promise<boolean> {
     return (
@@ -52,6 +54,8 @@ export class Combinator {
       ).supported
     )
   }
+
+  #log = Log.create(`id:${COM_ID++},`)
 
   #destroyed = false
 
@@ -102,9 +106,9 @@ export class Combinator {
     sprite: OffscreenSprite,
     opts: { offset?: number; duration?: number; main?: boolean } = {}
   ): Promise<void> {
-    Log.info('Combinator add sprite:', sprite.name)
+    this.#log.info('Combinator add sprite:', sprite.name)
     await sprite.ready
-    Log.info('Combinator add sprite ready:', sprite.name)
+    this.#log.info('Combinator add sprite ready:', sprite.name)
     this.#comItems.push({
       sprite,
       offset: (opts.offset ?? 0) * 1e6,
@@ -131,18 +135,24 @@ export class Combinator {
     }
     // 主视频（main）的 videoTrack duration 值为 0
     if (maxTime === -1) {
-      Log.warn("Unable to determine the end time, process value don't update")
+      this.#log.warn(
+        "Unable to determine the end time, process value don't update"
+      )
     }
 
+    let starTime = performance.now()
     const stopReCodeMux = this.#run(
       maxTime,
       prog => {
-        Log.debug('OutputProgress:', prog)
+        this.#log.debug('OutputProgress:', prog)
         this.#evtTool.emit('OutputProgress', prog)
       },
       async () => {
         await this.#remux.flush()
-        Log.info('===== output ended ======')
+        this.#log.info(
+          '===== output ended =====, cost:',
+          performance.now() - starTime
+        )
         this.#evtTool.emit('OutputProgress', 1)
         this.destroy()
       }
@@ -229,7 +239,6 @@ export class Combinator {
 
         if (stoped) return
 
-        // Log.debug('combinator run, ts:', ts, ' audio track count:', audios.length)
         if (audios.flat().every(a => a.length === 0)) {
           // 当前时刻无音频时，使用无声音频占位，否则会导致后续音频播放时间偏差
           this.#remux.encodeAudio(
@@ -273,7 +282,7 @@ export class Combinator {
       }
     }
 
-    _run().catch(Log.error)
+    _run().catch(this.#log.error)
 
     // 初始 1 避免 NaN
     let maxEncodeQSize = 1

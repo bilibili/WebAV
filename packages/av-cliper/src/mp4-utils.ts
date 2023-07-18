@@ -198,6 +198,7 @@ export function recodemux (opts: IWorkerOpts): {
       return
     },
     close: () => {
+      avSyncEvtTool.destroy()
       if (vEncoder.state === 'configured') vEncoder.close()
       if (aEncoder?.state === 'configured') aEncoder.close()
     },

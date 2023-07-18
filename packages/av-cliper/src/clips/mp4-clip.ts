@@ -8,7 +8,11 @@ import { Log } from '../log'
 import { demuxcode } from '../mp4-utils'
 import { DEFAULT_AUDIO_CONF, IClip } from './iclip'
 
+let CLIP_ID = 0
+
 export class MP4Clip implements IClip {
+  #log = Log.create(`id:${CLIP_ID++},`)
+
   #videoFrames: VideoFrame[] = []
 
   #ts = 0
@@ -68,7 +72,7 @@ export class MP4Clip implements IClip {
               audioSampleRate: DEFAULT_AUDIO_CONF.sampleRate,
               audioChanCount: DEFAULT_AUDIO_CONF.channelCount
             }
-            Log.info('MP4Clip info:', info)
+            this.#log.info('MP4Clip info:', info)
             resolve({
               width: videoTrack.track_width,
               height: videoTrack.track_height,
@@ -86,7 +90,7 @@ export class MP4Clip implements IClip {
           onAudioOutput: this.#audioData2PCMBuf,
           onComplete: () => {
             this.#decodeEnded = true
-            Log.info('MP4Clip decode complete')
+            this.#log.info('MP4Clip decode complete')
             if (lastVf == null) throw Error('mp4 parse error, no video frame')
             this.#meta.duration = lastVf.timestamp + (lastVf.duration ?? 0)
           }
@@ -218,7 +222,7 @@ export class MP4Clip implements IClip {
 
   destroy (): void {
     if (this.#destroyed) return
-    Log.info(
+    this.#log.info(
       'MP4Clip destroy, ts:',
       this.#ts,
       ', remainder frame count:',
