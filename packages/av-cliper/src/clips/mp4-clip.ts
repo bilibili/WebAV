@@ -233,6 +233,7 @@ export class MP4Clip implements IClip {
     this.#destroyed = true
 
     this.#demuxcoder?.stop()
+    this.#demuxcoder = null
     this.#videoFrames.forEach(f => f.close())
     this.#videoFrames = []
   }

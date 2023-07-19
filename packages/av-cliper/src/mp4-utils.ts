@@ -472,19 +472,36 @@ export function file2stream (
 
   let sendedBoxIdx = 0
   const boxes = file.boxes
+  const tracks: Array<{ track: TrakBoxParser; id: number }> = []
+
   const deltaBuf = (): Uint8Array | null => {
-    if (boxes.length < 4 || sendedBoxIdx >= boxes.length) return null
     // boxes.length >= 4 表示完成了 ftyp moov，且有了第一个 moof mdat
     // 避免moov未完成时写入文件，导致文件无法被识别
+    if (boxes.length < 4 || sendedBoxIdx >= boxes.length) return null
+
+    if (tracks.length === 0) {
+      for (let i = 1; true; i += 1) {
+        const track = file.getTrackById(i)
+        if (track == null) break
+        tracks.push({ track, id: i })
+      }
+    }
 
     const ds = new mp4box.DataStream()
     ds.endianness = mp4box.DataStream.BIG_ENDIAN
 
     for (let i = sendedBoxIdx; i < boxes.length; i++) {
       boxes[i].write(ds)
-      // @ts-expect-error 释放已使用的 mdat box 空间
-      if (boxes[i].data != null) boxes[i].data = null
+      delete boxes[i]
     }
+    // 释放引用，避免内存泄露
+    tracks.forEach(({ track, id }) => {
+      file.releaseUsedSamples(id, track.samples.length)
+      track.samples = []
+    })
+    file.mdats = []
+    file.moofs = []
+
     sendedBoxIdx = boxes.length
     return new Uint8Array(ds.buffer)
   }

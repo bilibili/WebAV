@@ -138,6 +138,15 @@ declare module 'mp4box' {
     mdia: MDIABoxParser
   }
 
+  interface MDATBoxParser extends BoxParser {
+    type: 'mdat'
+    data: Uint8Array
+  }
+
+  interface MOOFBoxParser extends BoxParser {
+    type: 'moof'
+  }
+
   interface MDIABoxParser extends BoxParser {
     type: 'mdia'
     minf: MINFBoxParser
@@ -222,6 +231,8 @@ declare module 'mp4box' {
 
   export interface MP4File {
     boxes: MP4Box[]
+    mdats: MDATBoxParser[]
+    moofs: MOOFBoxParser[]
 
     addTrack: (opts: VideoTrackOpts | AudioTrackOpts) => number
     addSample: (trackId: number, buf: ArrayBuffer, sample: SampleOpts) => void
