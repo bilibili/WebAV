@@ -90,17 +90,46 @@ function loadShader (gl: WebGLRenderingContext, type: number, source: string) {
   return shader
 }
 
-function loadTexture (gl: WebGLRenderingContext, img: TImgSource) {
-  var texture = gl.createTexture()
-  if (texture == null) throw Error('Could not create texture')
-
+function updateTexture (
+  gl: WebGLRenderingContext,
+  img: TImgSource,
+  texture: WebGLTexture
+) {
   gl.bindTexture(gl.TEXTURE_2D, texture)
   gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, img)
+  gl.drawArrays(gl.TRIANGLES, 0, 6)
+}
+
+function initTexture (gl: WebGLRenderingContext) {
+  const texture = gl.createTexture()
+  if (texture == null) throw Error('Create WebGL texture error')
+  gl.bindTexture(gl.TEXTURE_2D, texture)
+
+  // put a single pixel in the texture so we can use it immediately.
+  const level = 0
+  const internalFormat = gl.RGBA
+  const width = 1
+  const height = 1
+  const border = 0
+  const srcFormat = gl.RGBA
+  const srcType = gl.UNSIGNED_BYTE
+  const pixel = new Uint8Array([0, 0, 255, 255]) // opaque blue
+  gl.texImage2D(
+    gl.TEXTURE_2D,
+    level,
+    internalFormat,
+    width,
+    height,
+    border,
+    srcFormat,
+    srcType,
+    pixel
+  )
+
   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR)
   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR)
   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE)
   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE)
-  gl.bindTexture(gl.TEXTURE_2D, null)
 
   return texture
 }
@@ -202,21 +231,20 @@ export const createChromakey = (
   let cvs: OffscreenCanvas | null = null
   let gl: WebGLRenderingContext | null = null
   let keyC = opts.keyColor
+  let texture: WebGLTexture | null = null
 
   return async (imgSource: TImgSource) => {
-    if (cvs == null || gl == null) {
+    if (cvs == null || gl == null || texture == null) {
       if (keyC == null) keyC = getKeyColor(imgSource)
       ;({ cvs, gl } = initCvs({
         ...getSourceWH(imgSource),
         keyColor: keyC,
         range: opts.range ?? [0.2, 0.5]
       }))
+      texture = initTexture(gl)
     }
 
-    const tex = loadTexture(gl, imgSource)
-    gl.activeTexture(gl.TEXTURE0)
-    gl.bindTexture(gl.TEXTURE_2D, tex)
-    gl.drawArrays(gl.TRIANGLES, 0, 6)
+    updateTexture(gl, imgSource, texture)
 
     if (imgSource instanceof VideoFrame) {
       const rs = new VideoFrame(cvs, {
