@@ -35,8 +35,8 @@ This is an experimental project that tries to provide an easy-to-use API for pro
 - 录制 [AVRecorder](packages/av-recorder/README.md)
   - 从 MediaStream、AVCanvas 中录制视频
 
-[Discord](https://discord.gg/ZD9KF6TV)  
+加入[Discord](https://discord.gg/ZD9KF6TV)实时交流  
 
-[文章](https://hughfenghen.github.io/tag/WebAV/)  
+[Web 音视频系列文章](https://hughfenghen.github.io/tag/WebAV/)，更新中...  
 
 [Plan](./plan.md)
