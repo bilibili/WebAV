@@ -1,6 +1,7 @@
 // 能同时在 worker 和主线程中运行的工具函数
 
 import { Log } from './log'
+import { workerTimer } from './worker-timer'
 
 /**
  * 合并（串联）多个 Float32Array，通常用于合并 PCM 数据
@@ -167,7 +168,7 @@ export async function audioResample (
 
 export function sleep (time: number): Promise<void> {
   return new Promise(resolve => {
-    setTimeout(resolve, time)
+    workerTimer(resolve, time)
   })
 }
 
