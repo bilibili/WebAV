@@ -78,7 +78,10 @@ export function demuxcode (
         Log.info('demuxcode stream done')
         if (mp4Info == null) throw Error('MP4 demux unready')
         try {
-          await Promise.all([vdecoder.flush(), adecoder.flush()])
+          await Promise.all([
+            vdecoder.state === 'configured' ? vdecoder.flush() : null,
+            adecoder.state === 'configured' ? adecoder.flush() : null
+          ])
           Log.info('demuxcode decode done')
           cbs.onComplete()
         } catch (err) {
