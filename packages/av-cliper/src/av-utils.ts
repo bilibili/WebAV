@@ -168,7 +168,10 @@ export async function audioResample (
 
 export function sleep (time: number): Promise<void> {
   return new Promise(resolve => {
-    workerTimer(resolve, time)
+    const stop = workerTimer(() => {
+      stop()
+      resolve()
+    }, time)
   })
 }
 

@@ -42,9 +42,10 @@ export const workerTimer = (
   handler: () => void,
   time: number
 ): (() => void) => {
-  const fns = handlerMap.get(time) ?? new Set()
+  const groupId = Math.round(time / 16.6)
+  const fns = handlerMap.get(groupId) ?? new Set()
   fns.add(handler)
-  handlerMap.set(Math.round(time / 16.6), fns)
+  handlerMap.set(groupId, fns)
 
   if (handlerMap.size === 1 && fns.size === 1) {
     worker.postMessage({ event: 'start' })
@@ -52,7 +53,7 @@ export const workerTimer = (
 
   return () => {
     fns.delete(handler)
-    if (fns.size === 0) handlerMap.delete(time)
+    if (fns.size === 0) handlerMap.delete(groupId)
     if (handlerMap.size === 0) {
       runCount = 0
       worker.postMessage({ event: 'stop' })
