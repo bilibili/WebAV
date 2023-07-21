@@ -13,7 +13,7 @@ This is an experimental project that tries to provide an easy-to-use API for pro
 ## Packages
 - [AVCliper](packages/av-cliper/README.md)  
   Audio and video editing tool library.  
-  音视频剪辑工具库. 
+  音视频剪辑工具库。 
 - [AVCanvas](packages/av-canvas/README.md)  
   Combine Text, Image, Video, Audio, UserMedia, DisplayMedia to generate MediaStream.  
   使用文字、图片、音视频文件、摄像头&麦克风、分享屏幕来生成 MediaStream。  
@@ -33,7 +33,15 @@ This is an experimental project that tries to provide an easy-to-use API for pro
   - 媒体来源：摄像头、麦克风、分享屏幕
   - 资源类型：视频、音频、图片、文字
 - 录制 [AVRecorder](packages/av-recorder/README.md)
-  - 从 MediaStream、AVCanvas 中录制视频
+  - 从 MediaStream、AVCanvas 中录制视频，导出 MP4
+
+## DEMO
+- [画布添加各种素材，可录制导出 MP4](https://hughfenghen.github.io/WebAV/demo/record-avcanvas.html)
+- [SDK 合并 MP4 与各种素材](https://hughfenghen.github.io/WebAV/demo/concat-media.html)
+- [录制摄像头麦克风，导出 MP4](https://hughfenghen.github.io/WebAV/demo/record-usermedia.html)
+- [解码音视频、动图等](https://hughfenghen.github.io/WebAV/demo/decode-media.html)
+
+---
 
 加入[Discord](https://discord.gg/ZD9KF6TV)实时交流  
 
