@@ -7,8 +7,9 @@ Audio and video tools built using pure web technology, which is planned to inclu
 Chrome version 94 supports the WebCodecs API, meaning that JS can also have the ability to process audio and video.  
 Chrome 94 开放了 WebCodecs API，意味着 JS 也能处理音视频了。  
 
-This is an experimental project that tries to provide an easy-to-use API for processing audio and video data in the browser.  
-这是一个实验性项目，尝试提供简单易用的 API 在浏览器中处理音视频数据。  
+This is an experimental project that tries to provide an easy-to-use API for processing audio and video data in the browser. The project in development, so you can submit issues for bugs and new feature suggestions.  
+这是一个实验性项目，尝试提供简单易用的 API 在浏览器中处理音视频数据。项目正在积极迭代，可提交 issue 来反馈 Bug 和新功能建议。  
+
 
 ## Packages
 - [AVCliper](packages/av-cliper/README.md)  
@@ -27,7 +28,7 @@ This is an experimental project that tries to provide an easy-to-use API for pro
   - 嵌入 SRT 字幕
   - 视频消音、音频混流、音量控制、音频循环、音频重采样
   - 视频逐帧处理，内置 绿幕抠图
-  - 动画：x, y, w, h, opacity, angle
+  - 动画属性：x, y, w, h, opacity, angle
 - 画布 [AVCanvas](packages/av-canvas/README.md)
   - 移动、旋转、翻转、等比缩放、变形
   - 媒体来源：摄像头、麦克风、分享屏幕
