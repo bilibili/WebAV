@@ -65,7 +65,10 @@ function initShaderProgram (
   gl.linkProgram(shaderProgram)
 
   if (!gl.getProgramParameter(shaderProgram, gl.LINK_STATUS)) {
-    throw Error('Unable to initialize the shader program')
+    throw Error(
+      gl.getProgramInfoLog(shaderProgram) ??
+        'Unable to initialize the shader program'
+    )
   }
 
   return shaderProgram
@@ -83,8 +86,9 @@ function loadShader (gl: WebGLRenderingContext, type: number, source: string) {
 
   // See if it compiled successfully
   if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
+    const errMsg = gl.getShaderInfoLog(shader)
     gl.deleteShader(shader)
-    throw Error('An error occurred compiling the shaders')
+    throw Error(errMsg ?? 'An error occurred compiling the shaders')
   }
 
   return shader
