@@ -3,6 +3,17 @@
   "version": "0.1.48",
   "private": false,
   "repository": "https://github.com/hughfenghen/WebAV",
+  "keywords": [
+    "webcodecs",
+    "canvas",
+    "video",
+    "video edit",
+    "audio",
+    "音视频",
+    "cliper",
+    "流媒体",
+    "recorder"
+  ],
   "type": "module",
   "types": "dist/index.d.ts",
   "module": "dist/av-cliper.js",
