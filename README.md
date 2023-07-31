@@ -4,7 +4,7 @@ Audio and video tools built using pure web technology, which is planned to inclu
 使用纯Web技术构建的音视频工具，计划包含创建、编辑、导出功能，可应用于直播、教程录制、视频剪辑等产品中。  
 
 ## Motivation
-Chrome version 94 supports the WebCodecs API, meaning that JS can also have the ability to process audio and video. Before this, the front-end development in a limited number of scenarios will use ffmpeg.js, a simple test of decoding and re-encoding video shows that WebCodecs performance 20x better than ffmpeg.js.  
+Chrome version 94 supports the WebCodecs API, meaning that JS can also have the ability to process audio and video. Before this, the front-end developer in a limited number of scenarios will use ffmpeg.js, a simple test of decoding and re-encoding video shows that WebCodecs performance 20x better than ffmpeg.js.  
 Chrome 94 开放了 WebCodecs API，意味着 JS 也能处理音视频了。在此之前，前端开发在会在有限的场景使用 ffmpeg.js，经过简单地测试解码和重编码视频发现，WebCodecs 性能是 ffmpeg.js 的 20 倍。  
 
 This is an experimental project that tries to provide an easy-to-use API for processing audio and video data in the browser. The project in development, so you can submit issues for bugs and new feature suggestions.  
