@@ -1,3 +1,4 @@
+import { Combinator } from '@webav/av-cliper'
 import {
   AVCanvas,
   AudioSprite,
@@ -6,6 +7,11 @@ import {
   VideoSprite
 } from '../src/index'
 import { AVRecorder } from '@webav/av-recorder'
+;(async () => {
+  if (!(await Combinator.isSupported())) {
+    alert('Your browser does not support WebCodecs')
+  }
+})()
 
 const avCvs = new AVCanvas(document.querySelector('#app') as HTMLElement, {
   bgColor: '#333',

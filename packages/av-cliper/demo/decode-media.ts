@@ -1,8 +1,14 @@
+import { Combinator } from '../src'
 import { decodeImg, sleep } from '../src/av-utils'
 import { createChromakey } from '../src/chromakey'
 import { AudioClip, DEFAULT_AUDIO_CONF, MP4Clip } from '../src/clips'
 import { EmbedSubtitlesClip } from '../src/clips/embed-subtitles-clip'
 import { Log } from '../src/log'
+;(async () => {
+  if (!(await Combinator.isSupported())) {
+    alert('Your browser does not support WebCodecs')
+  }
+})()
 
 const cvs = document.querySelector('canvas') as HTMLCanvasElement
 const ctx = cvs.getContext('2d')!

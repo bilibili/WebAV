@@ -1,4 +1,10 @@
+import { Combinator } from '@webav/av-cliper'
 import { AVRecorder } from '../src/av-recorder'
+;(async () => {
+  if (!(await Combinator.isSupported())) {
+    alert('Your browser does not support WebCodecs')
+  }
+})()
 
 let recorder: AVRecorder | null = null
 document.querySelector('#startRecod')?.addEventListener('click', () => {

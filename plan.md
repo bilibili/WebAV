@@ -9,7 +9,6 @@
 ## Bugs
 - AVCanvas 首次录制，可能生成的文件是0字节
 - fastConcatMP4 miss esds box
-- demo 兼容性判断
 - 音量调整（volume）参考 ffmpeg实现
 
 ## 项目优化

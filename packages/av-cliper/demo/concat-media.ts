@@ -9,6 +9,11 @@ import { createChromakey, fastConcatMP4 } from '../src'
 
 // const cvs = document.querySelector('canvas') as HTMLCanvasElement
 // const ctx = cvs.getContext('2d')!
+;(async () => {
+  if (!(await Combinator.isSupported())) {
+    alert('Your browser does not support WebCodecs')
+  }
+})()
 
 const playerContiner = document.querySelector('#player-continer')!
 
