@@ -11,7 +11,7 @@ Source code: `./demo/*.ts`
 [fast concat mp4](https://hughfenghen.github.io/WebAV/demo/fast-concat-mp4.html), without re-encoding video track  
 
 ## Basic Concepts 基础概念
-- `Combinator`: add `OffscreenSprite`, ouput video stream
+- `Combinator`: add `OffscreenSprite`, output video stream
   - Currently only supports outputting binary streams for MP4,AAC format  
 - `OffscreenSprite`: wraps the resource (Clip), attaching Rect (position, width, height, animation) information to the resource so that it can be drawn to the Canvas
 - `IClip`: Abstract encapsulation of resources, reading (`IClip.tick(time)`) raw data of resources by time slice, has been implemented for the `IClip` interface with: 
@@ -19,7 +19,7 @@ Source code: `./demo/*.ts`
 
 <hr />
 
-- `Combinator`： 视频合成器， add `OffscreenSprite`， ouput 视频流  
+- `Combinator`： 视频合成器， add `OffscreenSprite`， output 视频流  
   - 目前仅支持输出 MP4,AAC 格式的二进制流
 - `OffscreenSprite`： 包装资源（Clip），给资源附加 Rect（位置、宽高、动画）信息，使得资源可被绘制到 Canvas 上  
 - `IClip`： 资源的抽象封装，按时间片段读取（`IClip.tick(time)`）资源的原始数据，已实现 `IClip` 接口的有：  
@@ -28,7 +28,7 @@ Source code: `./demo/*.ts`
 
 ## Usage
 **Two video overlays**  
-Re-encoding, output video formats is MP4(H264), AAC
+Re-encoding, output video formats are MP4(H264), AAC
 
 **两个视频叠加**  
 重新编码，输出音视频格式为 MP4(H264), AAC  
