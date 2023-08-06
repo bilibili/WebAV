@@ -130,7 +130,7 @@ export function mixinPCM (audios: Float32Array[][]): Float32Array {
  * 音频 PCM 重采样
  * @param pcmData PCM
  * @param curRate 当前采样率
- * @param target { reate: 目标采样率, chanCount: 目标声道数 }
+ * @param target { rate: 目标采样率, chanCount: 目标声道数 }
  * @returns PCM
  */
 export async function audioResample (
