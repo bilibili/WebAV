@@ -32,7 +32,7 @@ declare module 'mp4box' {
     audio: {
       sample_rate: number
       channel_count: number
-      sample_size: number
+      sample_size?: number
     }
   }
 
@@ -95,7 +95,6 @@ declare module 'mp4box' {
     samplesize?: number
     description?: BoxParser
     hdlr: string
-    name: string
     type: string
   }
 

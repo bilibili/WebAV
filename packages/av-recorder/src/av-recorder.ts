@@ -50,7 +50,6 @@ export class AVRecorder {
       audioConf = {
         codec: this.#conf.audioCodec,
         sampleRate: setting.sampleRate ?? 0,
-        sampleSize: setting.sampleSize ?? 0,
         channelCount: setting.channelCount ?? 0
       }
       streams.audio = new MediaStreamTrackProcessor({

@@ -32,7 +32,6 @@ interface IWorkerOpts {
   audio: {
     codec: 'opus' | 'aac'
     sampleRate: number
-    sampleSize: number
     channelCount: number
   } | null
   bitrate: number
@@ -290,11 +289,10 @@ function encodeAudioTrack (
     timescale: 1e6,
     samplerate: audioOpts.sampleRate,
     channel_count: audioOpts.channelCount,
-    samplesize: audioOpts.sampleSize,
     hdlr: 'soun',
-    name: 'SoundHandler',
     type: audioOpts.codec === 'aac' ? 'mp4a' : 'Opus'
   }
+  console.log(5555, audioTrackOpts)
 
   let trackId = 0
   let cache: EncodedAudioChunk[] = []
@@ -627,9 +625,7 @@ function extractFileConfig (file: MP4File, info: MP4Info) {
       timescale: aTrack.timescale,
       samplerate: aTrack.audio.sample_rate,
       channel_count: aTrack.audio.channel_count,
-      samplesize: aTrack.audio.sample_size,
       hdlr: 'soun',
-      name: 'SoundHandler',
       type: aTrack.codec.startsWith('mp4a') ? 'mp4a' : aTrack.codec
     }
     rs.audioDecoderConf = {

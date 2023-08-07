@@ -16,7 +16,6 @@ export interface IWorkerOpts {
   audio: {
     codec: 'opus' | 'aac'
     sampleRate: number
-    sampleSize: number
     channelCount: number
   } | null
   bitrate: number

@@ -124,7 +124,6 @@ export class Combinator {
       audio: {
         codec: 'aac',
         sampleRate: DEFAULT_AUDIO_CONF.sampleRate,
-        sampleSize: 16,
         channelCount: DEFAULT_AUDIO_CONF.channelCount
       },
       bitrate: opts.bitrate ?? 2_000_000
