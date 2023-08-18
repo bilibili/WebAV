@@ -4,6 +4,10 @@ import { createChromakey } from '../src/chromakey'
 import { AudioClip, DEFAULT_AUDIO_CONF, MP4Clip } from '../src/clips'
 import { EmbedSubtitlesClip } from '../src/clips/embed-subtitles-clip'
 import { Log } from '../src/log'
+
+import Worker from './decode-video-worker?worker&inline'
+
+new Worker()
 ;(async () => {
   if (!(await Combinator.isSupported())) {
     alert('Your browser does not support WebCodecs')
