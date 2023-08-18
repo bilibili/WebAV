@@ -131,7 +131,7 @@ export function demuxcode (
                 }
               }
               vdecoder.decode(new EncodedVideoChunk(sample2ChunkOpts(s)))
-            } else if (type === 'audio') {
+            } else if (type === 'audio' && opts.audio) {
               adecoder.decode(new EncodedAudioChunk(sample2ChunkOpts(s)))
             }
           }

@@ -63,7 +63,10 @@ export class MP4Clip implements IClip {
         },
         {
           onReady: info => {
-            this.#hasAudioTrack = info.audioTracks.length > 0
+            if (opts.audio !== false) {
+              this.#hasAudioTrack = info.audioTracks.length > 0
+            }
+
             const videoTrack = info.videoTracks[0]
             this.#meta = {
               duration: 0,
@@ -102,6 +105,7 @@ export class MP4Clip implements IClip {
   #audioData2PCMBuf = (() => {
     const resampleQ = createPromiseQueue<Float32Array[]>(resampedPCM => {
       if (resampedPCM instanceof Error) throw resampedPCM
+
       this.#audioChan0 = concatFloat32Array([this.#audioChan0, resampedPCM[0]])
       this.#audioChan1 = concatFloat32Array([
         this.#audioChan1,
