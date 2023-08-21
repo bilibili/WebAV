@@ -28,7 +28,7 @@ document.querySelector('#mp4-img')?.addEventListener('click', () => {
     )
 
     const spr2 = new OffscreenSprite(
-      'spr4',
+      'spr2',
       new ImgClip(
         await renderTxt2ImgBitmap(
           '水印',
