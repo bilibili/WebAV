@@ -1,7 +1,7 @@
 import { MP4Clip } from '../src/clips'
 ;(async () => {
   const resp1 = await fetch('./public/video/123.mp4')
-  const clip = new MP4Clip(resp1.body!, { audio: false })
+  const clip = new MP4Clip(resp1.body!)
   await clip.ready
   let time = 0
   while (true) {

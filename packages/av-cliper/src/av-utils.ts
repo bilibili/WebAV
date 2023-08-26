@@ -2,6 +2,7 @@
 
 import { Log } from './log'
 import { workerTimer } from './worker-timer'
+import { resample } from 'wave-resampler'
 
 /**
  * 合并（串联）多个 Float32Array，通常用于合并 PCM 数据
@@ -150,7 +151,17 @@ export async function audioResample (
   const len = Math.max(...pcmData.map(c => c.length))
   if (len === 0) return emptyPCM
 
-  const ctx = new OfflineAudioContext(
+  // The Worker scope does not have access to OfflineAudioContext
+  if (globalThis.OfflineAudioContext == null) {
+    return pcmData.map(
+      p =>
+        new Float32Array(
+          resample(p, curRate, target.rate, { method: 'sinc', LPF: true })
+        )
+    )
+  }
+
+  const ctx = new globalThis.OfflineAudioContext(
     target.chanCount,
     (len * target.rate) / curRate,
     target.rate

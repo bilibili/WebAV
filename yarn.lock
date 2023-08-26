@@ -7724,6 +7724,11 @@ w3c-xmlserializer@^4.0.0:
   dependencies:
     xml-name-validator "^4.0.0"
 
+wave-resampler@^1.0.0:
+  version "1.0.0"
+  resolved "https://registry.npmmirror.com/wave-resampler/-/wave-resampler-1.0.0.tgz#127502338d28e6d5315be1abb06665c04bbb4fc6"
+  integrity sha512-bE3rbpZXuKAV52Cd8/BeJvy82ZqEHK8pPWHrZ9JioaVVTBlmWbDC+u4p9blhFcf0Skepb4hlOAHc25XfqLC48g==
+
 wcwidth@^1.0.0:
   version "1.0.1"
   resolved "https://registry.npmmirror.com/wcwidth/-/wcwidth-1.0.1.tgz"

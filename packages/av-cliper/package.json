@@ -41,6 +41,7 @@
     "vitest": "^0.29.7"
   },
   "dependencies": {
-    "mp4box": "hughfenghen/mp4box.js"
+    "mp4box": "hughfenghen/mp4box.js",
+    "wave-resampler": "^1.0.0"
   }
 }

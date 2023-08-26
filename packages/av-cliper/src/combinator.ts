@@ -59,7 +59,6 @@ export class Combinator {
   static async isSupported (): Promise<boolean> {
     return (
       self.OffscreenCanvas != null &&
-      self.OfflineAudioContext != null &&
       self.VideoEncoder != null &&
       self.VideoDecoder != null &&
       self.VideoFrame != null &&
