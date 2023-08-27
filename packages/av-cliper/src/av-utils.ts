@@ -156,7 +156,7 @@ export async function audioResample (
     return pcmData.map(
       p =>
         new Float32Array(
-          resample(p, curRate, target.rate, { method: 'sinc', LPF: true })
+          resample(p, curRate, target.rate, { method: 'sinc', LPF: false })
         )
     )
   }
