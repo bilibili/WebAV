@@ -16,7 +16,7 @@
   ],
   "type": "module",
   "types": "dist/index.d.ts",
-  "module": "dist/index.js",
+  "module": "dist/av-canvas.js",
   "main": "dist/av-canvas.umd.cjs",
   "scripts": {
     "dev": "vite demo",
