@@ -1,4 +1,4 @@
-declare module 'mp4box' {
+declare module '@webav/mp4box.js' {
   export interface MP4MediaTrack {
     id: number
     created: Date
@@ -62,7 +62,7 @@ declare module 'mp4box' {
     BIG_ENDIAN: unknown
     END_ENDIAN: unknown
     prototype: DataStream
-    new (
+    new(
       size?: number | ArrayBufferView,
       byteOffset?: number,
       // @ts-expect-error
@@ -170,7 +170,7 @@ declare module 'mp4box' {
     version: number
     flags: number
     esd: ESDBoxParser
-    new (size: number): ESDSBoxParser
+    new(size: number): ESDSBoxParser
   }
 
   type STSDBoxParser = Omit<
@@ -263,7 +263,7 @@ declare module 'mp4box' {
   }
 
   interface MPEG4DescriptorParser {
-    new (): MPEG4DescriptorParser
+    new(): MPEG4DescriptorParser
     parseOneDescriptor(stream: DataStream): ESDBoxParser
   }
 

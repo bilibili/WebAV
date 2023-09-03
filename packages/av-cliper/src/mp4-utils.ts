@@ -7,7 +7,7 @@ import mp4box, {
   TrakBoxParser,
   VideoTrackOpts,
   AudioTrackOpts
-} from 'mp4box'
+} from '@webav/mp4box.js'
 import { Log } from './log'
 import {
   autoReadStream,
@@ -37,7 +37,7 @@ interface IWorkerOpts {
   bitrate: number
 }
 
-export function demuxcode (
+export function demuxcode(
   stream: ReadableStream<Uint8Array>,
   opts: { audio: boolean; start: number; end: number },
   cbs: {
@@ -156,7 +156,7 @@ export function demuxcode (
   }
 }
 
-export function recodemux (opts: IWorkerOpts): {
+export function recodemux(opts: IWorkerOpts): {
   encodeVideo: (frame: VideoFrame, options?: VideoEncoderEncodeOptions) => void
   encodeAudio: (data: AudioData) => void
   close: TCleanFn
@@ -208,7 +208,7 @@ export function recodemux (opts: IWorkerOpts): {
   }
 }
 
-function encodeVideoTrack (
+function encodeVideoTrack(
   opts: IWorkerOpts,
   mp4File: MP4File,
   avSyncEvtTool: EventTool<Record<'VideoReady' | 'AudioReady', () => void>>
@@ -252,7 +252,7 @@ function encodeVideoTrack (
   return encoder
 }
 
-function createVideoEncoder (
+function createVideoEncoder(
   opts: IWorkerOpts,
   outHandler: EncodedVideoChunkOutputCallback
 ): VideoEncoder {
@@ -280,7 +280,7 @@ function createVideoEncoder (
   return encoder
 }
 
-function encodeAudioTrack (
+function encodeAudioTrack(
   audioOpts: NonNullable<IWorkerOpts['audio']>,
   mp4File: MP4File,
   avSyncEvtTool: EventTool<Record<'VideoReady' | 'AudioReady', () => void>>
@@ -336,7 +336,7 @@ function encodeAudioTrack (
   return encoder
 }
 
-export function stream2file (stream: ReadableStream<Uint8Array>): {
+export function stream2file(stream: ReadableStream<Uint8Array>): {
   file: MP4File
   stop: () => void
 } {
@@ -344,7 +344,7 @@ export function stream2file (stream: ReadableStream<Uint8Array>): {
   let chunkOffset = 0
   const file = mp4box.createFile()
   let stoped = false
-  async function readFile (): Promise<void> {
+  async function readFile(): Promise<void> {
     while (!stoped) {
       const { done, value } = await reader.read()
       if (done) {
@@ -378,20 +378,20 @@ export function stream2file (stream: ReadableStream<Uint8Array>): {
 class SampleTransform {
   readable: ReadableStream<
     | {
-        chunkType: 'ready'
-        data: { info: MP4Info; file: MP4File }
-      }
+      chunkType: 'ready'
+      data: { info: MP4Info; file: MP4File }
+    }
     | {
-        chunkType: 'samples'
-        data: { id: number; type: 'video' | 'audio'; samples: MP4Sample[] }
-      }
+      chunkType: 'samples'
+      data: { id: number; type: 'video' | 'audio'; samples: MP4Sample[] }
+    }
   >
 
   writable: WritableStream<Uint8Array>
 
   #inputBufOffset = 0
 
-  constructor () {
+  constructor() {
     const file = mp4box.createFile()
     let outCtrlDesiredSize = 0
     let streamCancelled = false
@@ -461,7 +461,7 @@ class SampleTransform {
   }
 }
 
-export function file2stream (
+export function file2stream(
   file: MP4File,
   timeSlice: number,
   onCancel?: TCleanFn
@@ -511,7 +511,7 @@ export function file2stream (
   let canceled = false
   let exit: TCleanFn | null = null
   const stream = new ReadableStream({
-    start (ctrl) {
+    start(ctrl) {
       timerId = self.setInterval(() => {
         const d = deltaBuf()
         if (d != null && !canceled) ctrl.enqueue(d)
@@ -529,7 +529,7 @@ export function file2stream (
       // 安全起见，检测如果start触发时已经 stoped
       if (stoped) exit()
     },
-    cancel () {
+    cancel() {
       canceled = true
       clearInterval(timerId)
       onCancel?.()
@@ -547,7 +547,7 @@ export function file2stream (
 }
 
 // track is H.264, H.265 or VPX.
-function parseVideoCodecDesc (track: TrakBoxParser): Uint8Array {
+function parseVideoCodecDesc(track: TrakBoxParser): Uint8Array {
   for (const entry of track.mdia.minf.stbl.stsd.entries) {
     // @ts-expect-error
     const box = entry.avcC ?? entry.hvcC ?? entry.vpcC
@@ -567,7 +567,7 @@ function parseVideoCodecDesc (track: TrakBoxParser): Uint8Array {
 /**
  * EncodedAudioChunk | EncodedVideoChunk 转换为 MP4 addSample 需要的参数
  */
-function chunk2MP4SampleOpts (
+function chunk2MP4SampleOpts(
   chunk: EncodedAudioChunk | EncodedVideoChunk
 ): SampleOpts & {
   data: ArrayBuffer
@@ -584,7 +584,7 @@ function chunk2MP4SampleOpts (
   }
 }
 
-function extractFileConfig (file: MP4File, info: MP4Info) {
+function extractFileConfig(file: MP4File, info: MP4Info) {
   const vTrack = info.videoTracks[0]
   const rs: {
     videoTrackConf?: VideoTrackOpts
@@ -597,8 +597,8 @@ function extractFileConfig (file: MP4File, info: MP4Info) {
     const { descKey, type } = vTrack.codec.startsWith('avc1')
       ? { descKey: 'avcDecoderConfigRecord', type: 'avc1' }
       : vTrack.codec.startsWith('hvc1')
-      ? { descKey: 'hevcDecoderConfigRecord', type: 'hvc1' }
-      : { descKey: '', type: '' }
+        ? { descKey: 'hevcDecoderConfigRecord', type: 'hvc1' }
+        : { descKey: '', type: '' }
     if (descKey !== '') {
       rs.videoTrackConf = {
         timescale: vTrack.timescale,
@@ -643,12 +643,12 @@ function extractFileConfig (file: MP4File, info: MP4Info) {
  * 快速顺序合并多个mp4流，要求所有mp4的属性是一致的
  * 属性包括（不限于）：音视频编码格式、分辨率、采样率
  */
-export function fastConcatMP4 (streams: ReadableStream<Uint8Array>[]) {
+export function fastConcatMP4(streams: ReadableStream<Uint8Array>[]) {
   Log.info('fastConcatMP4, streams len:', streams.length)
   const outfile = mp4box.createFile()
-  const { stream, stop: stopOutStream } = file2stream(outfile, 500, () => {})
+  const { stream, stop: stopOutStream } = file2stream(outfile, 500, () => { })
 
-  async function run () {
+  async function run() {
     let vTrackId = 0
     let vDTS = 0
     let vCTS = 0
@@ -721,7 +721,7 @@ export function fastConcatMP4 (streams: ReadableStream<Uint8Array>[]) {
   return stream
 }
 
-function createMP4AudioSampleDecoder (
+function createMP4AudioSampleDecoder(
   adConf: Parameters<AudioDecoder['configure']>[0]
 ) {
   let cacheAD: AudioData[] = []
@@ -761,7 +761,7 @@ function createMP4AudioSampleDecoder (
 
 // 音频编码与解码API有很大区别，
 // 是因为编码中途调用 AudioEncoder.flush ，会导致声音听起来卡顿
-function createMP4AudioSampleEncoder (
+function createMP4AudioSampleEncoder(
   aeConf: Parameters<AudioEncoder['configure']>[0],
   onOutput: (s: ReturnType<typeof chunk2MP4SampleOpts>) => void
 ) {
@@ -781,7 +781,7 @@ function createMP4AudioSampleEncoder (
   // 保留一个音频数据，用于最后做声音淡出
   let lastData: { data: Float32Array; ts: number } | null = null
 
-  function createAD (data: Float32Array, ts: number) {
+  function createAD(data: Float32Array, ts: number) {
     return new AudioData({
       timestamp: ts,
       numberOfChannels: aeConf.numberOfChannels,
@@ -815,7 +815,7 @@ function createMP4AudioSampleEncoder (
  * 音频线性淡出，避免 POP 声
  * 副作用调整音量值
  */
-function audioFade (pcmData: Float32Array, chanCnt: number, sampleRate: number) {
+function audioFade(pcmData: Float32Array, chanCnt: number, sampleRate: number) {
   const dataLen = pcmData.length - 1
   // 避免超出边界，最长 500ms 的淡出时间
   const fadeLen = Math.min(sampleRate / 2, dataLen)
@@ -831,7 +831,7 @@ function audioFade (pcmData: Float32Array, chanCnt: number, sampleRate: number) 
  * 混合mp4与音频文件，仅重编码音频
  * @returns
  */
-export function mixinMP4AndAudio (
+export function mixinMP4AndAudio(
   mp4Stream: ReadableStream<Uint8Array>,
   audio: {
     stream: ReadableStream<Uint8Array>
@@ -924,7 +924,7 @@ export function mixinMP4AndAudio (
     }
   })
 
-  function getInputAudioSlice (len: number) {
+  function getInputAudioSlice(len: number) {
     const rs = inputAudioPCM.map(chanBuf =>
       audio.loop
         ? ringSliceFloat32Array(chanBuf, audioOffset, audioOffset + len)
@@ -940,13 +940,13 @@ export function mixinMP4AndAudio (
     return rs
   }
 
-  async function addInputAudio2Track (vdieoSamples: MP4Sample[]) {
+  async function addInputAudio2Track(vdieoSamples: MP4Sample[]) {
     const firstSamp = vdieoSamples[0]
     const lastSamp = vdieoSamples[vdieoSamples.length - 1]
     const pcmLength = Math.floor(
       ((lastSamp.cts + lastSamp.duration - firstSamp.cts) /
         lastSamp.timescale) *
-        sampleRate
+      sampleRate
     )
     const audioDataBuf = mixinPCM([getInputAudioSlice(pcmLength)])
     if (audioDataBuf.length === 0) return
@@ -956,7 +956,7 @@ export function mixinMP4AndAudio (
     )
   }
 
-  async function mixinAudioSampleAndInputPCM (samples: MP4Sample[]) {
+  async function mixinAudioSampleAndInputPCM(samples: MP4Sample[]) {
     if (audioSampleDecoder == null) return
 
     // 1. 先解码mp4音频
@@ -980,7 +980,7 @@ export function mixinMP4AndAudio (
   return outStream
 }
 
-function sample2ChunkOpts (
+function sample2ChunkOpts(
   s: MP4Sample
 ): EncodedAudioChunkInit | EncodedVideoChunkInit {
   return {
@@ -991,7 +991,7 @@ function sample2ChunkOpts (
   }
 }
 
-function createESDSBox (config: ArrayBuffer | ArrayBufferView) {
+function createESDSBox(config: ArrayBuffer | ArrayBufferView) {
   const configlen = config.byteLength
   const buf = new Uint8Array([
     0x00, // version 0

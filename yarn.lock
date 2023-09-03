@@ -1536,6 +1536,11 @@
     loupe "^2.3.6"
     pretty-format "^27.5.1"
 
+"@webav/mp4box.js@0.5.3-fenghen":
+  version "0.5.3-fenghen"
+  resolved "https://registry.npmjs.org/@webav/mp4box.js/-/mp4box.js-0.5.3-fenghen.tgz#2a5e744f78e21749e3ab13116129d99247bc4d23"
+  integrity sha512-jAN15I3Po1Z6Ns02iknb6KGbird9rd1h9TGldzbwsar+88ZlHd+oVjOQnFavBdNDc5vmULUnldcWGDdKc02npw==
+
 "@zkochan/cmd-shim@^3.1.0":
   version "3.1.0"
   resolved "https://registry.npmmirror.com/@zkochan/cmd-shim/-/cmd-shim-3.1.0.tgz"
@@ -5250,10 +5255,6 @@ move-concurrently@^1.0.1:
     mkdirp "^0.5.1"
     rimraf "^2.5.4"
     run-queue "^1.0.3"
-
-mp4box@hughfenghen/mp4box.js:
-  version "0.5.3-fenghen"
-  resolved "https://codeload.github.com/hughfenghen/mp4box.js/tar.gz/9e06b3c7075c1fc1c6c0af23fac61fe54576504c"
 
 ms@2.0.0:
   version "2.0.0"

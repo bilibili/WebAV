@@ -1,4 +1,4 @@
-import mp4box from 'mp4box'
+import mp4box from '@webav/mp4box.js'
 import { autoReadStream, file2stream, recodemux } from '@webav/av-cliper'
 import { TClearFn, EWorkerMsg, IWorkerOpts } from './types'
 
@@ -35,7 +35,7 @@ self.onmessage = async (evt: MessageEvent) => {
   }
 }
 
-function init (opts: IWorkerOpts, onEnded: TClearFn): TClearFn {
+function init(opts: IWorkerOpts, onEnded: TClearFn): TClearFn {
   let stopEncodeVideo: TClearFn | null = null
   let stopEncodeAudio: TClearFn | null = null
 
@@ -53,7 +53,7 @@ function init (opts: IWorkerOpts, onEnded: TClearFn): TClearFn {
         if (stoped) return
         encode(vf)
       },
-      onDone: () => {}
+      onDone: () => { }
     })
   }
 
@@ -63,7 +63,7 @@ function init (opts: IWorkerOpts, onEnded: TClearFn): TClearFn {
         if (stoped) return
         recoder.encodeAudio(ad)
       },
-      onDone: () => {}
+      onDone: () => { }
     })
   }
 
@@ -84,7 +84,7 @@ function init (opts: IWorkerOpts, onEnded: TClearFn): TClearFn {
     [stream]
   )
 
-  function exit () {
+  function exit() {
     stoped = true
 
     stopEncodeVideo?.()
@@ -96,7 +96,7 @@ function init (opts: IWorkerOpts, onEnded: TClearFn): TClearFn {
   return exit
 }
 
-function encodeVideoFrame (expectFPS: number, encode: VideoEncoder['encode']) {
+function encodeVideoFrame(expectFPS: number, encode: VideoEncoder['encode']) {
   let frameCount = 0
   const startTime = performance.now()
   let lastTime = startTime

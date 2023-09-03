@@ -44,6 +44,6 @@
   "dependencies": {
     "@webav/av-cliper": "^0.1.52",
     "fix-webm-duration": "^1.0.5",
-    "mp4box": "hughfenghen/mp4box.js"
+    "@webav/mp4box.js": "0.5.3-fenghen"
   }
 }
