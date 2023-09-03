@@ -41,6 +41,7 @@ This is an experimental project that tries to provide an easy-to-use API for pro
 - [SDK 合并 MP4 与各种素材](https://hughfenghen.github.io/WebAV/demo/concat-media.html)
 - [录制摄像头麦克风，导出 MP4](https://hughfenghen.github.io/WebAV/demo/record-usermedia.html)
 - [解码音视频、动图等](https://hughfenghen.github.io/WebAV/demo/decode-media.html)
+- [花影](https://github.com/hughfenghen/bloom-shadow) 尝试做一个在浏览器中运行的录屏软件，开发中...
 
 ---
 
