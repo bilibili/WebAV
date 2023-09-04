@@ -97,7 +97,6 @@ function init(opts: IWorkerOpts, onEnded: TClearFn): TClearFn {
 }
 
 function encodeVideoFrame(expectFPS: number, encode: VideoEncoder['encode']) {
-  let frameCount = 0
   const startTime = performance.now()
   let lastTime = startTime
 
@@ -108,7 +107,10 @@ function encodeVideoFrame(expectFPS: number, encode: VideoEncoder['encode']) {
     const now = performance.now()
     const offsetTime = now - startTime
     // 避免帧率超出期望太高
-    if ((frameCnt / offsetTime) * 1000 > maxFPS) return
+    if ((frameCnt / offsetTime) * 1000 > maxFPS) {
+      frame.close()
+      return
+    }
 
     const vf = new VideoFrame(frame, {
       // timestamp 单位 微妙
@@ -117,10 +119,9 @@ function encodeVideoFrame(expectFPS: number, encode: VideoEncoder['encode']) {
     })
     lastTime = now
 
-    encode(vf, { keyFrame: frameCount % 150 === 0 })
+    encode(vf, { keyFrame: frameCnt % 150 === 0 })
     frameCnt += 1
     vf.close()
     frame.close()
-    frameCount += 1
   }
 }
