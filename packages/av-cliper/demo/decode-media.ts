@@ -8,11 +8,11 @@ import { Log } from '../src/log'
 import Worker from './decode-video-worker?worker&inline'
 
 new Worker()
-;(async () => {
-  if (!(await Combinator.isSupported())) {
-    alert('Your browser does not support WebCodecs')
-  }
-})()
+  ; (async () => {
+    if (!(await Combinator.isSupported())) {
+      alert('Your browser does not support WebCodecs')
+    }
+  })()
 
 const cvs = document.querySelector('canvas') as HTMLCanvasElement
 const ctx = cvs.getContext('2d')!
@@ -24,9 +24,9 @@ const imgs = {
   'image/gif': './public/img/animated.gif'
 }
 
-let stopImg = () => {}
+let stopImg = () => { }
 document.querySelector('#decode-img')?.addEventListener('click', () => {
-  ;(async () => {
+  ; (async () => {
     stopImg()
     const imgType = (
       document.querySelector('input[name=img-type]:checked') as HTMLInputElement
@@ -37,7 +37,7 @@ document.querySelector('#decode-img')?.addEventListener('click', () => {
     const frames = await decodeImg(resp1.body!, imgType)
 
     let i = 0
-    function render (vf: VideoFrame) {
+    function render(vf: VideoFrame) {
       if (vf == null) return
       ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height)
       ctx.drawImage(vf, 0, 0)
@@ -58,9 +58,9 @@ const audios = {
   '16kHz-1chan.mp3': './public/audio/16kHz-1chan.mp3'
 }
 
-let stopAudio = () => {}
+let stopAudio = () => { }
 document.querySelector('#decode-audio')?.addEventListener('click', () => {
-  ;(async () => {
+  ; (async () => {
     stopAudio()
     const audioType = (
       document.querySelector(
@@ -73,7 +73,7 @@ document.querySelector('#decode-audio')?.addEventListener('click', () => {
     await clip.ready
     const ctx = new AudioContext()
     let time = 0
-    async function play () {
+    async function play() {
       const { audio, state } = await clip.tick(time)
       time += 100000
       if (state === 'done') {
@@ -108,7 +108,7 @@ const videos = {
   'bear-vp9.mp4': './public/video/bear-vp9.mp4'
 }
 document.querySelector('#decode-video')?.addEventListener('click', () => {
-  ;(async () => {
+  ; (async () => {
     const videoType = (
       document.querySelector(
         'input[name=video-type]:checked'
@@ -137,7 +137,7 @@ const subtitles = {
   'test-sample.srt': './public/subtitles/test-sample.srt'
 }
 document.querySelector('#decode-subtitles')?.addEventListener('click', () => {
-  ;(async () => {
+  ; (async () => {
     stopImg()
     const subtitlesType = (
       document.querySelector(
@@ -172,12 +172,14 @@ document.querySelector('#decode-subtitles')?.addEventListener('click', () => {
 })
 
 document.querySelector('#chromakey')?.addEventListener('click', () => {
-  ;(async () => {
+  ; (async () => {
     const clip = new MP4Clip(
       (await fetch('./public/video/chromakey-test.mp4')).body!
     )
     const chromakey = createChromakey({
-      keyColor: [65, 249, 0]
+      similarity: 0.4,
+      smoothness: 0.1,
+      spill: 0.1,
     })
     clip.tickInterceptor = async (_, tickRet) => {
       if (tickRet.video == null) return tickRet

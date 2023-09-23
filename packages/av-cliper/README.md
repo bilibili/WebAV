@@ -134,7 +134,11 @@ await com.add(spr2)
 ```ts
 import { createChromakey } from '@webav/av-cliper'
 
-const chromakey = createChromakey()
+const chromakey = createChromakey({
+  similarity: 0.35,
+  smoothness: 0.05,
+  spill: 0.05,
+})
 const clip = new MP4Clip((await fetch('./public/video/chromakey-test.mp4')).body!)
 clip.tickInterceptor = async (_, tickRet) => {
   if (tickRet.video == null) return tickRet

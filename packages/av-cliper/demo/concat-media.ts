@@ -7,18 +7,18 @@ import { EmbedSubtitlesClip } from '../src/clips/embed-subtitles-clip'
 import { playOutputStream } from './play-video'
 import { createChromakey, fastConcatMP4 } from '../src'
 
-// const cvs = document.querySelector('canvas') as HTMLCanvasElement
-// const ctx = cvs.getContext('2d')!
-;(async () => {
-  if (!(await Combinator.isSupported())) {
-    alert('Your browser does not support WebCodecs')
-  }
-})()
+  // const cvs = document.querySelector('canvas') as HTMLCanvasElement
+  // const ctx = cvs.getContext('2d')!
+  ; (async () => {
+    if (!(await Combinator.isSupported())) {
+      alert('Your browser does not support WebCodecs')
+    }
+  })()
 
 const playerContiner = document.querySelector('#player-continer')!
 
 document.querySelector('#mp4-img')?.addEventListener('click', () => {
-  ;(async () => {
+  ; (async () => {
     const resList = ['./public/video/webav1.mp4', './public/img/bunny.png']
     const { loadStream } = playOutputStream(resList, playerContiner)
 
@@ -80,7 +80,7 @@ document.querySelector('#mp4-img')?.addEventListener('click', () => {
 })
 
 document.querySelector('#mp4-mp3')?.addEventListener('click', () => {
-  ;(async () => {
+  ; (async () => {
     const resList = [
       './public/video/webav1.mp4',
       './public/audio/44.1kHz-2chan.mp3'
@@ -111,7 +111,7 @@ document.querySelector('#mp4-mp3')?.addEventListener('click', () => {
 })
 
 document.querySelector('#mix-audio')?.addEventListener('click', () => {
-  ;(async () => {
+  ; (async () => {
     const resList = [
       './public/audio/44.1kHz-2chan.m4a',
       './public/audio/16kHz-1chan.mp3'
@@ -135,7 +135,7 @@ document.querySelector('#mix-audio')?.addEventListener('click', () => {
 })
 
 document.querySelector('#concat-audio')?.addEventListener('click', () => {
-  ;(async () => {
+  ; (async () => {
     const resList = [
       './public/audio/16kHz-1chan.mp3',
       './public/audio/44.1kHz-2chan.m4a'
@@ -157,7 +157,7 @@ document.querySelector('#concat-audio')?.addEventListener('click', () => {
 })
 
 document.querySelector('#gif-m4a')?.addEventListener('click', () => {
-  ;(async () => {
+  ; (async () => {
     const resList = [
       './public/img/animated.gif',
       './public/audio/44.1kHz-2chan.m4a'
@@ -180,7 +180,7 @@ document.querySelector('#gif-m4a')?.addEventListener('click', () => {
 })
 
 document.querySelector('#mp4-srt')?.addEventListener('click', () => {
-  ;(async () => {
+  ; (async () => {
     const resList = [
       './public/video/webav1.mp4',
       './public/subtitles/test-sample.srt'
@@ -217,7 +217,7 @@ document.querySelector('#mp4-srt')?.addEventListener('click', () => {
 })
 
 document.querySelector('#mp4-chromakey')?.addEventListener('click', () => {
-  ;(async () => {
+  ; (async () => {
     const resList = [
       './public/video/chromakey-test.mp4',
       './public/img/bunny.png'
@@ -227,7 +227,11 @@ document.querySelector('#mp4-chromakey')?.addEventListener('click', () => {
     const width = 1280
     const height = 720
 
-    const chromakey = createChromakey()
+    const chromakey = createChromakey({
+      similarity: 0.4,
+      smoothness: 0.1,
+      spill: 0.1,
+    })
     const clip = new MP4Clip((await fetch(resList[0])).body!)
     clip.tickInterceptor = async (_, tickRet) => {
       if (tickRet.video == null) return tickRet
@@ -264,7 +268,7 @@ document.querySelector('#mp4-chromakey')?.addEventListener('click', () => {
 })
 
 document.querySelector('#complex')?.addEventListener('click', () => {
-  ;(async () => {
+  ; (async () => {
     const mp4List = [
       './public/video/123.mp4',
       './public/video/223.mp4',
@@ -274,7 +278,11 @@ document.querySelector('#complex')?.addEventListener('click', () => {
     const width = 1280
     const height = 720
 
-    const chromakey = createChromakey()
+    const chromakey = createChromakey({
+      similarity: 0.4,
+      smoothness: 0.1,
+      spill: 0.1,
+    })
 
     const coms = (
       await Promise.all(mp4List.map(async vurl => (await fetch(vurl)).body!))
