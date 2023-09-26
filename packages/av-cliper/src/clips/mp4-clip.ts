@@ -40,7 +40,7 @@ export class MP4Clip implements IClip {
 
   #demuxcoder: ReturnType<typeof demuxcode> | null = null
 
-  constructor (
+  constructor(
     rs: ReadableStream<Uint8Array>,
     opts: {
       audio?: boolean | { volume: number }
@@ -89,13 +89,16 @@ export class MP4Clip implements IClip {
           onVideoOutput: vf => {
             this.#videoFrames.push(vf)
             lastVf = vf
+            // 最后一帧的 timestamp 可能为 0
+            this.#meta.duration = Math.max(
+              this.#meta.duration, vf.timestamp + (vf.duration ?? 0)
+            )
           },
           onAudioOutput: this.#audioData2PCMBuf,
           onComplete: () => {
             this.#decodeEnded = true
             this.#log.info('MP4Clip decode complete')
             if (lastVf == null) throw Error('mp4 parse error, no video frame')
-            this.#meta.duration = lastVf.timestamp + (lastVf.duration ?? 0)
           }
         }
       )
@@ -140,7 +143,7 @@ export class MP4Clip implements IClip {
     }
   })()
 
-  async #nextVideo (time: number): Promise<VideoFrame | null> {
+  async #nextVideo(time: number): Promise<VideoFrame | null> {
     if (this.#videoFrames.length === 0) {
       if (this.#destroyed || this.#decodeEnded) {
         return null
@@ -164,7 +167,7 @@ export class MP4Clip implements IClip {
     return rs
   }
 
-  async #nextAudio (deltaTime: number): Promise<Float32Array[]> {
+  async #nextAudio(deltaTime: number): Promise<Float32Array[]> {
     const frameCnt = Math.ceil(deltaTime * (this.#meta.audioSampleRate / 1e6))
     if (frameCnt === 0) return []
     // 小心避免死循环
@@ -193,7 +196,7 @@ export class MP4Clip implements IClip {
   tickInterceptor: NonNullable<IClip['tickInterceptor']> = async (_, tickRet) =>
     tickRet
 
-  async tick (time: number): Promise<{
+  async tick(time: number): Promise<{
     video?: VideoFrame
     audio: Float32Array[]
     state: 'success' | 'done'
@@ -225,7 +228,7 @@ export class MP4Clip implements IClip {
     })
   }
 
-  destroy (): void {
+  destroy(): void {
     if (this.#destroyed) return
     this.#log.info(
       'MP4Clip destroy, ts:',
@@ -245,16 +248,16 @@ export class MP4Clip implements IClip {
 }
 
 // 并行执行任务，但按顺序emit结果
-function createPromiseQueue<T extends any> (onResult: (data: T) => void) {
+function createPromiseQueue<T extends any>(onResult: (data: T) => void) {
   const rsCache: T[] = []
   let waitingIdx = 0
 
-  function updateRs (rs: T, emitIdx: number) {
+  function updateRs(rs: T, emitIdx: number) {
     rsCache[emitIdx] = rs
     emitRs()
   }
 
-  function emitRs () {
+  function emitRs() {
     const rs = rsCache[waitingIdx]
     if (rs == null) return
     onResult(rs)
