@@ -15,7 +15,7 @@ Object.assign(global, {
 
 Object.assign(global, {
   AudioData: class {
-    constructor (init) {
+    constructor(init) {
       Object.assign(this, init)
     }
   }
@@ -127,7 +127,7 @@ export const revokeObjectURLMock = (URL.revokeObjectURL = vi.fn())
  * @param offsetY
  * @returns
  */
-export function crtMSEvt4Offset (
+export function crtMSEvt4Offset(
   evtName: string,
   offsetX: number,
   offsetY: number
@@ -206,3 +206,19 @@ Object.assign(global, {
     return that
   })
 })
+
+
+class Worker {
+  url: string
+  onmessage: (msg: string) => void;
+
+  constructor(stringUrl) {
+    this.url = stringUrl;
+    this.onmessage = () => { };
+  }
+
+  postMessage(msg) {
+    this.onmessage(msg);
+  }
+}
+Object.assign(global, { Worker })
