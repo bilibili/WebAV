@@ -46,6 +46,7 @@ This is an experimental project that tries to provide an easy-to-use API for pro
 ---
 
 加入[Discord](https://discord.gg/7g3tg6jHnE)实时交流  
+加微信 `liujun_fenghen` 备注 WebAV 邀请进入微信群  
 
 [Web 音视频系列文章](https://hughfenghen.github.io/tag/WebAV/)  
 
