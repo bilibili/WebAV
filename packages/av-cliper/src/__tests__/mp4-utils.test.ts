@@ -1,7 +1,7 @@
-import { beforeAll, describe, expect, test, vi } from 'vitest'
-import mp4box from 'mp4box'
-import { file2stream } from '../mp4-utils'
 import './mock'
+import { beforeAll, describe, expect, test, vi } from 'vitest'
+import mp4box from '@webav/mp4box.js'
+import { file2stream } from '../mp4-utils'
 
 beforeAll(() => {
   vi.useFakeTimers()
@@ -28,7 +28,7 @@ describe('file2stream', () => {
     vi.advanceTimersByTime(500)
     expect(stream._ctrl.enqueue).toHaveBeenCalledWith(new Uint8Array())
     // 内存引用被清理
-    expect(file.boxes[0].data).toBeNull()
+    expect([...file.boxes]).toEqual(Array(5).fill(undefined))
   })
 
   test('stop stream', () => {
