@@ -4,10 +4,10 @@ import { EWorkerMsg, IRecorderConf, IStream, IWorkerOpts } from './types'
 type TState = 'inactive' | 'recording' | 'paused'
 export class AVRecorder {
   #state: TState = 'inactive'
-  get state (): 'inactive' | 'recording' | 'paused' {
+  get state(): 'inactive' | 'recording' | 'paused' {
     return this.#state
   }
-  set state (_: TState) {
+  set state(_: TState) {
     throw new Error('state is readonly')
   }
 
@@ -19,7 +19,11 @@ export class AVRecorder {
 
   outputStream: ReadableStream<Uint8Array> | null = null
 
-  constructor (inputMediaStream: MediaStream, conf: IRecorderConf = {}) {
+  set paused(state: boolean) {
+    this.#worker?.postMessage({ type: EWorkerMsg.Paused, data: state })
+  }
+
+  constructor(inputMediaStream: MediaStream, conf: IRecorderConf = {}) {
     this.#ms = inputMediaStream
     this.#conf = {
       width: 1280,
@@ -31,7 +35,7 @@ export class AVRecorder {
     }
   }
 
-  async start (timeSlice: number = 500): Promise<void> {
+  async start(timeSlice: number = 500): Promise<void> {
     const worker = new MuxMP4Worker()
     this.#worker = worker
 
@@ -95,7 +99,7 @@ export class AVRecorder {
     })
   }
 
-  async stop (): Promise<void> {
+  async stop(): Promise<void> {
     this.#state = 'inactive'
     const worker = this.#worker
     if (worker == null) return

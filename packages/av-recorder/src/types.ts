@@ -31,6 +31,7 @@ export interface IStream {
 export enum EWorkerMsg {
   SafeExit = 'SafeExit',
   Stop = 'Stop',
+  Paused = 'Paused',
   Start = 'Start',
   OutputStream = 'OutputStream'
 }
