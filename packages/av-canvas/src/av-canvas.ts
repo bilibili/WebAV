@@ -1,11 +1,11 @@
 import { Rect, TCtrlKey } from '@webav/av-cliper'
 import { renderCtrls } from './sprites/render-ctrl'
 import { ESpriteManagerEvt, SpriteManager } from './sprites/sprite-manager'
-import { draggabelSprite } from './sprites/sprite-op'
+import { activeSprite, draggabelSprite } from './sprites/sprite-op'
 import { IResolution } from './types'
 import { createEl } from './utils'
 
-function createInitCvsEl (resolution: IResolution): HTMLCanvasElement {
+function createInitCvsEl(resolution: IResolution): HTMLCanvasElement {
   const cvsEl = createEl('canvas') as HTMLCanvasElement
   cvsEl.style.cssText = `
     width: 100%;
@@ -28,7 +28,7 @@ export class AVCanvas {
 
   #clears: Array<() => void> = []
 
-  constructor (container: HTMLElement, opts: {
+  constructor(container: HTMLElement, opts: {
     resolution: IResolution
     bgColor: string
   }) {
@@ -76,14 +76,14 @@ export class AVCanvas {
     // ;(window as any).cvsEl = this.#cvsEl
   }
 
-  destroy (): void {
+  destroy(): void {
     this.#destroyed = true
     this.#cvsEl.remove()
     this.#clears.forEach(fn => fn())
     this.spriteManager.destroy()
   }
 
-  captureStream (): MediaStream {
+  captureStream(): MediaStream {
     const ms = new MediaStream()
     this.#cvsEl.captureStream().getTracks().concat(
       this.spriteManager.audioMSDest.stream.getTracks()
@@ -93,7 +93,7 @@ export class AVCanvas {
     return ms
   }
 
-  #render (): void {
+  #render(): void {
     const cvsCtx = this.#cvsCtx
     const list = this.spriteManager.getSprites()
     list.forEach(r => r.render(cvsCtx))
@@ -103,50 +103,9 @@ export class AVCanvas {
 }
 
 /**
- * 鼠标点击，激活 sprite
- */
-function activeSprite (
-  cvsEl: HTMLCanvasElement,
-  sprMng: SpriteManager
-): () => void {
-  const cvsRatio = {
-    w: cvsEl.clientWidth / cvsEl.width,
-    h: cvsEl.clientHeight / cvsEl.height
-  }
-
-  // 排在后面的层级更高
-  let sprList = sprMng.getSprites().reverse()
-  const offAddSpr = sprMng.on(ESpriteManagerEvt.AddSprite, () => {
-    sprList = sprMng.getSprites().reverse()
-  })
-
-  const onCvsMouseDown = (evt: MouseEvent): void => {
-    if (evt.button !== 0) return
-    const { offsetX, offsetY } = evt
-    const ofx = offsetX / cvsRatio.w
-    const ofy = offsetY / cvsRatio.h
-    if (sprMng.activeSprite != null) {
-      const [ctrlKey] = Object.entries(sprMng.activeSprite.rect.ctrls)
-        .find(([, rect]) => rect.checkHit(ofx, ofy)) as [TCtrlKey, Rect ] ?? []
-      if (ctrlKey != null) return
-    }
-    sprMng.activeSprite = sprList.find(s => s.rect.checkHit(
-      ofx,
-      ofy
-    )) ?? null
-  }
-
-  cvsEl.addEventListener('mousedown', onCvsMouseDown)
-
-  return () => {
-    offAddSpr()
-    cvsEl.removeEventListener('mousedown', onCvsMouseDown)
-  }
-}
-/**
  * 根据当前位置（sprite & ctrls），动态调整鼠标样式
  */
-function dynamicCusor (
+function dynamicCusor(
   cvsEl: HTMLCanvasElement,
   sprMng: SpriteManager
 ): () => void {
@@ -154,6 +113,12 @@ function dynamicCusor (
     w: cvsEl.clientWidth / cvsEl.width,
     h: cvsEl.clientHeight / cvsEl.height
   }
+
+  const observer = new ResizeObserver(() => {
+    cvsRatio.w = cvsEl.clientWidth / cvsEl.width
+    cvsRatio.h = cvsEl.clientHeight / cvsEl.height
+  })
+  observer.observe(cvsEl)
 
   const cvsStyle = cvsEl.style
 
@@ -192,7 +157,7 @@ function dynamicCusor (
     const ofx = offsetX / cvsRatio.w
     const ofy = offsetY / cvsRatio.h
     const [ctrlKey] = Object.entries(actSpr.rect.ctrls)
-      .find(([, rect]) => rect.checkHit(ofx, ofy)) as [TCtrlKey, Rect ] ?? []
+      .find(([, rect]) => rect.checkHit(ofx, ofy)) as [TCtrlKey, Rect] ?? []
 
     if (ctrlKey != null) {
       if (ctrlKey === 'rotate') {
@@ -221,6 +186,7 @@ function dynamicCusor (
   window.addEventListener('mouseup', onWindowUp)
 
   return () => {
+    observer.disconnect()
     cvsEl.removeEventListener('mousemove', onMove)
     cvsEl.removeEventListener('mousedown', onDown)
     window.removeEventListener('mouseup', onWindowUp)

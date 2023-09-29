@@ -3,7 +3,7 @@ import { createEl } from '../utils'
 import { BaseSprite, CTRL_KEYS, TCtrlKey } from '@webav/av-cliper'
 import { ESpriteManagerEvt, SpriteManager } from './sprite-manager'
 
-export function renderCtrls (
+export function renderCtrls(
   container: HTMLElement,
   cvsEl: HTMLCanvasElement,
   sprMng: SpriteManager
@@ -12,6 +12,21 @@ export function renderCtrls (
     w: cvsEl.clientWidth / cvsEl.width,
     h: cvsEl.clientHeight / cvsEl.height
   }
+
+  const observer = new ResizeObserver(() => {
+    cvsRatio.w = cvsEl.clientWidth / cvsEl.width
+    cvsRatio.h = cvsEl.clientHeight / cvsEl.height
+
+    if (sprMng.activeSprite == null) return
+    syncCtrlElPos(
+      sprMng.activeSprite,
+      rectEl,
+      ctrlsEl,
+      cvsRatio
+    )
+  })
+
+  observer.observe(cvsEl)
 
   const { rectEl, ctrlsEl } = createRectAndCtrlEl(container)
   const offSprChange = sprMng.on(ESpriteManagerEvt.ActiveSpriteChange, (s) => {
@@ -50,6 +65,7 @@ export function renderCtrls (
   window.addEventListener('mousemove', onMove)
 
   return () => {
+    observer.disconnect()
     offSprChange()
     rectEl.remove()
     cvsEl.removeEventListener('mousedown', onDown)
@@ -58,12 +74,12 @@ export function renderCtrls (
   }
 }
 
-function createRectAndCtrlEl (
+function createRectAndCtrlEl(
   container: HTMLElement
 ): {
-    rectEl: HTMLElement
-    ctrlsEl: Record<TCtrlKey, HTMLElement>
-  } {
+  rectEl: HTMLElement
+  ctrlsEl: Record<TCtrlKey, HTMLElement>
+} {
   const rectEl = createEl('div')
   rectEl.style.cssText = `
     position: absolute;
@@ -93,7 +109,7 @@ function createRectAndCtrlEl (
   }
 }
 
-function syncCtrlElPos (
+function syncCtrlElPos(
   s: BaseSprite,
   rectEl: HTMLElement,
   ctrlsEl: Record<TCtrlKey, HTMLElement>,

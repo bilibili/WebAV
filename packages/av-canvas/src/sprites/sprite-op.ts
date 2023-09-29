@@ -1,11 +1,11 @@
-import { SpriteManager } from './sprite-manager'
+import { ESpriteManagerEvt, SpriteManager } from './sprite-manager'
 import { ICvsRatio, IPoint } from '../types'
 import { BaseSprite, Rect, TCtrlKey } from '@webav/av-cliper'
 
 /**
- * 让canvas中的sprite可以被拖拽移动
+ * 鼠标点击，激活 sprite
  */
-export function draggabelSprite (
+export function activeSprite(
   cvsEl: HTMLCanvasElement,
   sprMng: SpriteManager
 ): () => void {
@@ -13,6 +13,61 @@ export function draggabelSprite (
     w: cvsEl.clientWidth / cvsEl.width,
     h: cvsEl.clientHeight / cvsEl.height
   }
+
+  const observer = new ResizeObserver(() => {
+    cvsRatio.w = cvsEl.clientWidth / cvsEl.width
+    cvsRatio.h = cvsEl.clientHeight / cvsEl.height
+  })
+  observer.observe(cvsEl)
+
+  // 排在后面的层级更高
+  let sprList = sprMng.getSprites().reverse()
+  const offAddSpr = sprMng.on(ESpriteManagerEvt.AddSprite, () => {
+    sprList = sprMng.getSprites().reverse()
+  })
+
+  const onCvsMouseDown = (evt: MouseEvent): void => {
+    if (evt.button !== 0) return
+    const { offsetX, offsetY } = evt
+    const ofx = offsetX / cvsRatio.w
+    const ofy = offsetY / cvsRatio.h
+    if (sprMng.activeSprite != null) {
+      const [ctrlKey] = Object.entries(sprMng.activeSprite.rect.ctrls)
+        .find(([, rect]) => rect.checkHit(ofx, ofy)) as [TCtrlKey, Rect] ?? []
+      if (ctrlKey != null) return
+    }
+    sprMng.activeSprite = sprList.find(s => s.rect.checkHit(
+      ofx,
+      ofy
+    )) ?? null
+  }
+
+  cvsEl.addEventListener('mousedown', onCvsMouseDown)
+
+  return () => {
+    observer.disconnect()
+    offAddSpr()
+    cvsEl.removeEventListener('mousedown', onCvsMouseDown)
+  }
+}
+
+/**
+ * 让canvas中的sprite可以被拖拽移动
+ */
+export function draggabelSprite(
+  cvsEl: HTMLCanvasElement,
+  sprMng: SpriteManager
+): () => void {
+  const cvsRatio = {
+    w: cvsEl.clientWidth / cvsEl.width,
+    h: cvsEl.clientHeight / cvsEl.height
+  }
+
+  const observer = new ResizeObserver(() => {
+    cvsRatio.w = cvsEl.clientWidth / cvsEl.width
+    cvsRatio.h = cvsEl.clientHeight / cvsEl.height
+  })
+  observer.observe(cvsEl)
 
   let startX = 0
   let startY = 0
@@ -79,6 +134,7 @@ export function draggabelSprite (
   }
 
   return () => {
+    observer.disconnect()
     clearWindowEvt()
     cvsEl.removeEventListener('mousedown', onCvsMouseDown)
   }
@@ -87,7 +143,7 @@ export function draggabelSprite (
 /**
  * 缩放 sprite
  */
-function scaleRect ({
+function scaleRect({
   sprRect, startX, startY, ctrlKey, cvsRatio
 }: {
   sprRect: Rect
@@ -148,14 +204,14 @@ function scaleRect ({
 /**
  * 拉伸缩放, 上t 下b 左l 右r
  */
-function stretchScale ({
+function stretchScale({
   deltaX, deltaY, angle, ctrlKey
 }: { deltaX: number, deltaY: number, angle: number, ctrlKey: TCtrlKey }): {
-    incW: number
-    incH: number
-    incS: number
-    rotateAngle: number
-  } {
+  incW: number
+  incH: number
+  incS: number
+  rotateAngle: number
+} {
   // 计算矩形增加的宽度
   let incS = 0
   let incW = 0
@@ -178,7 +234,7 @@ function stretchScale ({
 /**
  * 等比例缩放
  */
-function fixedRatioScale ({
+function fixedRatioScale({
   deltaX, deltaY, angle, ctrlKey, diagonalAngle
 }: {
   deltaX: number
@@ -187,11 +243,11 @@ function fixedRatioScale ({
   ctrlKey: TCtrlKey
   diagonalAngle: number
 }): {
-    incW: number
-    incH: number
-    incS: number
-    rotateAngle: number
-  } {
+  incW: number
+  incH: number
+  incS: number
+  rotateAngle: number
+} {
   // 坐标系旋转角度， lb->rt的对角线的初始角度为负数，所以需要乘以-1
   const rotateAngle = (
     ctrlKey === 'lt' || ctrlKey === 'rb' ? 1 : -1
@@ -208,7 +264,7 @@ function fixedRatioScale ({
   return { incW, incH, incS, rotateAngle }
 }
 
-function hitRectCtrls ({
+function hitRectCtrls({
   rect, cvsRatio, offsetX, offsetY, clientX, clientY, cvsEl
 }: {
   rect: Rect
@@ -245,7 +301,7 @@ function hitRectCtrls ({
  * 监听拖拽事件，将鼠标坐标转换为旋转角度
  * 旋转时，rect的坐标不变
  */
-function rotateRect (rect: Rect, outCnt: IPoint): void {
+function rotateRect(rect: Rect, outCnt: IPoint): void {
   const onMove = ({ clientX, clientY }: MouseEvent): void => {
     // 映射为 中心点坐标系
     const x = clientX - outCnt.x
@@ -265,7 +321,7 @@ function rotateRect (rect: Rect, outCnt: IPoint): void {
 /**
  * canvas 内部（resolution）坐标映射成外部（DOM）坐标
  */
-function cntMap2Outer (
+function cntMap2Outer(
   cnt: IPoint,
   cvsRatio: ICvsRatio,
   cvsEl: HTMLElement
