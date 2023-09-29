@@ -1,6 +1,6 @@
+import { createObjectURLMock, revokeObjectURLMock } from '../../__tests__/mock'
 import { beforeEach, expect, test } from 'vitest'
 import { AudioSprite } from '../audio-sprite'
-import { createObjectURLMock, revokeObjectURLMock } from './mock'
 
 beforeEach(() => {
   createObjectURLMock.mockReset()

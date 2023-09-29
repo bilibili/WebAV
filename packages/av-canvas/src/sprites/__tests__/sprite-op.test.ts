@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, test, vi } from 'vitest'
-import { crtMSEvt4Offset } from './mock'
+import { crtMSEvt4Offset } from '../../__tests__/mock'
 import { SpriteManager } from '../sprite-manager'
 import { createEl } from '../../utils'
 import { draggabelSprite } from '../sprite-op'

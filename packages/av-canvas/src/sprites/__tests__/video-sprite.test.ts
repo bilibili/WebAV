@@ -1,8 +1,9 @@
+import { createObjectURLMock, MediaStreamMock, revokeObjectURLMock } from '../../__tests__/mock'
 import { vi, test, expect, beforeAll, afterAll } from 'vitest'
 import { VideoSprite } from '../video-sprite'
-import { createObjectURLMock, MediaStreamMock, revokeObjectURLMock } from './mock'
 
 beforeAll(() => {
+  createObjectURLMock.mockClear()
   MediaStreamMock.getAudioTracks.mockReturnValue([vi.fn()])
 })
 

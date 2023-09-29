@@ -1,10 +1,11 @@
+import './mock'
 import { beforeEach, expect, test, vi } from 'vitest'
 import { AVCanvas } from '../av-canvas'
 import { createEl } from '../utils'
 import { VideoSprite } from '../sprites/video-sprite'
-import { crtMSEvt4Offset, cvsCaptureStreamMock, CvsElementMock } from '../sprites/__tests__/mock'
+import { crtMSEvt4Offset, cvsCaptureStreamMock, CvsElementMock } from './mock'
 
-function createAVCanvas (): {
+function createAVCanvas(): {
   avCvs: AVCanvas
   container: HTMLElement
 } {

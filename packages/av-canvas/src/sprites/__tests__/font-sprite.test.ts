@@ -1,6 +1,6 @@
+import { getBoundingClientRectMock } from '../../__tests__/mock'
 import { vi, test, expect, beforeEach, afterEach } from 'vitest'
 import { FontSprite } from '../font-sprite'
-import { getBoundingClientRectMock } from './mock'
 
 beforeEach(() => {
   getBoundingClientRectMock.mockImplementation(() => {

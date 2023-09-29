@@ -105,9 +105,33 @@ export const revokeObjectURLMock = URL.revokeObjectURL = vi.fn()
  * @param offsetY
  * @returns
  */
-export function crtMSEvt4Offset (evtName: string, offsetX: number, offsetY: number): MouseEvent {
+export function crtMSEvt4Offset(evtName: string, offsetX: number, offsetY: number): MouseEvent {
   const evt = new MouseEvent(evtName)
   vi.spyOn(evt, 'offsetX', 'get').mockImplementation(() => offsetX)
   vi.spyOn(evt, 'offsetY', 'get').mockImplementation(() => offsetY)
   return evt
 }
+
+Object.assign(global, {
+  Worker: class {
+    url: string
+    onmessage: (msg: string) => void;
+
+    constructor(stringUrl) {
+      this.url = stringUrl;
+      this.onmessage = () => { };
+    }
+
+    postMessage(msg) {
+      this.onmessage(msg);
+    }
+  }
+})
+
+Object.assign(global, {
+  ResizeObserver: vi.fn().mockImplementation(() => ({
+    observe: vi.fn(),
+    unobserve: vi.fn(),
+    disconnect: vi.fn(),
+  }))
+})

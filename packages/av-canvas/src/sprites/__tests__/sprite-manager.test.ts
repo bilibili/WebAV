@@ -1,5 +1,5 @@
 import { vi, expect, test } from 'vitest'
-import './mock'
+import '../../__tests__/mock'
 import { SpriteManager } from '../sprite-manager'
 import { VideoSprite } from '../video-sprite'
 
