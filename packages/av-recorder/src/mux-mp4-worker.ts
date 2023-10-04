@@ -76,6 +76,7 @@ class RecoderPauseCtrl {
 const VIDEO_PAUSE_CTRL = new RecoderPauseCtrl(30)
 
 let STATE = State.Preparing
+// 当前是否处于暂停状态
 let PAUSED = false
 
 let clear: TClearFn | null = null

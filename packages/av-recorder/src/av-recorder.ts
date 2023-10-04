@@ -19,10 +19,6 @@ export class AVRecorder {
 
   outputStream: ReadableStream<Uint8Array> | null = null
 
-  set paused(state: boolean) {
-    this.#worker?.postMessage({ type: EWorkerMsg.Paused, data: state })
-  }
-
   constructor(inputMediaStream: MediaStream, conf: IRecorderConf = {}) {
     this.#ms = inputMediaStream
     this.#conf = {
@@ -97,6 +93,13 @@ export class AVRecorder {
         }
       })
     })
+  }
+
+  pause(): void {
+    this.#worker?.postMessage({ type: EWorkerMsg.Paused, data: true })
+  }
+  resume(): void {
+    this.#worker?.postMessage({ type: EWorkerMsg.Paused, data: false })
   }
 
   async stop(): Promise<void> {

@@ -23,9 +23,9 @@ const recorder = new AVRecorder(mediaStream, {
 await recorder.start()
 
 // pause recording
-recorder.paused = true
+recorder.pause()
 // resume recording
-recorder.paused = false
+recorder.resume()
 
 const fileHandle = await window.showSaveFilePicker({
   suggestedName: `av-recorder.mp4`
