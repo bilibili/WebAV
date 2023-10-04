@@ -49,7 +49,7 @@ const pauseEl = document.querySelector('#pauseRecod') as HTMLButtonElement
 pauseEl?.addEventListener('click', () => {
   ; (async () => {
     if (recorder == null) return
-    recorder.paused = true
+    recorder.pause()
 
     startEl.style.visibility = 'hidden'
     pauseEl.style.visibility = 'hidden'
@@ -60,7 +60,7 @@ const continueEl = document.querySelector('#continueRecod') as HTMLButtonElement
 continueEl?.addEventListener('click', () => {
   ; (async () => {
     if (recorder == null) return
-    recorder.paused = false
+    recorder.resume()
 
     startEl.style.visibility = 'hidden'
     pauseEl.style.visibility = 'visible'
