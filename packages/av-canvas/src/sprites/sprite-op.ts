@@ -1,4 +1,4 @@
-import { ESpriteManagerEvt, SpriteManager } from './sprite-manager'
+import { SpriteManager } from './sprite-manager'
 import { ICvsRatio, IPoint } from '../types'
 import { BaseSprite, Rect, TCtrlKey } from '@webav/av-cliper'
 
@@ -20,12 +20,6 @@ export function activeSprite(
   })
   observer.observe(cvsEl)
 
-  // 排在后面的层级更高
-  let sprList = sprMng.getSprites().reverse()
-  const offAddSpr = sprMng.on(ESpriteManagerEvt.AddSprite, () => {
-    sprList = sprMng.getSprites().reverse()
-  })
-
   const onCvsMouseDown = (evt: MouseEvent): void => {
     if (evt.button !== 0) return
     const { offsetX, offsetY } = evt
@@ -36,17 +30,19 @@ export function activeSprite(
         .find(([, rect]) => rect.checkHit(ofx, ofy)) as [TCtrlKey, Rect] ?? []
       if (ctrlKey != null) return
     }
-    sprMng.activeSprite = sprList.find(s => s.rect.checkHit(
-      ofx,
-      ofy
-    )) ?? null
+    sprMng.activeSprite = sprMng.getSprites()
+      // 排在后面的层级更高
+      .reverse()
+      .find(s => s.rect.checkHit(
+        ofx,
+        ofy
+      )) ?? null
   }
 
   cvsEl.addEventListener('mousedown', onCvsMouseDown)
 
   return () => {
     observer.disconnect()
-    offAddSpr()
     cvsEl.removeEventListener('mousedown', onCvsMouseDown)
   }
 }
