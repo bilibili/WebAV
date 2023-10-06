@@ -292,7 +292,6 @@ function encodeAudioTrack(
     hdlr: 'soun',
     type: audioOpts.codec === 'aac' ? 'mp4a' : 'Opus'
   }
-  console.log(5555, audioTrackOpts)
 
   let trackId = 0
   let cache: EncodedAudioChunk[] = []
