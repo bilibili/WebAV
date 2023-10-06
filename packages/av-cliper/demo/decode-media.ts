@@ -104,7 +104,7 @@ document.querySelector('#decode-audio')?.addEventListener('click', () => {
 })
 
 const videos = {
-  'alpha-hevc.mp4': './public/video/alpha-hevc.mp4',
+  'bunny-avc.mp4': './public/video/bunny-avc.mp4',
   'bear-vp9.mp4': './public/video/bear-vp9.mp4'
 }
 document.querySelector('#decode-video')?.addEventListener('click', () => {
@@ -116,7 +116,7 @@ document.querySelector('#decode-video')?.addEventListener('click', () => {
     ).value
     // @ts-expect-error
     const resp1 = await fetch(videos[videoType])
-    const clip = new MP4Clip(resp1.body!, { start: 1, end: 8 })
+    const clip = new MP4Clip(resp1.body!)
     await clip.ready
     let time = 0
     while (true) {
