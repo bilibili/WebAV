@@ -6,6 +6,7 @@ interface IEmbedSubtitlesOpts {
   type?: 'srt'
   fontFamily?: string
   fontSize?: number
+  letterSpacing?: string | null
   // 字幕偏离底部的距离
   bottomOffset?: number
   stroke?: {
@@ -19,6 +20,12 @@ interface IEmbedSubtitlesOpts {
   }
   videoWidth: number
   videoHeight: number
+}
+
+declare global {
+  interface OffscreenCanvasRenderingContext2D {
+    letterSpacing: string
+  }
 }
 
 export class EmbedSubtitlesClip implements IClip {
@@ -35,6 +42,7 @@ export class EmbedSubtitlesClip implements IClip {
     textBgColor: null,
     type: 'srt',
     fontSize: 30,
+    letterSpacing: null,
     bottomOffset: 30,
     fontFamily: 'Noto Sans SC',
     stroke: {
@@ -58,7 +66,7 @@ export class EmbedSubtitlesClip implements IClip {
   #lineHeight = 0
   #linePadding = 0
 
-  constructor (content: string, opts: IEmbedSubtitlesOpts) {
+  constructor(content: string, opts: IEmbedSubtitlesOpts) {
     this.#subtitles = parseSrt(content).map(({ start, end, text }) => ({
       start: start * 1e6,
       end: end * 1e6,
@@ -71,13 +79,14 @@ export class EmbedSubtitlesClip implements IClip {
     this.#linePadding =
       opts.textBgColor == null ? 0 : (opts.fontSize ?? 50) * 0.2
 
-    const { fontSize, fontFamily, videoWidth, videoHeight } = this.#opts
+    const { fontSize, fontFamily, videoWidth, videoHeight, letterSpacing } = this.#opts
     this.#lineHeight = fontSize + this.#linePadding * 2
     this.#cvs = new OffscreenCanvas(videoWidth, videoHeight)
     this.#ctx = this.#cvs.getContext('2d')!
     this.#ctx.font = `${fontSize}px ${fontFamily}`
     this.#ctx.textAlign = 'center'
     this.#ctx.textBaseline = 'top'
+    this.#ctx.letterSpacing = letterSpacing ?? '0px'
 
     // 字幕的宽高 由视频画面内容决定
     this.ready = Promise.resolve({
@@ -87,7 +96,7 @@ export class EmbedSubtitlesClip implements IClip {
     })
   }
 
-  #renderTxt (txt: string) {
+  #renderTxt(txt: string) {
     const lines = txt
       .split('\n')
       .reverse()
@@ -154,7 +163,7 @@ export class EmbedSubtitlesClip implements IClip {
     }
   }
 
-  async tick (time: number): Promise<{
+  async tick(time: number): Promise<{
     video?: VideoFrame
     state: 'done' | 'success'
   }> {
@@ -199,13 +208,13 @@ export class EmbedSubtitlesClip implements IClip {
     return { video: vf.clone(), state: 'success' }
   }
 
-  destroy () {
+  destroy() {
     this.#lastVF?.close()
   }
 }
 
 // SRT字幕格式 https://www.cnblogs.com/tocy/p/subtitle-format-srt.html
-function srtTimeToSeconds (time: string) {
+function srtTimeToSeconds(time: string) {
   const match = time.match(/(\d{2}):(\d{2}):(\d{2}),(\d{3})/)
   if (match == null) throw Error(`time format error: ${time}`)
 
@@ -217,7 +226,7 @@ function srtTimeToSeconds (time: string) {
   return hours * 60 * 60 + minutes * 60 + seconds + milliseconds / 1000
 }
 
-function parseSrt (srt: string) {
+function parseSrt(srt: string) {
   return (
     srt
       .split(/\r|\n/)
