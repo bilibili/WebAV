@@ -197,9 +197,7 @@ document.querySelector('#mp4-srt')?.addEventListener('click', () => {
         videoHeight: 720,
         fontSize: 44,
         fontFamily: 'Noto Sans SC',
-        stroke: {
-          color: '#000'
-        },
+        strokeStyle: '#000',
         textShadow: {
           offsetX: 2,
           offsetY: 2,

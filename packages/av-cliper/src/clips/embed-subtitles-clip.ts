@@ -9,9 +9,7 @@ interface IEmbedSubtitlesOpts {
   letterSpacing?: string | null
   // 字幕偏离底部的距离
   bottomOffset?: number
-  stroke?: {
-    color: string
-  }
+  strokeStyle?: string
   textShadow?: {
     offsetX: number
     offsetY: number
@@ -45,9 +43,7 @@ export class EmbedSubtitlesClip implements IClip {
     letterSpacing: null,
     bottomOffset: 30,
     fontFamily: 'Noto Sans SC',
-    stroke: {
-      color: '#000'
-    },
+    strokeStyle: '#000',
     textShadow: {
       offsetX: 2,
       offsetY: 2,
@@ -104,7 +100,7 @@ export class EmbedSubtitlesClip implements IClip {
 
     const { width, height } = this.#cvs
 
-    const { color, fontSize, textBgColor, textShadow, stroke, bottomOffset } =
+    const { color, fontSize, textBgColor, textShadow, strokeStyle, bottomOffset } =
       this.#opts
     const ctx = this.#ctx
 
@@ -141,9 +137,9 @@ export class EmbedSubtitlesClip implements IClip {
 
       ctx.globalAlpha = 1
 
-      if (stroke != null) {
+      if (strokeStyle != null) {
         ctx.lineWidth = fontSize / 6
-        ctx.strokeStyle = stroke.color
+        ctx.strokeStyle = strokeStyle
         ctx.strokeText(
           lineStr,
           centerX,
