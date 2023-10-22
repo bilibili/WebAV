@@ -73,6 +73,8 @@ document.querySelector('#decode-audio')?.addEventListener('click', () => {
     await clip.ready
     const ctx = new AudioContext()
     let time = 0
+    // 当前片段的开始播放的时间
+    let startAt = 0
     async function play() {
       const { audio, state } = await clip.tick(time)
       time += 100000
@@ -81,10 +83,6 @@ document.querySelector('#decode-audio')?.addEventListener('click', () => {
         return
       }
       const len = audio[0].length
-      if (len === 0) {
-        play()
-        return
-      }
 
       const buf = ctx.createBuffer(2, len, DEFAULT_AUDIO_CONF.sampleRate)
       buf.copyToChannel(audio[0], 0)
@@ -92,14 +90,19 @@ document.querySelector('#decode-audio')?.addEventListener('click', () => {
       const source = ctx.createBufferSource()
       source.buffer = buf
       source.connect(ctx.destination)
-      source.onended = play
-      source.start()
-      stopAudio = () => {
-        source.onended = null
-        source.disconnect()
-      }
+      startAt = Math.max(ctx.currentTime, startAt);
+      source.start(startAt)
+
+      startAt += buf.duration;
+
+      play()
     }
     play()
+
+
+    stopAudio = () => {
+      ctx.close()
+    }
   })()
 })
 
