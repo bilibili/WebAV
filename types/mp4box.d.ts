@@ -54,6 +54,7 @@ declare module '@webav/mp4box.js' {
   export type MP4ArrayBuffer = ArrayBuffer & { fileStart: number }
 
   interface MP4Box {
+    type: string
     write: (dataStream: DataStream) => void
     parse: (dataStream: DataStream) => void
   }
