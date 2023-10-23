@@ -1,4 +1,4 @@
-import { Rect, TCtrlKey } from '@webav/av-cliper'
+import { Log, Rect, TCtrlKey } from '@webav/av-cliper'
 import { renderCtrls } from './sprites/render-ctrl'
 import { ESpriteManagerEvt, SpriteManager } from './sprites/sprite-manager'
 import { activeSprite, draggabelSprite } from './sprites/sprite-op'
@@ -91,6 +91,7 @@ export class AVCanvas {
     ).forEach((t) => {
       ms.addTrack(t)
     })
+    Log.info('AVCanvas.captureStream, tracks:', ms.getTracks().map(t => t.kind))
     return ms
   }
 

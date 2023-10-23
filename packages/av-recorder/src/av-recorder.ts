@@ -1,3 +1,4 @@
+import { Log } from '@webav/av-cliper'
 import MuxMP4Worker from './mux-mp4-worker?worker&inline'
 import { EWorkerMsg, IRecorderConf, IStream, IWorkerOpts } from './types'
 
@@ -32,6 +33,7 @@ export class AVRecorder {
   }
 
   async start(timeSlice: number = 500): Promise<void> {
+    Log.info('AVRecorder.start recoding')
     const worker = new MuxMP4Worker()
     this.#worker = worker
 
@@ -52,6 +54,7 @@ export class AVRecorder {
         sampleRate: setting.sampleRate ?? 0,
         channelCount: setting.channelCount ?? 0
       }
+      Log.info('AVRecorder recording audioConf:', audioConf)
       streams.audio = new MediaStreamTrackProcessor({
         track: audioTrack
       }).readable

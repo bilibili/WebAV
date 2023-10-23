@@ -164,6 +164,7 @@ export function recodemux(opts: IWorkerOpts): {
   mp4file: MP4File
   getEecodeQueueSize: () => number
 } {
+  Log.info('recodemux opts:', opts)
   const mp4file = mp4box.createFile()
 
   // 音视频轨道必须同时创建, 保存在 moov 中

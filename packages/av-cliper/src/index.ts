@@ -8,3 +8,5 @@ export * from './clips'
 export { OffscreenSprite } from './offscreen-sprite'
 export { BaseSprite } from './base-sprite'
 export { Combinator } from './combinator'
+
+export * from './log'
