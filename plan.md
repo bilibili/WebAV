@@ -6,11 +6,6 @@
 - Web 直播推流工作台
 - Web 视频教程录制工具
 
-## Bugs
-- AVCanvas 首次录制，可能生成的文件是0字节
-- fastConcatMP4 miss esds box
-- 音量调整（volume）参考 ffmpeg实现
-
 ## 项目优化
 - API 文档、视频
 - 代码单测
