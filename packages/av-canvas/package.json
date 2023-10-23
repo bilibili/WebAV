@@ -15,20 +15,21 @@
     "recorder"
   ],
   "type": "module",
-  "types": "dist/index.d.ts",
+  "types": "src/index.ts",
   "module": "dist/av-canvas.js",
   "main": "dist/av-canvas.umd.cjs",
   "scripts": {
     "dev": "vite demo",
     "test": "vitest",
     "test:coverage": "vitest run --coverage",
-    "build": "vite build && tsc -p build.tsconfig.json --outDir dist",
-    "build:demo": "rimraf demo-dist && vite build -c demo.vite.config.ts",
+    "build": "vite build",
+    "build:demo": "vite build -c demo.vite.config.ts",
     "prepublishOnly": "yarn build",
     "preview": "vite preview"
   },
   "files": [
-    "dist"
+    "dist",
+    "src"
   ],
   "devDependencies": {
     "@types/wicg-file-system-access": "^2020.9.6",

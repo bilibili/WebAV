@@ -15,21 +15,22 @@
     "recorder"
   ],
   "type": "module",
-  "types": "dist/index.d.ts",
+  "types": "src/index.ts",
   "module": "dist/av-cliper.js",
   "main": "dist/av-cliper.umd.cjs",
   "scripts": {
     "dev": "vite demo --host 0.0.0.0 --port 6066",
     "test": "vitest",
     "test:coverage": "vitest run --coverage",
-    "build": "vite build && tsc -p build.tsconfig.json --outDir dist",
-    "build:dev": "rimraf dist && concurrently --kill-others \"vite build --watch\" \"tsc -p build.tsconfig.json --outDir dist --watch\"",
-    "build:demo": "rimraf demo-dist && vite build -c demo.vite.config.ts && cp -r demo/public demo-dist/demo",
+    "build": "vite build",
+    "build:dev": "concurrently --kill-others \"vite build --watch\"",
+    "build:demo": "vite build -c demo.vite.config.ts && cp -r demo/public demo-dist/demo",
     "prepublishOnly": "yarn build",
     "preview": "vite preview"
   },
   "files": [
-    "dist"
+    "dist",
+    "src"
   ],
   "devDependencies": {
     "@types/dom-webcodecs": "^0.1.7",
