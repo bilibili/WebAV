@@ -66,6 +66,27 @@ This is an experimental project attempting to provide easy-to-use APIs for handl
 - [解码音视频、动图等](https://hughfenghen.github.io/WebAV/demo/decode-media.html)
 - [花影](https://github.com/hughfenghen/bloom-shadow) 尝试做一个在浏览器中运行的录屏软件，开发中...
 
+## Development
+This repo uses lerna + yarn to manage packages.
+1. Install dependencies: Run `yarn install` in root directory
+2. Run DEMO
+   1. cd into specific package, e.g. `cd packages/av-cliper` 
+   2. Run `yarn dev`
+3. Access DEMO in browser
+   1. Copy baseUrl printed in console, e.g. `http://localhost:6066/`
+   2. Locate DEMO path, it's filename in `packages/av-cliper/demo` dir, like `concat-media.html`
+   3. Open final URL in browser: `http://localhost:6066/concat-media.html`
+
+当前仓库是使用 lerna + yarn 管理 packages。  
+1. 安装依赖：在根目录执行 `yarn install`  
+2. 运行 DEMO
+   1. cd 到特定的 package 目录，比如 `cd packages/av-cliper`
+   2. 执行 `yarn dev`
+3. 访问 DEMO
+   1. 复制控制台中打印的 baseUrl，类似 `http://localhost:6066/`
+   2. 确定对应 DEMO 的 path，是 `packages/av-cliper/demo` 目录下的文件名，如 `concat-media.html`
+   3. 在浏览器打开最终 URL：`http://localhost:6066/concat-media.html`
+
 ---
 
 加入[Discord](https://discord.gg/7g3tg6jHnE)实时交流  
