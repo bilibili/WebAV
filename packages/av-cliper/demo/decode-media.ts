@@ -117,22 +117,55 @@ document.querySelector('#decode-video')?.addEventListener('click', () => {
         'input[name=video-type]:checked'
       ) as HTMLInputElement
     ).value
+    const speed = document.querySelector(
+      'input[name=playrate]:checked'
+    ) as HTMLInputElement
+
     // @ts-expect-error
     const resp1 = await fetch(videos[videoType])
     const clip = new MP4Clip(resp1.body!)
     await clip.ready
-    let time = 0
-    while (true) {
-      const { state, video } = await clip.tick(time)
-      if (state === 'done') break
-      if (video != null && state === 'success') {
-        ctx.clearRect(0, 0, cvs.width, cvs.height)
-        ctx.drawImage(video, 0, 0, video.codedWidth, video.codedHeight)
-        video.close()
-      }
-      time += 40000
+
+    if (speed.value === 'fastest') {
+      fastestDecode()
+    } else {
+      normalDecode()
     }
-    clip.destroy()
+
+    async function fastestDecode() {
+      let time = 0
+      while (true) {
+        const { state, video } = await clip.tick(time)
+        if (state === 'done') break
+        if (video != null && state === 'success') {
+          ctx.clearRect(0, 0, cvs.width, cvs.height)
+          ctx.drawImage(video, 0, 0, video.codedWidth, video.codedHeight)
+          video.close()
+        }
+        time += 33000
+      }
+      clip.destroy()
+    }
+
+    function normalDecode() {
+      let startTime = performance.now()
+
+      const timer = setInterval(async () => {
+        const { state, video } = await clip.tick(
+          Math.round((performance.now() - startTime) * 1000)
+        )
+        if (state === 'done') {
+          clearInterval(timer)
+          clip.destroy()
+          return
+        }
+        if (video != null && state === 'success') {
+          ctx.clearRect(0, 0, cvs.width, cvs.height)
+          ctx.drawImage(video, 0, 0, video.codedWidth, video.codedHeight)
+          video.close()
+        }
+      }, 1000 / 30)
+    }
   })().catch(Log.error)
 })
 
