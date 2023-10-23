@@ -129,7 +129,7 @@ document.querySelector('#decode-video')?.addEventListener('click', () => {
     if (speed.value === 'fastest') {
       fastestDecode()
     } else {
-      normalDecode()
+      timesSpeedDecode(Number(speed.value))
     }
 
     async function fastestDecode() {
@@ -147,12 +147,12 @@ document.querySelector('#decode-video')?.addEventListener('click', () => {
       clip.destroy()
     }
 
-    function normalDecode() {
+    function timesSpeedDecode(times: number) {
       let startTime = performance.now()
 
       const timer = setInterval(async () => {
         const { state, video } = await clip.tick(
-          Math.round((performance.now() - startTime) * 1000)
+          Math.round((performance.now() - startTime) * 1000) * times
         )
         if (state === 'done') {
           clearInterval(timer)
