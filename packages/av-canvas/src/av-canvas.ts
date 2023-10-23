@@ -85,6 +85,11 @@ export class AVCanvas {
   }
 
   captureStream(): MediaStream {
+    if (this.spriteManager.audioCtx.state === 'suspended') {
+      Log.info('AVCanvas.captureStream resume AudioContext')
+      this.spriteManager.audioCtx.resume().catch(Log.error)
+    }
+
     const ms = new MediaStream()
     this.#cvsEl.captureStream().getTracks().concat(
       this.spriteManager.audioMSDest.stream.getTracks()
