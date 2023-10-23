@@ -1,19 +1,21 @@
 # WebAV
+An audio/video toolkit built with pure web technologies, planned to include creation, editing, and exporting capabilities, applicable to products like live streaming, tutorial recording, video clipping, etc.  
 
-Audio and video tools built using pure web technology, which is planned to include creation, editing, and export features, which can be applied to live streaming, record tutorials, video clips, etc.  
 使用纯Web技术构建的音视频工具，计划包含创建、编辑、导出功能，可应用于直播、教程录制、视频剪辑等产品中。  
 
 ## Motivation
-Chrome version 94 supports the WebCodecs API, meaning that JS can also have the ability to process audio and video. Before this, the front-end developer in a limited number of scenarios will use ffmpeg.js, a simple test of decoding and re-encoding video shows that WebCodecs performance 20x better than ffmpeg.js.  
+Chrome 94 released the WebCodecs API, meaning JS can now handle audio/video as well. Before this, frontend developers could only use ffmpeg.js in limited scenarios. Through simple tests of decoding and re-encoding videos, it was found WebCodecs has 20x the performance of ffmpeg.js.  
+
 Chrome 94 开放了 WebCodecs API，意味着 JS 也能处理音视频了。在此之前，前端开发在会在有限的场景使用 ffmpeg.js，经过简单地测试解码和重编码视频发现，WebCodecs 性能是 ffmpeg.js 的 20 倍。  
 
-This is an experimental project that tries to provide an easy-to-use API for processing audio and video data in the browser. The project in development, so you can submit issues for bugs and new feature suggestions.  
+This is an experimental project attempting to provide easy-to-use APIs for handling audio/video data in the browser. The project is under active development, feel free to open issues to report bugs or suggest new features.  
+
 这是一个实验性项目，尝试提供简单易用的 API 在浏览器中处理音视频数据。项目正在积极迭代，可提交 issue 来反馈 Bug 和新功能建议。  
 
 
 ## Packages
 - [AVCliper](packages/av-cliper/README.md)  
-  Audio and video editing tool library.  
+  Audio/Video Clipping Toolkit.  
   音视频剪辑工具库。 
 - [AVCanvas](packages/av-canvas/README.md)  
   Combine Text, Image, Video, Audio, UserMedia, DisplayMedia to generate MediaStream.  
@@ -23,6 +25,19 @@ This is an experimental project that tries to provide an easy-to-use API for pro
   录制 MediaStream，导出 MP4 流。  
 
 ## Features
+- Audio/Video Clipper [AVCliper](packages/av-cliper/README.md)
+  - Combine mp4, mp3, images, text by timeline  
+  - Embed SRT subtitles
+  - Video muting, audio mixing, volume control, audio looping, audio resampling
+  - Video frame by frame processing, built-in chroma key
+  - Animation properties: x, y, w, h, opacity, angle
+- Canvas [AVCanvas](packages/av-canvas/README.md) 
+  - Move, rotate, flip, scale to fit, warp
+  - Media sources: camera, microphone, screen sharing
+  - Resource types: video, audio, image, text
+- Recorder [AVRecorder](packages/av-recorder/README.md)
+  - Record video from MediaStream, AVCanvas, export to MP4
+
 - 音视频剪辑 [AVCliper](packages/av-cliper/README.md)
   - mp4、mp3、图片、文字 按时间线合成 
   - 嵌入 SRT 字幕
@@ -36,7 +51,15 @@ This is an experimental project that tries to provide an easy-to-use API for pro
 - 录制 [AVRecorder](packages/av-recorder/README.md)
   - 从 MediaStream、AVCanvas 中录制视频，导出 MP4
 
+
 ## DEMO
+- [Add resource to canvas, record and export MP4](https://hughfenghen.github.io/WebAV/demo/record-avcanvas.html)
+- [Merge MP4 and resource](https://hughfenghen.github.io/WebAV/demo/concat-media.html) 
+- [Record camera and microphone, export MP4](https://hughfenghen.github.io/WebAV/demo/record-usermedia.html)
+- [Decode audio/video, animation image, etc.](https://hughfenghen.github.io/WebAV/demo/decode-media.html)
+- [Bloom Shadow](https://github.com/hughfenghen/bloom-shadow) Try to build a screen recorder running in browser, in development...
+
+
 - [画布添加各种素材，可录制导出 MP4](https://hughfenghen.github.io/WebAV/demo/record-avcanvas.html)
 - [SDK 合并 MP4 与各种素材](https://hughfenghen.github.io/WebAV/demo/concat-media.html)
 - [录制摄像头麦克风，导出 MP4](https://hughfenghen.github.io/WebAV/demo/record-usermedia.html)
