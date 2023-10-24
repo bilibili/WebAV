@@ -1,6 +1,6 @@
 import { Combinator } from '../src'
 
-export function playOutputStream (resourceList: string[], attachEl: Element) {
+export function playOutputStream(resourceList: string[], attachEl: Element) {
   const container = document.createElement('div')
   attachEl.appendChild(container)
 
@@ -64,14 +64,14 @@ export function playOutputStream (resourceList: string[], attachEl: Element) {
   }
 }
 
-function createDownloadBtn (url: string) {
+function createDownloadBtn(url: string) {
   const downloadEl = document.createElement('button')
   downloadEl.textContent = 'download'
   downloadEl.onclick = () => {
     const aEl = document.createElement('a')
     document.body.appendChild(aEl)
     aEl.setAttribute('href', url)
-    aEl.setAttribute('download', `WebAv-export-${Date.now()}.mp4`)
+    aEl.setAttribute('download', `WebAV-export-${Date.now()}.mp4`)
     aEl.setAttribute('target', '_self')
     aEl.click()
   }

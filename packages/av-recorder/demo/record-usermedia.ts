@@ -73,7 +73,7 @@ async function createFileWriter(
   extName: string
 ): Promise<FileSystemWritableFileStream> {
   const fileHandle = await window.showSaveFilePicker({
-    suggestedName: `WebAv-export-${Date.now()}.${extName}`
+    suggestedName: `WebAV-export-${Date.now()}.${extName}`
   })
   return fileHandle.createWritable()
 }

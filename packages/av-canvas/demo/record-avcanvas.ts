@@ -7,11 +7,11 @@ import {
   VideoSprite
 } from '../src/index'
 import { AVRecorder } from '@webav/av-recorder'
-;(async () => {
-  if (!(await Combinator.isSupported())) {
-    alert('Your browser does not support WebCodecs')
-  }
-})()
+  ; (async () => {
+    if (!(await Combinator.isSupported())) {
+      alert('Your browser does not support WebCodecs')
+    }
+  })()
 
 const avCvs = new AVCanvas(document.querySelector('#app') as HTMLElement, {
   bgColor: '#333',
@@ -22,12 +22,12 @@ const avCvs = new AVCanvas(document.querySelector('#app') as HTMLElement, {
 })
 
 console.log({ avCvs })
-;(async (): Promise<void> => {
-  // const is = new ImgSprite('img', 'https://neo-pages.bilibili.com/bbfe/neo/assets/img/neo-pages-overview.48f7bb81.png')
-  // await avCvs.spriteManager.addSprite(is)
-})().catch(console.error)
+  ; (async (): Promise<void> => {
+    // const is = new ImgSprite('img', 'https://neo-pages.bilibili.com/bbfe/neo/assets/img/neo-pages-overview.48f7bb81.png')
+    // await avCvs.spriteManager.addSprite(is)
+  })().catch(console.error)
 document.querySelector('#userMedia')?.addEventListener('click', () => {
-  ;(async () => {
+  ; (async () => {
     const mediaStream = await navigator.mediaDevices.getUserMedia({
       video: true,
       audio: true
@@ -40,7 +40,7 @@ document.querySelector('#userMedia')?.addEventListener('click', () => {
 })
 
 document.querySelector('#display')?.addEventListener('click', () => {
-  ;(async () => {
+  ; (async () => {
     const mediaStream = await navigator.mediaDevices.getDisplayMedia({
       video: true,
       audio: true
@@ -53,7 +53,7 @@ document.querySelector('#display')?.addEventListener('click', () => {
 })
 
 document.querySelector('#localImg')?.addEventListener('click', () => {
-  ;(async () => {
+  ; (async () => {
     const [imgFH] = await (window as any).showOpenFilePicker({
       types: [
         {
@@ -70,7 +70,7 @@ document.querySelector('#localImg')?.addEventListener('click', () => {
 })
 
 document.querySelector('#localVideo')?.addEventListener('click', () => {
-  ;(async () => {
+  ; (async () => {
     const [imgFH] = await (window as any).showOpenFilePicker({
       types: [
         {
@@ -87,7 +87,7 @@ document.querySelector('#localVideo')?.addEventListener('click', () => {
 })
 
 document.querySelector('#localAudio')?.addEventListener('click', () => {
-  ;(async () => {
+  ; (async () => {
     const [imgFH] = await (window as any).showOpenFilePicker({
       types: [
         {
@@ -104,7 +104,7 @@ document.querySelector('#localAudio')?.addEventListener('click', () => {
 })
 
 document.querySelector('#fontExamp')?.addEventListener('click', () => {
-  ;(async () => {
+  ; (async () => {
     const fs = new FontSprite('font', '示例文字')
     await avCvs.spriteManager.addSprite(fs)
   })().catch(console.error)
@@ -112,7 +112,7 @@ document.querySelector('#fontExamp')?.addEventListener('click', () => {
 
 let recorder: AVRecorder | null = null
 document.querySelector('#startRecod')?.addEventListener('click', () => {
-  ;(async () => {
+  ; (async () => {
     const writer = await createFileWriter('mp4')
     recorder = new AVRecorder(avCvs.captureStream(), {
       width: 1920,
@@ -125,19 +125,19 @@ document.querySelector('#startRecod')?.addEventListener('click', () => {
   })().catch(console.error)
 })
 document.querySelector('#stopRecod')?.addEventListener('click', () => {
-  ;(async () => {
+  ; (async () => {
     await recorder?.stop()
     alert('save done')
   })().catch(console.error)
 })
 
-async function createFileWriter (
+async function createFileWriter(
   extName: string
 ): Promise<FileSystemWritableFileStream> {
   const fileHandle = await window.showSaveFilePicker({
-    suggestedName: `WebAv-export-${Date.now()}.${extName}`
+    suggestedName: `WebAV-export-${Date.now()}.${extName}`
   })
   return fileHandle.createWritable()
 }
 
-export {}
+export { }
