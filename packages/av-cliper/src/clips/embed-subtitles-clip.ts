@@ -10,6 +10,9 @@ interface IEmbedSubtitlesOpts {
   // 字幕偏离底部的距离
   bottomOffset?: number
   strokeStyle?: string
+  lineWidth?: number | null
+  lineCap?: CanvasLineCap | null
+  lineJoin?: CanvasLineJoin | null
   textShadow?: {
     offsetX: number
     offsetY: number
@@ -44,6 +47,9 @@ export class EmbedSubtitlesClip implements IClip {
     bottomOffset: 30,
     fontFamily: 'Noto Sans SC',
     strokeStyle: '#000',
+    lineWidth: null,
+    lineCap: null,
+    lineJoin: null,
     textShadow: {
       offsetX: 2,
       offsetY: 2,
@@ -100,8 +106,17 @@ export class EmbedSubtitlesClip implements IClip {
 
     const { width, height } = this.#cvs
 
-    const { color, fontSize, textBgColor, textShadow, strokeStyle, bottomOffset } =
-      this.#opts
+    const {
+      color,
+      fontSize,
+      textBgColor,
+      textShadow,
+      strokeStyle,
+      lineWidth,
+      lineCap,
+      lineJoin,
+      bottomOffset
+    } = this.#opts
     const ctx = this.#ctx
 
     ctx.clearRect(0, 0, width, height)
@@ -138,7 +153,9 @@ export class EmbedSubtitlesClip implements IClip {
       ctx.globalAlpha = 1
 
       if (strokeStyle != null) {
-        ctx.lineWidth = fontSize / 6
+        ctx.lineWidth = lineWidth ?? (fontSize / 6)
+        if (lineCap != null) ctx.lineCap = lineCap
+        if (lineJoin != null) ctx.lineJoin = lineJoin
         ctx.strokeStyle = strokeStyle
         ctx.strokeText(
           lineStr,
