@@ -69,20 +69,22 @@ This is an experimental project attempting to provide easy-to-use APIs for handl
 ## Development
 This repo uses lerna + yarn to manage packages.
 1. Install dependencies: Run `yarn install` in root directory
-2. Run DEMO
+2. Build all packages: Run `yarn build` in root directory
+3. Run DEMO
    1. cd into specific package, e.g. `cd packages/av-cliper` 
    2. Run `yarn dev`
-3. Access DEMO in browser
+4. Access DEMO in browser
    1. Copy baseUrl printed in console, e.g. `http://localhost:6066/`
    2. Locate DEMO path, it's filename in `packages/av-cliper/demo` dir, like `concat-media.html`
    3. Open final URL in browser: `http://localhost:6066/concat-media.html`
 
 当前仓库是使用 lerna + yarn 管理 packages。  
 1. 安装依赖：在根目录执行 `yarn install`  
-2. 运行 DEMO
+2. 构建所有 packages：在根目录执行 `yarn build`
+3. 运行 DEMO
    1. cd 到特定的 package 目录，比如 `cd packages/av-cliper`
    2. 执行 `yarn dev`
-3. 访问 DEMO
+4. 访问 DEMO
    1. 复制控制台中打印的 baseUrl，类似 `http://localhost:6066/`
    2. 确定对应 DEMO 的 path，是 `packages/av-cliper/demo` 目录下的文件名，如 `concat-media.html`
    3. 在浏览器打开最终 URL：`http://localhost:6066/concat-media.html`
