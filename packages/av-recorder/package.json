@@ -33,9 +33,6 @@
     "src"
   ],
   "devDependencies": {
-    "@types/dom-mediacapture-transform": "^0.1.5",
-    "@types/dom-webcodecs": "^0.1.7",
-    "@types/wicg-file-system-access": "^2020.9.6",
     "@typescript/lib-dom": "npm:@types/web",
     "@vitest/coverage-istanbul": "^0.29.8",
     "jsdom": "^21.1.1",
@@ -44,6 +41,9 @@
     "vitest": "^0.29.7"
   },
   "dependencies": {
+    "@types/dom-mediacapture-transform": "^0.1.5",
+    "@types/dom-webcodecs": "^0.1.7",
+    "@types/wicg-file-system-access": "^2020.9.6",
     "@webav/av-cliper": "^0.2.7",
     "@webav/mp4box.js": "0.5.3-fenghen",
     "fix-webm-duration": "^1.0.5"
