@@ -233,8 +233,17 @@ document.querySelector('#mp4-chromakey')?.addEventListener('click', () => {
       smoothness: 0.1,
       spill: 0.1,
     })
-    const clip = new MP4Clip((await fetch(resList[0])).body!)
-    clip.tickInterceptor = async (_, tickRet) => {
+    const originSpr = new OffscreenSprite(
+      'originSpr',
+      new MP4Clip((await fetch(resList[0])).body!)
+    )
+    await originSpr.ready
+    originSpr.zIndex = 1
+    originSpr.rect.x = (width - originSpr.rect.w * 2 - 100) / 2
+    originSpr.rect.y = (height - originSpr.rect.h) / 2
+
+    const rmBgClip = new MP4Clip((await fetch(resList[0])).body!)
+    rmBgClip.tickInterceptor = async (_, tickRet) => {
       if (tickRet.video == null) return tickRet
       return {
         ...tickRet,
@@ -242,10 +251,10 @@ document.querySelector('#mp4-chromakey')?.addEventListener('click', () => {
       }
     }
 
-    const spr1 = new OffscreenSprite('spr1', clip)
+    const spr1 = new OffscreenSprite('spr1', rmBgClip)
     await spr1.ready
     spr1.zIndex = 1
-    spr1.rect.x = (width - spr1.rect.w) / 2
+    spr1.rect.x = originSpr.rect.x + spr1.rect.w + 100
     spr1.rect.y = (height - spr1.rect.h) / 2
 
     const spr2 = new OffscreenSprite(
@@ -261,7 +270,8 @@ document.querySelector('#mp4-chromakey')?.addEventListener('click', () => {
       bgColor: 'white'
     })
 
-    await com.add(spr1, { main: true })
+    await com.add(originSpr, { main: true })
+    await com.add(spr1)
     await com.add(spr2)
 
     await loadStream(com.output(), com)
