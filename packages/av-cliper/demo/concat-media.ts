@@ -295,6 +295,7 @@ document.querySelector('#complex')?.addEventListener('click', () => {
       spill: 0.1,
     })
 
+    // Remove background, add bunny as new background, composite video
     const coms = (
       await Promise.all(mp4List.map(async vurl => (await fetch(vurl)).body!))
     )
@@ -311,7 +312,7 @@ document.querySelector('#complex')?.addEventListener('click', () => {
         return clip
       })
       .map(clip => new OffscreenSprite('spr', clip))
-      .map(async spr => {
+      .map(async (spr, idx) => {
         const com = new Combinator({ width, height })
         const imgSpr = new OffscreenSprite(
           'spr3',
@@ -321,6 +322,8 @@ document.querySelector('#complex')?.addEventListener('click', () => {
             )
           )
         )
+        await spr.ready
+        spr.rect.x = idx * spr.rect.w
         await com.add(imgSpr)
         await com.add(spr, { main: true })
         return com.output()
@@ -328,6 +331,7 @@ document.querySelector('#complex')?.addEventListener('click', () => {
 
     const { loadStream } = playOutputStream(mp4List, playerContiner)
 
+    // then concat multiple videos
     await loadStream(fastConcatMP4(await Promise.all(coms)))
   })().catch(Log.error)
 })
