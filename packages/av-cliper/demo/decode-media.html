@@ -25,7 +25,7 @@
 <body>
   <canvas id="canvas" width="1280" height="720"></canvas>
   <br>
-  <button id="decode-img">decode image</button>
+  <button id="decode-img">image decode</button>
   <input id="avif" type="radio" name="img-type" value="image/avif" checked>
   <label for="avif">avif</label>
   <input id="webp" type="radio" name="img-type" value="image/webp">
@@ -35,7 +35,7 @@
   <input id="gif" type="radio" name="img-type" value="image/gif">
   <label for="gif">gif</label>
   <hr>
-  <button id="decode-audio">decode audio</button>
+  <button id="decode-audio">audio decode</button>
   <input id="44.1kHz-2chan.m4a" type="radio" name="audio-type" value="44.1kHz-2chan.m4a" checked>
   <label for="44.1kHz-2chan.m4a">44.1kHz-2chan.m4a</label>
   <input id="44.1kHz-2chan.mp3" type="radio" name="audio-type" value="44.1kHz-2chan.mp3">
@@ -43,21 +43,21 @@
   <input id="16kHz-1chan.mp3" type="radio" name="audio-type" value="16kHz-1chan.mp3">
   <label for="16kHz-1chan.mp3">16kHz-1chan.mp3</label>
   <hr>
-  <button id="decode-video">decode video</button>
+  <button id="decode-video">video decode</button>
   <input id="bunny-avc.mp4" type="radio" name="video-type" value="bunny-avc.mp4" checked>
   <label for="bunny-avc.mp4">bunny-avc.mp4</label>
   <input id="bear-vp9.mp4" type="radio" name="video-type" value="bear-vp9.mp4">
   <label for="bear-vp9.mp4">bear-vp9.mp4</label> |
   <input id="max-rate" type="radio" name="playrate" value="fastest" checked>
-  <label for="max-rate">Fastest speed decode</label>
-  <input id="playrate-0.5" type="radio" name="playrate" value="0.5">
-  <label for="playrate-0.5">x0.5</label>
-  <input id="playrate-1" type="radio" name="playrate" value="1">
-  <label for="playrate-1">x1</label>
+  <label for="max-rate">Fastest decode</label>
   <input id="playrate-3" type="radio" name="playrate" value="3">
   <label for="playrate-3">x3</label>
+  <input id="playrate-1" type="radio" name="playrate" value="1">
+  <label for="playrate-1">x1</label>
+  <input id="playrate-0.5" type="radio" name="playrate" value="0.5">
+  <label for="playrate-0.5">x0.5</label>
   <hr>
-  <button id="decode-subtitles">decode subtitles</button>
+  <button id="decode-subtitles">subtitles decode</button>
   <input id="test-sample.srt" type="radio" name="subtitles-type" value="test-sample.srt" checked>
   <label for="test-sample.srt">test-sample.srt</label>
   <hr>
