@@ -15,22 +15,20 @@
     "recorder"
   ],
   "type": "module",
-  "types": "src/av-recorder.ts",
+  "types": "dist/av-recorder.d.ts",
   "module": "dist/av-recorder.js",
   "main": "dist/av-recorder.umd.cjs",
   "scripts": {
     "dev": "vite demo",
     "test": "vitest",
     "test:coverage": "vitest run --coverage",
-    "build": "vite build",
-    "build:dev": "concurrently --kill-others \"vite build --watch\"",
-    "build:demo": "vite build -c demo.vite.config.ts",
+    "build": "vite build && tsc -p build.tsconfig.json ",
+    "build:demo": "rimraf demo-dist && vite build -c demo.vite.config.ts",
     "prepublishOnly": "yarn build",
     "preview": "vite preview"
   },
   "files": [
-    "dist",
-    "src"
+    "dist"
   ],
   "devDependencies": {
     "@typescript/lib-dom": "npm:@types/web",
