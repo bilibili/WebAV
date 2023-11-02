@@ -7,7 +7,7 @@ interface IEmbedTextOpts {
     fontFamily?: string
     fontSize?: number
     letterSpacing?: string | null
-    // 字幕偏离底部的距离
+    // 文字偏离底部的距离
     bottomOffset?: number
     strokeStyle?: string
     lineWidth?: number | null
@@ -69,12 +69,6 @@ export class TextClip implements IClip {
     #linePadding = 0
 
     constructor(content: string, opts: IEmbedTextOpts) {
-        // this.#subtitles = parseSrt(content).map(({ start, end, text }) => ({
-        //   start: start * 1e6,
-        //   end: end * 1e6,
-        //   text
-        // }))
-        // if (this.#subtitles.length === 0) throw Error('No subtitles content')
         this.#text = content
         this.#opts = Object.assign(this.#opts, opts)
         // 如果需要绘制背景，则需要给文字添加边距
@@ -90,7 +84,7 @@ export class TextClip implements IClip {
         this.#ctx.textBaseline = 'top'
         this.#ctx.letterSpacing = letterSpacing ?? '0px'
 
-        // 字幕的宽高 由视频画面内容决定
+        // 文字的宽高 由视频画面内容决定
         this.ready = Promise.resolve({
             width: videoWidth,
             height: videoHeight,
@@ -134,7 +128,7 @@ export class TextClip implements IClip {
                 ctx.shadowOffsetX = 0
                 ctx.shadowOffsetY = 0
                 ctx.shadowBlur = 0
-                // 字幕背景
+                // 文字背景
                 ctx.fillStyle = textBgColor
                 ctx.globalAlpha = 0.5
                 ctx.fillRect(
