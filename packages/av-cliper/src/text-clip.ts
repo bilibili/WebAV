@@ -22,7 +22,11 @@ interface IEmbedTextOpts {
     videoWidth: number
     videoHeight: number
     duration?: number,
-    start?: number
+    start?: number,
+    position?: {
+        x: number,
+        y: number
+    }
 }
 
 declare global {
@@ -57,7 +61,11 @@ export class TextClip implements IClip {
         videoWidth: 1280,
         videoHeight: 720,
         duration: 0,
-        start: 0
+        start: 0,
+        position: {
+            x: 0,
+            y: 0
+        }
     }
 
     #cvs: OffscreenCanvas
@@ -162,8 +170,8 @@ export class TextClip implements IClip {
             ctx.fillStyle = color
             ctx.fillText(
                 lineStr,
-                centerX,
-                height - bottomDistance - this.#lineHeight + this.#linePadding
+                this.#opts.position.x ?? centerX,
+                this.#opts.position.y ?? height - bottomDistance - this.#lineHeight + this.#linePadding
             )
 
             // 多行，底部偏移距离叠加
