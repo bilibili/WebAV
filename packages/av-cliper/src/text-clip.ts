@@ -88,7 +88,7 @@ export class TextClip implements IClip {
         this.#cvs = new OffscreenCanvas(videoWidth, videoHeight)
         this.#ctx = this.#cvs.getContext('2d')!
         this.#ctx.font = `${fontSize}px ${fontFamily}`
-        this.#ctx.textAlign = 'center'
+        // this.#ctx.textAlign = 'center'
         this.#ctx.textBaseline = 'top'
         this.#ctx.letterSpacing = letterSpacing ?? '0px'
 
@@ -162,12 +162,13 @@ export class TextClip implements IClip {
                 ctx.strokeStyle = strokeStyle
                 ctx.strokeText(
                     lineStr,
-                    centerX,
-                    height - bottomDistance - this.#lineHeight + this.#linePadding
+                    this.#opts.position.x ?? centerX,
+                    this.#opts.position.y ?? height - bottomDistance - this.#lineHeight + this.#linePadding
                 )
             }
 
             ctx.fillStyle = color
+            console.log(this.#opts.position)
             ctx.fillText(
                 lineStr,
                 this.#opts.position.x ?? centerX,
