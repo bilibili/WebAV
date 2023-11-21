@@ -107,8 +107,8 @@ document.querySelector('#decode-audio')?.addEventListener('click', () => {
 })
 
 const videos = {
-  'bunny-avc.mp4': './public/video/bunny-avc.mp4',
-  'bear-vp9.mp4': './public/video/bear-vp9.mp4'
+  'bunny.mp4': './public/video/bunny-avc.mp4',
+  'bear.mp4': './public/video/bear-vp9.mp4'
 }
 document.querySelector('#decode-video')?.addEventListener('click', () => {
   ; (async () => {
