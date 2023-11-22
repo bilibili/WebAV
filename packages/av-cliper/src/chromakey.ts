@@ -277,6 +277,8 @@ export const createChromakey = (
       return rs
     }
 
-    return createImageBitmap(cvs)
+    return createImageBitmap(cvs, {
+      imageOrientation: imgSource instanceof ImageBitmap ? 'flipY' : 'none'
+    })
   }
 }

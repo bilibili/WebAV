@@ -17,6 +17,7 @@ const ctx = cvs.getContext('2d', {
       spill: 0.05,
     })
     console.time('cost')
+    // ctx.drawImage(await chromakey(await createImageBitmap(img)), 0, 0, cvs.width, cvs.height)
     ctx.drawImage(await chromakey(img), 0, 0, cvs.width, cvs.height)
     console.timeEnd('cost')
   })()
