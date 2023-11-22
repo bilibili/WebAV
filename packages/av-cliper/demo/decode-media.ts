@@ -76,13 +76,17 @@ document.querySelector('#decode-audio')?.addEventListener('click', () => {
     // 当前片段的开始播放的时间
     let startAt = 0
     async function play() {
-      const { audio, state } = await clip.tick(time)
       time += 100000
+      const { audio, state } = await clip.tick(time)
       if (state === 'done') {
         console.log('--- ended')
         return
       }
       const len = audio[0].length
+      if (len === 0) {
+        play()
+        return
+      }
 
       const buf = ctx.createBuffer(2, len, DEFAULT_AUDIO_CONF.sampleRate)
       buf.copyToChannel(audio[0], 0)
