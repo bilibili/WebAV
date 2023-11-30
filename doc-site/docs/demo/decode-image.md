@@ -2,8 +2,10 @@
 group: 解码
 nav: DEMO
 second:
-    title: 图片
-    order: 1
+  title: 图片
+  order: 1
 ---
 
-# 解码图片 
+# 解码图片
+
+<code src="./decode-image.tsx"></code>

@@ -29,5 +29,9 @@
     "husky": "^8.0.1",
     "lint-staged": "^13.0.3",
     "prettier": "^2.7.1"
+  },
+  "dependencies": {
+    "@webav/av-cliper": "^0.2.10",
+    "antd": "^5.11.5"
   }
 }
