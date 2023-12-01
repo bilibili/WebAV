@@ -1,7 +1,5 @@
 ---
-nav: 
-  title: DEMO
-  order: 2
+nav: DEMO
 group: 抠图
 ---
 
