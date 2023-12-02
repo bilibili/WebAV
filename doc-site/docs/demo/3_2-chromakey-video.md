@@ -75,12 +75,12 @@ async function start() {
 
 export default function UI() {
   const [com, setCom] = useState<null | Combinator>(null);
-  async function onStart() {
-    const com = await start();
-    setCom(com);
-  }
   return (
-    <CombinatorPlay list={resList} onStart={onStart} com={com}></CombinatorPlay>
+    <CombinatorPlay
+      list={resList}
+      onStart={async () => setCom(await start())}
+      com={com}
+    ></CombinatorPlay>
   );
 }
 ```
