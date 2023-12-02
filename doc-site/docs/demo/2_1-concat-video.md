@@ -1,11 +1,12 @@
 ---
 nav: DEMO
 group:
-  title: 解码
-  order: 1
+  title: 合成
+  order: 2
+
 order: 1
 ---
 
-# 解码视频
+# 合成视频
 
 <code src="./decode-video.tsx"></code>

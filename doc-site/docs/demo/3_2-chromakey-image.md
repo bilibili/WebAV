@@ -1,6 +1,8 @@
 ---
 nav: DEMO
-group: 抠图
+group:
+  title: 抠图
+  order: 3
 ---
 
 # 移除图片背景
