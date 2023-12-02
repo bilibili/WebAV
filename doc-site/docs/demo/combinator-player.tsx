@@ -6,24 +6,26 @@ export function CombinatorPlay({
   list,
   onStart,
   com,
+  stream,
 }: {
   list: string[];
   onStart: () => void;
-  com: Combinator | null;
+  com?: Combinator | null;
+  stream?: ReadableStream | null;
 }) {
   const [state, setState] = useState('');
   const [videoSrc, setVideoSrc] = useState('');
 
   useEffect(() => {
     (async () => {
-      if (com == null) return;
+      if (com == null && stream == null) return;
       setState('合成中...');
       const timeStart = performance.now();
-      const srcBlob = await new Response(com.output()).blob();
+      const srcBlob = await new Response(com?.output() ?? stream).blob();
       setVideoSrc(URL.createObjectURL(srcBlob));
       setState(`合成耗时: ${Math.round(performance.now() - timeStart)}ms`);
     })();
-  }, [com]);
+  }, [com, stream]);
   return (
     <div>
       <Button
