@@ -6,7 +6,9 @@ group:
 order: 3
 ---
 
-# 混音
+# 音频合成
+
+## 混音
 
 混合两个音频文件，输出 mp4（无画面）。
 
@@ -47,3 +49,43 @@ export default function UI() {
 :::warning
 `AudioClip` 内部使用了 `AudioContext` 解码音频文件，所以无法在 WebWorker 中工作。
 :::
+
+## 拼接音频
+
+将两个音频文件首尾相连，输出 mp4（无画面）。
+
+```tsx
+import {
+  AudioClip,
+  Combinator,
+  OffscreenSprite,
+  concatAudioClip,
+} from '@webav/av-cliper';
+import React, { useState } from 'react';
+import { CombinatorPlay } from './combinator-player';
+
+const resList = ['/audio/16kHz-1chan.mp3', '/audio/44.1kHz-2chan.m4a'];
+async function start() {
+  const clip = await concatAudioClip(
+    await Promise.all(
+      resList.map(async (url) => new AudioClip((await fetch(url)).body!)),
+    ),
+  );
+  const audioSpr = new OffscreenSprite('audioSpr', clip);
+
+  const com = new Combinator({ width: 1280, height: 720 });
+  await com.add(audioSpr, { offset: 0, duration: 30 });
+  return com;
+}
+
+export default function UI() {
+  const [com, setCom] = useState<null | Combinator>(null);
+  async function onStart() {
+    const com = await start();
+    setCom(com);
+  }
+  return (
+    <CombinatorPlay list={resList} onStart={onStart} com={com}></CombinatorPlay>
+  );
+}
+```
