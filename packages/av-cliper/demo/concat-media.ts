@@ -242,8 +242,8 @@ document.querySelector('#mp4-chromakey')?.addEventListener('click', () => {
     originSpr.rect.x = (width - originSpr.rect.w * 2 - 100) / 2
     originSpr.rect.y = (height - originSpr.rect.h) / 2
 
-    const rmBgClip = new MP4Clip((await fetch(resList[0])).body!)
-    rmBgClip.tickInterceptor = async (_, tickRet) => {
+    const targetClip = new MP4Clip((await fetch(resList[0])).body!)
+    targetClip.tickInterceptor = async (_, tickRet) => {
       if (tickRet.video == null) return tickRet
       return {
         ...tickRet,
@@ -251,14 +251,14 @@ document.querySelector('#mp4-chromakey')?.addEventListener('click', () => {
       }
     }
 
-    const spr1 = new OffscreenSprite('spr1', rmBgClip)
-    await spr1.ready
-    spr1.zIndex = 1
-    spr1.rect.x = originSpr.rect.x + spr1.rect.w + 100
-    spr1.rect.y = (height - spr1.rect.h) / 2
+    const targetSpr = new OffscreenSprite('targetSpr', targetClip)
+    await targetSpr.ready
+    targetSpr.zIndex = 1
+    targetSpr.rect.x = originSpr.rect.x + targetSpr.rect.w + 100
+    targetSpr.rect.y = (height - targetSpr.rect.h) / 2
 
-    const spr2 = new OffscreenSprite(
-      'spr3',
+    const bgImgSpr = new OffscreenSprite(
+      'bgImgSpr',
       new ImgClip(
         await createImageBitmap(await (await fetch(resList[1])).blob())
       )
@@ -271,8 +271,8 @@ document.querySelector('#mp4-chromakey')?.addEventListener('click', () => {
     })
 
     await com.add(originSpr, { main: true })
-    await com.add(spr1)
-    await com.add(spr2)
+    await com.add(targetSpr)
+    await com.add(bgImgSpr)
 
     await loadStream(com.output(), com)
   })().catch(Log.error)

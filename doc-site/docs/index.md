@@ -7,5 +7,5 @@ hero:
     - text: API
       link: /api/av-canvas
     - text: DEMO
-      link: /demo/decode-image
+      link: /demo/1_1-decode-video
 ---
