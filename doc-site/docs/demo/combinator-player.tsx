@@ -37,7 +37,7 @@ export function CombinatorPlay({
       <div className="resouse-list">
         素材：
         {list.map((it) => (
-          <a href={it} target="_blank" key={it}>
+          <a href={it} target="_blank" key={it} style={{ marginRight: '16px' }}>
             {it}
           </a>
         ))}
