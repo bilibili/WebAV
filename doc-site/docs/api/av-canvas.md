@@ -5,12 +5,6 @@ nav:
   order: 1
 ---
 
-
 # av-canvas
 
-
-```jsx
-import React from 'react';
-export default () => <button onClick={() => alert(111)}>Hello dumi!</button>;
-
-```
+_建设中..._
