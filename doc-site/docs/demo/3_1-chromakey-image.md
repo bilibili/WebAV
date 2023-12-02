@@ -3,6 +3,8 @@ nav: DEMO
 group:
   title: 绿幕抠图
   order: 3
+
+order: 1
 ---
 
 # 图片背景
