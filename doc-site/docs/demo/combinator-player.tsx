@@ -39,12 +39,29 @@ export function CombinatorPlay({
       <div className="resouse-list">
         素材：
         {list.map((it) => (
-          <a href={it} target="_blank" key={it} style={{ marginRight: '16px' }}>
+          <a
+            href={it}
+            target="_blank"
+            key={it}
+            style={{ marginRight: '16px', textDecoration: 'none' }}
+          >
             {it}
           </a>
         ))}
       </div>
-      <div className="state">{state}</div>
+      <div className="state">
+        {state}
+        {videoSrc.length > 0 && (
+          <a
+            href={videoSrc}
+            download={`WebAV-${Date.now()}.mp4`}
+            target="_self"
+            style={{ marginLeft: '16px', textDecoration: 'none' }}
+          >
+            导出视频
+          </a>
+        )}
+      </div>
       {videoSrc.length > 0 && (
         <video
           src={videoSrc}
