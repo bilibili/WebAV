@@ -1,5 +1,7 @@
 ---
-nav: DEMO
+nav:
+  title: DEMO
+  order: 2
 group:
   title: 解码
   order: 1
