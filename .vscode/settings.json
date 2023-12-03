@@ -2,5 +2,8 @@
   "typescript.tsdk": "node_modules/typescript/lib",
   "files.trimTrailingWhitespace": true,
   "editor.formatOnSave": true,
-  "editor.defaultFormatter": "numso.prettier-standard-vscode"
+  "editor.defaultFormatter": "numso.prettier-standard-vscode",
+  "[markdown]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  }
 }
