@@ -17,8 +17,9 @@ import {
 } from '@webav/av-cliper';
 import React, { useState } from 'react';
 import { CombinatorPlay } from './combinator-player';
+import { assetsPrefix } from './utils';
 
-const resList = ['/video/webav1.mp4', '/audio/44.1kHz-2chan.mp3'];
+const resList = assetsPrefix(['video/webav1.mp4', 'audio/44.1kHz-2chan.mp3']);
 
 async function start() {
   const videoSpr = new OffscreenSprite(
@@ -68,8 +69,9 @@ import {
 } from '@webav/av-cliper';
 import React, { useState } from 'react';
 import { CombinatorPlay } from './combinator-player';
+import { assetsPrefix } from './utils';
 
-const resList = ['/img/animated.gif', '/audio/44.1kHz-2chan.m4a'];
+const resList = assetsPrefix(['img/animated.gif', 'audio/44.1kHz-2chan.m4a']);
 
 async function start() {
   const gifSpr = new OffscreenSprite(

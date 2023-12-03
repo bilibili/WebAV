@@ -16,8 +16,12 @@ order: 3
 import { AudioClip, Combinator, OffscreenSprite } from '@webav/av-cliper';
 import React, { useState } from 'react';
 import { CombinatorPlay } from './combinator-player';
+import { assetsPrefix } from './utils';
 
-const resList = ['/audio/44.1kHz-2chan.m4a', '/audio/16kHz-1chan.mp3'];
+const resList = assetsPrefix([
+  'audio/44.1kHz-2chan.m4a',
+  'audio/16kHz-1chan.mp3',
+]);
 async function start() {
   const audioSpr1 = new OffscreenSprite(
     'audioSpr1',
@@ -63,8 +67,12 @@ import {
 } from '@webav/av-cliper';
 import React, { useState } from 'react';
 import { CombinatorPlay } from './combinator-player';
+import { assetsPrefix } from './utils';
 
-const resList = ['/audio/16kHz-1chan.mp3', '/audio/44.1kHz-2chan.m4a'];
+const resList = assetsPrefix([
+  'audio/16kHz-1chan.mp3',
+  'audio/44.1kHz-2chan.m4a',
+]);
 async function start() {
   const clip = await concatAudioClip(
     await Promise.all(

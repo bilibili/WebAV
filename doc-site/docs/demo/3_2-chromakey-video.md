@@ -21,8 +21,9 @@ import {
 } from '@webav/av-cliper';
 import React, { useState } from 'react';
 import { CombinatorPlay } from './combinator-player';
+import { assetsPrefix } from './utils';
 
-const resList = ['/video/chromakey-test.mp4', '/img/bunny.png'];
+const resList = assetsPrefix(['video/chromakey-test.mp4', 'img/bunny.png']);
 
 const chromakey = createChromakey({
   similarity: 0.4,

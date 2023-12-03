@@ -25,9 +25,14 @@ import {
 } from '@webav/av-cliper';
 import React, { useState } from 'react';
 import { CombinatorPlay } from './combinator-player';
+import { assetsPrefix } from './utils';
 
-const videoList = ['/video/123.mp4', '/video/223.mp4', '/video/323.mp4'];
-const imgList = ['/img/bunny.png'];
+const videoList = assetsPrefix([
+  'video/123.mp4',
+  'video/223.mp4',
+  'video/323.mp4',
+]);
+const imgList = assetsPrefix(['img/bunny.png']);
 
 const chromakey = createChromakey({
   similarity: 0.4,

@@ -19,8 +19,9 @@ import {
 } from '@webav/av-cliper';
 import React, { useState } from 'react';
 import { CombinatorPlay } from './combinator-player';
+import { assetsPrefix } from './utils';
 
-const resList = ['/video/webav1.mp4', '/subtitles/test-sample.srt'];
+const resList = assetsPrefix(['video/webav1.mp4', 'subtitles/test-sample.srt']);
 async function start() {
   const videoSpr = new OffscreenSprite(
     'videoSpr',
