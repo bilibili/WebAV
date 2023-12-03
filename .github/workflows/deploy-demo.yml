@@ -23,6 +23,9 @@ concurrency:
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./doc-site
     steps:
       - name: Checkout repository
         uses: actions/checkout@v2
@@ -34,21 +37,17 @@ jobs:
 
       - name: Install dependencies
         run: yarn install --frozen-lockfile
-        working-directory: ./doc-site
 
       - name: Build
         run: yarn build
-        working-directory: ./doc-site
 
       - name: Setup Pages
         uses: actions/configure-pages@v3
-        working-directory: ./doc-site
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v1
         with:
           path: ./dist
-        working-directory: ./doc-site
 
       - name: Deploy to GitHub Pages
         id: deployment
