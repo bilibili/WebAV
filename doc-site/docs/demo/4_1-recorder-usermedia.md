@@ -13,7 +13,7 @@ order: 1
 录制过程中流式写入数据就，所以一开始就需要创建一个本地文件。
 
 ```tsx
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Button, Divider } from 'antd';
 import { AVRecorder } from '@webav/av-recorder';
 
@@ -43,6 +43,13 @@ async function start(videoEl: HTMLVideoElement) {
 export default function UI() {
   const [btnState, setBtnState] = useState(0);
   const videoRef = useRef<HTMLVideoElement>(null);
+
+  useEffect(() => {
+    return () => {
+      recorder?.stop();
+    };
+  }, []);
+
   return (
     <>
       <Button
