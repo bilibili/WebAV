@@ -147,7 +147,10 @@ export default function UI() {
         Stop Recod
       </Button>
       <span style={{ marginLeft: 16, color: '#666' }}>{stateText}</span>
-      <div ref={initCvs} style={{ width: 900, height: 500 }}></div>
+      <div
+        ref={initCvs}
+        style={{ width: 900, height: 500, position: 'relative' }}
+      ></div>
     </>
   );
 }
