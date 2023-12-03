@@ -1,13 +1,14 @@
 import { decodeImg } from '@webav/av-cliper';
 import { Button, Radio } from 'antd';
 import React, { useState } from 'react';
+import { assetsPrefix } from './utils';
 
-const imgs = {
-  avif: '/img/animated.avif',
-  webp: '/img/animated.webp',
-  png: '/img/animated.png',
-  gif: '/img/animated.gif',
-};
+const imgs = assetsPrefix({
+  avif: 'img/animated.avif',
+  webp: 'img/animated.webp',
+  png: 'img/animated.png',
+  gif: 'img/animated.gif',
+});
 
 let stopRender = () => {};
 async function start(

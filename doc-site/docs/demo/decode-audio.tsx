@@ -1,12 +1,13 @@
 import { AudioClip, DEFAULT_AUDIO_CONF } from '@webav/av-cliper';
 import { Button, Radio } from 'antd';
 import React, { useState } from 'react';
+import { assetsPrefix } from './utils';
 
-const audios = {
-  '44.1kHz-2chan.m4a': '/audio/44.1kHz-2chan.m4a',
-  '44.1kHz-2chan.mp3': '/audio/44.1kHz-2chan.mp3',
-  '16kHz-1chan.mp3': '/audio/16kHz-1chan.mp3',
-};
+const audios = assetsPrefix({
+  '44.1kHz-2chan.m4a': 'audio/44.1kHz-2chan.m4a',
+  '44.1kHz-2chan.mp3': 'audio/44.1kHz-2chan.mp3',
+  '16kHz-1chan.mp3': 'audio/16kHz-1chan.mp3',
+});
 
 let stopAudio = () => {};
 async function start(audioType: keyof typeof audios) {
@@ -72,7 +73,7 @@ function createUI(start: Function) {
           value={value}
         >
           <Radio value="44.1kHz-2chan.m4a">44.1kHz-2chan.m4a</Radio>
-          <Radio value="44.1kHz-2chan.m4a">44.1kHz-2chan.m4a</Radio>
+          <Radio value="44.1kHz-2chan.mp3">44.1kHz-2chan.mp3</Radio>
           <Radio value="16kHz-1chan.mp3">16kHz-1chan.mp3</Radio>
         </Radio.Group>
       </div>

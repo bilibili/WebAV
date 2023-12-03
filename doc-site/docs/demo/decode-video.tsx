@@ -1,11 +1,12 @@
 import { MP4Clip } from '@webav/av-cliper';
 import { Button, Divider, Radio } from 'antd';
 import React, { useState } from 'react';
+import { assetsPrefix } from './utils';
 
-const videos = {
-  'bunny.mp4': '/video/bunny-avc.mp4',
-  'bear.mp4': '/video/bear-vp9.mp4',
-};
+const videos = assetsPrefix({
+  'bunny.mp4': 'video/bunny-avc.mp4',
+  'bear.mp4': 'video/bear-vp9.mp4',
+});
 
 async function start(
   speed: number,
