@@ -1514,7 +1514,14 @@
   dependencies:
     "@types/ms" "*"
 
-"@types/dom-webcodecs@^0.1.7":
+"@types/dom-mediacapture-transform@^0.1.5":
+  version "0.1.9"
+  resolved "https://registry.npmmirror.com/@types/dom-mediacapture-transform/-/dom-mediacapture-transform-0.1.9.tgz#75558aedd4b0b1e1429c6bc22daee58d8090be3c"
+  integrity sha512-/K96dASG23bqF+VAftybbI5SUj9qSsdsSKZglm7Bq/sIaEve5z8I+GdClARcSQMAAVkH7bc83UI1jiH/qc5LMw==
+  dependencies:
+    "@types/dom-webcodecs" "*"
+
+"@types/dom-webcodecs@*", "@types/dom-webcodecs@^0.1.7":
   version "0.1.11"
   resolved "https://registry.npmmirror.com/@types/dom-webcodecs/-/dom-webcodecs-0.1.11.tgz#2e36e5cc71789551f107e2fe15d956845fa19567"
   integrity sha512-yPEZ3z7EohrmOxbk/QTAa0yonMFkNkjnVXqbGb7D4rMr+F1dGQ8ZUFxXkyLLJuiICPejZ0AZE9Rrk9wUCczx4A==
@@ -1698,6 +1705,11 @@
   version "2.0.10"
   resolved "https://registry.npmjs.org/@types/unist/-/unist-2.0.10.tgz#04ffa7f406ab628f7f7e97ca23e290cd8ab15efc"
   integrity sha512-IfYcSBWE3hLpBg8+X2SEa8LVkJdJEkT2Ese2aaLs3ptGdVtABxndrMaxuFlQ1qdFf9Q5rDvDpxI3WwgvKFAsQA==
+
+"@types/wicg-file-system-access@^2020.9.6":
+  version "2020.9.8"
+  resolved "https://registry.npmmirror.com/@types/wicg-file-system-access/-/wicg-file-system-access-2020.9.8.tgz#a8b739854ccb74b8048ef607d3701e9d506830e7"
+  integrity sha512-ggMz8nOygG7d/stpH40WVaNvBwuyYLnrg5Mbyf6bmsj/8+gb6Ei4ZZ9/4PNpcPNTT8th9Q8sM8wYmWGjMWLX/A==
 
 "@types/yargs-parser@*":
   version "21.0.3"
@@ -2136,6 +2148,18 @@
     "@types/dom-webcodecs" "^0.1.7"
     "@webav/mp4box.js" "0.5.3-fenghen"
     wave-resampler "^1.0.0"
+
+"@webav/av-recorder@^0.2.10":
+  version "0.2.10"
+  resolved "https://registry.npmmirror.com/@webav/av-recorder/-/av-recorder-0.2.10.tgz#9fc5cb57243d8cd53abb3d6b3f7da0a3218ee511"
+  integrity sha512-TPeawMZ/v561lZrVTJZPb6XRXMSZdL9n9hYUFy3x1f5CFQTJv/B8XCCWWvHyCkQg74szLIhbB+x2feON00GM/Q==
+  dependencies:
+    "@types/dom-mediacapture-transform" "^0.1.5"
+    "@types/dom-webcodecs" "^0.1.7"
+    "@types/wicg-file-system-access" "^2020.9.6"
+    "@webav/av-cliper" "^0.2.10"
+    "@webav/mp4box.js" "0.5.3-fenghen"
+    fix-webm-duration "^1.0.5"
 
 "@webav/mp4box.js@0.5.3-fenghen":
   version "0.5.3-fenghen"
@@ -4639,6 +4663,11 @@ find-up@^5.0.0:
   dependencies:
     locate-path "^6.0.0"
     path-exists "^4.0.0"
+
+fix-webm-duration@^1.0.5:
+  version "1.0.5"
+  resolved "https://registry.npmmirror.com/fix-webm-duration/-/fix-webm-duration-1.0.5.tgz#da4558a92196a677302bfc54780b494dd5336a96"
+  integrity sha512-b6oula3OfSknx0aWoLsxvp4DVIYbwsf+UAkr6EDAK3iuMYk/OSNKzmeSI61GXK0MmFTEuzle19BPvTxMIKjkZg==
 
 flush-write-stream@^1.0.0:
   version "1.1.1"
