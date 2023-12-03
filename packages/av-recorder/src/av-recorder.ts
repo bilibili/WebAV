@@ -117,6 +117,10 @@ export class AVRecorder {
         switch (type) {
           case EWorkerMsg.SafeExit:
             worker.terminate()
+            this.#ms.getTracks().forEach((track) => {
+              track.stop();
+            });
+            this.outputStream = null
             resolve()
             break
         }
