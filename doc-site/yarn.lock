@@ -2152,33 +2152,33 @@
     istanbul-reports "^3.1.5"
     test-exclude "^6.0.0"
 
-"@webav/av-canvas@^0.2.10":
-  version "0.2.10"
-  resolved "https://registry.npmmirror.com/@webav/av-canvas/-/av-canvas-0.2.10.tgz#ba7a189ba0af0d5c68ca9f697f374b85b5a23954"
-  integrity sha512-4M51B+cSv1d4dDsVQosTiupZExiGQkkZ5aqB/bjfbP9fFgwImMbbSM11goUnB6olp0FbMVOW1AVPW32aXqKiLQ==
+"@webav/av-canvas@^0.2.11":
+  version "0.2.11"
+  resolved "https://registry.npmmirror.com/@webav/av-canvas/-/av-canvas-0.2.11.tgz#3a639ca45cb44d2351a45f94f92b1f1c2a5ba402"
+  integrity sha512-ampjTRRaFHzlgdFyDeXuy9uDxFB7hKID8yc3DLXXDJa4+z4vLTV8i/81MCh2XVNmGk1xobs6XGc6oxw0mlu3BQ==
   dependencies:
     "@types/wicg-file-system-access" "^2020.9.6"
     "@vitest/coverage-istanbul" "^0.29.8"
-    "@webav/av-cliper" "^0.2.10"
+    "@webav/av-cliper" "^0.2.11"
 
-"@webav/av-cliper@^0.2.10":
-  version "0.2.10"
-  resolved "https://registry.npmmirror.com/@webav/av-cliper/-/av-cliper-0.2.10.tgz#3f400178087845f5ec20a01692b6b46bc7eb4a70"
-  integrity sha512-YImFuZTTUacCDn7Q3Ymb8ox3c5IorXUxhQ8B/ImHAtKOQZajToVHm1msz6J3AcN+U3l5lowMNBO6qbroa6UmFA==
+"@webav/av-cliper@^0.2.11":
+  version "0.2.11"
+  resolved "https://registry.npmmirror.com/@webav/av-cliper/-/av-cliper-0.2.11.tgz#a0afc1af00acd0e95fc810d8ced67b31c399dbae"
+  integrity sha512-t/N4yp3Za6mglMG7BpGQUSA1lMNLGwmIKEcFS1t8v0Jf6pRkaKBieR4PpNpL+WPNlQlG9mvZw350De08vn674w==
   dependencies:
     "@types/dom-webcodecs" "^0.1.7"
     "@webav/mp4box.js" "0.5.3-fenghen"
     wave-resampler "^1.0.0"
 
-"@webav/av-recorder@^0.2.10":
-  version "0.2.10"
-  resolved "https://registry.npmmirror.com/@webav/av-recorder/-/av-recorder-0.2.10.tgz#9fc5cb57243d8cd53abb3d6b3f7da0a3218ee511"
-  integrity sha512-TPeawMZ/v561lZrVTJZPb6XRXMSZdL9n9hYUFy3x1f5CFQTJv/B8XCCWWvHyCkQg74szLIhbB+x2feON00GM/Q==
+"@webav/av-recorder@^0.2.11":
+  version "0.2.11"
+  resolved "https://registry.npmmirror.com/@webav/av-recorder/-/av-recorder-0.2.11.tgz#2c52687f895ff094f5e78cab178694a781aeecd0"
+  integrity sha512-B0eadxFQtF2wvq3KgZk1G5b+li+vtUkY/LaP6r+7Q7WScpF3KOnS7QK+VQ17sF8rZBaKC3eA5zgydFt+x1XwjA==
   dependencies:
     "@types/dom-mediacapture-transform" "^0.1.5"
     "@types/dom-webcodecs" "^0.1.7"
     "@types/wicg-file-system-access" "^2020.9.6"
-    "@webav/av-cliper" "^0.2.10"
+    "@webav/av-cliper" "^0.2.11"
     "@webav/mp4box.js" "0.5.3-fenghen"
     fix-webm-duration "^1.0.5"
 
