@@ -24,9 +24,7 @@
     "test:coverage": "vitest run --coverage",
     "build": "vite build && tsc -p build.tsconfig.json --outDir dist",
     "build:dev": "rimraf dist && concurrently --kill-others \"vite build --watch\" \"tsc -p build.tsconfig.json --outDir dist --watch\"",
-    "build:demo": "rimraf demo-dist && vite build -c demo.vite.config.ts && cp -r demo/public demo-dist/demo",
-    "prepublishOnly": "yarn build",
-    "preview": "vite preview"
+    "prepublishOnly": "yarn build"
   },
   "files": [
     "dist"
