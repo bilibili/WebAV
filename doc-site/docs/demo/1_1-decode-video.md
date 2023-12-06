@@ -10,4 +10,8 @@ order: 1
 
 # 解码视频
 
+:::info
+测试用的视频资源托管在 github pages，启动 DEMO 可能需要一些的加载时间
+:::
+
 <code src="./decode-video.tsx"></code>
