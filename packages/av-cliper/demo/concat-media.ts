@@ -19,7 +19,7 @@ const playerContiner = document.querySelector('#player-continer')!
 
 document.querySelector('#mp4-img')?.addEventListener('click', () => {
   ; (async () => {
-    const resList = ['./public/video/webav1.mp4', './public/img/bunny.png']
+    const resList = ['./video/webav1.mp4', './img/bunny.png']
     const { loadStream } = playOutputStream(resList, playerContiner)
 
     const spr1 = new OffscreenSprite(
@@ -82,12 +82,12 @@ document.querySelector('#mp4-img')?.addEventListener('click', () => {
 document.querySelector('#mp4-mp3')?.addEventListener('click', () => {
   ; (async () => {
     const resList = [
-      './public/video/webav1.mp4',
-      './public/audio/44.1kHz-2chan.mp3'
+      './video/webav1.mp4',
+      './audio/44.1kHz-2chan.mp3'
     ]
     const { loadStream } = playOutputStream(resList, playerContiner)
 
-    // const resp1 = await fetch('./public/video/pri-bunny_avc_frag.mp4')
+    // const resp1 = await fetch('./video/pri-bunny_avc_frag.mp4')
     const resp1 = await fetch(resList[0])
     const spr1 = new OffscreenSprite('spr1', new MP4Clip(resp1.body!))
 
@@ -113,8 +113,8 @@ document.querySelector('#mp4-mp3')?.addEventListener('click', () => {
 document.querySelector('#mix-audio')?.addEventListener('click', () => {
   ; (async () => {
     const resList = [
-      './public/audio/44.1kHz-2chan.m4a',
-      './public/audio/16kHz-1chan.mp3'
+      './audio/44.1kHz-2chan.m4a',
+      './audio/16kHz-1chan.mp3'
     ]
     const { loadStream } = playOutputStream(resList, playerContiner)
 
@@ -137,8 +137,8 @@ document.querySelector('#mix-audio')?.addEventListener('click', () => {
 document.querySelector('#concat-audio')?.addEventListener('click', () => {
   ; (async () => {
     const resList = [
-      './public/audio/16kHz-1chan.mp3',
-      './public/audio/44.1kHz-2chan.m4a'
+      './audio/16kHz-1chan.mp3',
+      './audio/44.1kHz-2chan.m4a'
     ]
     const { loadStream } = playOutputStream(resList, playerContiner)
 
@@ -159,8 +159,8 @@ document.querySelector('#concat-audio')?.addEventListener('click', () => {
 document.querySelector('#gif-m4a')?.addEventListener('click', () => {
   ; (async () => {
     const resList = [
-      './public/img/animated.gif',
-      './public/audio/44.1kHz-2chan.m4a'
+      './img/animated.gif',
+      './audio/44.1kHz-2chan.m4a'
     ]
     const { loadStream } = playOutputStream(resList, playerContiner)
 
@@ -182,8 +182,8 @@ document.querySelector('#gif-m4a')?.addEventListener('click', () => {
 document.querySelector('#mp4-srt')?.addEventListener('click', () => {
   ; (async () => {
     const resList = [
-      './public/video/webav1.mp4',
-      './public/subtitles/test-sample.srt'
+      './video/webav1.mp4',
+      './subtitles/test-sample.srt'
     ]
     const { loadStream } = playOutputStream(resList, playerContiner)
 
@@ -220,8 +220,8 @@ document.querySelector('#mp4-srt')?.addEventListener('click', () => {
 document.querySelector('#mp4-chromakey')?.addEventListener('click', () => {
   ; (async () => {
     const resList = [
-      './public/video/chromakey-test.mp4',
-      './public/img/bunny.png'
+      './video/chromakey-test.mp4',
+      './img/bunny.png'
     ]
     const { loadStream } = playOutputStream(resList, playerContiner)
 
@@ -281,9 +281,9 @@ document.querySelector('#mp4-chromakey')?.addEventListener('click', () => {
 document.querySelector('#complex')?.addEventListener('click', () => {
   ; (async () => {
     const mp4List = [
-      './public/video/123.mp4',
-      './public/video/223.mp4',
-      './public/video/323.mp4'
+      './video/123.mp4',
+      './video/223.mp4',
+      './video/323.mp4'
     ]
 
     const width = 1280
@@ -318,7 +318,7 @@ document.querySelector('#complex')?.addEventListener('click', () => {
           'spr3',
           new ImgClip(
             await createImageBitmap(
-              await (await fetch('./public/img/bunny.png')).blob()
+              await (await fetch('./img/bunny.png')).blob()
             )
           )
         )

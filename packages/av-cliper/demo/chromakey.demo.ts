@@ -7,7 +7,7 @@ const ctx = cvs.getContext('2d', {
 
   ; (async () => {
     const img = new Image()
-    img.src = './public/img/green-dog.jpeg'
+    img.src = './img/green-dog.jpeg'
     await new Promise(resolve => {
       img.onload = resolve
     })
