@@ -4,11 +4,13 @@
   "devDependencies": {
     "lerna": "^3.22.1",
     "rimraf": "^5.0.1",
-    "ts-standard": "^12.0.2"
+    "ts-standard": "^12.0.2",
+    "typedoc": "^0.25.4"
   },
   "scripts": {
     "build": "lerna run build",
-    "publish:all": "lerna publish from-package --no-verify-access --no-private --yes"
+    "publish:all": "lerna publish from-package --no-verify-access --no-private --yes",
+    "build:api": "lerna run build:api"
   },
   "workspaces": [
     "packages/*"

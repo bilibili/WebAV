@@ -2,11 +2,11 @@
   "extends": "./build.tsconfig.json",
   "compilerOptions": {
     "types": [
-      "@types/dom-webcodecs",
-      "../../types/mp4box.d.ts"
+      "@types/dom-webcodecs"
     ]
   },
   "include": [
+    "../../types/mp4box.d.ts",
     "src",
     "demo"
   ]

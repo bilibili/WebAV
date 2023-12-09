@@ -4,10 +4,10 @@
     "types": [
       "@types/dom-mediacapture-transform",
       "@types/dom-webcodecs",
-      "../../types/mp4box.d.ts"
     ]
   },
   "include": [
+    "../../types/mp4box.d.ts",
     "src",
     "demo"
   ]

@@ -26,3 +26,4 @@ dist-ssr
 coverage
 
 **/public/**/pri-*
+doc-site/public/_api/av-*
