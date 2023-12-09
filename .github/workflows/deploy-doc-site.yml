@@ -36,7 +36,7 @@ jobs:
         run: yarn install --frozen-lockfile
 
       - name: Build:api
-        run: yarn build:api
+        run: yarn build && yarn build:api
 
       - name: Install doc-site dependencies
         run: yarn install --frozen-lockfile
