@@ -1,13 +1,14 @@
 ---
 nav:
-  title: 文章
+  title: Article
   order: 3
+sidebar: false
 ---
 
 # 相关文章索引
 
 - [WebCodecs 开启 Web 音视频新篇章](//hughfenghen.github.io/posts/2023/10/06/webcodecs-new-era-for-media-on-the-web/)
-  - LVS 分享主题，是后面系列文章的总结
+  - LVS (Live Video Stack) 分享主题，是后面系列文章的总结
 - [【译】WebCodecs 说明](https://hughfenghen.github.io/posts/2023/10/02/webcodecs-explainer/)
 - WebAV 系列
   - [Web 音视频（零）概览](//hughfenghen.github.io/posts/2023/07/16/webav-0-overview/)

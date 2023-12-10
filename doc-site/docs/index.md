@@ -4,8 +4,8 @@ hero:
   title: WebAV
   description: WebAV Doc Site
   actions:
-    - text: API (建设中...)
-      link: /api/av-canvas
+    - text: Guide
+      link: /guide/
     - text: DEMO
       link: /demo/1_1-decode-video
 ---

@@ -85,6 +85,8 @@ This repo uses lerna + yarn to manage packages.
    2. 确定对应 DEMO 的 path，是 `packages/av-cliper/demo` 目录下的文件名，如 `concat-media.html`
    3. 在浏览器打开最终 URL：`http://localhost:6066/concat-media.html`
 
+若你有意贡献代码，建议先跟通过 Github Issue、Discussions、微信（`liujun_fenghen`）与作者讨论
+
 ---
 
 加微信 `liujun_fenghen` 备注 WebAV 邀请进入微信群
