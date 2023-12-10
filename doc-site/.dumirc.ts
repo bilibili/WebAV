@@ -7,6 +7,7 @@ export default defineConfig({
     socialLinks: {
       github: 'https://github.com/hughfenghen/WebAV'
     },
+    footer: false
   },
   ...(process.env.NODE_ENV === 'development' ? {
     base: '/',
