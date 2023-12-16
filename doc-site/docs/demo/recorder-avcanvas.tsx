@@ -99,6 +99,7 @@ export default function UI() {
           const vs = new VideoSprite(
             'video',
             await loadFile({ 'video/*': ['.webm', '.mp4'] }),
+            { audioCtx: avCvs.spriteManager.audioCtx },
           );
           await avCvs.spriteManager.addSprite(vs);
         }}
@@ -112,6 +113,7 @@ export default function UI() {
           const as = new AudioSprite(
             'audio',
             await loadFile({ 'audio/*': ['.mp3', '.wav', '.ogg'] }),
+            { audioCtx: avCvs.spriteManager.audioCtx },
           );
           await avCvs.spriteManager.addSprite(as);
         }}

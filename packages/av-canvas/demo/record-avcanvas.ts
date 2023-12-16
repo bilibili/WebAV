@@ -81,7 +81,9 @@ document.querySelector('#localVideo')?.addEventListener('click', () => {
         }
       ]
     })
-    const vs = new VideoSprite('vs', await imgFH.getFile())
+    const vs = new VideoSprite('vs', await imgFH.getFile(), {
+      audioCtx: avCvs.spriteManager.audioCtx
+    })
     await avCvs.spriteManager.addSprite(vs)
   })().catch(console.error)
 })
@@ -98,7 +100,9 @@ document.querySelector('#localAudio')?.addEventListener('click', () => {
         }
       ]
     })
-    const as = new AudioSprite('vs', await imgFH.getFile())
+    const as = new AudioSprite('vs', await imgFH.getFile(), {
+      audioCtx: avCvs.spriteManager.audioCtx
+    })
     await avCvs.spriteManager.addSprite(as)
   })().catch(console.error)
 })
