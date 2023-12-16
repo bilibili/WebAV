@@ -33,22 +33,25 @@ export function CombinatorPlay({
           setState('loading...');
           onStart();
         }}
+        style={{ marginBottom: 16 }}
       >
         启动！
       </Button>
-      <div className="resouse-list">
-        素材：
-        {list.map((it) => (
-          <a
-            href={it}
-            target="_blank"
-            key={it}
-            style={{ marginRight: '16px', textDecoration: 'none' }}
-          >
-            {it}
-          </a>
-        ))}
-      </div>
+      {list.length > 0 && (
+        <div className="resouse-list">
+          素材：
+          {list.map((it) => (
+            <a
+              href={it}
+              target="_blank"
+              key={it}
+              style={{ marginRight: '16px', textDecoration: 'none' }}
+            >
+              {it}
+            </a>
+          ))}
+        </div>
+      )}
       <div className="state">
         {state}
         {videoSrc.length > 0 && (
