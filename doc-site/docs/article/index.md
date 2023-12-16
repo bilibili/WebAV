@@ -5,6 +5,8 @@ nav:
 sidebar: false
 ---
 
+<div style="background: #fff; padding: 16px; border-radius: 10px;">
+
 # 相关文章索引
 
 - [WebCodecs 开启 Web 音视频新篇章](//hughfenghen.github.io/posts/2023/10/06/webcodecs-new-era-for-media-on-the-web/)
@@ -33,3 +35,5 @@ sidebar: false
     - 素材动画：位移、旋转、不透明度...
   - [中期回顾](//hughfenghen.github.io/posts/2023/08/19/webav-7-mid-review/)
 - [WebGL Chromakey 实时绿幕抠图](https://hughfenghen.github.io/posts/2023/07/07/webgl-chromakey/)
+
+</div>

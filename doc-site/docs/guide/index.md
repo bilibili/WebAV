@@ -5,6 +5,8 @@ order: 1
 sidebar: false
 ---
 
+<div style="background: #fff; padding: 16px; border-radius: 10px;">
+
 # 指南
 
 开始前，建议先快速过一遍 [DEMO](../demo/1_1-decode-video.md)，了解 WebAV 能实现哪些能力；
@@ -51,3 +53,5 @@ WebAV 项目包含三个模块，使用 TypeDoc 生成 API 文档
    3. 在浏览器打开最终 URL：`http://localhost:6066/concat-media.html`
 
 若你有意贡献代码，建议先通过 Github Issue、Discussions、微信（`liujun_fenghen`）与作者讨论
+
+</div>
