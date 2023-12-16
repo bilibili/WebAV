@@ -1,6 +1,7 @@
 import { defineConfig } from 'dumi';
 
 export default defineConfig({
+  analytics: { ga_v2: 'G-MC335K4KV6' },
   themeConfig: {
     name: 'WebAV',
     logo: false,
