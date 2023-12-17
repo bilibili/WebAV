@@ -6,10 +6,10 @@ interface IFontStyle {
   size: number
 }
 
-export class FontSprite extends BaseSprite {
+export class TextSprite extends BaseSprite {
   #img: HTMLImageElement
 
-  constructor (name: string, content: string, style: Partial<IFontStyle> = {}) {
+  constructor(name: string, content: string, style: Partial<IFontStyle> = {}) {
     super(name)
     const s = {
       color: '#ffffff',
@@ -30,11 +30,11 @@ export class FontSprite extends BaseSprite {
     this.rect.h = this.#img.height
   }
 
-  render (ctx: CanvasRenderingContext2D): void {
+  render(ctx: CanvasRenderingContext2D): void {
     super.render(ctx)
     const { w, h } = this.rect
     ctx.drawImage(this.#img, -w / 2, -h / 2, w, h)
   }
 
-  destroy (): void {}
+  destroy(): void { }
 }

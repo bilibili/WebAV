@@ -11,7 +11,7 @@ WebCodecs-based, combine video, audio, images, text, with animation support
   - `MP4Clip, AudioClip, ImgClip, EmbedSubtitlesClip` (embedded SRT subtitles), these are the types of resources supported by `Combinator`
 - `BaseSprite`: An abstract representation of manipulable elements, attaching Rect information (position, width, height, layer, animation) to resources to make them controllable.
   - `OffscreenSprite`: Wraps resources (`IClip`) and adds them to a `Combinator` for background offscreen video synthesis.
-  - `AVCanvas`: Includes `VideoSprite, AudioSprite, ImgSprite, FontSprite` to support user or program control over the positioning of drawn resources.
+  - `AVCanvas`: Includes `VideoSprite, AudioSprite, ImgSprite, TextSprite` to support user or program control over the positioning of drawn resources.
 
 <hr />
 
@@ -21,7 +21,7 @@ WebCodecs-based, combine video, audio, images, text, with animation support
   - `MP4Clip, AudioClip, ImgClip, EmbedSubtitlesClip`（内嵌 SRT 字幕），这些是合成视频所支持的资源类型
 - `BaseSprite` 可操作元素的抽象，给资源附加 Rect（位置、宽高、层级、动画）信息，使得资源可被控制
   - `OffscreenSprite`： 包装资源（`IClip`）添加到 `Combinator`，在后台离屏合成视频
-  - `AVCanvas` 包含了 `VideoSprite, AudioSprite, ImgSprite, FontSprite`，以支持用户或程序控制资源绘制的位置
+  - `AVCanvas` 包含了 `VideoSprite, AudioSprite, ImgSprite, TextSprite`，以支持用户或程序控制资源绘制的位置
 
 ## DEMO
 

@@ -2,7 +2,7 @@ import { Combinator } from '@webav/av-cliper'
 import {
   AVCanvas,
   AudioSprite,
-  FontSprite,
+  TextSprite,
   ImgSprite,
   VideoSprite
 } from '../src/index'
@@ -109,8 +109,8 @@ document.querySelector('#localAudio')?.addEventListener('click', () => {
 
 document.querySelector('#fontExamp')?.addEventListener('click', () => {
   ; (async () => {
-    const fs = new FontSprite('font', '示例文字')
-    await avCvs.spriteManager.addSprite(fs)
+    const textSpr = new TextSprite('text', '示例文字')
+    await avCvs.spriteManager.addSprite(textSpr)
   })().catch(console.error)
 })
 

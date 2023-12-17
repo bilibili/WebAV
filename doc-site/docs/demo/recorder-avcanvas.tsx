@@ -1,8 +1,8 @@
 import {
-  AudioSprite,
   AVCanvas,
-  FontSprite,
+  AudioSprite,
   ImgSprite,
+  TextSprite,
   VideoSprite,
 } from '@webav/av-canvas';
 import { AVRecorder } from '@webav/av-recorder';
@@ -124,7 +124,7 @@ export default function UI() {
       <Button
         onClick={async () => {
           if (avCvs == null) return;
-          const fs = new FontSprite('font', '示例文字');
+          const fs = new TextSprite('text', '示例文字');
           await avCvs.spriteManager.addSprite(fs);
         }}
       >

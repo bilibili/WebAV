@@ -1,6 +1,6 @@
 import { getBoundingClientRectMock } from '../../__tests__/mock'
 import { vi, test, expect, beforeEach, afterEach } from 'vitest'
-import { FontSprite } from '../font-sprite'
+import { TextSprite } from '../text-sprite'
 
 beforeEach(() => {
   getBoundingClientRectMock.mockImplementation(() => {
@@ -16,13 +16,13 @@ afterEach(() => {
 })
 
 test('font-sprite', () => {
-  const fs = new FontSprite('fs', '示例文本')
+  const textSpr = new TextSprite('text', '示例文本')
   const mockCtx = {
     drawImage: vi.fn(),
     rotate: vi.fn(),
     setTransform: vi.fn()
   }
-  fs.render(mockCtx as unknown as CanvasRenderingContext2D)
+  textSpr.render(mockCtx as unknown as CanvasRenderingContext2D)
   expect(mockCtx.drawImage).toBeCalledWith(
     expect.any(HTMLImageElement),
     -50, -50, 100, 100
