@@ -21,7 +21,7 @@ npm install @webav-cliper
 yarn add @webav-cliper
 ```
 
-## 项目模块
+## API
 
 WebAV 项目包含三个模块，使用 TypeDoc 生成 API 文档
 
