@@ -2152,10 +2152,8 @@
     istanbul-reports "^3.1.5"
     test-exclude "^6.0.0"
 
-"@webav/av-canvas@^0.2.11":
+"@webav/av-canvas@file:../packages/av-canvas":
   version "0.2.11"
-  resolved "https://registry.npmmirror.com/@webav/av-canvas/-/av-canvas-0.2.11.tgz#3a639ca45cb44d2351a45f94f92b1f1c2a5ba402"
-  integrity sha512-ampjTRRaFHzlgdFyDeXuy9uDxFB7hKID8yc3DLXXDJa4+z4vLTV8i/81MCh2XVNmGk1xobs6XGc6oxw0mlu3BQ==
   dependencies:
     "@types/wicg-file-system-access" "^2020.9.6"
     "@vitest/coverage-istanbul" "^0.29.8"
@@ -2170,10 +2168,15 @@
     "@webav/mp4box.js" "0.5.3-fenghen"
     wave-resampler "^1.0.0"
 
-"@webav/av-recorder@^0.2.11":
+"@webav/av-cliper@file:../packages/av-cliper":
   version "0.2.11"
-  resolved "https://registry.npmmirror.com/@webav/av-recorder/-/av-recorder-0.2.11.tgz#2c52687f895ff094f5e78cab178694a781aeecd0"
-  integrity sha512-B0eadxFQtF2wvq3KgZk1G5b+li+vtUkY/LaP6r+7Q7WScpF3KOnS7QK+VQ17sF8rZBaKC3eA5zgydFt+x1XwjA==
+  dependencies:
+    "@types/dom-webcodecs" "^0.1.7"
+    "@webav/mp4box.js" "0.5.3-fenghen"
+    wave-resampler "^1.0.0"
+
+"@webav/av-recorder@file:../packages/av-recorder":
+  version "0.2.11"
   dependencies:
     "@types/dom-mediacapture-transform" "^0.1.5"
     "@types/dom-webcodecs" "^0.1.7"

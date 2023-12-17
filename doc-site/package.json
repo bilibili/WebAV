@@ -21,9 +21,9 @@
     "prettier": "^2.7.1"
   },
   "dependencies": {
-    "@webav/av-canvas": "^0.2.11",
-    "@webav/av-cliper": "^0.2.11",
-    "@webav/av-recorder": "^0.2.11",
+    "@webav/av-canvas": "file:../packages/av-canvas",
+    "@webav/av-cliper": "file:../packages/av-cliper",
+    "@webav/av-recorder": "file:../packages/av-recorder",
     "antd": "^5.11.5"
   }
 }
