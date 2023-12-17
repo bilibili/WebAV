@@ -1,6 +1,4 @@
 
-
-
 export function assetsPrefix<T extends (string[] | Record<string, string>)>(assetsURL: T): T {
   const prefix = process.env.NODE_ENV === 'development' ? '/' : '/WebAV/'
   if (Array.isArray(assetsURL)) {

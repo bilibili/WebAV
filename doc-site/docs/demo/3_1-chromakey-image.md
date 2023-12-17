@@ -12,8 +12,9 @@ order: 1
 ```tsx
 import React, { useEffect, useState } from 'react';
 import { createChromakey } from '@webav/av-cliper';
+import { assetsPrefix } from './utils';
 
-const imgSrc = '/img/green-dog.jpeg';
+const imgSrc = assetsPrefix(['img/green-dog.jpeg']);
 
 const chromakey = createChromakey({
   similarity: 0.4,
@@ -23,7 +24,7 @@ const chromakey = createChromakey({
 
 async function start(ctx: CanvasRenderingContext2D) {
   const img = new Image();
-  img.src = imgSrc;
+  img.src = imgSrc[0];
   await new Promise((resolve) => {
     img.onload = resolve;
   });
@@ -49,7 +50,7 @@ export default function UI() {
   return (
     <div>
       <div>原图</div>
-      <img src={imgSrc} style={{ width: 500 }} />
+      <img src={imgSrc[0]} style={{ width: 500 }} />
       <div>移除背景</div>
       <canvas
         width={500}
