@@ -116,9 +116,9 @@ function createUI(start: Function) {
           }}
           value={speed}
         >
-          <Radio value={Infinity}>Fastest</Radio>
-          <Radio value={3}>3</Radio>
-          <Radio value={1}>1</Radio>
+          <Radio value={Infinity}>最快</Radio>
+          <Radio value={3}>3 倍速</Radio>
+          <Radio value={1}>1 倍速</Radio>
         </Radio.Group>
         <br></br>
         <canvas
