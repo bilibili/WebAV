@@ -89,14 +89,19 @@ export function demuxcode(
       },
       onChunk: async ({ chunkType, data }) => {
         if (chunkType === 'ready') {
-          Log.info('demuxcode chunk ready')
+          Log.info('demuxcode chunk ready, info:', data)
           mp4File = data.file
           mp4Info = data.info
           const { videoDecoderConf, audioDecoderConf } = extractFileConfig(
             data.file,
             data.info
           )
-          if (videoDecoderConf != null) vdecoder.configure(videoDecoderConf)
+
+          if (videoDecoderConf != null) {
+            vdecoder.configure(videoDecoderConf)
+          } else {
+            throw new Error('MP4 file does not include a video track or uses an unsupported codec')
+          }
           if (opts.audio && audioDecoderConf != null) {
             adecoder.configure(audioDecoderConf)
           }
