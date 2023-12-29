@@ -267,7 +267,10 @@ export const createChromakey = (
 
     updateTexture(gl, imgSource, texture)
 
-    if (imgSource instanceof VideoFrame) {
+    if (
+      globalThis.VideoFrame != null &&
+      imgSource instanceof globalThis.VideoFrame
+    ) {
       const rs = new VideoFrame(cvs, {
         alpha: 'keep',
         timestamp: imgSource.timestamp,
