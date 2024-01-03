@@ -174,6 +174,11 @@ declare module '@webav/mp4box.js' {
     new(size: number): ESDSBoxParser
   }
 
+  interface MOOVBoxParser extends BoxParser {
+    type: 'moov'
+    traks: TrakBoxParser[]
+  }
+
   type STSDBoxParser = Omit<
     BoxParser & {
       type: 'stsd'
@@ -226,6 +231,7 @@ declare module '@webav/mp4box.js' {
     size: number
     start: number
     boxes: []
+    esds?: ESDSBoxParser
     getCodec: () => string
   }
 
@@ -233,6 +239,7 @@ declare module '@webav/mp4box.js' {
     boxes: MP4Box[]
     mdats: MDATBoxParser[]
     moofs: MOOFBoxParser[]
+    moov: MOOVBoxParser
 
     addTrack: (opts: VideoTrackOpts | AudioTrackOpts) => number
     addSample: (trackId: number, buf: ArrayBuffer, sample: SampleOpts) => void

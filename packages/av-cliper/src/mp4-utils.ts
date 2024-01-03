@@ -6,7 +6,8 @@ import mp4box, {
   SampleOpts,
   TrakBoxParser,
   VideoTrackOpts,
-  AudioTrackOpts
+  AudioTrackOpts,
+  MP4ABoxParser
 } from '@webav/mp4box.js'
 import { Log } from './log'
 import {
@@ -631,7 +632,8 @@ function extractFileConfig(file: MP4File, info: MP4Info) {
       samplerate: aTrack.audio.sample_rate,
       channel_count: aTrack.audio.channel_count,
       hdlr: 'soun',
-      type: aTrack.codec.startsWith('mp4a') ? 'mp4a' : aTrack.codec
+      type: aTrack.codec.startsWith('mp4a') ? 'mp4a' : aTrack.codec,
+      description: getESDSBoxFromMP4File(file)
     }
     rs.audioDecoderConf = {
       codec: aTrack.codec.startsWith('mp4a')
@@ -1041,4 +1043,13 @@ function createESDSBox(config: ArrayBuffer | ArrayBufferView) {
   esdsBox.hdr_size = 0
   esdsBox.parse(new mp4box.DataStream(buf, 0, mp4box.DataStream.BIG_ENDIAN))
   return esdsBox
+}
+
+function getESDSBoxFromMP4File(file: MP4File, codec = 'mp4a') {
+  const mp4aBox = file.moov.traks.map(
+    t => t.mdia.minf.stbl.stsd.entries
+  ).flat()
+    .find(({ type }) => type === codec) as MP4ABoxParser
+
+  return mp4aBox?.esds
 }
