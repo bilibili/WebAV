@@ -5,7 +5,7 @@ import { playOutputStream } from './play-video'
 document.querySelector('#fast-concat-mp4')?.addEventListener('click', () => {
   ; (async () => {
     const resList = ['./video/webav1.mp4', './video/webav2.mp4']
-    const stream = fastConcatMP4(
+    const stream = await fastConcatMP4(
       await Promise.all(resList.map(async url => (await fetch(url)).body!))
     )
     const { loadStream } = playOutputStream(resList, document.body)
@@ -36,7 +36,7 @@ document.querySelector('#concat-and-mixin')?.addEventListener('click', () => {
       './video/webav2.mp4',
       './audio/44.1kHz-2chan.mp3'
     ]
-    const mp4Stream = fastConcatMP4([
+    const mp4Stream = await fastConcatMP4([
       (await fetch(resList[0])).body!,
       (await fetch(resList[1])).body!
     ])

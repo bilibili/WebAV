@@ -75,7 +75,7 @@ async function start() {
       return com.output();
     });
 
-  return fastConcatMP4(await Promise.all(coms));
+  return await fastConcatMP4(await Promise.all(coms));
 }
 
 export default function UI() {
