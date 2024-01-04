@@ -552,6 +552,112 @@ export function file2stream(
   }
 }
 
+export function mp4File2OPFSFile(inMP4File: MP4File): () => (Promise<File | null>) {
+  let sendedBoxIdx = 0
+  const boxes = inMP4File.boxes
+  const tracks: Array<{ track: TrakBoxParser; id: number }> = []
+  let totalDuration = 0
+
+  async function write2TmpFile() {
+    const buf = box2Buf(boxes, sendedBoxIdx)
+    sendedBoxIdx = boxes.length
+    // 释放引用，避免内存泄露
+    tracks.forEach(({ track, id }) => {
+      const s = track.samples.at(-1)
+      if (s != null) totalDuration = Math.max(totalDuration, s.cts + s.duration)
+
+      inMP4File.releaseUsedSamples(id, track.samples.length)
+      track.samples = []
+    })
+    inMP4File.mdats = []
+    inMP4File.moofs = []
+    if (buf != null) await tmpFileWriter?.write(buf)
+  }
+
+  let moovPrevBoxes: typeof boxes = []
+  function moovBoxReady() {
+    if (moovPrevBoxes.length > 0) return true
+
+    const moovIdx = boxes.findIndex(box => box.type === 'moov')
+    if (moovIdx === -1) return false
+
+    moovPrevBoxes = boxes.slice(0, moovIdx + 1)
+    sendedBoxIdx = moovIdx + 1
+
+    if (tracks.length === 0) {
+      for (let i = 1; true; i += 1) {
+        const track = inMP4File.getTrackById(i)
+        if (track == null) break
+        tracks.push({ track, id: i })
+      }
+    }
+
+    return true
+  }
+
+  const box2Buf = (source: typeof boxes, startIdx: number): Uint8Array | null => {
+    if (startIdx >= source.length) return null
+
+    const ds = new mp4box.DataStream()
+    ds.endianness = mp4box.DataStream.BIG_ENDIAN
+
+    for (let i = startIdx; i < source.length; i++) {
+      if (source[i] === null) continue
+      source[i].write(ds)
+      delete source[i]
+    }
+    return new Uint8Array(ds.buffer)
+  }
+
+  let timerId = 0
+  let tmpFileHandle: FileSystemFileHandle | null = null
+  let tmpFileWriter: FileSystemWritableFileStream | null = null
+
+    ; (async () => {
+      const opfsRoot = await navigator.storage.getDirectory()
+      tmpFileHandle = await opfsRoot.getFileHandle(
+        Math.random().toString(),
+        { create: true }
+      )
+      tmpFileWriter = await tmpFileHandle.createWritable()
+
+      timerId = self.setInterval(() => {
+        if (!moovBoxReady()) return
+        write2TmpFile()
+      }, 100)
+    })()
+
+  let stoped = false
+  return async () => {
+    if (stoped) throw Error('File exported')
+    stoped = true
+
+    clearInterval(timerId)
+    if (tmpFileHandle == null) return null
+    inMP4File.flush()
+    await write2TmpFile()
+    await tmpFileWriter?.close()
+
+    const moov = moovPrevBoxes.find(box => box.type === 'moov') as (typeof inMP4File.moov | undefined)
+    if (moov == null) return null
+
+    moov.mvhd.duration = totalDuration
+
+    const opfsRoot = await navigator.storage.getDirectory()
+    const rsFileHandle = await opfsRoot.getFileHandle(
+      Math.random().toString(),
+      { create: true }
+    )
+    const writer = await rsFileHandle.createWritable()
+    const buf = box2Buf(moovPrevBoxes, 0)!
+    await writer.write(buf)
+    await writer.write(await tmpFileHandle.getFile())
+    await writer.close()
+
+    return await rsFileHandle.getFile()
+  }
+}
+
 // track is H.264, H.265 or VPX.
 function parseVideoCodecDesc(track: TrakBoxParser): Uint8Array {
   for (const entry of track.mdia.minf.stbl.stsd.entries) {
@@ -650,10 +756,15 @@ function extractFileConfig(file: MP4File, info: MP4Info) {
  * 快速顺序合并多个mp4流，要求所有mp4的属性是一致的
  * 属性包括（不限于）：音视频编码格式、分辨率、采样率
  */
-export function fastConcatMP4(streams: ReadableStream<Uint8Array>[]) {
+export async function fastConcatMP4(streams: ReadableStream<Uint8Array>[]): Promise<ReadableStream<Uint8Array>> {
   Log.info('fastConcatMP4, streams len:', streams.length)
   const outfile = mp4box.createFile()
-  const { stream, stop: stopOutStream } = file2stream(outfile, 500, () => { })
+
+  const dumpFile = mp4File2OPFSFile(outfile)
+  await run()
+  const opfsFile = await dumpFile()
+  if (opfsFile == null) throw Error('Can not generate file from streams')
+  return opfsFile.stream()
 
   async function run() {
     let vTrackId = 0
@@ -719,13 +830,7 @@ export function fastConcatMP4(streams: ReadableStream<Uint8Array>[]) {
         aCTS += lastASamp.cts
       }
     }
-
-    stopOutStream()
   }
-
-  run().catch(Log.error)
-
-  return stream
 }
 
 function createMP4AudioSampleDecoder(
@@ -1046,7 +1151,7 @@ function createESDSBox(config: ArrayBuffer | ArrayBufferView) {
 }
 
 function getESDSBoxFromMP4File(file: MP4File, codec = 'mp4a') {
-  const mp4aBox = file.moov.traks.map(
+  const mp4aBox = file.moov?.traks.map(
     t => t.mdia.minf.stbl.stsd.entries
   ).flat()
     .find(({ type }) => type === codec) as MP4ABoxParser

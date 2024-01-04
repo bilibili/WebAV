@@ -17,10 +17,6 @@ declare module '@webav/mp4box.js' {
     nb_samples: number
   }
 
-  export interface MP4Box {
-    write: (ds: DataStream) => void
-  }
-
   export interface MP4VideoTrack extends MP4MediaTrack {
     video: {
       width: number
@@ -52,12 +48,6 @@ declare module '@webav/mp4box.js' {
   }
 
   export type MP4ArrayBuffer = ArrayBuffer & { fileStart: number }
-
-  interface MP4Box {
-    type: string
-    write: (dataStream: DataStream) => void
-    parse: (dataStream: DataStream) => void
-  }
 
   const DataStream: {
     BIG_ENDIAN: unknown
@@ -94,7 +84,7 @@ declare module '@webav/mp4box.js' {
     samplerate: number
     channel_count: number
     samplesize?: number
-    description?: BoxParser
+    description?: ESDSBoxParser
     hdlr: string
     type: string
   }
@@ -127,7 +117,8 @@ declare module '@webav/mp4box.js' {
     hdr_size: number
     start: number
     type: string
-    parse: (stream: DataStream) => void
+    write: (dataStream: DataStream) => void
+    parse: (dataStream: DataStream) => void
   }
 
   export interface TrakBoxParser extends BoxParser {
@@ -135,6 +126,7 @@ declare module '@webav/mp4box.js' {
     samples: MP4Sample[]
     nextSample: number
     sample_size: number
+    samples_duration: number
     mdia: MDIABoxParser
   }
 
@@ -177,6 +169,13 @@ declare module '@webav/mp4box.js' {
   interface MOOVBoxParser extends BoxParser {
     type: 'moov'
     traks: TrakBoxParser[]
+    mvhd: MVHDBoxParser
+  }
+
+  interface MVHDBoxParser extends BoxParser {
+    type: 'mvhd'
+    duration: number
+    timescale: number
   }
 
   type STSDBoxParser = Omit<
@@ -211,13 +210,13 @@ declare module '@webav/mp4box.js' {
     width: number
   }
 
-  interface AVCCBox extends MP4Box, BoxParser {
+  interface AVCCBox extends BoxParser {
     PPS: Array<{ length: number; nalu: Uint8Array }>
     SPS: Array<{ length: number; nalu: Uint8Array }>
     type: 'avcC'
   }
 
-  interface HVCCBox extends MP4Box, BoxParser {
+  interface HVCCBox extends BoxParser {
     PPS: Array<{ length: number; nalu: Uint8Array }>
     SPS: Array<{ length: number; nalu: Uint8Array }>
     type: 'hvcC'
@@ -236,10 +235,10 @@ declare module '@webav/mp4box.js' {
   }
 
   export interface MP4File {
-    boxes: MP4Box[]
+    boxes: BoxParser[]
     mdats: MDATBoxParser[]
     moofs: MOOFBoxParser[]
-    moov: MOOVBoxParser
+    moov?: MOOVBoxParser
 
     addTrack: (opts: VideoTrackOpts | AudioTrackOpts) => number
     addSample: (trackId: number, buf: ArrayBuffer, sample: SampleOpts) => void
