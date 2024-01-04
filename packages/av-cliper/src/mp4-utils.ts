@@ -595,45 +595,33 @@ export function mp4File2OPFSFile(inMP4File: MP4File): () => (Promise<File | null
     return true
   }
 
-  const box2Buf = (source: typeof boxes, startIdx: number): Uint8Array | null => {
-    if (startIdx >= source.length) return null
-
-    const ds = new mp4box.DataStream()
-    ds.endianness = mp4box.DataStream.BIG_ENDIAN
-
-    for (let i = startIdx; i < source.length; i++) {
-      if (source[i] === null) continue
-      source[i].write(ds)
-      delete source[i]
-    }
-    return new Uint8Array(ds.buffer)
-  }
-
   let timerId = 0
   let tmpFileHandle: FileSystemFileHandle | null = null
   let tmpFileWriter: FileSystemWritableFileStream | null = null
 
-    ; (async () => {
-      const opfsRoot = await navigator.storage.getDirectory()
-      tmpFileHandle = await opfsRoot.getFileHandle(
-        Math.random().toString(),
-        { create: true }
-      )
-      tmpFileWriter = await tmpFileHandle.createWritable()
+  const initPromise = (async () => {
+    const opfsRoot = await navigator.storage.getDirectory()
+    tmpFileHandle = await opfsRoot.getFileHandle(
+      Math.random().toString(),
+      { create: true }
+    )
+    tmpFileWriter = await tmpFileHandle.createWritable()
 
-      timerId = self.setInterval(() => {
-        if (!moovBoxReady()) return
-        write2TmpFile()
-      }, 100)
-    })()
+    timerId = self.setInterval(() => {
+      if (!moovBoxReady()) return
+      write2TmpFile()
+    }, 100)
+  })()
 
   let stoped = false
   return async () => {
     if (stoped) throw Error('File exported')
     stoped = true
 
+    await initPromise
     clearInterval(timerId)
-    if (tmpFileHandle == null) return null
+
+    if (!moovBoxReady() || tmpFileHandle == null) return null
     inMP4File.flush()
     await write2TmpFile()
     await tmpFileWriter?.close()
@@ -655,6 +643,20 @@ export function mp4File2OPFSFile(inMP4File: MP4File): () => (Promise<File | null
     await writer.close()
 
     return await rsFileHandle.getFile()
+  }
+
+  function box2Buf(source: typeof boxes, startIdx: number): Uint8Array | null {
+    if (startIdx >= source.length) return null
+
+    const ds = new mp4box.DataStream()
+    ds.endianness = mp4box.DataStream.BIG_ENDIAN
+
+    for (let i = startIdx; i < source.length; i++) {
+      if (source[i] === null) continue
+      source[i].write(ds)
+      delete source[i]
+    }
+    return new Uint8Array(ds.buffer)
   }
 }
 
