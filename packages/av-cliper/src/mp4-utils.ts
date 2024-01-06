@@ -342,7 +342,7 @@ function encodeAudioTrack(
   return encoder
 }
 
-export function stream2file(stream: ReadableStream<Uint8Array>): {
+export function _deprecated_stream2file(stream: ReadableStream<Uint8Array>): {
   file: MP4File
   stop: () => void
 } {
