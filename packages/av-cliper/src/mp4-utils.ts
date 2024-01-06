@@ -552,7 +552,7 @@ export function file2stream(
   }
 }
 
-export function mp4File2OPFSFile(inMP4File: MP4File): () => (Promise<File | null>) {
+function mp4File2OPFSFile(inMP4File: MP4File): () => (Promise<File | null>) {
   let sendedBoxIdx = 0
   const boxes = inMP4File.boxes
   const tracks: Array<{ track: TrakBoxParser; id: number }> = []
@@ -763,76 +763,91 @@ export async function fastConcatMP4(streams: ReadableStream<Uint8Array>[]): Prom
   const outfile = mp4box.createFile()
 
   const dumpFile = mp4File2OPFSFile(outfile)
-  await run()
+  await concatStreamsToMP4BoxFile(streams, outfile)
   const opfsFile = await dumpFile()
   if (opfsFile == null) throw Error('Can not generate file from streams')
   return opfsFile.stream()
+}
 
-  async function run() {
-    let vTrackId = 0
-    let vDTS = 0
-    let vCTS = 0
-    let aTrackId = 0
-    let aDTS = 0
-    let aCTS = 0
-    // ts bug, 不能正确识别类型
-    let lastVSamp: any = null
-    let lastASamp: any = null
-    for (const stream of streams) {
-      await new Promise<void>(async resolve => {
-        let curFile: MP4File | null = null
-        autoReadStream(stream.pipeThrough(new SampleTransform()), {
-          onDone: resolve,
-          onChunk: async ({ chunkType, data }) => {
-            if (chunkType === 'ready') {
-              const { videoTrackConf, audioTrackConf } = extractFileConfig(
-                data.file,
-                data.info
-              )
-              curFile = data.file
-              if (vTrackId === 0 && videoTrackConf != null) {
-                vTrackId = outfile.addTrack(videoTrackConf)
-              }
-              if (aTrackId === 0 && audioTrackConf != null) {
-                aTrackId = outfile.addTrack(audioTrackConf)
-              }
-            } else if (chunkType === 'samples') {
-              const { id: curId, type, samples } = data
-              const trackId = type === 'video' ? vTrackId : aTrackId
-              const offsetDTS = type === 'video' ? vDTS : aDTS
-              const offsetCTS = type === 'video' ? vCTS : aCTS
+async function concatStreamsToMP4BoxFile(streams: ReadableStream<Uint8Array>[], outfile: MP4File) {
+  let vTrackId = 0
+  let vDTS = 0
+  let vCTS = 0
+  let aTrackId = 0
+  let aDTS = 0
+  let aCTS = 0
+  // ts bug, 不能正确识别类型
+  let lastVSamp: any = null
+  let lastASamp: any = null
+  for (const stream of streams) {
+    await new Promise<void>(async resolve => {
+      let curFile: MP4File | null = null
+      autoReadStream(stream.pipeThrough(new SampleTransform()), {
+        onDone: resolve,
+        onChunk: async ({ chunkType, data }) => {
+          if (chunkType === 'ready') {
+            const { videoTrackConf, audioTrackConf } = extractFileConfig(
+              data.file,
+              data.info
+            )
+            curFile = data.file
+            if (vTrackId === 0 && videoTrackConf != null) {
+              vTrackId = outfile.addTrack(videoTrackConf)
+            }
+            if (aTrackId === 0 && audioTrackConf != null) {
+              aTrackId = outfile.addTrack(audioTrackConf)
+            }
+          } else if (chunkType === 'samples') {
+            const { id: curId, type, samples } = data
+            const trackId = type === 'video' ? vTrackId : aTrackId
+            const offsetDTS = type === 'video' ? vDTS : aDTS
+            const offsetCTS = type === 'video' ? vCTS : aCTS
 
-              samples.forEach(s => {
-                outfile.addSample(trackId, s.data, {
-                  duration: s.duration,
-                  dts: s.dts + offsetDTS,
-                  cts: s.cts + offsetCTS,
-                  is_sync: s.is_sync
-                })
+            samples.forEach(s => {
+              outfile.addSample(trackId, s.data, {
+                duration: s.duration,
+                dts: s.dts + offsetDTS,
+                cts: s.cts + offsetCTS,
+                is_sync: s.is_sync
               })
-              curFile?.releaseUsedSamples(curId, samples.length)
+            })
+            curFile?.releaseUsedSamples(curId, samples.length)
 
-              const lastSamp = samples.at(-1)
-              if (lastSamp == null) return
-              if (type === 'video') {
-                lastVSamp = lastSamp
-              } else if (type === 'audio') {
-                lastASamp = lastSamp
-              }
+            const lastSamp = samples.at(-1)
+            if (lastSamp == null) return
+            if (type === 'video') {
+              lastVSamp = lastSamp
+            } else if (type === 'audio') {
+              lastASamp = lastSamp
             }
           }
-        })
+        }
       })
-      if (lastVSamp != null) {
-        vDTS += lastVSamp.dts
-        vCTS += lastVSamp.cts
-      }
-      if (lastASamp != null) {
-        aDTS += lastASamp.dts
-        aCTS += lastASamp.cts
-      }
+    })
+    if (lastVSamp != null) {
+      vDTS += lastVSamp.dts
+      vCTS += lastVSamp.cts
+    }
+    if (lastASamp != null) {
+      aDTS += lastASamp.dts
+      aCTS += lastASamp.cts
     }
   }
+}
+
+/**
+ * Convert live stream to OPFS File, fix duration being 0
+ * @param stream mp4 file stream
+ * @returns File
+ */
+export async function mp4StreamToOPFSFile(stream: ReadableStream<Uint8Array>): Promise<File> {
+  const outfile = mp4box.createFile()
+
+  const dumpFile = mp4File2OPFSFile(outfile)
+  await concatStreamsToMP4BoxFile([stream], outfile)
+  const opfsFile = await dumpFile()
+  if (opfsFile == null) throw Error('Can not generate file from stream')
+  return opfsFile
 }
 
 function createMP4AudioSampleDecoder(
