@@ -226,7 +226,7 @@ function encodeVideoTrack(
     width: opts.video.width,
     height: opts.video.height,
     brands: ['isom', 'iso2', 'avc1', 'mp42', 'mp41'],
-    avcDecoderConfigRecord: null as AllowSharedBufferSource | undefined | null
+    avcDecoderConfigRecord: null as ArrayBuffer | undefined | null
   }
 
   let trackId: number
@@ -242,7 +242,7 @@ function encodeVideoTrack(
   })
   const encoder = createVideoEncoder(opts, (chunk, meta) => {
     if (trackId == null && meta != null) {
-      videoTrackOpts.avcDecoderConfigRecord = meta.decoderConfig?.description
+      videoTrackOpts.avcDecoderConfigRecord = meta.decoderConfig?.description as ArrayBuffer
       trackId = mp4File.addTrack(videoTrackOpts)
       avSyncEvtTool.emit('VideoReady')
       Log.info('VideoEncoder, video track ready, trackId:', trackId)
