@@ -3,6 +3,7 @@ export interface IRecorderConf {
   height?: number
   expectFPS?: number
   audioCodec?: 'aac'
+  videoCodec?: string
   /* 码率 */
   bitrate?: number
 }
@@ -12,6 +13,7 @@ export interface IWorkerOpts {
     width: number
     height: number
     expectFPS: number
+    codec: string
   }
   audio: {
     codec: 'opus' | 'aac'

@@ -22,6 +22,7 @@ interface ICombinatorOpts {
   height: number
   bitrate?: number
   bgColor?: string
+  videoCodec?: string
 }
 
 let COM_ID = 0
@@ -42,7 +43,7 @@ const encoderIdle = (() => {
     totalQSize = ts
   }, 10)
 
-  return async function encoderIdle () {
+  return async function encoderIdle() {
     updateQS()
     if (totalQSize > 100) {
       // VideoFrame 非常占用 GPU 显存，避免显存压力过大，稍等一下整体性能更优
@@ -56,7 +57,9 @@ const encoderIdle = (() => {
 })()
 
 export class Combinator {
-  static async isSupported (): Promise<boolean> {
+  static async isSupported(args = {
+    videoCodec: 'avc1.42E032'
+  }): Promise<boolean> {
     return (
       self.OffscreenCanvas != null &&
       self.VideoEncoder != null &&
@@ -67,7 +70,7 @@ export class Combinator {
       self.AudioData != null &&
       ((
         await self.VideoEncoder.isConfigSupported({
-          codec: 'avc1.4D0032',
+          codec: args.videoCodec,
           width: 1280,
           height: 720
         })
@@ -105,7 +108,7 @@ export class Combinator {
   }>()
   on = this.#evtTool.on
 
-  constructor (opts: ICombinatorOpts) {
+  constructor(opts: ICombinatorOpts) {
     const { width, height } = opts
     this.#cvs = new OffscreenCanvas(width, height)
     // this.#cvs = document.querySelector('#canvas') as HTMLCanvasElement
@@ -118,7 +121,8 @@ export class Combinator {
       video: {
         width,
         height,
-        expectFPS: 30
+        expectFPS: 30,
+        codec: opts.videoCodec ?? 'avc1.42E032'
       },
       audio: {
         codec: 'aac',
@@ -131,7 +135,7 @@ export class Combinator {
     TOTAL_COM_ENCODE_QSIZE.set(this, this.#remux.getEecodeQueueSize)
   }
 
-  async add (
+  async add(
     sprite: OffscreenSprite,
     opts: { offset?: number; duration?: number; main?: boolean } = {}
   ): Promise<void> {
@@ -147,7 +151,7 @@ export class Combinator {
     this.#comItems.sort((a, b) => a.sprite.zIndex - b.sprite.zIndex)
   }
 
-  output (): ReadableStream<Uint8Array> {
+  output(): ReadableStream<Uint8Array> {
     if (this.#comItems.length === 0) throw Error('No clip added')
 
     const mainItem = this.#comItems.find(it => it.main)
@@ -201,7 +205,7 @@ export class Combinator {
     return stream
   }
 
-  destroy () {
+  destroy() {
     if (this.#destroyed) return
     this.#destroyed = true
 
@@ -210,7 +214,7 @@ export class Combinator {
     this.#evtTool.destroy()
   }
 
-  #run (
+  #run(
     maxTime: number,
     onprogress: (prog: number) => void,
     onEnded: () => Promise<void>
@@ -331,7 +335,7 @@ export class Combinator {
   }
 }
 
-function createAudioPlaceholder (
+function createAudioPlaceholder(
   ts: number,
   duration: number,
   sampleRate: number

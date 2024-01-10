@@ -28,6 +28,7 @@ export class AVRecorder {
       bitrate: 3_000_000,
       expectFPS: 30,
       audioCodec: 'aac',
+      videoCodec: 'avc1.42E032',
       ...conf
     }
   }
@@ -68,7 +69,8 @@ export class AVRecorder {
       video: {
         width: this.#conf.width,
         height: this.#conf.height,
-        expectFPS: this.#conf.expectFPS
+        expectFPS: this.#conf.expectFPS,
+        codec: this.#conf.videoCodec
       },
       audio: audioConf,
       bitrate: this.#conf.bitrate,

@@ -29,6 +29,7 @@ interface IWorkerOpts {
     width: number
     height: number
     expectFPS: number
+    codec: string
   }
   audio: {
     codec: 'opus' | 'aac'
@@ -270,7 +271,7 @@ function createVideoEncoder(
 
   const videoOpts = opts.video
   encoder.configure({
-    codec: 'avc1.4D0032',
+    codec: opts.video.codec,
     framerate: videoOpts.expectFPS,
     // hardwareAcceleration: 'prefer-hardware',
     // 码率
