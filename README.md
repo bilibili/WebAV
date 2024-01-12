@@ -57,7 +57,7 @@ This is an experimental project attempting to provide easy-to-use APIs for handl
 
 ## DEMO
 
-<https://hughfenghen.github.io/WebAV/demo/1_1-decode-video>
+<https://hughfenghen.github.io/WebAV/demo/>
 
 ## Development
 

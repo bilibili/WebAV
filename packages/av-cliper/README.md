@@ -25,4 +25,4 @@ WebCodecs-based, combine video, audio, images, text, with animation support
 
 ## DEMO
 
-<https://hughfenghen.github.io/WebAV/demo/1_1-decode-video>
+<https://hughfenghen.github.io/WebAV/demo/>

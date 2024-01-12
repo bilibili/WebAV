@@ -7,5 +7,5 @@ hero:
     - text: Guide
       link: /guide/
     - text: DEMO
-      link: /demo/1_1-decode-video
+      link: /demo/
 ---
