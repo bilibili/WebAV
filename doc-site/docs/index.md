@@ -1,5 +1,5 @@
 ---
-title: A static site based on dumi
+title: WebAV Doc Site
 hero:
   title: WebAV
   description: WebAV Doc Site
