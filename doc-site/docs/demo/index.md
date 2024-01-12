@@ -1,10 +1,6 @@
----
-nav:
-  title: DEMO
-  order: 2
----
+# DEMO 前言
 
-左侧包含多个可体验的 DEMO，在纯浏览器环境中实现音视频数据处理。
+左侧包含多个可体验的 DEMO，在纯浏览器环境中实现音视频数据处理的各种示例。
 
 ```tsx
 import { Combinator } from '@webav/av-cliper';
@@ -28,7 +24,7 @@ export default function UI() {
 }
 ```
 
-体验 DEMO 前：
+体验 DEMO 前
 
 1. 确保你的浏览器支持 WebCodecs API（Chrome 94+），查看详细[浏览器兼容性][1]
 2. 音视频资源托管在 Github Pages，没有科学联网的设备可能耐心等待资源加载
