@@ -29,7 +29,8 @@ export default function UI() {
 1. 确保你的浏览器支持 WebCodecs API（Chrome 94+），查看详细[浏览器兼容性][1]
 2. 音视频资源托管在 Github Pages，没有科学联网的设备可能需要耐心等待资源加载
    1. 最好能科学上网，否则资源可能加载失败
-   2. 也可 clone [WebAV 项目][2]，在本地环境运行
+   2. 或先体验**视频录制**等不需要加载视频资源的示例
+   3. 也可 clone [WebAV 项目][2]，在本地环境运行
 
 [1]: https://caniuse.com/?search=WebCodecs
 [2]: https://github.com/hughfenghen/WebAV
