@@ -1,6 +1,6 @@
 # DEMO 前言
 
-左侧包含多个可体验的 DEMO，在纯浏览器环境中实现音视频数据处理的各种示例。
+左侧包含多个可体验的 DEMO，是基于 [WebAV 项目][2]实现在纯浏览器环境中处理音视频数据的各种示例。
 
 ```tsx
 import { Combinator } from '@webav/av-cliper';
@@ -27,6 +27,9 @@ export default function UI() {
 体验 DEMO 前
 
 1. 确保你的浏览器支持 WebCodecs API（Chrome 94+），查看详细[浏览器兼容性][1]
-2. 音视频资源托管在 Github Pages，没有科学联网的设备可能耐心等待资源加载
+2. 音视频资源托管在 Github Pages，没有科学联网的设备可能需要耐心等待资源加载
+   1. 最好能科学上网，否则资源可能加载失败
+   2. 也可 clone [WebAV 项目][2]，在本地环境运行
 
 [1]: https://caniuse.com/?search=WebCodecs
+[2]: https://github.com/hughfenghen/WebAV
