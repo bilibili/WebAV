@@ -5,22 +5,20 @@ import mp4box, {
   MP4Sample,
   SampleOpts,
   TrakBoxParser,
-  VideoTrackOpts,
-  AudioTrackOpts,
-  MP4ABoxParser
 } from '@webav/mp4box.js'
-import { Log } from './log'
+import { Log } from '../log'
 import {
   autoReadStream,
   extractPCM4AudioData,
   extractPCM4AudioBuffer,
   mixinPCM,
   ringSliceFloat32Array,
-  sleep,
   concatPCMFragments
-} from './av-utils'
-import { DEFAULT_AUDIO_CONF } from './clips'
-import { EventTool } from './event-tool'
+} from '../av-utils'
+import { DEFAULT_AUDIO_CONF } from '../clips'
+import { EventTool } from '../event-tool'
+import { SampleTransform } from './sample-transform'
+import { extractFileConfig } from './mp4box-utils'
 
 type TCleanFn = () => void
 
@@ -379,94 +377,7 @@ export function _deprecated_stream2file(stream: ReadableStream<Uint8Array>): {
   }
 }
 
-/**
- * 将原始字节流转换成 MP4Sample 流
- */
-class SampleTransform {
-  readable: ReadableStream<
-    | {
-      chunkType: 'ready'
-      data: { info: MP4Info; file: MP4File }
-    }
-    | {
-      chunkType: 'samples'
-      data: { id: number; type: 'video' | 'audio'; samples: MP4Sample[] }
-    }
-  >
 
-  writable: WritableStream<Uint8Array>
-
-  #inputBufOffset = 0
-
-  constructor() {
-    const file = mp4box.createFile()
-    let outCtrlDesiredSize = 0
-    let streamCancelled = false
-    this.readable = new ReadableStream(
-      {
-        start: ctrl => {
-          file.onReady = info => {
-            const vTrackId = info.videoTracks[0]?.id
-            if (vTrackId != null)
-              file.setExtractionOptions(vTrackId, 'video', { nbSamples: 100 })
-
-            const aTrackId = info.audioTracks[0]?.id
-            if (aTrackId != null)
-              file.setExtractionOptions(aTrackId, 'audio', { nbSamples: 100 })
-
-            ctrl.enqueue({ chunkType: 'ready', data: { info, file } })
-            file.start()
-          }
-
-          file.onSamples = (id, type, samples) => {
-            ctrl.enqueue({
-              chunkType: 'samples',
-              data: { id, type, samples }
-            })
-            outCtrlDesiredSize = ctrl.desiredSize ?? 0
-          }
-
-          file.onFlush = () => {
-            ctrl.close()
-          }
-        },
-        pull: ctrl => {
-          outCtrlDesiredSize = ctrl.desiredSize ?? 0
-        },
-        cancel: () => {
-          file.stop()
-          streamCancelled = true
-        }
-      },
-      {
-        // 每条消息 100 个 samples
-        highWaterMark: 50
-      }
-    )
-
-    this.writable = new WritableStream({
-      write: async ui8Arr => {
-        if (streamCancelled) {
-          this.writable.abort()
-          return
-        }
-
-        const inputBuf = ui8Arr.buffer as MP4ArrayBuffer
-        inputBuf.fileStart = this.#inputBufOffset
-        this.#inputBufOffset += inputBuf.byteLength
-        file.appendBuffer(inputBuf)
-
-        // 等待输出的数据被消费
-        while (outCtrlDesiredSize < 0) await sleep(50)
-      },
-      close: () => {
-        file.flush()
-        file.stop()
-        file.onFlush?.()
-      }
-    })
-  }
-}
 
 export function file2stream(
   file: MP4File,
@@ -661,24 +572,6 @@ function mp4File2OPFSFile(inMP4File: MP4File): () => (Promise<File | null>) {
   }
 }
 
-// track is H.264, H.265 or VPX.
-function parseVideoCodecDesc(track: TrakBoxParser): Uint8Array {
-  for (const entry of track.mdia.minf.stbl.stsd.entries) {
-    // @ts-expect-error
-    const box = entry.avcC ?? entry.hvcC ?? entry.vpcC
-    if (box != null) {
-      const stream = new mp4box.DataStream(
-        undefined,
-        0,
-        mp4box.DataStream.BIG_ENDIAN
-      )
-      box.write(stream)
-      return new Uint8Array(stream.buffer.slice(8)) // Remove the box header.
-    }
-  }
-  throw Error('avcC, hvcC or VPX not found')
-}
-
 /**
  * EncodedAudioChunk | EncodedVideoChunk 转换为 MP4 addSample 需要的参数
  */
@@ -699,61 +592,7 @@ function chunk2MP4SampleOpts(
   }
 }
 
-function extractFileConfig(file: MP4File, info: MP4Info) {
-  const vTrack = info.videoTracks[0]
-  const rs: {
-    videoTrackConf?: VideoTrackOpts
-    videoDecoderConf?: Parameters<VideoDecoder['configure']>[0]
-    audioTrackConf?: AudioTrackOpts
-    audioDecoderConf?: Parameters<AudioDecoder['configure']>[0]
-  } = {}
-  if (vTrack != null) {
-    const videoDesc = parseVideoCodecDesc(file.getTrackById(vTrack.id)).buffer
-    const { descKey, type } = vTrack.codec.startsWith('avc1')
-      ? { descKey: 'avcDecoderConfigRecord', type: 'avc1' }
-      : vTrack.codec.startsWith('hvc1')
-        ? { descKey: 'hevcDecoderConfigRecord', type: 'hvc1' }
-        : { descKey: '', type: '' }
-    if (descKey !== '') {
-      rs.videoTrackConf = {
-        timescale: vTrack.timescale,
-        duration: vTrack.duration,
-        width: vTrack.video.width,
-        height: vTrack.video.height,
-        brands: info.brands,
-        type,
-        [descKey]: videoDesc
-      }
-    }
 
-    rs.videoDecoderConf = {
-      codec: vTrack.codec,
-      codedHeight: vTrack.video.height,
-      codedWidth: vTrack.video.width,
-      description: videoDesc
-    }
-  }
-
-  const aTrack = info.audioTracks[0]
-  if (aTrack != null) {
-    rs.audioTrackConf = {
-      timescale: aTrack.timescale,
-      samplerate: aTrack.audio.sample_rate,
-      channel_count: aTrack.audio.channel_count,
-      hdlr: 'soun',
-      type: aTrack.codec.startsWith('mp4a') ? 'mp4a' : aTrack.codec,
-      description: getESDSBoxFromMP4File(file)
-    }
-    rs.audioDecoderConf = {
-      codec: aTrack.codec.startsWith('mp4a')
-        ? DEFAULT_AUDIO_CONF.codec
-        : aTrack.codec,
-      numberOfChannels: aTrack.audio.channel_count,
-      sampleRate: aTrack.audio.sample_rate
-    }
-  }
-  return rs
-}
 
 /**
  * 快速顺序合并多个mp4流，要求所有mp4的属性是一致的
@@ -1168,11 +1007,3 @@ function createESDSBox(config: ArrayBuffer | ArrayBufferView) {
   return esdsBox
 }
 
-function getESDSBoxFromMP4File(file: MP4File, codec = 'mp4a') {
-  const mp4aBox = file.moov?.traks.map(
-    t => t.mdia.minf.stbl.stsd.entries
-  ).flat()
-    .find(({ type }) => type === codec) as MP4ABoxParser
-
-  return mp4aBox?.esds
-}
