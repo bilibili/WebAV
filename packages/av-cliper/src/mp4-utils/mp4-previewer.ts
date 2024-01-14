@@ -16,16 +16,13 @@ export class MP4Previewer {
 
   #opfsFile = new OPFSFileWrap(Math.random().toString())
 
+  #wrapDecoder: ReturnType<typeof wrapVideoDecoder> | null = null
+
   constructor(stream: ReadableStream<Uint8Array>) {
     this.#ready = this.#init(stream)
   }
 
   async #init(stream: ReadableStream<Uint8Array>) {
-    const videoDecoder = new VideoDecoder({
-      output: () => { },
-      error: Log.error
-    })
-
     let offset = 0
     return new Promise<MP4Info>((resolve, reject) => {
       let mp4Info: MP4Info | null = null
@@ -42,7 +39,8 @@ export class MP4Previewer {
               duration: videoTrackConf.duration ?? 0,
               timescale: videoTrackConf.timescale
             }
-            videoDecoder.configure(videoDecoderConf)
+
+            this.#wrapDecoder = wrapVideoDecoder(videoDecoderConf)
           }
           if (chunkType === 'samples' && data.type === 'video') {
             for (const s of data.samples) {
@@ -69,14 +67,11 @@ export class MP4Previewer {
     })
   }
 
-  #decodeVideoChunk(chunks: EncodedVideoChunk[]) {
-
-  }
-
   async getInfo() {
     return await this.#ready
   }
 
+  // time 单位秒 s
   async getVideoFrame(time: number): Promise<VideoFrame | null> {
     if (time < 0) return null
     const info = await this.#ready
@@ -108,7 +103,55 @@ export class MP4Previewer {
         break
       }
     }
-    console.log(55555, chunks)
+    return new Promise<VideoFrame>((resolve) => {
+      this.#wrapDecoder?.decode(chunks, (vf, done) => {
+        if (done) resolve(vf)
+        else vf.close()
+      })
+    })
   }
 }
 
+function wrapVideoDecoder(conf: VideoDecoderConfig) {
+  type OutputHandle = (vf: VideoFrame, done: boolean) => void
+
+  let curCb: ((vf: VideoFrame) => void) | null = null
+  const vdec = new VideoDecoder({
+    output: (vf) => {
+      curCb?.(vf)
+    },
+    error: Log.error
+  })
+  vdec.configure(conf)
+
+  let tasks: Array<{
+    chunks: EncodedVideoChunk[]
+    cb: (vf: VideoFrame, done: boolean) => void
+  }> = []
+
+  async function run() {
+    if (curCb != null) return
+
+    const t = tasks.shift()
+    if (t == null) return
+    let i = 0
+    curCb = (vf) => {
+      i += 1
+      const done = i >= t.chunks.length
+      t.cb(vf, done)
+      if (done) {
+        curCb = null
+        run().catch(Log.error)
+      }
+    }
+    for (const chunk of t.chunks) vdec.decode(chunk)
+    await vdec.flush()
+  }
+
+  return {
+    decode(chunks: EncodedVideoChunk[], cb: OutputHandle) {
+      tasks.push({ chunks, cb })
+      run().catch(Log.error)
+    }
+  }
+}
