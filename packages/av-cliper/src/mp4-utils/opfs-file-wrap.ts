@@ -16,7 +16,7 @@ export class OPFSFileWrap {
 
   constructor(fileName: string) {
     const createWorker = (): Worker => {
-      const blob = new Blob([`(${setup.toString()})()`])
+      const blob = new Blob([`(${opfsWorkerSetup.toString()})()`])
       const url = URL.createObjectURL(blob)
       return new Worker(url)
     }
@@ -57,7 +57,7 @@ export class OPFSFileWrap {
   }
 }
 
-const setup = (): void => {
+const opfsWorkerSetup = (): void => {
   let accessHandle: FileSystemSyncAccessHandle
 
   async function createFile(fileName: string) {
