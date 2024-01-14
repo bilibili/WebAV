@@ -1,4 +1,4 @@
-import { MP4Info, MP4Sample } from '@webav/mp4box.js'
+import { MP4File, MP4Info, MP4Sample } from '@webav/mp4box.js'
 import { autoReadStream } from '../av-utils'
 import { Log } from '../log'
 import { extractFileConfig, sample2ChunkOpts } from './mp4box-utils'
@@ -18,6 +18,8 @@ export class MP4Previewer {
 
   #wrapDecoder: ReturnType<typeof wrapVideoDecoder> | null = null
 
+  #cvs: OffscreenCanvas | null = null
+
   constructor(stream: ReadableStream<Uint8Array>) {
     this.#ready = this.#init(stream)
   }
@@ -26,6 +28,7 @@ export class MP4Previewer {
     let offset = 0
     return new Promise<MP4Info>((resolve, reject) => {
       let mp4Info: MP4Info | null = null
+      let mp4boxFile: MP4File | null = null
       autoReadStream(stream.pipeThrough(new SampleTransform()), {
         onChunk: async ({ chunkType, data }): Promise<void> => {
           if (chunkType === 'ready') {
@@ -39,21 +42,24 @@ export class MP4Previewer {
               duration: videoTrackConf.duration ?? 0,
               timescale: videoTrackConf.timescale
             }
+            mp4boxFile = data.file
 
             this.#wrapDecoder = wrapVideoDecoder(videoDecoderConf)
           }
-          if (chunkType === 'samples' && data.type === 'video') {
-            for (const s of data.samples) {
-              this.#videoSamples.push({
-                ...s,
-                offset,
-                timeEnd: s.cts + s.duration,
-                data: null
-              })
-              offset += s.data.byteLength
-              await this.#opfsFile.write(s.data)
+          if (chunkType === 'samples') {
+            if (data.type === 'video') {
+              for (const s of data.samples) {
+                this.#videoSamples.push({
+                  ...s,
+                  offset,
+                  timeEnd: s.cts + s.duration,
+                  data: null
+                })
+                offset += s.data.byteLength
+                await this.#opfsFile.write(s.data)
+              }
             }
-            // todo: 释放内存
+            mp4boxFile?.releaseUsedSamples(data.id, data.samples.length)
           }
         },
         onDone: async () => {
