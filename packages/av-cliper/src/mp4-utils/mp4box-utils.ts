@@ -3,6 +3,7 @@ import mp4box, {
   MP4ABoxParser,
   MP4File,
   MP4Info,
+  MP4Sample,
   TrakBoxParser,
   VideoTrackOpts
 } from '@webav/mp4box.js'
@@ -89,4 +90,19 @@ function getESDSBoxFromMP4File(file: MP4File, codec = 'mp4a') {
     .find(({ type }) => type === codec) as MP4ABoxParser
 
   return mp4aBox?.esds
+}
+
+export function sample2ChunkOpts(s: {
+  is_sync: boolean
+  cts: number
+  timescale: number
+  duration: number
+  data: ArrayBuffer
+}): EncodedAudioChunkInit | EncodedVideoChunkInit {
+  return {
+    type: (s.is_sync ? 'key' : 'delta') as EncodedVideoChunkType,
+    timestamp: (1e6 * s.cts) / s.timescale,
+    duration: (1e6 * s.duration) / s.timescale,
+    data: s.data
+  }
 }

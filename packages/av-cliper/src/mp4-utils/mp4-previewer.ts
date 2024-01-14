@@ -1,58 +1,64 @@
-import { MP4Info } from '@webav/mp4box.js'
+import { MP4Info, MP4Sample } from '@webav/mp4box.js'
 import { autoReadStream } from '../av-utils'
 import { Log } from '../log'
-import { extractFileConfig } from './mp4box-utils'
+import { extractFileConfig, sample2ChunkOpts } from './mp4box-utils'
+import { OPFSFileWrap } from './opfs-file-wrap'
 import { SampleTransform } from './sample-transform'
 
 export class MP4Previewer {
   #ready: Promise<MP4Info>
+
+  #videoSamples: Array<Omit<MP4Sample, 'data'> & {
+    offset: number
+    timeEnd: number
+    data: null
+  }> = []
+
+  #opfsFile = new OPFSFileWrap(Math.random().toString())
 
   constructor(stream: ReadableStream<Uint8Array>) {
     this.#ready = this.#init(stream)
   }
 
   async #init(stream: ReadableStream<Uint8Array>) {
-    const opfsRoot = await navigator.storage.getDirectory()
-    const fileHandle = await opfsRoot.getFileHandle(Math.random().toString(), {
-      create: true
-    })
-    const fileWriter = await fileHandle.createWritable()
     const videoDecoder = new VideoDecoder({
       output: () => { },
       error: Log.error
     })
 
-    const trackIndex = []
     let offset = 0
     return new Promise<MP4Info>((resolve, reject) => {
       let mp4Info: MP4Info | null = null
       autoReadStream(stream.pipeThrough(new SampleTransform()), {
         onChunk: async ({ chunkType, data }): Promise<void> => {
           if (chunkType === 'ready') {
-            const { videoDecoderConf } = extractFileConfig(data.file, data.info)
-            if (videoDecoderConf == null) {
+            const { videoDecoderConf, videoTrackConf } = extractFileConfig(data.file, data.info)
+            if (videoDecoderConf == null || videoTrackConf == null) {
               reject('Unsupported codec')
               return
             }
-            mp4Info = data.info
+            mp4Info = {
+              ...data.info,
+              duration: videoTrackConf.duration ?? 0,
+              timescale: videoTrackConf.timescale
+            }
             videoDecoder.configure(videoDecoderConf)
           }
           if (chunkType === 'samples' && data.type === 'video') {
             for (const s of data.samples) {
-              trackIndex.push({
+              this.#videoSamples.push({
+                ...s,
                 offset,
-                size: s.data.byteLength,
-                cts: s.cts,
-                duration: s.duration
+                timeEnd: s.cts + s.duration,
+                data: null
               })
               offset += s.data.byteLength
-              await fileWriter.write(s.data)
+              await this.#opfsFile.write(s.data)
             }
+            // todo: 释放内存
           }
         },
         onDone: async () => {
-          await fileWriter.close()
-          console.log(4444, await fileHandle.getFile())
           if (mp4Info == null) {
             reject('Parse failed')
             return
@@ -63,11 +69,46 @@ export class MP4Previewer {
     })
   }
 
+  #decodeVideoChunk(chunks: EncodedVideoChunk[]) {
+
+  }
+
   async getInfo() {
     return await this.#ready
   }
 
-  getVideoFrame(time: number): VideoFrame {
-    throw Error('Not implemented')
+  async getVideoFrame(time: number): Promise<VideoFrame | null> {
+    if (time < 0) return null
+    const info = await this.#ready
+    if (time > info.duration / info.timescale) return null
+
+    let timeMapping = time * info.timescale
+    const chunks: EncodedVideoChunk[] = []
+    // todo: 二分查找
+    for (let i = 0; i < this.#videoSamples.length; i += 1) {
+      const si = this.#videoSamples[i]
+      if (si.cts <= timeMapping && si.timeEnd >= timeMapping) {
+        // 寻找最近的一个 关键帧
+        if (!si.is_sync) {
+          for (let j = i - 1; j >= 0; j -= 1) {
+            const sj = this.#videoSamples[j]
+            if (sj.is_sync) {
+              chunks.push(new EncodedVideoChunk(sample2ChunkOpts({
+                ...sj,
+                data: await this.#opfsFile.read(sj.offset, sj.size)
+              })))
+              break
+            }
+          }
+        }
+        chunks.push(new EncodedVideoChunk(sample2ChunkOpts({
+          ...si,
+          data: await this.#opfsFile.read(si.offset, si.size)
+        })))
+        break
+      }
+    }
+    console.log(55555, chunks)
   }
 }
+

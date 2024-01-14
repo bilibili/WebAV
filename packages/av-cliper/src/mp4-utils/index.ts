@@ -18,7 +18,7 @@ import {
 import { DEFAULT_AUDIO_CONF } from '../clips'
 import { EventTool } from '../event-tool'
 import { SampleTransform } from './sample-transform'
-import { extractFileConfig } from './mp4box-utils'
+import { extractFileConfig, sample2ChunkOpts } from './mp4box-utils'
 
 type TCleanFn = () => void
 
@@ -947,17 +947,6 @@ export function mixinMP4AndAudio(
   }
 
   return outStream
-}
-
-function sample2ChunkOpts(
-  s: MP4Sample
-): EncodedAudioChunkInit | EncodedVideoChunkInit {
-  return {
-    type: (s.is_sync ? 'key' : 'delta') as EncodedVideoChunkType,
-    timestamp: (1e6 * s.cts) / s.timescale,
-    duration: (1e6 * s.duration) / s.timescale,
-    data: s.data
-  }
 }
 
 function createESDSBox(config: ArrayBuffer | ArrayBufferView) {

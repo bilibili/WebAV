@@ -53,7 +53,7 @@ export class OPFSFileWrap {
   }
 
   async read(offset: number, size: number) {
-    return await this.#postMsg('read', { offset, size })
+    return await this.#postMsg('read', { offset, size }) as ArrayBuffer
   }
 }
 
