@@ -20,6 +20,8 @@ import { EventTool } from '../event-tool'
 import { SampleTransform } from './sample-transform'
 import { extractFileConfig, sample2ChunkOpts } from './mp4box-utils'
 
+export { MP4Previewer } from './mp4-previewer'
+
 type TCleanFn = () => void
 
 interface IWorkerOpts {

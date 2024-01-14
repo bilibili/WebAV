@@ -88,31 +88,36 @@ export class MP4Previewer {
     if (time > info.duration / info.timescale) return null
 
     let timeMapping = time * info.timescale
-    const chunks: EncodedVideoChunk[] = []
     // todo: 二分查找
+    let start = 0
+    let end = 0
     for (let i = 0; i < this.#videoSamples.length; i += 1) {
       const si = this.#videoSamples[i]
       if (si.cts <= timeMapping && si.timeEnd >= timeMapping) {
+        end = i
         // 寻找最近的一个 关键帧
         if (!si.is_sync) {
           for (let j = i - 1; j >= 0; j -= 1) {
             const sj = this.#videoSamples[j]
             if (sj.is_sync) {
-              chunks.push(new EncodedVideoChunk(sample2ChunkOpts({
-                ...sj,
-                data: await this.#opfsFile.read(sj.offset, sj.size)
-              })))
+              start = j
               break
             }
           }
         }
-        chunks.push(new EncodedVideoChunk(sample2ChunkOpts({
-          ...si,
-          data: await this.#opfsFile.read(si.offset, si.size)
-        })))
         break
       }
     }
+
+    const chunks = await Promise.all(
+      this.#videoSamples.slice(start, end + 1)
+        .map(async s => new EncodedVideoChunk(sample2ChunkOpts({
+          ...s,
+          data: await this.#opfsFile.read(s.offset, s.size)
+        })))
+    )
+    if (chunks.length === 0) return Promise.resolve(null)
+
     return new Promise<VideoFrame>((resolve) => {
       this.#wrapDecoder?.decode(chunks, (vf, done) => {
         if (done) resolve(vf)
@@ -133,6 +138,7 @@ export class MP4Previewer {
   }
 }
 
+// 封装 decoder，一次解析一个 GOP
 function wrapVideoDecoder(conf: VideoDecoderConfig) {
   type OutputHandle = (vf: VideoFrame, done: boolean) => void
 
