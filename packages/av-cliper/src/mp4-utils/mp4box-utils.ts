@@ -3,7 +3,6 @@ import mp4box, {
   MP4ABoxParser,
   MP4File,
   MP4Info,
-  MP4Sample,
   TrakBoxParser,
   VideoTrackOpts
 } from '@webav/mp4box.js'

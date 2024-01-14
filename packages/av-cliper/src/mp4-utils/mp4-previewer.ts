@@ -19,6 +19,7 @@ export class MP4Previewer {
   #wrapDecoder: ReturnType<typeof wrapVideoDecoder> | null = null
 
   #cvs: OffscreenCanvas | null = null
+  #ctx: OffscreenCanvasRenderingContext2D | null = null
 
   constructor(stream: ReadableStream<Uint8Array>) {
     this.#ready = this.#init(stream)
@@ -43,6 +44,9 @@ export class MP4Previewer {
               timescale: videoTrackConf.timescale
             }
             mp4boxFile = data.file
+            const { width, height } = data.info.videoTracks[0].video
+            this.#cvs = new OffscreenCanvas(width, height)
+            this.#ctx = this.#cvs.getContext('2d')
 
             this.#wrapDecoder = wrapVideoDecoder(videoDecoderConf)
           }
@@ -115,6 +119,17 @@ export class MP4Previewer {
         else vf.close()
       })
     })
+  }
+
+  async getImage(time: number) {
+    const vf = await this.getVideoFrame(time)
+    if (vf == null || this.#cvs == null || this.#ctx == null) return
+
+    this.#ctx.drawImage(vf, 0, 0)
+    vf.close()
+    const src = URL.createObjectURL(await this.#cvs.convertToBlob())
+    this.#ctx.clearRect(0, 0, this.#cvs.width, this.#cvs.height)
+    return src
   }
 }
 
