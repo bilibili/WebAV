@@ -6,7 +6,7 @@ order: 4
 
 # 视频预览
 
-从 MP4 文件中提取指定时间的图像。
+从 MP4 文件中提取指定时间的图像，点击 Slider 预览任意时间点的图像。
 
 ```tsx
 import React, { useState } from 'react';
@@ -25,14 +25,19 @@ export default function UI() {
 
   return (
     <div>
-      <Slider
-        min={0}
-        max={duration}
-        step={0.1}
-        onChange={async (val) => {
-          setImgSrc(await previewer.getImage(val));
-        }}
-      />
+      <div style={{ display: 'flex', alignItems: 'center' }}>
+        <span> 时间：</span>
+        <div style={{ flex: 1 }}>
+          <Slider
+            min={0}
+            max={duration}
+            step={0.1}
+            onChange={async (val) => {
+              setImgSrc(await previewer.getImage(val));
+            }}
+          />
+        </div>
+      </div>
       {imgSrc && <img src={imgSrc} style={{ width: '100%' }} />}
     </div>
   );
