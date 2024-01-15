@@ -316,10 +316,12 @@ function encodeAudioTrack(
   const encoder = new AudioEncoder({
     error: Log.error,
     output: (chunk, meta) => {
-      if (trackId === 0 && meta.decoderConfig?.description != null) {
+      if (trackId === 0) {
+        // 某些设备不会输出 description
+        const desc = meta.decoderConfig?.description
         trackId = mp4File.addTrack({
           ...audioTrackOpts,
-          description: createESDSBox(meta.decoderConfig?.description)
+          description: desc == null ? undefined : createESDSBox(desc)
         })
         avSyncEvtTool.emit('AudioReady')
         Log.info('AudioEncoder, audio track ready, trackId:', trackId)
