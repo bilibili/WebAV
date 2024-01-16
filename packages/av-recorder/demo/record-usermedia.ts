@@ -10,10 +10,16 @@ let recorder: AVRecorder | null = null
 const startEl = document.querySelector('#startRecod') as HTMLButtonElement
 startEl?.addEventListener('click', () => {
   ; (async () => {
-    const mediaStream = await navigator.mediaDevices.getUserMedia({
-      video: true,
-      audio: true
-    })
+    // @ts-expect-error
+    const mediaStream = document.querySelector('input[name="source"]:checked')?.value === 'camera'
+      ? await navigator.mediaDevices.getUserMedia({
+        video: true,
+        audio: true
+      })
+      : await navigator.mediaDevices.getDisplayMedia({
+        video: true,
+        audio: true
+      })
     const recodeMS = mediaStream.clone()
     const vEl = document.querySelector('video') as HTMLVideoElement
     vEl.muted = true

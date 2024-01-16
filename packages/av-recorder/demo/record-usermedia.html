@@ -26,10 +26,14 @@
   <div id="app">
     <video></video>
   </div>
-  <button id="startRecod">start</button>&nbsp;
-  <button id="pauseRecod" style="visibility: hidden;">pause</button>&nbsp;
-  <button id="continueRecod" style="visibility: hidden;">resume</button>&nbsp;| &nbsp;
-  <button id="stopRecod">stop</button>
+  <div>
+    <label><input type="radio" name="source" value="camera">Camera</label>
+    <label><input type="radio" name="source" value="display" checked>Display</label>
+  </div>
+  <button id="startRecod">Start</button>&nbsp;
+  <button id="pauseRecod" style="visibility: hidden;">Pause</button>&nbsp;
+  <button id="continueRecod" style="visibility: hidden;">Resume</button>&nbsp;| &nbsp;
+  <button id="stopRecod">Stop</button>
   <script type="module" src="record-usermedia.ts"></script>
 </body>
 

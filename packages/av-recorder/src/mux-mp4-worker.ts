@@ -119,19 +119,42 @@ function init(opts: IWorkerOpts, onEnded: TClearFn): TClearFn {
 
   let stoped = false
   if (opts.streams.video != null) {
-    // const encode = encodeVideoFrame(opts.video.expectFPS, recoder.encodeVideo)
-    stopEncodeVideo = autoReadStream(opts.streams.video, {
+    let lastVf: VideoFrame | null = null
+    let autoInsertVFTimer = 0
+    const emitVf = (vf: VideoFrame) => {
+      clearTimeout(autoInsertVFTimer)
+
+      lastVf?.close()
+      lastVf = vf
+      const vfWrap = VIDEO_PAUSE_CTRL.transfrom(vf.clone())
+      if (vfWrap == null) return
+      recoder.encodeVideo(vfWrap.vf, vfWrap.opts)
+
+      // 录制静态画面，MediaStream 不出帧时，每秒插入一帧
+      autoInsertVFTimer = setTimeout(() => {
+        if (lastVf == null) return
+        const newVf = new VideoFrame(lastVf, {
+          timestamp: lastVf.timestamp + 1e6,
+          duration: 1e6
+        })
+        emitVf(newVf)
+      }, 1000)
+    }
+    const stopReadStream = autoReadStream(opts.streams.video, {
       onChunk: async (chunk: VideoFrame) => {
         if (stoped) {
           chunk.close()
           return
         }
-        const vfWrap = VIDEO_PAUSE_CTRL.transfrom(chunk)
-        if (vfWrap == null) return
-        recoder.encodeVideo(vfWrap.vf, vfWrap.opts)
+        emitVf(chunk)
       },
       onDone: () => { }
     })
+    stopEncodeVideo = () => {
+      stopReadStream()
+      clearTimeout(autoInsertVFTimer)
+      lastVf?.close()
+    }
   }
 
   if (opts.audio != null && opts.streams.audio != null) {
