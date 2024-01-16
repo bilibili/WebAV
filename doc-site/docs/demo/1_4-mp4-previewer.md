@@ -6,7 +6,8 @@ order: 4
 
 # 视频预览
 
-从 MP4 文件中提取指定时间的图像，点击 Slider 预览任意时间点的图像。
+从 MP4 文件中提取指定时间的图像，点击 Slider 预览任意时间点的图像；  
+可用于实现视频截帧、视频 seek 预览等功能。
 
 ```tsx
 import React, { useState, useEffect } from 'react';
