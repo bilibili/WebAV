@@ -2,7 +2,7 @@
 title: WebAV Doc Site
 hero:
   title: WebAV
-  description: WebAV Doc Site
+  description: '<strong>WebAV Doc Site</strong>'
   actions:
     - text: Guide
       link: /guide/
