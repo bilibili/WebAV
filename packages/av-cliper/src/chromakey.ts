@@ -154,11 +154,16 @@ function initCvs(opts: {
   width: number
   height: number
 } & IChromakeyOpts) {
-  const cvs = new OffscreenCanvas(opts.width, opts.height)
+  const cvs = 'document' in globalThis
+    ? globalThis.document.createElement('canvas')
+    : new OffscreenCanvas(opts.width, opts.height)
+  cvs.width = opts.width
+  cvs.height = opts.height
+
   const gl = cvs.getContext('webgl2', {
     premultipliedAlpha: false,
     alpha: true
-  })
+  }) as (WebGL2RenderingContext | null)
 
   if (gl == null) throw Error('Cant create gl context')
 
@@ -249,7 +254,7 @@ function getKeyColor(imgSource: TImgSource) {
 export const createChromakey = (
   opts: Omit<IChromakeyOpts, 'keyColor'> & { keyColor?: [number, number, number] }
 ) => {
-  let cvs: OffscreenCanvas | null = null
+  let cvs: HTMLCanvasElement | OffscreenCanvas | null = null
   let gl: WebGLRenderingContext | null = null
   let keyC = opts.keyColor
   let texture: WebGLTexture | null = null
