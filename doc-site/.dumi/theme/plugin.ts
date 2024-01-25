@@ -3,7 +3,6 @@ export default function (api) {
   // github-button
   api.addHTMLHeadScripts(() => `
     var timer = setInterval(() => {
-      console.log(111)
       if (performance.now() > 10000) {
         clearInterval(timer)
         return
