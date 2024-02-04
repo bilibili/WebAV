@@ -41,6 +41,7 @@
   "dependencies": {
     "@types/dom-webcodecs": "^0.1.7",
     "@webav/mp4box.js": "0.5.3-fenghen",
+    "opfs-tools": "^0.1.1",
     "wave-resampler": "^1.0.0"
   }
 }
