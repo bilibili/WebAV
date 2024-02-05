@@ -1,9 +1,9 @@
-import { IClip } from "./iclip";
+import { IClip } from './iclip';
 
 interface IEmbedSubtitlesOpts {
   color?: string;
   textBgColor?: string | null;
-  type?: "srt";
+  type?: 'srt';
   fontFamily?: string;
   fontSize?: number;
   letterSpacing?: string | null;
@@ -30,7 +30,7 @@ declare global {
 }
 
 export class EmbedSubtitlesClip implements IClip {
-  ready: IClip["ready"];
+  ready: IClip['ready'];
 
   #subtitles: Array<{
     start: number;
@@ -39,14 +39,14 @@ export class EmbedSubtitlesClip implements IClip {
   }> = [];
 
   #opts: Required<IEmbedSubtitlesOpts> = {
-    color: "#FFF",
+    color: '#FFF',
     textBgColor: null,
-    type: "srt",
+    type: 'srt',
     fontSize: 30,
     letterSpacing: null,
     bottomOffset: 30,
-    fontFamily: "Noto Sans SC",
-    strokeStyle: "#000",
+    fontFamily: 'Noto Sans SC',
+    strokeStyle: '#000',
     lineWidth: null,
     lineCap: null,
     lineJoin: null,
@@ -54,7 +54,7 @@ export class EmbedSubtitlesClip implements IClip {
       offsetX: 2,
       offsetY: 2,
       blur: 4,
-      color: "#000",
+      color: '#000',
     },
     videoWidth: 1280,
     videoHeight: 720,
@@ -74,7 +74,7 @@ export class EmbedSubtitlesClip implements IClip {
       end: end * 1e6,
       text,
     }));
-    if (this.#subtitles.length === 0) throw Error("No subtitles content");
+    if (this.#subtitles.length === 0) throw Error('No subtitles content');
 
     this.#opts = Object.assign(this.#opts, opts);
     // 如果需要绘制背景，则需要给文字添加边距
@@ -85,11 +85,11 @@ export class EmbedSubtitlesClip implements IClip {
       this.#opts;
     this.#lineHeight = fontSize + this.#linePadding * 2;
     this.#cvs = new OffscreenCanvas(videoWidth, videoHeight);
-    this.#ctx = this.#cvs.getContext("2d")!;
+    this.#ctx = this.#cvs.getContext('2d')!;
     this.#ctx.font = `${fontSize}px ${fontFamily}`;
-    this.#ctx.textAlign = "center";
-    this.#ctx.textBaseline = "top";
-    this.#ctx.letterSpacing = letterSpacing ?? "0px";
+    this.#ctx.textAlign = 'center';
+    this.#ctx.textBaseline = 'top';
+    this.#ctx.letterSpacing = letterSpacing ?? '0px';
 
     // 字幕的宽高 由视频画面内容决定
     this.ready = Promise.resolve({
@@ -101,7 +101,7 @@ export class EmbedSubtitlesClip implements IClip {
 
   #renderTxt(txt: string) {
     const lines = txt
-      .split("\n")
+      .split('\n')
       .reverse()
       .map((t) => t.trim());
 
@@ -179,14 +179,14 @@ export class EmbedSubtitlesClip implements IClip {
 
   async tick(time: number): Promise<{
     video?: VideoFrame;
-    state: "done" | "success";
+    state: 'done' | 'success';
   }> {
     if (
       this.#lastVF != null &&
       time >= this.#lastVF.timestamp &&
       time <= this.#lastVF.timestamp + (this.#lastVF.duration ?? 0)
     ) {
-      return { video: this.#lastVF.clone(), state: "success" };
+      return { video: this.#lastVF.clone(), state: 'success' };
     }
 
     let i = 0;
@@ -195,7 +195,7 @@ export class EmbedSubtitlesClip implements IClip {
     }
 
     const it = this.#subtitles[i] ?? this.#subtitles.at(-1);
-    if (time > it.end) return { state: "done" };
+    if (time > it.end) return { state: 'done' };
     if (time < it.start) {
       // 此时无字幕内容，清空画布
       this.#ctx.clearRect(0, 0, this.#cvs.width, this.#cvs.height);
@@ -207,7 +207,7 @@ export class EmbedSubtitlesClip implements IClip {
       this.#lastVF?.close();
       this.#lastVF = vf;
 
-      return { video: vf.clone(), state: "success" };
+      return { video: vf.clone(), state: 'success' };
     }
 
     this.#renderTxt(it.text);
@@ -219,7 +219,7 @@ export class EmbedSubtitlesClip implements IClip {
     this.#lastVF?.close();
     this.#lastVF = vf;
 
-    return { video: vf.clone(), state: "success" };
+    return { video: vf.clone(), state: 'success' };
   }
 
   destroy() {
@@ -270,7 +270,7 @@ function parseSrt(srt: string) {
             acc.push({
               start: srtTimeToSeconds(match[1]),
               end: srtTimeToSeconds(match[2]),
-              text: "",
+              text: '',
             });
           }
 

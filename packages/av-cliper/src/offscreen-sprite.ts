@@ -1,6 +1,6 @@
-import { BaseSprite } from "./base-sprite";
-import { IClip } from "./clips";
-import { Log } from "./log";
+import { BaseSprite } from './base-sprite';
+import { IClip } from './clips';
+import { Log } from './log';
 
 export class OffscreenSprite extends BaseSprite {
   #clip: IClip;
@@ -37,7 +37,7 @@ export class OffscreenSprite extends BaseSprite {
     super.render(ctx);
     const { w, h } = this.rect;
     const { video, audio, state } = await this.#clip.tick(time);
-    if (state === "done") {
+    if (state === 'done') {
       return {
         audio: audio ?? [],
         done: true,

@@ -1,12 +1,12 @@
-import { Log, Rect, TCtrlKey } from "@webav/av-cliper";
-import { renderCtrls } from "./sprites/render-ctrl";
-import { ESpriteManagerEvt, SpriteManager } from "./sprites/sprite-manager";
-import { activeSprite, draggabelSprite } from "./sprites/sprite-op";
-import { IResolution } from "./types";
-import { createEl } from "./utils";
+import { Log, Rect, TCtrlKey } from '@webav/av-cliper';
+import { renderCtrls } from './sprites/render-ctrl';
+import { ESpriteManagerEvt, SpriteManager } from './sprites/sprite-manager';
+import { activeSprite, draggabelSprite } from './sprites/sprite-op';
+import { IResolution } from './types';
+import { createEl } from './utils';
 
 function createInitCvsEl(resolution: IResolution): HTMLCanvasElement {
-  const cvsEl = createEl("canvas") as HTMLCanvasElement;
+  const cvsEl = createEl('canvas') as HTMLCanvasElement;
   cvsEl.style.cssText = `
     width: 100%;
     height: 100%;
@@ -36,8 +36,8 @@ export class AVCanvas {
     },
   ) {
     this.#cvsEl = createInitCvsEl(opts.resolution);
-    const ctx = this.#cvsEl.getContext("2d", { alpha: false });
-    if (ctx == null) throw Error("canvas context is null");
+    const ctx = this.#cvsEl.getContext('2d', { alpha: false });
+    if (ctx == null) throw Error('canvas context is null');
     this.#cvsCtx = ctx;
     container.appendChild(this.#cvsEl);
 
@@ -87,8 +87,8 @@ export class AVCanvas {
   }
 
   captureStream(): MediaStream {
-    if (this.spriteManager.audioCtx.state === "suspended") {
-      Log.info("AVCanvas.captureStream resume AudioContext");
+    if (this.spriteManager.audioCtx.state === 'suspended') {
+      Log.info('AVCanvas.captureStream resume AudioContext');
       this.spriteManager.audioCtx.resume().catch(Log.error);
     }
 
@@ -101,7 +101,7 @@ export class AVCanvas {
         ms.addTrack(t);
       });
     Log.info(
-      "AVCanvas.captureStream, tracks:",
+      'AVCanvas.captureStream, tracks:',
       ms.getTracks().map((t) => t.kind),
     );
     return ms;
@@ -139,7 +139,7 @@ function dynamicCusor(
   let actSpr = sprMng.activeSprite;
   sprMng.on(ESpriteManagerEvt.ActiveSpriteChange, (s) => {
     actSpr = s;
-    if (s == null) cvsStyle.cursor = "";
+    if (s == null) cvsStyle.cursor = '';
   });
   // 鼠标按下时，在操作过程中，不需要变换鼠标样式
   let isMSDown = false;
@@ -149,8 +149,8 @@ function dynamicCusor(
     const ofx = offsetX / cvsRatio.w;
     const ofy = offsetY / cvsRatio.h;
     // 直接选中 sprite 时，需要改变鼠标样式为 move
-    if (actSpr?.rect.checkHit(ofx, ofy) === true && cvsStyle.cursor === "") {
-      cvsStyle.cursor = "move";
+    if (actSpr?.rect.checkHit(ofx, ofy) === true && cvsStyle.cursor === '') {
+      cvsStyle.cursor = 'move';
     }
   };
   const onWindowUp = (): void => {
@@ -159,14 +159,14 @@ function dynamicCusor(
 
   // 八个 ctrl 点位对应的鼠标样式，构成循环
   const curStyles = [
-    "ns-resize",
-    "nesw-resize",
-    "ew-resize",
-    "nwse-resize",
-    "ns-resize",
-    "nesw-resize",
-    "ew-resize",
-    "nwse-resize",
+    'ns-resize',
+    'nesw-resize',
+    'ew-resize',
+    'nwse-resize',
+    'ns-resize',
+    'nesw-resize',
+    'ew-resize',
+    'nwse-resize',
   ];
   const curInitIdx = { t: 0, rt: 1, r: 2, rb: 3, b: 4, lb: 5, l: 6, lt: 7 };
 
@@ -182,8 +182,8 @@ function dynamicCusor(
       ) as [TCtrlKey, Rect]) ?? [];
 
     if (ctrlKey != null) {
-      if (ctrlKey === "rotate") {
-        cvsStyle.cursor = "crosshair";
+      if (ctrlKey === 'rotate') {
+        cvsStyle.cursor = 'crosshair';
         return;
       }
       // 旋转后，控制点的箭头指向也需要修正
@@ -198,21 +198,21 @@ function dynamicCusor(
       return;
     }
     if (actSpr.rect.checkHit(ofx, ofy)) {
-      cvsStyle.cursor = "move";
+      cvsStyle.cursor = 'move';
       return;
     }
     // 未命中 ctrls、sprite，重置为默认鼠标样式
-    cvsStyle.cursor = "";
+    cvsStyle.cursor = '';
   };
 
-  cvsEl.addEventListener("mousemove", onMove);
-  cvsEl.addEventListener("mousedown", onDown);
-  window.addEventListener("mouseup", onWindowUp);
+  cvsEl.addEventListener('mousemove', onMove);
+  cvsEl.addEventListener('mousedown', onDown);
+  window.addEventListener('mouseup', onWindowUp);
 
   return () => {
     observer.disconnect();
-    cvsEl.removeEventListener("mousemove", onMove);
-    cvsEl.removeEventListener("mousedown", onDown);
-    window.removeEventListener("mouseup", onWindowUp);
+    cvsEl.removeEventListener('mousemove', onMove);
+    cvsEl.removeEventListener('mousedown', onDown);
+    window.removeEventListener('mouseup', onWindowUp);
   };
 }

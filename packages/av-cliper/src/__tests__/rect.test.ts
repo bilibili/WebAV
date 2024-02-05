@@ -1,23 +1,23 @@
-import { describe, expect, test } from "vitest";
-import { Rect } from "../rect";
+import { describe, expect, test } from 'vitest';
+import { Rect } from '../rect';
 
-describe("Rect", () => {
-  test("center", () => {
+describe('Rect', () => {
+  test('center', () => {
     const rect = new Rect(0, 0, 100, 100);
     expect(rect.center).toEqual({ x: 50, y: 50 });
   });
 
-  test("ctrls", () => {
+  test('ctrls', () => {
     const rect = new Rect(0, 0, 100, 100);
     expect(rect.ctrls).toMatchSnapshot();
   });
 
-  test("clone", () => {
+  test('clone', () => {
     const { x, y, w, h } = new Rect(0, 0, 100, 100).clone();
     expect([x, y, w, h]).toEqual([0, 0, 100, 100]);
   });
 
-  test("checkHit", () => {
+  test('checkHit', () => {
     const rect = new Rect(100, 100, 100, 100);
     rect.x = 100;
     rect.y = 100;

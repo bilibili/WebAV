@@ -1,15 +1,15 @@
-import { Log } from "@webav/av-cliper";
-import MuxMP4Worker from "./mux-mp4-worker?worker&inline";
-import { EWorkerMsg, IRecorderConf, IStream, IWorkerOpts } from "./types";
+import { Log } from '@webav/av-cliper';
+import MuxMP4Worker from './mux-mp4-worker?worker&inline';
+import { EWorkerMsg, IRecorderConf, IStream, IWorkerOpts } from './types';
 
-type TState = "inactive" | "recording" | "paused";
+type TState = 'inactive' | 'recording' | 'paused';
 export class AVRecorder {
-  #state: TState = "inactive";
-  get state(): "inactive" | "recording" | "paused" {
+  #state: TState = 'inactive';
+  get state(): 'inactive' | 'recording' | 'paused' {
     return this.#state;
   }
   set state(_: TState) {
-    throw new Error("state is readonly");
+    throw new Error('state is readonly');
   }
 
   #ms;
@@ -27,14 +27,14 @@ export class AVRecorder {
       height: 720,
       bitrate: 3_000_000,
       expectFPS: 30,
-      audioCodec: "aac",
-      videoCodec: "avc1.42E032",
+      audioCodec: 'aac',
+      videoCodec: 'avc1.42E032',
       ...conf,
     };
   }
 
   async start(timeSlice: number = 500): Promise<void> {
-    Log.info("AVRecorder.start recoding");
+    Log.info('AVRecorder.start recoding');
     const worker = new MuxMP4Worker();
     this.#worker = worker;
 
@@ -47,7 +47,7 @@ export class AVRecorder {
     }
 
     const audioTrack = this.#ms.getAudioTracks()[0];
-    let audioConf: IWorkerOpts["audio"] | null = null;
+    let audioConf: IWorkerOpts['audio'] | null = null;
     if (audioTrack != null) {
       const setting = audioTrack.getSettings();
       audioConf = {
@@ -55,14 +55,14 @@ export class AVRecorder {
         sampleRate: setting.sampleRate ?? 0,
         channelCount: setting.channelCount ?? 0,
       };
-      Log.info("AVRecorder recording audioConf:", audioConf);
+      Log.info('AVRecorder recording audioConf:', audioConf);
       streams.audio = new MediaStreamTrackProcessor({
         track: audioTrack,
       }).readable;
     }
 
     if (streams.audio == null && streams.video == null) {
-      throw new Error("No available tracks in MediaStream");
+      throw new Error('No available tracks in MediaStream');
     }
 
     const workerOpts: IWorkerOpts = {
@@ -87,11 +87,11 @@ export class AVRecorder {
     );
 
     return await new Promise<void>((resolve) => {
-      worker.addEventListener("message", (evt: MessageEvent) => {
+      worker.addEventListener('message', (evt: MessageEvent) => {
         const { type, data } = evt.data;
         switch (type) {
           case EWorkerMsg.OutputStream:
-            this.#state = "recording";
+            this.#state = 'recording';
             this.outputStream = data;
             resolve();
             break;
@@ -108,13 +108,13 @@ export class AVRecorder {
   }
 
   async stop(): Promise<void> {
-    this.#state = "inactive";
+    this.#state = 'inactive';
     const worker = this.#worker;
     if (worker == null) return;
 
     worker.postMessage({ type: EWorkerMsg.Stop });
     return await new Promise<void>((resolve) => {
-      worker.addEventListener("message", (evt: MessageEvent) => {
+      worker.addEventListener('message', (evt: MessageEvent) => {
         const { type } = evt.data;
         switch (type) {
           case EWorkerMsg.SafeExit:

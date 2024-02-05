@@ -1,4 +1,4 @@
-import { BaseSprite } from "@webav/av-cliper";
+import { BaseSprite } from '@webav/av-cliper';
 
 export class ImgSprite extends BaseSprite {
   #img: HTMLImageElement = new Image();
@@ -9,14 +9,14 @@ export class ImgSprite extends BaseSprite {
     if (
       source instanceof File &&
       ![
-        "image/png",
-        "image/jpg",
-        "image/jpeg",
-        "image/bmp",
-        "image/gif",
+        'image/png',
+        'image/jpg',
+        'image/jpeg',
+        'image/bmp',
+        'image/gif',
       ].includes(source.type)
     )
-      throw Error("Unsupport image format");
+      throw Error('Unsupport image format');
 
     this.initReady = this.#init(source).catch(console.error);
   }

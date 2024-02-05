@@ -1,20 +1,20 @@
-import { createEl } from "../utils";
-import { BaseSprite } from "@webav/av-cliper";
+import { createEl } from '../utils';
+import { BaseSprite } from '@webav/av-cliper';
 
 interface IAudioSpriteOpts {
   audioCtx?: AudioContext;
 }
 
 export class AudioSprite extends BaseSprite {
-  #audioEl = createEl("audio") as HTMLAudioElement;
+  #audioEl = createEl('audio') as HTMLAudioElement;
 
   // 音频节点没有可视内容
   readonly visible = false;
 
   constructor(name: string, source: File, opts: IAudioSpriteOpts = {}) {
     super(name);
-    if (!["audio/mpeg", "audio/ogg", "audio/wav"].includes(source.type))
-      throw new Error("Unsupport audio format");
+    if (!['audio/mpeg', 'audio/ogg', 'audio/wav'].includes(source.type))
+      throw new Error('Unsupport audio format');
 
     if (opts.audioCtx != null) {
       this.audioNode = opts.audioCtx.createGain();

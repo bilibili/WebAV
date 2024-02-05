@@ -1,15 +1,15 @@
-import mp4box from "@webav/mp4box.js";
-import { autoReadStream, file2stream, recodemux } from "@webav/av-cliper";
-import { TClearFn, EWorkerMsg, IWorkerOpts } from "./types";
+import mp4box from '@webav/mp4box.js';
+import { autoReadStream, file2stream, recodemux } from '@webav/av-cliper';
+import { TClearFn, EWorkerMsg, IWorkerOpts } from './types';
 
 if (import.meta.env.DEV) {
   mp4box.Log.setLogLevel(mp4box.Log.debug);
 }
 
 enum State {
-  Preparing = "preparing",
-  Running = "running",
-  Stopped = "stopped",
+  Preparing = 'preparing',
+  Running = 'running',
+  Stopped = 'stopped',
 }
 
 class RecoderPauseCtrl {

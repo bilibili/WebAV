@@ -5,8 +5,8 @@ import mp4box, {
   MP4Sample,
   SampleOpts,
   TrakBoxParser,
-} from "@webav/mp4box.js";
-import { Log } from "../log";
+} from '@webav/mp4box.js';
+import { Log } from '../log';
 import {
   autoReadStream,
   extractPCM4AudioData,
@@ -14,13 +14,13 @@ import {
   mixinPCM,
   ringSliceFloat32Array,
   concatPCMFragments,
-} from "../av-utils";
-import { DEFAULT_AUDIO_CONF } from "../clips";
-import { EventTool } from "../event-tool";
-import { SampleTransform } from "./sample-transform";
-import { extractFileConfig, sample2ChunkOpts } from "./mp4box-utils";
+} from '../av-utils';
+import { DEFAULT_AUDIO_CONF } from '../clips';
+import { EventTool } from '../event-tool';
+import { SampleTransform } from './sample-transform';
+import { extractFileConfig, sample2ChunkOpts } from './mp4box-utils';
 
-export { MP4Previewer } from "./mp4-previewer";
+export { MP4Previewer } from './mp4-previewer';
 
 type TCleanFn = () => void;
 
@@ -32,7 +32,7 @@ interface IWorkerOpts {
     codec: string;
   };
   audio: {
-    codec: "opus" | "aac";
+    codec: 'opus' | 'aac';
     sampleRate: number;
     channelCount: number;
   } | null;
@@ -76,22 +76,22 @@ export function demuxcode(
     stream.pipeThrough(new SampleTransform()),
     {
       onDone: async () => {
-        Log.info("demuxcode stream done");
-        if (mp4Info == null) throw Error("MP4 demux unready");
+        Log.info('demuxcode stream done');
+        if (mp4Info == null) throw Error('MP4 demux unready');
         try {
           await Promise.all([
-            vdecoder.state === "configured" ? vdecoder.flush() : null,
-            adecoder.state === "configured" ? adecoder.flush() : null,
+            vdecoder.state === 'configured' ? vdecoder.flush() : null,
+            adecoder.state === 'configured' ? adecoder.flush() : null,
           ]);
-          Log.info("demuxcode decode done");
+          Log.info('demuxcode decode done');
           cbs.onComplete();
         } catch (err) {
           Log.info(err);
         }
       },
       onChunk: async ({ chunkType, data }) => {
-        if (chunkType === "ready") {
-          Log.info("demuxcode chunk ready, info:", data);
+        if (chunkType === 'ready') {
+          Log.info('demuxcode chunk ready, info:', data);
           mp4File = data.file;
           mp4Info = data.info;
           const { videoDecoderConf, audioDecoderConf } = extractFileConfig(
@@ -103,7 +103,7 @@ export function demuxcode(
             vdecoder.configure(videoDecoderConf);
           } else {
             throw new Error(
-              "MP4 file does not include a video track or uses an unsupported codec",
+              'MP4 file does not include a video track or uses an unsupported codec',
             );
           }
           if (opts.audio && audioDecoderConf != null) {
@@ -112,7 +112,7 @@ export function demuxcode(
 
           cbs.onReady(data.info);
           return;
-        } else if (chunkType === "samples") {
+        } else if (chunkType === 'samples') {
           const { id: curId, type, samples } = data;
           for (let i = 0; i < samples.length; i += 1) {
             const s = samples[i];
@@ -122,7 +122,7 @@ export function demuxcode(
             // 跳过裁剪时间区间外的sample，无需解码
             if (cts < opts.start || cts > opts.end) continue;
 
-            if (type === "video") {
+            if (type === 'video') {
               if (firstVideoSamp && i === 0 && s.cts !== 0) {
                 // 兼容某些视频首帧 有偏移
                 s.cts = 0;
@@ -140,7 +140,7 @@ export function demuxcode(
                 }
               }
               vdecoder.decode(new EncodedVideoChunk(sample2ChunkOpts(s)));
-            } else if (type === "audio" && opts.audio) {
+            } else if (type === 'audio' && opts.audio) {
               adecoder.decode(new EncodedAudioChunk(sample2ChunkOpts(s)));
             }
           }
@@ -173,17 +173,17 @@ export function recodemux(opts: IWorkerOpts): {
   mp4file: MP4File;
   getEecodeQueueSize: () => number;
 } {
-  Log.info("recodemux opts:", opts);
+  Log.info('recodemux opts:', opts);
   const mp4file = mp4box.createFile();
 
   // 音视频轨道必须同时创建, 保存在 moov 中
   const avSyncEvtTool = new EventTool<
-    Record<"VideoReady" | "AudioReady", () => void>
+    Record<'VideoReady' | 'AudioReady', () => void>
   >();
   const vEncoder = encodeVideoTrack(opts, mp4file, avSyncEvtTool);
   let aEncoder: AudioEncoder | null = null;
   if (opts.audio == null) {
-    avSyncEvtTool.emit("AudioReady");
+    avSyncEvtTool.emit('AudioReady');
   } else {
     aEncoder = encodeAudioTrack(opts.audio, mp4file, avSyncEvtTool);
   }
@@ -205,15 +205,15 @@ export function recodemux(opts: IWorkerOpts): {
     getEecodeQueueSize: () => vEncoder.encodeQueueSize,
     flush: async () => {
       await Promise.all([
-        vEncoder.state === "configured" ? vEncoder.flush() : null,
-        aEncoder?.state === "configured" ? aEncoder.flush() : null,
+        vEncoder.state === 'configured' ? vEncoder.flush() : null,
+        aEncoder?.state === 'configured' ? aEncoder.flush() : null,
       ]);
       return;
     },
     close: () => {
       avSyncEvtTool.destroy();
-      if (vEncoder.state === "configured") vEncoder.close();
-      if (aEncoder?.state === "configured") aEncoder.close();
+      if (vEncoder.state === 'configured') vEncoder.close();
+      if (aEncoder?.state === 'configured') aEncoder.close();
     },
     mp4file,
   };
@@ -222,21 +222,21 @@ export function recodemux(opts: IWorkerOpts): {
 function encodeVideoTrack(
   opts: IWorkerOpts,
   mp4File: MP4File,
-  avSyncEvtTool: EventTool<Record<"VideoReady" | "AudioReady", () => void>>,
+  avSyncEvtTool: EventTool<Record<'VideoReady' | 'AudioReady', () => void>>,
 ): VideoEncoder {
   const videoTrackOpts = {
     // 微秒
     timescale: 1e6,
     width: opts.video.width,
     height: opts.video.height,
-    brands: ["isom", "iso2", "avc1", "mp42", "mp41"],
+    brands: ['isom', 'iso2', 'avc1', 'mp42', 'mp41'],
     avcDecoderConfigRecord: null as ArrayBuffer | undefined | null,
   };
 
   let trackId: number;
   let cache: EncodedVideoChunk[] = [];
   let audioReady = false;
-  avSyncEvtTool.once("AudioReady", () => {
+  avSyncEvtTool.once('AudioReady', () => {
     audioReady = true;
     cache.forEach((c) => {
       const s = chunk2MP4SampleOpts(c);
@@ -249,8 +249,8 @@ function encodeVideoTrack(
       videoTrackOpts.avcDecoderConfigRecord = meta.decoderConfig
         ?.description as ArrayBuffer;
       trackId = mp4File.addTrack(videoTrackOpts);
-      avSyncEvtTool.emit("VideoReady");
-      Log.info("VideoEncoder, video track ready, trackId:", trackId);
+      avSyncEvtTool.emit('VideoReady');
+      Log.info('VideoEncoder, video track ready, trackId:', trackId);
     }
 
     if (audioReady) {
@@ -283,9 +283,9 @@ function createVideoEncoder(
     width: videoOpts.width,
     height: videoOpts.height,
     // H264 不支持背景透明度
-    alpha: "discard",
+    alpha: 'discard',
     // macos 自带播放器只支持avc
-    avc: { format: "avc" },
+    avc: { format: 'avc' },
     // mp4box.js 无法解析 annexb 的 mimeCodec ，只会显示 avc1
     // avc: { format: 'annexb' }
   });
@@ -293,22 +293,22 @@ function createVideoEncoder(
 }
 
 function encodeAudioTrack(
-  audioOpts: NonNullable<IWorkerOpts["audio"]>,
+  audioOpts: NonNullable<IWorkerOpts['audio']>,
   mp4File: MP4File,
-  avSyncEvtTool: EventTool<Record<"VideoReady" | "AudioReady", () => void>>,
+  avSyncEvtTool: EventTool<Record<'VideoReady' | 'AudioReady', () => void>>,
 ): AudioEncoder {
   const audioTrackOpts = {
     timescale: 1e6,
     samplerate: audioOpts.sampleRate,
     channel_count: audioOpts.channelCount,
-    hdlr: "soun",
-    type: audioOpts.codec === "aac" ? "mp4a" : "Opus",
+    hdlr: 'soun',
+    type: audioOpts.codec === 'aac' ? 'mp4a' : 'Opus',
   };
 
   let trackId = 0;
   let cache: EncodedAudioChunk[] = [];
   let videoReady = false;
-  avSyncEvtTool.once("VideoReady", () => {
+  avSyncEvtTool.once('VideoReady', () => {
     videoReady = true;
     cache.forEach((c) => {
       const s = chunk2MP4SampleOpts(c);
@@ -327,8 +327,8 @@ function encodeAudioTrack(
           ...audioTrackOpts,
           description: desc == null ? undefined : createESDSBox(desc),
         });
-        avSyncEvtTool.emit("AudioReady");
-        Log.info("AudioEncoder, audio track ready, trackId:", trackId);
+        avSyncEvtTool.emit('AudioReady');
+        Log.info('AudioEncoder, audio track ready, trackId:', trackId);
       }
 
       if (videoReady) {
@@ -340,7 +340,7 @@ function encodeAudioTrack(
     },
   });
   encoder.configure({
-    codec: audioOpts.codec === "aac" ? DEFAULT_AUDIO_CONF.codec : "opus",
+    codec: audioOpts.codec === 'aac' ? DEFAULT_AUDIO_CONF.codec : 'opus',
     sampleRate: audioOpts.sampleRate,
     numberOfChannels: audioOpts.channelCount,
     bitrate: 128_000,
@@ -361,7 +361,7 @@ export function _deprecated_stream2file(stream: ReadableStream<Uint8Array>): {
     while (!stoped) {
       const { done, value } = await reader.read();
       if (done) {
-        Log.info("stream source read done");
+        Log.info('stream source read done');
         file.flush();
         file.onFlush?.();
         return;
@@ -497,7 +497,7 @@ function mp4File2OPFSFile(inMP4File: MP4File): () => Promise<File | null> {
   function moovBoxReady() {
     if (moovPrevBoxes.length > 0) return true;
 
-    const moovIdx = boxes.findIndex((box) => box.type === "moov");
+    const moovIdx = boxes.findIndex((box) => box.type === 'moov');
     if (moovIdx === -1) return false;
 
     moovPrevBoxes = boxes.slice(0, moovIdx + 1);
@@ -533,7 +533,7 @@ function mp4File2OPFSFile(inMP4File: MP4File): () => Promise<File | null> {
 
   let stoped = false;
   return async () => {
-    if (stoped) throw Error("File exported");
+    if (stoped) throw Error('File exported');
     stoped = true;
 
     await initPromise;
@@ -544,7 +544,7 @@ function mp4File2OPFSFile(inMP4File: MP4File): () => Promise<File | null> {
     await write2TmpFile();
     await tmpFileWriter?.close();
 
-    const moov = moovPrevBoxes.find((box) => box.type === "moov") as
+    const moov = moovPrevBoxes.find((box) => box.type === 'moov') as
       | typeof inMP4File.moov
       | undefined;
     if (moov == null) return null;
@@ -595,7 +595,7 @@ function chunk2MP4SampleOpts(
     duration: chunk.duration ?? 0,
     dts,
     cts: dts,
-    is_sync: chunk.type === "key",
+    is_sync: chunk.type === 'key',
     data: buf,
   };
 }
@@ -607,13 +607,13 @@ function chunk2MP4SampleOpts(
 export async function fastConcatMP4(
   streams: ReadableStream<Uint8Array>[],
 ): Promise<ReadableStream<Uint8Array>> {
-  Log.info("fastConcatMP4, streams len:", streams.length);
+  Log.info('fastConcatMP4, streams len:', streams.length);
   const outfile = mp4box.createFile();
 
   const dumpFile = mp4File2OPFSFile(outfile);
   await concatStreamsToMP4BoxFile(streams, outfile);
   const opfsFile = await dumpFile();
-  if (opfsFile == null) throw Error("Can not generate file from streams");
+  if (opfsFile == null) throw Error('Can not generate file from streams');
   return opfsFile.stream();
 }
 
@@ -636,7 +636,7 @@ async function concatStreamsToMP4BoxFile(
       autoReadStream(stream.pipeThrough(new SampleTransform()), {
         onDone: resolve,
         onChunk: async ({ chunkType, data }) => {
-          if (chunkType === "ready") {
+          if (chunkType === 'ready') {
             const { videoTrackConf, audioTrackConf } = extractFileConfig(
               data.file,
               data.info,
@@ -648,11 +648,11 @@ async function concatStreamsToMP4BoxFile(
             if (aTrackId === 0 && audioTrackConf != null) {
               aTrackId = outfile.addTrack(audioTrackConf);
             }
-          } else if (chunkType === "samples") {
+          } else if (chunkType === 'samples') {
             const { id: curId, type, samples } = data;
-            const trackId = type === "video" ? vTrackId : aTrackId;
-            const offsetDTS = type === "video" ? vDTS : aDTS;
-            const offsetCTS = type === "video" ? vCTS : aCTS;
+            const trackId = type === 'video' ? vTrackId : aTrackId;
+            const offsetDTS = type === 'video' ? vDTS : aDTS;
+            const offsetCTS = type === 'video' ? vCTS : aCTS;
 
             samples.forEach((s) => {
               outfile.addSample(trackId, s.data, {
@@ -666,9 +666,9 @@ async function concatStreamsToMP4BoxFile(
 
             const lastSamp = samples.at(-1);
             if (lastSamp == null) return;
-            if (type === "video") {
+            if (type === 'video') {
               lastVSamp = lastSamp;
-            } else if (type === "audio") {
+            } else if (type === 'audio') {
               lastASamp = lastSamp;
             }
           }
@@ -699,12 +699,12 @@ export async function mp4StreamToOPFSFile(
   const dumpFile = mp4File2OPFSFile(outfile);
   await concatStreamsToMP4BoxFile([stream], outfile);
   const opfsFile = await dumpFile();
-  if (opfsFile == null) throw Error("Can not generate file from stream");
+  if (opfsFile == null) throw Error('Can not generate file from stream');
   return opfsFile;
 }
 
 function createMP4AudioSampleDecoder(
-  adConf: Parameters<AudioDecoder["configure"]>[0],
+  adConf: Parameters<AudioDecoder['configure']>[0],
 ) {
   let cacheAD: AudioData[] = [];
   const adDecoder = new AudioDecoder({
@@ -720,7 +720,7 @@ function createMP4AudioSampleDecoder(
       ss.forEach((s) => {
         adDecoder.decode(
           new EncodedAudioChunk({
-            type: s.is_sync ? "key" : "delta",
+            type: s.is_sync ? 'key' : 'delta',
             timestamp: (1e6 * s.cts) / s.timescale,
             duration: (1e6 * s.duration) / s.timescale,
             data: s.data,
@@ -744,7 +744,7 @@ function createMP4AudioSampleDecoder(
 // 音频编码与解码API有很大区别，
 // 是因为编码中途调用 AudioEncoder.flush ，会导致声音听起来卡顿
 function createMP4AudioSampleEncoder(
-  aeConf: Parameters<AudioEncoder["configure"]>[0],
+  aeConf: Parameters<AudioEncoder['configure']>[0],
   onOutput: (s: ReturnType<typeof chunk2MP4SampleOpts>) => void,
 ) {
   const adEncoder = new AudioEncoder({
@@ -769,7 +769,7 @@ function createMP4AudioSampleEncoder(
       numberOfChannels: aeConf.numberOfChannels,
       numberOfFrames: data.length / aeConf.numberOfChannels,
       sampleRate: aeConf.sampleRate,
-      format: "f32-planar",
+      format: 'f32-planar',
       data,
     });
   }
@@ -821,7 +821,7 @@ export function mixinMP4AndAudio(
     loop: boolean;
   },
 ) {
-  Log.info("mixinMP4AndAudio, opts:", {
+  Log.info('mixinMP4AndAudio, opts:', {
     volume: audio.volume,
     loop: audio.loop,
   });
@@ -851,7 +851,7 @@ export function mixinMP4AndAudio(
       stopOut();
     },
     onChunk: async ({ chunkType, data }) => {
-      if (chunkType === "ready") {
+      if (chunkType === 'ready') {
         const { videoTrackConf, audioTrackConf, audioDecoderConf } =
           extractFileConfig(data.file, data.info);
         if (vTrackId === 0 && videoTrackConf != null) {
@@ -862,9 +862,9 @@ export function mixinMP4AndAudio(
           timescale: 1e6,
           samplerate: sampleRate,
           channel_count: DEFAULT_AUDIO_CONF.channelCount,
-          hdlr: "soun",
-          name: "SoundHandler",
-          type: "mp4a",
+          hdlr: 'soun',
+          name: 'SoundHandler',
+          type: 'mp4a',
         };
         if (aTrackId === 0) {
           aTrackId = outfile.addTrack(safeAudioTrackConf);
@@ -884,7 +884,7 @@ export function mixinMP4AndAudio(
         audioSampleEncoder = createMP4AudioSampleEncoder(
           audioDecoderConf ?? {
             codec:
-              safeAudioTrackConf.type === "mp4a"
+              safeAudioTrackConf.type === 'mp4a'
                 ? DEFAULT_AUDIO_CONF.codec
                 : safeAudioTrackConf.type,
             numberOfChannels: safeAudioTrackConf.channel_count,
@@ -892,16 +892,16 @@ export function mixinMP4AndAudio(
           },
           (s) => outfile.addSample(aTrackId, s.data, s),
         );
-      } else if (chunkType === "samples") {
+      } else if (chunkType === 'samples') {
         const { id, type, samples } = data;
-        if (type === "video") {
+        if (type === 'video') {
           samples.forEach((s) => outfile.addSample(id, s.data, s));
 
           if (!mp4HasAudio) await addInputAudio2Track(samples);
           return;
         }
 
-        if (type === "audio") await mixinAudioSampleAndInputPCM(samples);
+        if (type === 'audio') await mixinAudioSampleAndInputPCM(samples);
       }
     },
   });

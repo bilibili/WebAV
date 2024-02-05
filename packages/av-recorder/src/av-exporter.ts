@@ -1,4 +1,4 @@
-import fixWebmDur from "fix-webm-duration";
+import fixWebmDur from 'fix-webm-duration';
 
 /**
  * 导出 WebM 格式的视频，
@@ -15,7 +15,7 @@ export async function exportWebM(
 ): Promise<() => void> {
   const recoder = new MediaRecorder(inputMediaStream, {
     ...recordOpts,
-    mimeType: "video/webm;codecs=avc1.64001f,opus",
+    mimeType: 'video/webm;codecs=avc1.64001f,opus',
   });
   let firstBlob: Blob | null = null;
   recoder.ondataavailable = async (evt) => {

@@ -1,4 +1,4 @@
-import { renderTxt2Img, BaseSprite } from "@webav/av-cliper";
+import { renderTxt2Img, BaseSprite } from '@webav/av-cliper';
 
 interface IFontStyle {
   color: string;
@@ -12,9 +12,9 @@ export class TextSprite extends BaseSprite {
   constructor(name: string, content: string, style: Partial<IFontStyle> = {}) {
     super(name);
     const s = {
-      color: "#ffffff",
+      color: '#ffffff',
       size: 100,
-      family: "sans-serif",
+      family: 'sans-serif',
       ...style,
     };
 

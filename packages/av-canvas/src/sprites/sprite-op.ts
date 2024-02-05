@@ -1,6 +1,6 @@
-import { SpriteManager } from "./sprite-manager";
-import { ICvsRatio, IPoint } from "../types";
-import { BaseSprite, Rect, TCtrlKey } from "@webav/av-cliper";
+import { SpriteManager } from './sprite-manager';
+import { ICvsRatio, IPoint } from '../types';
+import { BaseSprite, Rect, TCtrlKey } from '@webav/av-cliper';
 
 /**
  * 鼠标点击，激活 sprite
@@ -40,11 +40,11 @@ export function activeSprite(
         .find((s) => s.rect.checkHit(ofx, ofy)) ?? null;
   };
 
-  cvsEl.addEventListener("mousedown", onCvsMouseDown);
+  cvsEl.addEventListener('mousedown', onCvsMouseDown);
 
   return () => {
     observer.disconnect();
-    cvsEl.removeEventListener("mousedown", onCvsMouseDown);
+    cvsEl.removeEventListener('mousedown', onCvsMouseDown);
   };
 }
 
@@ -69,7 +69,7 @@ export function draggabelSprite(
   let startX = 0;
   let startY = 0;
   let startRect: Rect | null = null;
-  let mvLimit: Record<"xl" | "xr" | "yt" | "yb", number> | null = null;
+  let mvLimit: Record<'xl' | 'xr' | 'yt' | 'yb', number> | null = null;
 
   let hitSpr: BaseSprite | null = null;
   // sprMng.activeSprite 在 av-canvas.ts -> activeSprite 中被赋值
@@ -105,8 +105,8 @@ export function draggabelSprite(
 
     startX = clientX;
     startY = clientY;
-    window.addEventListener("mousemove", onMouseMove);
-    window.addEventListener("mouseup", clearWindowEvt);
+    window.addEventListener('mousemove', onMouseMove);
+    window.addEventListener('mouseup', clearWindowEvt);
   };
 
   const onMouseMove = (evt: MouseEvent): void => {
@@ -125,17 +125,17 @@ export function draggabelSprite(
     hitSpr.rect.y = newY;
   };
 
-  cvsEl.addEventListener("mousedown", onCvsMouseDown);
+  cvsEl.addEventListener('mousedown', onCvsMouseDown);
 
   const clearWindowEvt = (): void => {
-    window.removeEventListener("mousemove", onMouseMove);
-    window.removeEventListener("mouseup", clearWindowEvt);
+    window.removeEventListener('mousemove', onMouseMove);
+    window.removeEventListener('mouseup', clearWindowEvt);
   };
 
   return () => {
     observer.disconnect();
     clearWindowEvt();
-    cvsEl.removeEventListener("mousedown", onCvsMouseDown);
+    cvsEl.removeEventListener('mousedown', onCvsMouseDown);
   };
 }
 
@@ -195,11 +195,11 @@ function scaleRect({
   };
 
   const clearWindowEvt = (): void => {
-    window.removeEventListener("mousemove", onMouseMove);
-    window.removeEventListener("mouseup", clearWindowEvt);
+    window.removeEventListener('mousemove', onMouseMove);
+    window.removeEventListener('mouseup', clearWindowEvt);
   };
-  window.addEventListener("mousemove", onMouseMove);
-  window.addEventListener("mouseup", clearWindowEvt);
+  window.addEventListener('mousemove', onMouseMove);
+  window.addEventListener('mouseup', clearWindowEvt);
 }
 
 /**
@@ -226,15 +226,15 @@ function stretchScale({
   let incW = 0;
   let incH = 0;
   let rotateAngle = angle;
-  if (ctrlKey === "l" || ctrlKey === "r") {
+  if (ctrlKey === 'l' || ctrlKey === 'r') {
     incS = deltaX * Math.cos(angle) + deltaY * Math.sin(angle);
     // l 缩放是反向的
-    incW = incS * (ctrlKey === "l" ? -1 : 1);
-  } else if (ctrlKey === "t" || ctrlKey === "b") {
+    incW = incS * (ctrlKey === 'l' ? -1 : 1);
+  } else if (ctrlKey === 't' || ctrlKey === 'b') {
     // 计算矩形增加的宽度，旋转坐标系让x轴与角度重合，鼠标位置在x轴的投影（x值）即为增加的高度
     rotateAngle = angle - Math.PI / 2;
     incS = deltaX * Math.cos(rotateAngle) + deltaY * Math.sin(rotateAngle);
-    incH = incS * (ctrlKey === "b" ? -1 : 1);
+    incH = incS * (ctrlKey === 'b' ? -1 : 1);
   }
 
   return { incW, incH, incS, rotateAngle };
@@ -263,11 +263,11 @@ function fixedRatioScale({
 } {
   // 坐标系旋转角度， lb->rt的对角线的初始角度为负数，所以需要乘以-1
   const rotateAngle =
-    (ctrlKey === "lt" || ctrlKey === "rb" ? 1 : -1) * diagonalAngle + angle;
+    (ctrlKey === 'lt' || ctrlKey === 'rb' ? 1 : -1) * diagonalAngle + angle;
   // 旋转坐标系让x轴与对角线重合，鼠标位置在x轴的投影（x值）即为增加的长度
   const incS = deltaX * Math.cos(rotateAngle) + deltaY * Math.sin(rotateAngle);
   // lb lt 缩放值是反向
-  const coefficient = ctrlKey === "lt" || ctrlKey === "lb" ? -1 : 1;
+  const coefficient = ctrlKey === 'lt' || ctrlKey === 'lb' ? -1 : 1;
   // 等比例缩放，增加宽高等于长度乘以对应的角度函数
   // 因为等比例缩放，中心及被拖拽的点，一定在对角线上
   const incW = incS * Math.cos(diagonalAngle) * coefficient;
@@ -303,7 +303,7 @@ function hitRectCtrls({
     ]) ?? [];
 
   if (k == null) return false;
-  if (k === "rotate") {
+  if (k === 'rotate') {
     rotateRect(rect, cntMap2Outer(rect.center, cvsRatio, cvsEl));
   } else {
     scaleRect({
@@ -332,11 +332,11 @@ function rotateRect(rect: Rect, outCnt: IPoint): void {
     rect.angle = angle;
   };
   const clear = (): void => {
-    window.removeEventListener("mousemove", onMove);
-    window.removeEventListener("mouseup", clear);
+    window.removeEventListener('mousemove', onMove);
+    window.removeEventListener('mouseup', clear);
   };
-  window.addEventListener("mousemove", onMove);
-  window.addEventListener("mouseup", clear);
+  window.addEventListener('mousemove', onMove);
+  window.addEventListener('mouseup', clear);
 }
 
 /**

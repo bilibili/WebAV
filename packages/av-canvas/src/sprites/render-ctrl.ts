@@ -1,7 +1,7 @@
-import { ICvsRatio } from "../types";
-import { createEl } from "../utils";
-import { BaseSprite, CTRL_KEYS, TCtrlKey } from "@webav/av-cliper";
-import { ESpriteManagerEvt, SpriteManager } from "./sprite-manager";
+import { ICvsRatio } from '../types';
+import { createEl } from '../utils';
+import { BaseSprite, CTRL_KEYS, TCtrlKey } from '@webav/av-cliper';
+import { ESpriteManagerEvt, SpriteManager } from './sprite-manager';
 
 export function renderCtrls(
   container: HTMLElement,
@@ -26,11 +26,11 @@ export function renderCtrls(
   const { rectEl, ctrlsEl } = createRectAndCtrlEl(container);
   const offSprChange = sprMng.on(ESpriteManagerEvt.ActiveSpriteChange, (s) => {
     if (s == null) {
-      rectEl.style.display = "none";
+      rectEl.style.display = 'none';
       return;
     }
     syncCtrlElPos(s, rectEl, ctrlsEl, cvsRatio);
-    rectEl.style.display = "";
+    rectEl.style.display = '';
   });
 
   let isDown = false;
@@ -47,17 +47,17 @@ export function renderCtrls(
     syncCtrlElPos(sprMng.activeSprite, rectEl, ctrlsEl, cvsRatio);
   };
 
-  cvsEl.addEventListener("mousedown", onDown);
-  window.addEventListener("mouseup", onWinowUp);
-  window.addEventListener("mousemove", onMove);
+  cvsEl.addEventListener('mousedown', onDown);
+  window.addEventListener('mouseup', onWinowUp);
+  window.addEventListener('mousemove', onMove);
 
   return () => {
     observer.disconnect();
     offSprChange();
     rectEl.remove();
-    cvsEl.removeEventListener("mousedown", onDown);
-    window.removeEventListener("mouseup", onWinowUp);
-    window.removeEventListener("mousemove", onMove);
+    cvsEl.removeEventListener('mousedown', onDown);
+    window.removeEventListener('mouseup', onWinowUp);
+    window.removeEventListener('mousemove', onMove);
   };
 }
 
@@ -65,7 +65,7 @@ function createRectAndCtrlEl(container: HTMLElement): {
   rectEl: HTMLElement;
   ctrlsEl: Record<TCtrlKey, HTMLElement>;
 } {
-  const rectEl = createEl("div");
+  const rectEl = createEl('div');
   rectEl.style.cssText = `
     position: absolute;
     pointer-events: none;
@@ -75,7 +75,7 @@ function createRectAndCtrlEl(container: HTMLElement): {
   `;
   const ctrlsEl = Object.fromEntries(
     CTRL_KEYS.map((k) => {
-      const d = createEl("div");
+      const d = createEl('div');
       d.style.cssText = `
       position: absolute;
       border: 1px solid #3ee;
@@ -112,8 +112,8 @@ function syncCtrlElPos(
   Object.entries(ctrls).forEach(([k, { x, y, w, h }]) => {
     // ctrl 是相对中心点定位的
     Object.assign(ctrlsEl[k as TCtrlKey].style, {
-      left: "50%",
-      top: "50%",
+      left: '50%',
+      top: '50%',
       width: `${w * cvsRatio.w}px`,
       height: `${h * cvsRatio.h}px`,
       // border 1px, 所以要 -1

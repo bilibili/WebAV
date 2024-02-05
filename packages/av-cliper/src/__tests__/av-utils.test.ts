@@ -1,14 +1,14 @@
-import { test, expect } from "vitest";
-import "./mock";
-import { concatFloat32Array, concatPCMFragments, mixinPCM } from "../av-utils";
+import { test, expect } from 'vitest';
+import './mock';
+import { concatFloat32Array, concatPCMFragments, mixinPCM } from '../av-utils';
 
-test("concatArrayBuffer", () => {
+test('concatArrayBuffer', () => {
   expect(
     concatFloat32Array([new Float32Array([1]), new Float32Array([2])]),
   ).toEqual(new Float32Array([1, 2]));
 });
 
-test("mixinPCM", () => {
+test('mixinPCM', () => {
   const wav1 = new Float32Array([1, 1, 1]);
   const wav2 = new Float32Array([2, 2, 2, 2, 2]);
 
@@ -23,7 +23,7 @@ test("mixinPCM", () => {
   ).toEqual(new Float32Array([3, 3, 3, 2, 2, 3, 3, 3, 2, 2]));
 });
 
-test("mixinPCM empty track", () => {
+test('mixinPCM empty track', () => {
   expect(
     mixinPCM([
       [new Float32Array([2, 2, 2, 2, 2]), new Float32Array([0, 0, 0, 0, 0])],
@@ -32,7 +32,7 @@ test("mixinPCM empty track", () => {
   ).toEqual(new Float32Array([2, 2, 2, 2, 2, 0, 0, 0, 0, 0]));
 });
 
-test("concatFragmentPCM", () => {
+test('concatFragmentPCM', () => {
   const chan0 = new Float32Array([0, 0, 0]);
   const chan1 = new Float32Array([1, 1, 1]);
   expect(

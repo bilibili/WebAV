@@ -1,6 +1,6 @@
-import { getBoundingClientRectMock } from "../../__tests__/mock";
-import { vi, test, expect, beforeEach, afterEach } from "vitest";
-import { TextSprite } from "../text-sprite";
+import { getBoundingClientRectMock } from '../../__tests__/mock';
+import { vi, test, expect, beforeEach, afterEach } from 'vitest';
+import { TextSprite } from '../text-sprite';
 
 beforeEach(() => {
   getBoundingClientRectMock.mockImplementation(() => {
@@ -15,8 +15,8 @@ afterEach(() => {
   getBoundingClientRectMock.mockRestore();
 });
 
-test("font-sprite", () => {
-  const textSpr = new TextSprite("text", "示例文本");
+test('font-sprite', () => {
+  const textSpr = new TextSprite('text', '示例文本');
   const mockCtx = {
     drawImage: vi.fn(),
     rotate: vi.fn(),

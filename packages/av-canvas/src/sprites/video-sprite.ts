@@ -1,5 +1,5 @@
-import { createEl } from "../utils";
-import { BaseSprite } from "@webav/av-cliper";
+import { createEl } from '../utils';
+import { BaseSprite } from '@webav/av-cliper';
 
 interface IVideoSpriteOpts {
   audioCtx?: AudioContext;
@@ -63,9 +63,9 @@ export class VideoSprite extends BaseSprite {
     videoEl: HTMLVideoElement;
     audioSource: AudioNode | null;
   }> {
-    if (!["video/mp4", "video/webm"].includes(videoFile.type))
-      throw Error("Unsupport video format");
-    const videoEl = createEl("video") as HTMLVideoElement;
+    if (!['video/mp4', 'video/webm'].includes(videoFile.type))
+      throw Error('Unsupport video format');
+    const videoEl = createEl('video') as HTMLVideoElement;
     videoEl.src = URL.createObjectURL(videoFile);
     await videoEl.play();
 
@@ -104,7 +104,7 @@ export class VideoSprite extends BaseSprite {
 async function mediaStream2Video(
   stream: MediaStream,
 ): Promise<HTMLVideoElement> {
-  const video = document.createElement("video");
+  const video = document.createElement('video');
 
   let timer: number;
 
@@ -112,14 +112,14 @@ async function mediaStream2Video(
 
   return await new Promise((resolve, reject) => {
     let failed = false;
-    video.addEventListener("loadeddata", () => {
+    video.addEventListener('loadeddata', () => {
       if (failed) return;
       clearTimeout(timer);
       resolve(video);
     });
     timer = window.setTimeout(() => {
       failed = true;
-      reject(new Error("video load failed"));
+      reject(new Error('video load failed'));
     }, 2000);
   });
 }

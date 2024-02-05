@@ -1,9 +1,9 @@
-import { OffscreenSprite } from "./offscreen-sprite";
-import { file2stream, recodemux } from "./mp4-utils";
-import { Log } from "./log";
-import { mixinPCM, sleep, throttle } from "./av-utils";
-import { EventTool } from "./event-tool";
-import { DEFAULT_AUDIO_CONF } from "./clips";
+import { OffscreenSprite } from './offscreen-sprite';
+import { file2stream, recodemux } from './mp4-utils';
+import { Log } from './log';
+import { mixinPCM, sleep, throttle } from './av-utils';
+import { EventTool } from './event-tool';
+import { DEFAULT_AUDIO_CONF } from './clips';
 
 interface IComItem {
   offset: number;
@@ -59,7 +59,7 @@ const encoderIdle = (() => {
 export class Combinator {
   static async isSupported(
     args = {
-      videoCodec: "avc1.42E032",
+      videoCodec: 'avc1.42E032',
     },
   ): Promise<boolean> {
     return (
@@ -114,20 +114,20 @@ export class Combinator {
     const { width, height } = opts;
     this.#cvs = new OffscreenCanvas(width, height);
     // this.#cvs = document.querySelector('#canvas') as HTMLCanvasElement
-    const ctx = this.#cvs.getContext("2d", { alpha: false });
-    if (ctx == null) throw Error("Can not create 2d offscreen context");
+    const ctx = this.#cvs.getContext('2d', { alpha: false });
+    if (ctx == null) throw Error('Can not create 2d offscreen context');
     this.#ctx = ctx;
-    this.#opts = Object.assign({ bgColor: "#000" }, opts);
+    this.#opts = Object.assign({ bgColor: '#000' }, opts);
 
     this.#remux = recodemux({
       video: {
         width,
         height,
         expectFPS: 30,
-        codec: opts.videoCodec ?? "avc1.42E032",
+        codec: opts.videoCodec ?? 'avc1.42E032',
       },
       audio: {
-        codec: "aac",
+        codec: 'aac',
         sampleRate: DEFAULT_AUDIO_CONF.sampleRate,
         channelCount: DEFAULT_AUDIO_CONF.channelCount,
       },
@@ -141,9 +141,9 @@ export class Combinator {
     sprite: OffscreenSprite,
     opts: { offset?: number; duration?: number; main?: boolean } = {},
   ): Promise<void> {
-    this.#log.info("Combinator add sprite:", sprite.name);
+    this.#log.info('Combinator add sprite:', sprite.name);
     await sprite.ready;
-    this.#log.info("Combinator add sprite ready:", sprite.name);
+    this.#log.info('Combinator add sprite ready:', sprite.name);
     this.#comItems.push({
       sprite,
       offset: (opts.offset ?? 0) * 1e6,
@@ -154,7 +154,7 @@ export class Combinator {
   }
 
   output(): ReadableStream<Uint8Array> {
-    if (this.#comItems.length === 0) throw Error("No clip added");
+    if (this.#comItems.length === 0) throw Error('No clip added');
 
     const mainItem = this.#comItems.find((it) => it.main);
     // 最大时间，优先取 main sprite，不存在则取最大值
@@ -165,7 +165,7 @@ export class Combinator {
 
     if (maxTime === Infinity) {
       throw Error(
-        "Unable to determine the end time, please specify a main sprite, or limit the duration of ImgClip, AudioCli",
+        'Unable to determine the end time, please specify a main sprite, or limit the duration of ImgClip, AudioCli',
       );
     }
     // 主视频（main）的 videoTrack duration 值为 0
@@ -179,16 +179,16 @@ export class Combinator {
     const stopReCodeMux = this.#run(
       maxTime,
       (prog) => {
-        this.#log.debug("OutputProgress:", prog);
-        this.#evtTool.emit("OutputProgress", prog);
+        this.#log.debug('OutputProgress:', prog);
+        this.#evtTool.emit('OutputProgress', prog);
       },
       async () => {
         await this.#remux.flush();
         this.#log.info(
-          "===== output ended =====, cost:",
+          '===== output ended =====, cost:',
           performance.now() - starTime,
         );
-        this.#evtTool.emit("OutputProgress", 1);
+        this.#evtTool.emit('OutputProgress', 1);
         this.destroy();
       },
     );
@@ -292,7 +292,7 @@ export class Combinator {
               numberOfChannels: DEFAULT_AUDIO_CONF.channelCount,
               numberOfFrames: data.length / DEFAULT_AUDIO_CONF.channelCount,
               sampleRate: DEFAULT_AUDIO_CONF.sampleRate,
-              format: "f32-planar",
+              format: 'f32-planar',
               data,
             }),
           );
@@ -352,7 +352,7 @@ function createAudioPlaceholder(
     numberOfChannels: DEFAULT_AUDIO_CONF.channelCount,
     numberOfFrames: frameCnt,
     sampleRate: sampleRate,
-    format: "f32-planar",
+    format: 'f32-planar',
     data: new Float32Array(frameCnt * 2),
   });
 }

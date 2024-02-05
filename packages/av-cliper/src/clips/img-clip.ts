@@ -1,9 +1,9 @@
-import { decodeImg } from "../av-utils";
-import { Log } from "../log";
-import { IClip } from "./iclip";
+import { decodeImg } from '../av-utils';
+import { Log } from '../log';
+import { IClip } from './iclip';
 
 export class ImgClip implements IClip {
-  ready: IClip["ready"];
+  ready: IClip['ready'];
 
   #meta = {
     // 微秒
@@ -17,7 +17,7 @@ export class ImgClip implements IClip {
   #frames: VideoFrame[] = [];
 
   constructor(
-    dataSource: ImageBitmap | { type: "image/gif"; stream: ReadableStream },
+    dataSource: ImageBitmap | { type: 'image/gif'; stream: ReadableStream },
   ) {
     if (dataSource instanceof ImageBitmap) {
       this.#img = dataSource;
@@ -42,24 +42,24 @@ export class ImgClip implements IClip {
   async #gifInit(stream: ReadableStream, type: string) {
     this.#frames = await decodeImg(stream, type);
     const firstVf = this.#frames[0];
-    if (firstVf == null) throw Error("No frame available in gif");
+    if (firstVf == null) throw Error('No frame available in gif');
 
     this.#meta = {
       duration: this.#frames.reduce((acc, cur) => acc + (cur.duration ?? 0), 0),
       width: firstVf.codedWidth,
       height: firstVf.codedHeight,
     };
-    Log.info("ImgClip ready:", this.#meta);
+    Log.info('ImgClip ready:', this.#meta);
   }
 
   async tick(time: number): Promise<{
     video: ImageBitmap | VideoFrame;
-    state: "success";
+    state: 'success';
   }> {
     if (this.#img != null) {
       return {
         video: await createImageBitmap(this.#img),
-        state: "success",
+        state: 'success',
       };
     }
     const tt = time % this.#meta.duration;
@@ -69,12 +69,12 @@ export class ImgClip implements IClip {
           (f) => tt >= f.timestamp && tt <= f.timestamp + (f.duration ?? 0),
         ) ?? this.#frames[0]
       ).clone(),
-      state: "success",
+      state: 'success',
     };
   }
 
   destroy(): void {
-    Log.info("ImgClip destroy");
+    Log.info('ImgClip destroy');
     this.#img?.close();
     this.#frames.forEach((f) => f.close());
   }

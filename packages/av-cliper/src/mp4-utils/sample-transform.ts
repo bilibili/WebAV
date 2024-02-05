@@ -3,8 +3,8 @@ import mp4box, {
   MP4File,
   MP4Info,
   MP4Sample,
-} from "@webav/mp4box.js";
-import { sleep } from "../av-utils";
+} from '@webav/mp4box.js';
+import { sleep } from '../av-utils';
 
 /**
  * 将原始字节流转换成 MP4Sample 流
@@ -12,12 +12,12 @@ import { sleep } from "../av-utils";
 export class SampleTransform {
   readable: ReadableStream<
     | {
-        chunkType: "ready";
+        chunkType: 'ready';
         data: { info: MP4Info; file: MP4File };
       }
     | {
-        chunkType: "samples";
-        data: { id: number; type: "video" | "audio"; samples: MP4Sample[] };
+        chunkType: 'samples';
+        data: { id: number; type: 'video' | 'audio'; samples: MP4Sample[] };
       }
   >;
 
@@ -35,19 +35,19 @@ export class SampleTransform {
           file.onReady = (info) => {
             const vTrackId = info.videoTracks[0]?.id;
             if (vTrackId != null)
-              file.setExtractionOptions(vTrackId, "video", { nbSamples: 100 });
+              file.setExtractionOptions(vTrackId, 'video', { nbSamples: 100 });
 
             const aTrackId = info.audioTracks[0]?.id;
             if (aTrackId != null)
-              file.setExtractionOptions(aTrackId, "audio", { nbSamples: 100 });
+              file.setExtractionOptions(aTrackId, 'audio', { nbSamples: 100 });
 
-            ctrl.enqueue({ chunkType: "ready", data: { info, file } });
+            ctrl.enqueue({ chunkType: 'ready', data: { info, file } });
             file.start();
           };
 
           file.onSamples = (id, type, samples) => {
             ctrl.enqueue({
-              chunkType: "samples",
+              chunkType: 'samples',
               data: { id, type, samples },
             });
             outCtrlDesiredSize = ctrl.desiredSize ?? 0;

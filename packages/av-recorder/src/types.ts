@@ -2,7 +2,7 @@ export interface IRecorderConf {
   width?: number;
   height?: number;
   expectFPS?: number;
-  audioCodec?: "aac";
+  audioCodec?: 'aac';
   videoCodec?: string;
   /* 码率 */
   bitrate?: number;
@@ -16,7 +16,7 @@ export interface IWorkerOpts {
     codec: string;
   };
   audio: {
-    codec: "opus" | "aac";
+    codec: 'opus' | 'aac';
     sampleRate: number;
     channelCount: number;
   } | null;
@@ -31,11 +31,11 @@ export interface IStream {
 }
 
 export enum EWorkerMsg {
-  SafeExit = "SafeExit",
-  Stop = "Stop",
-  Paused = "Paused",
-  Start = "Start",
-  OutputStream = "OutputStream",
+  SafeExit = 'SafeExit',
+  Stop = 'Stop',
+  Paused = 'Paused',
+  Start = 'Start',
+  OutputStream = 'OutputStream',
 }
 
 export type TClearFn = () => void;

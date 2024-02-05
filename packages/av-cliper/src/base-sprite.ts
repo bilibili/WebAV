@@ -1,4 +1,4 @@
-import { IRectBaseProps, Rect } from "./rect";
+import { IRectBaseProps, Rect } from './rect';
 
 interface IAnimationOpts {
   duration: number;
@@ -11,7 +11,7 @@ type TAnimateProps = IRectBaseProps & { opacity: number };
 export type TAnimationKeyFrame = Array<[number, Partial<TAnimateProps>]>;
 
 type TKeyFrameOpts = Partial<
-  Record<`${number}%` | "from" | "to", Partial<TAnimateProps>>
+  Record<`${number}%` | 'from' | 'to', Partial<TAnimateProps>>
 >;
 
 export abstract class BaseSprite {
@@ -23,7 +23,7 @@ export abstract class BaseSprite {
 
   opacity = 1;
 
-  flip: "horizontal" | "vertical" | null = null;
+  flip: 'horizontal' | 'vertical' | null = null;
 
   #animatKeyFrame: TAnimationKeyFrame | null = null;
 
@@ -43,11 +43,11 @@ export abstract class BaseSprite {
     } = this;
     ctx.setTransform(
       // 水平 缩放、倾斜
-      this.flip === "horizontal" ? -1 : 1,
+      this.flip === 'horizontal' ? -1 : 1,
       0,
       // 垂直 倾斜、缩放
       0,
-      this.flip === "vertical" ? -1 : 1,
+      this.flip === 'vertical' ? -1 : 1,
       // 坐标原点偏移 x y
       center.x,
       center.y,
@@ -62,7 +62,7 @@ export abstract class BaseSprite {
     this.#animatKeyFrame = Object.entries(keyFrame).map(([k, val]) => {
       const numK = { from: 0, to: 100 }[k] ?? Number(k.slice(0, -1));
       if (isNaN(numK) || numK > 100 || numK < 0) {
-        throw Error("keyFrame must between 0~100");
+        throw Error('keyFrame must between 0~100');
       }
       return [numK / 100, val];
     }) as TAnimationKeyFrame;
@@ -88,14 +88,14 @@ export abstract class BaseSprite {
     );
     for (const k in updateProps) {
       switch (k) {
-        case "opacity":
+        case 'opacity':
           this.opacity = updateProps[k] as number;
           break;
-        case "x":
-        case "y":
-        case "w":
-        case "h":
-        case "angle":
+        case 'x':
+        case 'y':
+        case 'w':
+        case 'h':
+        case 'angle':
           this.rect[k] = updateProps[k] as number;
           break;
       }

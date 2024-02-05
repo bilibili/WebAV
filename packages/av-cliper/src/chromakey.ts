@@ -72,7 +72,7 @@ function initShaderProgram(
   if (!gl.getProgramParameter(shaderProgram, gl.LINK_STATUS)) {
     throw Error(
       gl.getProgramInfoLog(shaderProgram) ??
-        "Unable to initialize the shader program",
+        'Unable to initialize the shader program',
     );
   }
 
@@ -93,7 +93,7 @@ function loadShader(gl: WebGLRenderingContext, type: number, source: string) {
   if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
     const errMsg = gl.getShaderInfoLog(shader);
     gl.deleteShader(shader);
-    throw Error(errMsg ?? "An error occurred compiling the shaders");
+    throw Error(errMsg ?? 'An error occurred compiling the shaders');
   }
 
   return shader;
@@ -111,7 +111,7 @@ function updateTexture(
 
 function initTexture(gl: WebGLRenderingContext) {
   const texture = gl.createTexture();
-  if (texture == null) throw Error("Create WebGL texture error");
+  if (texture == null) throw Error('Create WebGL texture error');
   gl.bindTexture(gl.TEXTURE_2D, texture);
 
   // put a single pixel in the texture so we can use it immediately.
@@ -157,40 +157,40 @@ function initCvs(
   } & IChromakeyOpts,
 ) {
   const cvs =
-    "document" in globalThis
-      ? globalThis.document.createElement("canvas")
+    'document' in globalThis
+      ? globalThis.document.createElement('canvas')
       : new OffscreenCanvas(opts.width, opts.height);
   cvs.width = opts.width;
   cvs.height = opts.height;
 
-  const gl = cvs.getContext("webgl2", {
+  const gl = cvs.getContext('webgl2', {
     premultipliedAlpha: false,
     alpha: true,
   }) as WebGL2RenderingContext | null;
 
-  if (gl == null) throw Error("Cant create gl context");
+  if (gl == null) throw Error('Cant create gl context');
 
   const shaderProgram = initShaderProgram(gl, vertexShader, fragmentShader);
   gl.useProgram(shaderProgram);
 
   gl.uniform3fv(
-    gl.getUniformLocation(shaderProgram, "keyColor"),
+    gl.getUniformLocation(shaderProgram, 'keyColor'),
     opts.keyColor.map((v) => v / 255),
   );
   gl.uniform1f(
-    gl.getUniformLocation(shaderProgram, "similarity"),
+    gl.getUniformLocation(shaderProgram, 'similarity'),
     opts.similarity,
   );
   gl.uniform1f(
-    gl.getUniformLocation(shaderProgram, "smoothness"),
+    gl.getUniformLocation(shaderProgram, 'smoothness'),
     opts.smoothness,
   );
-  gl.uniform1f(gl.getUniformLocation(shaderProgram, "spill"), opts.spill);
+  gl.uniform1f(gl.getUniformLocation(shaderProgram, 'spill'), opts.spill);
 
   const posBuffer = gl.createBuffer();
   gl.bindBuffer(gl.ARRAY_BUFFER, posBuffer);
   gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(POINT_POS), gl.STATIC_DRAW);
-  const a_position = gl.getAttribLocation(shaderProgram, "a_position");
+  const a_position = gl.getAttribLocation(shaderProgram, 'a_position');
   gl.vertexAttribPointer(
     a_position,
     2,
@@ -208,7 +208,7 @@ function initCvs(
     new Float32Array(TEX_COORD_POS),
     gl.STATIC_DRAW,
   );
-  const a_texCoord = gl.getAttribLocation(shaderProgram, "a_texCoord");
+  const a_texCoord = gl.getAttribLocation(shaderProgram, 'a_texCoord');
   gl.vertexAttribPointer(
     a_texCoord,
     2,
@@ -240,7 +240,7 @@ function getSourceWH(imgSource: TImgSource) {
 
 function getKeyColor(imgSource: TImgSource) {
   const cvs = new OffscreenCanvas(1, 1);
-  const ctx = cvs.getContext("2d")!;
+  const ctx = cvs.getContext('2d')!;
   ctx.drawImage(imgSource, 0, 0);
   const {
     data: [r, g, b],
@@ -262,7 +262,7 @@ function getKeyColor(imgSource: TImgSource) {
  * }
  */
 export const createChromakey = (
-  opts: Omit<IChromakeyOpts, "keyColor"> & {
+  opts: Omit<IChromakeyOpts, 'keyColor'> & {
     keyColor?: [number, number, number];
   },
 ) => {
@@ -289,7 +289,7 @@ export const createChromakey = (
       imgSource instanceof globalThis.VideoFrame
     ) {
       const rs = new VideoFrame(cvs, {
-        alpha: "keep",
+        alpha: 'keep',
         timestamp: imgSource.timestamp,
         duration: imgSource.duration ?? undefined,
       });
@@ -298,7 +298,7 @@ export const createChromakey = (
     }
 
     return createImageBitmap(cvs, {
-      imageOrientation: imgSource instanceof ImageBitmap ? "flipY" : "none",
+      imageOrientation: imgSource instanceof ImageBitmap ? 'flipY' : 'none',
     });
   };
 };

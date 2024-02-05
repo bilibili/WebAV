@@ -1,6 +1,6 @@
-import { expect, test } from "vitest";
-import "../../__tests__/mock";
-import { EmbedSubtitlesClip } from "../embed-subtitles-clip";
+import { expect, test } from 'vitest';
+import '../../__tests__/mock';
+import { EmbedSubtitlesClip } from '../embed-subtitles-clip';
 
 const txt1 = `
 
@@ -43,7 +43,7 @@ const txt1 = `
 
 `;
 
-test("EmbedSubtitles", async () => {
+test('EmbedSubtitles', async () => {
   const es = new EmbedSubtitlesClip(txt1, {
     videoWidth: 1280,
     videoHeight: 720,
@@ -60,7 +60,7 @@ test("EmbedSubtitles", async () => {
 
   // 100s 超出字幕时间
   const { state } = await es.tick(100 * 1e6);
-  expect(state).toBe("done");
+  expect(state).toBe('done');
 });
 
 const txt2 = `
@@ -70,7 +70,7 @@ const txt2 = `
 测试样本1-3s
 
 `;
-test("EmbedSubtitles digital", async () => {
+test('EmbedSubtitles digital', async () => {
   const es = new EmbedSubtitlesClip(txt2, {
     videoWidth: 1280,
     videoHeight: 720,

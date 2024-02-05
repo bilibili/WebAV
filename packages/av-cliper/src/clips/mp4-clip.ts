@@ -3,10 +3,10 @@ import {
   concatFloat32Array,
   extractPCM4AudioData,
   sleep,
-} from "../av-utils";
-import { Log } from "../log";
-import { demuxcode } from "../mp4-utils";
-import { DEFAULT_AUDIO_CONF, IClip } from "./iclip";
+} from '../av-utils';
+import { Log } from '../log';
+import { demuxcode } from '../mp4-utils';
+import { DEFAULT_AUDIO_CONF, IClip } from './iclip';
 
 let CLIP_ID = 0;
 
@@ -17,7 +17,7 @@ export class MP4Clip implements IClip {
 
   #ts = 0;
 
-  ready: IClip["ready"];
+  ready: IClip['ready'];
 
   #destroyed = false;
   #decodeEnded = false;
@@ -51,7 +51,7 @@ export class MP4Clip implements IClip {
     this.ready = new Promise((resolve) => {
       let lastVf: VideoFrame | null = null;
       this.#volume =
-        typeof opts.audio === "object" && "volume" in opts.audio
+        typeof opts.audio === 'object' && 'volume' in opts.audio
           ? opts.audio.volume
           : 1;
       this.#demuxcoder = demuxcode(
@@ -75,7 +75,7 @@ export class MP4Clip implements IClip {
               audioSampleRate: DEFAULT_AUDIO_CONF.sampleRate,
               audioChanCount: DEFAULT_AUDIO_CONF.channelCount,
             };
-            this.#log.info("MP4Clip info:", info);
+            this.#log.info('MP4Clip info:', info);
             resolve({
               width: videoTrack.track_width,
               height: videoTrack.track_height,
@@ -98,8 +98,8 @@ export class MP4Clip implements IClip {
           onAudioOutput: this.#audioData2PCMBuf,
           onComplete: () => {
             this.#decodeEnded = true;
-            this.#log.info("MP4Clip decode complete");
-            if (lastVf == null) throw Error("mp4 parse error, no video frame");
+            this.#log.info('MP4Clip decode complete');
+            if (lastVf == null) throw Error('mp4 parse error, no video frame');
           },
         },
       );
@@ -194,19 +194,19 @@ export class MP4Clip implements IClip {
   }
 
   // 默认直接返回
-  tickInterceptor: NonNullable<IClip["tickInterceptor"]> = async (_, tickRet) =>
+  tickInterceptor: NonNullable<IClip['tickInterceptor']> = async (_, tickRet) =>
     tickRet;
 
   async tick(time: number): Promise<{
     video?: VideoFrame;
     audio: Float32Array[];
-    state: "success" | "done";
+    state: 'success' | 'done';
   }> {
-    if (time < this.#ts) throw Error("time not allow rollback");
+    if (time < this.#ts) throw Error('time not allow rollback');
     if (this.#decodeEnded && time >= this.#meta.duration) {
       return await this.tickInterceptor<MP4Clip>(time, {
         audio: [],
-        state: "done",
+        state: 'done',
       });
     }
 
@@ -218,25 +218,25 @@ export class MP4Clip implements IClip {
     if (video == null) {
       return await this.tickInterceptor<MP4Clip>(time, {
         audio,
-        state: "success",
+        state: 'success',
       });
     }
 
     return await this.tickInterceptor<MP4Clip>(time, {
       video,
       audio,
-      state: "success",
+      state: 'success',
     });
   }
 
   destroy(): void {
     if (this.#destroyed) return;
     this.#log.info(
-      "MP4Clip destroy, ts:",
+      'MP4Clip destroy, ts:',
       this.#ts,
-      ", remainder frame count:",
+      ', remainder frame count:',
       this.#videoFrames.length,
-      ", decodeEnded:",
+      ', decodeEnded:',
       this.#decodeEnded,
     );
     this.#destroyed = true;

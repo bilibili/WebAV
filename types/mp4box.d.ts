@@ -1,4 +1,4 @@
-declare module "@webav/mp4box.js" {
+declare module '@webav/mp4box.js' {
   export interface MP4MediaTrack {
     id: number;
     created: Date;
@@ -122,7 +122,7 @@ declare module "@webav/mp4box.js" {
   }
 
   export interface TrakBoxParser extends BoxParser {
-    type: "trak";
+    type: 'trak';
     samples: MP4Sample[];
     nextSample: number;
     sample_size: number;
@@ -131,26 +131,26 @@ declare module "@webav/mp4box.js" {
   }
 
   interface MDATBoxParser extends BoxParser {
-    type: "mdat";
+    type: 'mdat';
     data: Uint8Array;
   }
 
   interface MOOFBoxParser extends BoxParser {
-    type: "moof";
+    type: 'moof';
   }
 
   interface MDIABoxParser extends BoxParser {
-    type: "mdia";
+    type: 'mdia';
     minf: MINFBoxParser;
   }
 
   interface MINFBoxParser extends BoxParser {
-    type: "minf";
+    type: 'minf';
     stbl: STBLBoxParser;
   }
 
   interface STBLBoxParser extends BoxParser {
-    type: "stbl";
+    type: 'stbl';
     stsd: STSDBoxParser;
   }
 
@@ -159,7 +159,7 @@ declare module "@webav/mp4box.js" {
   }
 
   interface ESDSBoxParser extends BoxParser {
-    type: "esds";
+    type: 'esds';
     version: number;
     flags: number;
     esd: ESDBoxParser;
@@ -167,27 +167,27 @@ declare module "@webav/mp4box.js" {
   }
 
   interface MOOVBoxParser extends BoxParser {
-    type: "moov";
+    type: 'moov';
     traks: TrakBoxParser[];
     mvhd: MVHDBoxParser;
   }
 
   interface MVHDBoxParser extends BoxParser {
-    type: "mvhd";
+    type: 'mvhd';
     duration: number;
     timescale: number;
   }
 
   type STSDBoxParser = Omit<
     BoxParser & {
-      type: "stsd";
+      type: 'stsd';
       entries: Array<AVC1BoxParser | HVCBoxParser | MP4ABoxParser>;
     },
-    "boxes"
+    'boxes'
   >;
 
   export interface AVC1BoxParser extends BoxParser {
-    type: "avc1";
+    type: 'avc1';
     boxes: AVCCBox[];
     avcC: AVCCBox;
     compressorname: string;
@@ -199,7 +199,7 @@ declare module "@webav/mp4box.js" {
   }
 
   export interface HVCBoxParser extends BoxParser {
-    type: "hvc";
+    type: 'hvc';
     boxes: HVCCBox[];
     hvcC: HVCCBox;
     compressorname: string;
@@ -213,17 +213,17 @@ declare module "@webav/mp4box.js" {
   interface AVCCBox extends BoxParser {
     PPS: Array<{ length: number; nalu: Uint8Array }>;
     SPS: Array<{ length: number; nalu: Uint8Array }>;
-    type: "avcC";
+    type: 'avcC';
   }
 
   interface HVCCBox extends BoxParser {
     PPS: Array<{ length: number; nalu: Uint8Array }>;
     SPS: Array<{ length: number; nalu: Uint8Array }>;
-    type: "hvcC";
+    type: 'hvcC';
   }
 
   export interface MP4ABoxParser extends BoxParser {
-    type: "mp4a";
+    type: 'mp4a';
     channel_count: number;
     samplerate: number;
     samplesize: number;

@@ -1,15 +1,15 @@
-import { MP4File, MP4Info, MP4Sample } from "@webav/mp4box.js";
-import { autoReadStream } from "../av-utils";
-import { Log } from "../log";
-import { extractFileConfig, sample2ChunkOpts } from "./mp4box-utils";
-import { file } from "opfs-tools";
-import { SampleTransform } from "./sample-transform";
+import { MP4File, MP4Info, MP4Sample } from '@webav/mp4box.js';
+import { autoReadStream } from '../av-utils';
+import { Log } from '../log';
+import { extractFileConfig, sample2ChunkOpts } from './mp4box-utils';
+import { file } from 'opfs-tools';
+import { SampleTransform } from './sample-transform';
 
 export class MP4Previewer {
   #ready: Promise<MP4Info>;
 
   #videoSamples: Array<
-    Omit<MP4Sample, "data"> & {
+    Omit<MP4Sample, 'data'> & {
       offset: number;
       timeEnd: number;
       data: null;
@@ -35,13 +35,13 @@ export class MP4Previewer {
       let mp4boxFile: MP4File | null = null;
       autoReadStream(stream.pipeThrough(new SampleTransform()), {
         onChunk: async ({ chunkType, data }): Promise<void> => {
-          if (chunkType === "ready") {
+          if (chunkType === 'ready') {
             const { videoDecoderConf, videoTrackConf } = extractFileConfig(
               data.file,
               data.info,
             );
             if (videoDecoderConf == null || videoTrackConf == null) {
-              reject("Unsupported codec");
+              reject('Unsupported codec');
               return;
             }
             mp4Info = {
@@ -52,12 +52,12 @@ export class MP4Previewer {
             mp4boxFile = data.file;
             const { width, height } = data.info.videoTracks[0].video;
             this.#cvs = new OffscreenCanvas(width, height);
-            this.#ctx = this.#cvs.getContext("2d");
+            this.#ctx = this.#cvs.getContext('2d');
 
             this.#wrapDecoder = wrapVideoDecoder(videoDecoderConf);
           }
-          if (chunkType === "samples") {
-            if (data.type === "video") {
+          if (chunkType === 'samples') {
+            if (data.type === 'video') {
               for (const s of data.samples) {
                 this.#videoSamples.push({
                   ...s,
@@ -75,7 +75,7 @@ export class MP4Previewer {
         onDone: async () => {
           await writer.close();
           if (mp4Info == null) {
-            reject("Parse failed");
+            reject('Parse failed');
             return;
           }
           resolve(mp4Info);

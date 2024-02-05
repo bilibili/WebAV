@@ -4,17 +4,17 @@ interface IPoint {
 }
 
 export type TCtrlKey =
-  | "t"
-  | "b"
-  | "l"
-  | "r"
-  | "lt"
-  | "lb"
-  | "rt"
-  | "rb"
-  | "rotate";
+  | 't'
+  | 'b'
+  | 'l'
+  | 'r'
+  | 'lt'
+  | 'lb'
+  | 'rt'
+  | 'rb'
+  | 'rotate';
 
-export const CTRL_KEYS = ["t", "b", "l", "r", "lt", "lb", "rt", "rb", "rotate"];
+export const CTRL_KEYS = ['t', 'b', 'l', 'r', 'lt', 'lb', 'rt', 'rb', 'rotate'];
 
 export interface IRectBaseProps {
   x: number;

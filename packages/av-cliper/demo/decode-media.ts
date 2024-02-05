@@ -1,35 +1,35 @@
-import { Combinator } from "../src";
-import { decodeImg, sleep } from "../src/av-utils";
-import { createChromakey } from "../src/chromakey";
-import { AudioClip, DEFAULT_AUDIO_CONF, MP4Clip } from "../src/clips";
-import { EmbedSubtitlesClip } from "../src/clips/embed-subtitles-clip";
-import { Log } from "../src/log";
+import { Combinator } from '../src';
+import { decodeImg, sleep } from '../src/av-utils';
+import { createChromakey } from '../src/chromakey';
+import { AudioClip, DEFAULT_AUDIO_CONF, MP4Clip } from '../src/clips';
+import { EmbedSubtitlesClip } from '../src/clips/embed-subtitles-clip';
+import { Log } from '../src/log';
 
-import Worker from "./decode-video-worker?worker&inline";
+import Worker from './decode-video-worker?worker&inline';
 
 new Worker();
 (async () => {
   if (!(await Combinator.isSupported())) {
-    alert("Your browser does not support WebCodecs");
+    alert('Your browser does not support WebCodecs');
   }
 })();
 
-const cvs = document.querySelector("canvas") as HTMLCanvasElement;
-const ctx = cvs.getContext("2d")!;
+const cvs = document.querySelector('canvas') as HTMLCanvasElement;
+const ctx = cvs.getContext('2d')!;
 
 const imgs = {
-  "image/avif": "./img/animated.avif",
-  "image/webp": "./img/animated.webp",
-  "image/png": "./img/animated.png",
-  "image/gif": "./img/animated.gif",
+  'image/avif': './img/animated.avif',
+  'image/webp': './img/animated.webp',
+  'image/png': './img/animated.png',
+  'image/gif': './img/animated.gif',
 };
 
 let stopImg = () => {};
-document.querySelector("#decode-img")?.addEventListener("click", () => {
+document.querySelector('#decode-img')?.addEventListener('click', () => {
   (async () => {
     stopImg();
     const imgType = (
-      document.querySelector("input[name=img-type]:checked") as HTMLInputElement
+      document.querySelector('input[name=img-type]:checked') as HTMLInputElement
     ).value;
 
     // @ts-expect-error
@@ -56,18 +56,18 @@ document.querySelector("#decode-img")?.addEventListener("click", () => {
 });
 
 const audios = {
-  "44.1kHz-2chan.m4a": "./audio/44.1kHz-2chan.m4a",
-  "44.1kHz-2chan.mp3": "./audio/44.1kHz-2chan.mp3",
-  "16kHz-1chan.mp3": "./audio/16kHz-1chan.mp3",
+  '44.1kHz-2chan.m4a': './audio/44.1kHz-2chan.m4a',
+  '44.1kHz-2chan.mp3': './audio/44.1kHz-2chan.mp3',
+  '16kHz-1chan.mp3': './audio/16kHz-1chan.mp3',
 };
 
 let stopAudio = () => {};
-document.querySelector("#decode-audio")?.addEventListener("click", () => {
+document.querySelector('#decode-audio')?.addEventListener('click', () => {
   (async () => {
     stopAudio();
     const audioType = (
       document.querySelector(
-        "input[name=audio-type]:checked",
+        'input[name=audio-type]:checked',
       ) as HTMLInputElement
     ).value;
     // @ts-expect-error
@@ -81,8 +81,8 @@ document.querySelector("#decode-audio")?.addEventListener("click", () => {
     async function play() {
       time += 100000;
       const { audio, state } = await clip.tick(time);
-      if (state === "done") {
-        console.log("--- ended");
+      if (state === 'done') {
+        console.log('--- ended');
         return;
       }
       const len = audio[0].length;
@@ -113,18 +113,18 @@ document.querySelector("#decode-audio")?.addEventListener("click", () => {
 });
 
 const videos = {
-  "bunny.mp4": "./video/bunny-avc.mp4",
-  "bear.mp4": "./video/bear-vp9.mp4",
+  'bunny.mp4': './video/bunny-avc.mp4',
+  'bear.mp4': './video/bear-vp9.mp4',
 };
-document.querySelector("#decode-video")?.addEventListener("click", () => {
+document.querySelector('#decode-video')?.addEventListener('click', () => {
   (async () => {
     const videoType = (
       document.querySelector(
-        "input[name=video-type]:checked",
+        'input[name=video-type]:checked',
       ) as HTMLInputElement
     ).value;
     const speed = document.querySelector(
-      "input[name=playrate]:checked",
+      'input[name=playrate]:checked',
     ) as HTMLInputElement;
 
     // @ts-expect-error
@@ -132,7 +132,7 @@ document.querySelector("#decode-video")?.addEventListener("click", () => {
     const clip = new MP4Clip(resp1.body!);
     await clip.ready;
 
-    if (speed.value === "fastest") {
+    if (speed.value === 'fastest') {
       fastestDecode();
     } else {
       timesSpeedDecode(Number(speed.value));
@@ -142,8 +142,8 @@ document.querySelector("#decode-video")?.addEventListener("click", () => {
       let time = 0;
       while (true) {
         const { state, video } = await clip.tick(time);
-        if (state === "done") break;
-        if (video != null && state === "success") {
+        if (state === 'done') break;
+        if (video != null && state === 'success') {
           ctx.clearRect(0, 0, cvs.width, cvs.height);
           ctx.drawImage(video, 0, 0, video.codedWidth, video.codedHeight);
           video.close();
@@ -160,12 +160,12 @@ document.querySelector("#decode-video")?.addEventListener("click", () => {
         const { state, video } = await clip.tick(
           Math.round((performance.now() - startTime) * 1000) * times,
         );
-        if (state === "done") {
+        if (state === 'done') {
           clearInterval(timer);
           clip.destroy();
           return;
         }
-        if (video != null && state === "success") {
+        if (video != null && state === 'success') {
           ctx.clearRect(0, 0, cvs.width, cvs.height);
           ctx.drawImage(video, 0, 0, video.codedWidth, video.codedHeight);
           video.close();
@@ -176,14 +176,14 @@ document.querySelector("#decode-video")?.addEventListener("click", () => {
 });
 
 const subtitles = {
-  "test-sample.srt": "./subtitles/test-sample.srt",
+  'test-sample.srt': './subtitles/test-sample.srt',
 };
-document.querySelector("#decode-subtitles")?.addEventListener("click", () => {
+document.querySelector('#decode-subtitles')?.addEventListener('click', () => {
   (async () => {
     stopImg();
     const subtitlesType = (
       document.querySelector(
-        "input[name=subtitles-type]:checked",
+        'input[name=subtitles-type]:checked',
       ) as HTMLInputElement
     ).value;
 
@@ -195,27 +195,27 @@ document.querySelector("#decode-subtitles")?.addEventListener("click", () => {
       videoHeight: 720,
       fontSize: 40,
       // textBgColor: '#000000',
-      color: "yellow",
+      color: 'yellow',
     });
 
     let time = 0;
     while (time < 20 * 1e6) {
       const { state, video } = await es.tick(time);
-      if (state === "done") break;
+      if (state === 'done') break;
       ctx.clearRect(0, 0, cvs.width, cvs.height);
       ctx.drawImage(video!, 0, 0);
       video?.close();
       time += 33000;
       await sleep(10);
     }
-    console.log("decode subtitles done");
+    console.log('decode subtitles done');
     es.destroy();
   })();
 });
 
-document.querySelector("#chromakey")?.addEventListener("click", () => {
+document.querySelector('#chromakey')?.addEventListener('click', () => {
   (async () => {
-    const clip = new MP4Clip((await fetch("./video/chromakey-test.mp4")).body!);
+    const clip = new MP4Clip((await fetch('./video/chromakey-test.mp4')).body!);
     const chromakey = createChromakey({
       similarity: 0.4,
       smoothness: 0.1,
@@ -231,11 +231,11 @@ document.querySelector("#chromakey")?.addEventListener("click", () => {
     let time = 0;
     const timerId = setInterval(async () => {
       const { state, video } = await clip.tick(time);
-      if (state === "done") {
+      if (state === 'done') {
         clearInterval(timerId);
         clip.destroy();
       }
-      if (video != null && state === "success") {
+      if (video != null && state === 'success') {
         ctx.clearRect(0, 0, cvs.width, cvs.height);
         ctx.drawImage(video, 0, 0, video.codedWidth, video.codedHeight);
         video.close();

@@ -1,4 +1,4 @@
-import { vi } from "vitest";
+import { vi } from 'vitest';
 
 export const MediaStreamMock = {
   getTracks: vi.fn().mockReturnValue([]),
@@ -74,21 +74,21 @@ Object.assign(global, {
   }),
 });
 
-vi.spyOn(HTMLVideoElement.prototype, "addEventListener").mockImplementation(
+vi.spyOn(HTMLVideoElement.prototype, 'addEventListener').mockImplementation(
   (_, handler: any) => {
     handler();
   },
 );
 
-vi.spyOn(HTMLVideoElement.prototype, "play").mockImplementation(async () => {
+vi.spyOn(HTMLVideoElement.prototype, 'play').mockImplementation(async () => {
   return await Promise.resolve();
 });
 
-vi.spyOn(HTMLAudioElement.prototype, "play").mockImplementation(async () => {
+vi.spyOn(HTMLAudioElement.prototype, 'play').mockImplementation(async () => {
   return await Promise.resolve();
 });
 
-vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockImplementation(() => {
+vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockImplementation(() => {
   return {
     drawImage: vi.fn(),
     fillRect: vi.fn(),
@@ -100,10 +100,10 @@ vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockImplementation(() => {
 
 export const CvsElementMock = {
   clientWidth: vi
-    .spyOn(HTMLCanvasElement.prototype, "clientWidth", "get")
+    .spyOn(HTMLCanvasElement.prototype, 'clientWidth', 'get')
     .mockImplementation(() => 0),
   clientHeight: vi
-    .spyOn(HTMLCanvasElement.prototype, "clientHeight", "get")
+    .spyOn(HTMLCanvasElement.prototype, 'clientHeight', 'get')
     .mockImplementation(() => 0),
 };
 
@@ -114,7 +114,7 @@ Object.assign(HTMLCanvasElement.prototype, {
 
 export const getBoundingClientRectMock = vi.spyOn(
   HTMLElement.prototype,
-  "getBoundingClientRect",
+  'getBoundingClientRect',
 );
 
 export const createObjectURLMock = (URL.createObjectURL = vi.fn());
@@ -133,8 +133,8 @@ export function crtMSEvt4Offset(
   offsetY: number,
 ): MouseEvent {
   const evt = new MouseEvent(evtName);
-  vi.spyOn(evt, "offsetX", "get").mockImplementation(() => offsetX);
-  vi.spyOn(evt, "offsetY", "get").mockImplementation(() => offsetY);
+  vi.spyOn(evt, 'offsetX', 'get').mockImplementation(() => offsetX);
+  vi.spyOn(evt, 'offsetY', 'get').mockImplementation(() => offsetY);
   return evt;
 }
 
@@ -173,7 +173,7 @@ export const OffscreenCanvasRenderingContext2DMock = {
   clearRect: vi.fn(),
   measureText: vi.fn().mockReturnValue({}),
   strokeText: vi.fn(),
-  fillStyle: "",
+  fillStyle: '',
 };
 
 Object.assign(global, {

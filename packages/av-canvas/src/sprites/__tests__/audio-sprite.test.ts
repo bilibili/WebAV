@@ -1,15 +1,15 @@
-import { createObjectURLMock, revokeObjectURLMock } from "../../__tests__/mock";
-import { beforeEach, expect, test } from "vitest";
-import { AudioSprite } from "../audio-sprite";
+import { createObjectURLMock, revokeObjectURLMock } from '../../__tests__/mock';
+import { beforeEach, expect, test } from 'vitest';
+import { AudioSprite } from '../audio-sprite';
 
 beforeEach(() => {
   createObjectURLMock.mockReset();
   revokeObjectURLMock.mockReset();
 });
 
-test("create AudioSprite", () => {
-  createObjectURLMock.mockReturnValueOnce("mock-audio-src");
-  const as = new AudioSprite("as", { type: "audio/mpeg" } as unknown as File, {
+test('create AudioSprite', () => {
+  createObjectURLMock.mockReturnValueOnce('mock-audio-src');
+  const as = new AudioSprite('as', { type: 'audio/mpeg' } as unknown as File, {
     audioCtx: new AudioContext(),
   });
   expect(as.audioNode).not.toBeNull();

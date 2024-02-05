@@ -2,9 +2,9 @@ import {
   concatPCMFragments,
   extractPCM4AudioBuffer,
   ringSliceFloat32Array,
-} from "../av-utils";
-import { Log } from "../log";
-import { DEFAULT_AUDIO_CONF, IClip } from "./iclip";
+} from '../av-utils';
+import { Log } from '../log';
+import { DEFAULT_AUDIO_CONF, IClip } from './iclip';
 
 interface IAudioClipOpts {
   loop?: boolean;
@@ -14,7 +14,7 @@ interface IAudioClipOpts {
 export class AudioClip implements IClip {
   static ctx: AudioContext | null = null;
 
-  ready: IClip["ready"];
+  ready: IClip['ready'];
 
   #meta = {
     // 微秒
@@ -69,7 +69,7 @@ export class AudioClip implements IClip {
         ? await parseStream2PCM(dataSource, AudioClip.ctx)
         : dataSource;
 
-    Log.info("Audio clip decoded complete:", performance.now() - tStart);
+    Log.info('Audio clip decoded complete:', performance.now() - tStart);
 
     const volume = this.#opts.volume;
     if (volume !== 1) {
@@ -84,19 +84,19 @@ export class AudioClip implements IClip {
     this.#chan1Buf = pcm[1] ?? this.#chan0Buf;
 
     Log.info(
-      "Audio clip convert to AudioData, time:",
+      'Audio clip convert to AudioData, time:',
       performance.now() - tStart,
     );
   }
 
   async tick(time: number): Promise<{
     audio: Float32Array[];
-    state: "success" | "done";
+    state: 'success' | 'done';
   }> {
-    if (time < this.#ts) throw Error("time not allow rollback");
+    if (time < this.#ts) throw Error('time not allow rollback');
     if (!this.#opts.loop && time >= this.#meta.duration) {
       // 待观察：如果time跨度较大，返回done，理论上会丢失一些音频帧
-      return { audio: [], state: "done" };
+      return { audio: [], state: 'done' };
     }
 
     const deltaTime = time - this.#ts;
@@ -117,13 +117,13 @@ export class AudioClip implements IClip {
         ];
     this.#frameOffset = endIdx;
 
-    return { audio, state: "success" };
+    return { audio, state: 'success' };
   }
 
   destroy(): void {
     this.#chan0Buf = new Float32Array(0);
     this.#chan1Buf = new Float32Array(0);
-    Log.info("---- audioclip destroy ----");
+    Log.info('---- audioclip destroy ----');
   }
 }
 

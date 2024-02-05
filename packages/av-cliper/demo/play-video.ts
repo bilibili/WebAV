@@ -1,22 +1,22 @@
-import { Combinator } from "../src";
+import { Combinator } from '../src';
 
 export function playOutputStream(resourceList: string[], attachEl: Element) {
-  const container = document.createElement("div");
+  const container = document.createElement('div');
   attachEl.appendChild(container);
 
-  const resourceEl = document.createElement("div");
+  const resourceEl = document.createElement('div');
   resourceEl.innerHTML =
     `Resource:<br/>` +
     resourceList
       .map((str) => `<a href="${str}" target="_blank">${str}</>`)
-      .join("<br/>");
+      .join('<br/>');
   container.appendChild(resourceEl);
 
-  const stateEl = document.createElement("div");
-  stateEl.textContent = "loading...";
+  const stateEl = document.createElement('div');
+  stateEl.textContent = 'loading...';
   container.appendChild(stateEl);
 
-  const videoEl = document.createElement("video");
+  const videoEl = document.createElement('video');
   videoEl.controls = true;
   videoEl.autoplay = true;
   videoEl.style.cssText = `
@@ -25,12 +25,12 @@ export function playOutputStream(resourceList: string[], attachEl: Element) {
     display: block;
   `;
 
-  const btnContiner = document.createElement("div");
+  const btnContiner = document.createElement('div');
   container.appendChild(btnContiner);
 
-  const closeEl = document.createElement("button");
-  closeEl.textContent = "close";
-  closeEl.style.marginRight = "16px";
+  const closeEl = document.createElement('button');
+  closeEl.textContent = 'close';
+  closeEl.style.marginRight = '16px';
 
   btnContiner.appendChild(closeEl);
   container.appendChild(videoEl);
@@ -46,8 +46,8 @@ export function playOutputStream(resourceList: string[], attachEl: Element) {
         URL.revokeObjectURL(videoEl.src);
       };
 
-      com?.on("OutputProgress", (v) => {
-        console.log("----- progress:", v);
+      com?.on('OutputProgress', (v) => {
+        console.log('----- progress:', v);
         stateEl.textContent = `progress: ${Math.round(v * 100)}%`;
       });
 
@@ -65,14 +65,14 @@ export function playOutputStream(resourceList: string[], attachEl: Element) {
 }
 
 function createDownloadBtn(url: string) {
-  const downloadEl = document.createElement("button");
-  downloadEl.textContent = "download";
+  const downloadEl = document.createElement('button');
+  downloadEl.textContent = 'download';
   downloadEl.onclick = () => {
-    const aEl = document.createElement("a");
+    const aEl = document.createElement('a');
     document.body.appendChild(aEl);
-    aEl.setAttribute("href", url);
-    aEl.setAttribute("download", `WebAV-export-${Date.now()}.mp4`);
-    aEl.setAttribute("target", "_self");
+    aEl.setAttribute('href', url);
+    aEl.setAttribute('download', `WebAV-export-${Date.now()}.mp4`);
+    aEl.setAttribute('target', '_self');
     aEl.click();
   };
   return downloadEl;

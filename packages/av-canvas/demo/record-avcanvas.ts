@@ -1,20 +1,20 @@
-import { Combinator } from "@webav/av-cliper";
+import { Combinator } from '@webav/av-cliper';
 import {
   AVCanvas,
   AudioSprite,
   TextSprite,
   ImgSprite,
   VideoSprite,
-} from "../src/index";
-import { AVRecorder } from "@webav/av-recorder";
+} from '../src/index';
+import { AVRecorder } from '@webav/av-recorder';
 (async () => {
   if (!(await Combinator.isSupported())) {
-    alert("Your browser does not support WebCodecs");
+    alert('Your browser does not support WebCodecs');
   }
 })();
 
-const avCvs = new AVCanvas(document.querySelector("#app") as HTMLElement, {
-  bgColor: "#333",
+const avCvs = new AVCanvas(document.querySelector('#app') as HTMLElement, {
+  bgColor: '#333',
   resolution: {
     width: 1920,
     height: 1080,
@@ -26,112 +26,112 @@ console.log({ avCvs });
   // const is = new ImgSprite('img', 'https://neo-pages.bilibili.com/bbfe/neo/assets/img/neo-pages-overview.48f7bb81.png')
   // await avCvs.spriteManager.addSprite(is)
 })().catch(console.error);
-document.querySelector("#userMedia")?.addEventListener("click", () => {
+document.querySelector('#userMedia')?.addEventListener('click', () => {
   (async () => {
     const mediaStream = await navigator.mediaDevices.getUserMedia({
       video: true,
       audio: true,
     });
-    const vs = new VideoSprite("userMedia", mediaStream, {
+    const vs = new VideoSprite('userMedia', mediaStream, {
       audioCtx: avCvs.spriteManager.audioCtx,
     });
     await avCvs.spriteManager.addSprite(vs);
   })().catch(console.error);
 });
 
-document.querySelector("#display")?.addEventListener("click", () => {
+document.querySelector('#display')?.addEventListener('click', () => {
   (async () => {
     const mediaStream = await navigator.mediaDevices.getDisplayMedia({
       video: true,
       audio: true,
     });
-    const vs = new VideoSprite("display", mediaStream, {
+    const vs = new VideoSprite('display', mediaStream, {
       audioCtx: avCvs.spriteManager.audioCtx,
     });
     await avCvs.spriteManager.addSprite(vs);
   })().catch(console.error);
 });
 
-document.querySelector("#localImg")?.addEventListener("click", () => {
+document.querySelector('#localImg')?.addEventListener('click', () => {
   (async () => {
     const [imgFH] = await (window as any).showOpenFilePicker({
       types: [
         {
-          description: "Images",
+          description: 'Images',
           accept: {
-            "image/*": [".png", ".gif", ".jpeg", ".jpg"],
+            'image/*': ['.png', '.gif', '.jpeg', '.jpg'],
           },
         },
       ],
     });
-    const is = new ImgSprite("img", await imgFH.getFile());
+    const is = new ImgSprite('img', await imgFH.getFile());
     await avCvs.spriteManager.addSprite(is);
   })().catch(console.error);
 });
 
-document.querySelector("#localVideo")?.addEventListener("click", () => {
+document.querySelector('#localVideo')?.addEventListener('click', () => {
   (async () => {
     const [imgFH] = await (window as any).showOpenFilePicker({
       types: [
         {
-          description: "Video",
+          description: 'Video',
           accept: {
-            "video/*": [".webm", ".mp4"],
+            'video/*': ['.webm', '.mp4'],
           },
         },
       ],
     });
-    const vs = new VideoSprite("vs", await imgFH.getFile(), {
+    const vs = new VideoSprite('vs', await imgFH.getFile(), {
       audioCtx: avCvs.spriteManager.audioCtx,
     });
     await avCvs.spriteManager.addSprite(vs);
   })().catch(console.error);
 });
 
-document.querySelector("#localAudio")?.addEventListener("click", () => {
+document.querySelector('#localAudio')?.addEventListener('click', () => {
   (async () => {
     const [imgFH] = await (window as any).showOpenFilePicker({
       types: [
         {
-          description: "Audio",
+          description: 'Audio',
           accept: {
-            "audio/*": [".mp3", ".wav", ".ogg"],
+            'audio/*': ['.mp3', '.wav', '.ogg'],
           },
         },
       ],
     });
-    const as = new AudioSprite("vs", await imgFH.getFile(), {
+    const as = new AudioSprite('vs', await imgFH.getFile(), {
       audioCtx: avCvs.spriteManager.audioCtx,
     });
     await avCvs.spriteManager.addSprite(as);
   })().catch(console.error);
 });
 
-document.querySelector("#fontExamp")?.addEventListener("click", () => {
+document.querySelector('#fontExamp')?.addEventListener('click', () => {
   (async () => {
-    const textSpr = new TextSprite("text", "示例文字");
+    const textSpr = new TextSprite('text', '示例文字');
     await avCvs.spriteManager.addSprite(textSpr);
   })().catch(console.error);
 });
 
 let recorder: AVRecorder | null = null;
-document.querySelector("#startRecod")?.addEventListener("click", () => {
+document.querySelector('#startRecod')?.addEventListener('click', () => {
   (async () => {
-    const writer = await createFileWriter("mp4");
+    const writer = await createFileWriter('mp4');
     recorder = new AVRecorder(avCvs.captureStream(), {
       width: 1920,
       height: 1080,
       bitrate: 5e6,
-      audioCodec: "aac",
+      audioCodec: 'aac',
     });
     await recorder.start();
     recorder.outputStream?.pipeTo(writer).catch(console.error);
   })().catch(console.error);
 });
-document.querySelector("#stopRecod")?.addEventListener("click", () => {
+document.querySelector('#stopRecod')?.addEventListener('click', () => {
   (async () => {
     await recorder?.stop();
-    alert("save done");
+    alert('save done');
   })().catch(console.error);
 });
 

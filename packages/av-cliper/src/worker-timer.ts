@@ -4,14 +4,14 @@ const setup = (): void => {
   let interval: number = 16.6;
 
   self.onmessage = (e) => {
-    if (e.data.event === "start") {
+    if (e.data.event === 'start') {
       self.clearInterval(timerId);
       timerId = self.setInterval(() => {
         self.postMessage({});
       }, interval);
     }
 
-    if (e.data.event === "stop") {
+    if (e.data.event === 'stop') {
       self.clearInterval(timerId);
     }
   };
@@ -48,7 +48,7 @@ export const workerTimer = (
   handlerMap.set(groupId, fns);
 
   if (handlerMap.size === 1 && fns.size === 1) {
-    worker.postMessage({ event: "start" });
+    worker.postMessage({ event: 'start' });
   }
 
   return () => {
@@ -56,7 +56,7 @@ export const workerTimer = (
     if (fns.size === 0) handlerMap.delete(groupId);
     if (handlerMap.size === 0) {
       runCount = 0;
-      worker.postMessage({ event: "stop" });
+      worker.postMessage({ event: 'stop' });
     }
   };
 };

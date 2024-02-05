@@ -41,6 +41,6 @@ if (import.meta.env.DEV) {
   Log.setLogLevel(Log.debug);
 }
 
-if (import.meta.env.MODE === "test") {
+if (import.meta.env.MODE === 'test') {
   Log.setLogLevel(Log.warn);
 }
