@@ -1,6 +1,6 @@
-import { expect, test } from 'vitest'
-import '../../__tests__/mock'
-import { EmbedSubtitlesClip } from '../embed-subtitles-clip'
+import { expect, test } from "vitest";
+import "../../__tests__/mock";
+import { EmbedSubtitlesClip } from "../embed-subtitles-clip";
 
 const txt1 = `
 
@@ -41,27 +41,27 @@ const txt1 = `
 00:01:11,774 --> 00:01:30,026
 测试样本9-20s
 
-`
+`;
 
-test('EmbedSubtitles', async () => {
+test("EmbedSubtitles", async () => {
   const es = new EmbedSubtitlesClip(txt1, {
     videoWidth: 1280,
-    videoHeight: 720
-  })
-  const vf0 = (await es.tick(0)).video
+    videoHeight: 720,
+  });
+  const vf0 = (await es.tick(0)).video;
   // 第一个字幕还未显示出来
-  expect(vf0?.timestamp).toBe(0)
-  expect(vf0?.duration).toBe(341000)
+  expect(vf0?.timestamp).toBe(0);
+  expect(vf0?.duration).toBe(341000);
 
-  const vf1 = (await es.tick(342000)).video
+  const vf1 = (await es.tick(342000)).video;
   // 显示第一个字幕
-  expect(vf1?.timestamp).toBe(342000)
-  expect(vf1?.duration).toBe(3218000 - 342000)
+  expect(vf1?.timestamp).toBe(342000);
+  expect(vf1?.duration).toBe(3218000 - 342000);
 
   // 100s 超出字幕时间
-  const { state } = await es.tick(100 * 1e6)
-  expect(state).toBe('done')
-})
+  const { state } = await es.tick(100 * 1e6);
+  expect(state).toBe("done");
+});
 
 const txt2 = `
 1
@@ -69,14 +69,14 @@ const txt2 = `
 111
 测试样本1-3s
 
-`
-test('EmbedSubtitles digital', async () => {
+`;
+test("EmbedSubtitles digital", async () => {
   const es = new EmbedSubtitlesClip(txt2, {
     videoWidth: 1280,
-    videoHeight: 720
-  })
-  const vf1 = (await es.tick(342000)).video
+    videoHeight: 720,
+  });
+  const vf1 = (await es.tick(342000)).video;
   // 显示第一个字幕
-  expect(vf1?.timestamp).toBe(342000)
-  expect(vf1?.duration).toBe(3218000 - 342000)
-})
+  expect(vf1?.timestamp).toBe(342000);
+  expect(vf1?.duration).toBe(3218000 - 342000);
+});

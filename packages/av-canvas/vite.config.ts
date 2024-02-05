@@ -1,17 +1,17 @@
-import { resolve } from 'path'
-import { defineConfig } from 'vitest/config'
+import { resolve } from "path";
+import { defineConfig } from "vitest/config";
 export default defineConfig({
   test: {
-    environment: 'jsdom',
+    environment: "jsdom",
     coverage: {
-      provider: 'istanbul' // or 'c8'
-    }
+      provider: "istanbul", // or 'c8'
+    },
   },
   build: {
     sourcemap: true,
     lib: {
-      entry: resolve(__dirname, 'src/index.ts'),
-      name: 'av-canvas'
-    }
-  }
-})
+      entry: resolve(__dirname, "src/index.ts"),
+      name: "av-canvas",
+    },
+  },
+});

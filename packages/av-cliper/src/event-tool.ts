@@ -1,27 +1,27 @@
 export class EventTool<
   T extends Record<P, (...args: any[]) => any> = any,
-  P extends string | number | symbol = keyof T
+  P extends string | number | symbol = keyof T,
 > {
-  #listeners = new Map<keyof T, Set<T[keyof T]>>()
+  #listeners = new Map<keyof T, Set<T[keyof T]>>();
 
   /**
    * 监听EventType中定义的事件，调用方【必须】在合适的时机自行移除监听
    */
   on = <Type extends keyof T>(type: Type, listener: T[Type]): (() => void) => {
-    const handlers = this.#listeners.get(type) ?? new Set<T[keyof T]>()
-    handlers.add(listener)
+    const handlers = this.#listeners.get(type) ?? new Set<T[keyof T]>();
+    handlers.add(listener);
 
     if (!this.#listeners.has(type)) {
-      this.#listeners.set(type, handlers)
+      this.#listeners.set(type, handlers);
     }
 
     return () => {
-      handlers.delete(listener)
+      handlers.delete(listener);
       if (handlers.size === 0) {
-        this.#listeners.delete(type)
+        this.#listeners.delete(type);
       }
-    }
-  }
+    };
+  };
 
   /**
    * 监听事件，首次触发后自动移除监听
@@ -29,16 +29,16 @@ export class EventTool<
    */
   once = <Type extends keyof T>(
     type: Type,
-    listener: T[Type]
+    listener: T[Type],
   ): (() => void) => {
     // @ts-ignore
     const off = this.on(type, (...args) => {
-      off()
-      listener(...args)
-    })
+      off();
+      listener(...args);
+    });
 
-    return off
-  }
+    return off;
+  };
 
   /**
    * 触发事件
@@ -54,13 +54,13 @@ export class EventTool<
         : any[]
       : any[]
   ): void => {
-    const handlers = this.#listeners.get(type)
-    if (handlers == null) return
+    const handlers = this.#listeners.get(type);
+    if (handlers == null) return;
 
-    handlers.forEach(handler => handler(...args))
-  }
+    handlers.forEach((handler) => handler(...args));
+  };
 
-  destroy (): void {
-    this.#listeners.clear()
+  destroy(): void {
+    this.#listeners.clear();
   }
 }

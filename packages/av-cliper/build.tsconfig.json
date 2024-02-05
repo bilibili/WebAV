@@ -3,13 +3,8 @@
     "target": "ESNext",
     "useDefineForClassFields": true,
     "module": "ESNext",
-    "lib": [
-      "ESNext",
-      "DOM"
-    ],
-    "types": [
-      "@types/dom-webcodecs"
-    ],
+    "lib": ["ESNext", "DOM"],
+    "types": ["@types/dom-webcodecs"],
     "moduleResolution": "Node",
     "strict": true,
     "resolveJsonModule": true,
@@ -22,11 +17,6 @@
     "emitDeclarationOnly": true,
     "skipLibCheck": true
   },
-  "include": [
-    "../../types/mp4box.d.ts",
-    "src/**/*"
-  ],
-  "exclude": [
-    "src/**/__tests__/*"
-  ]
+  "include": ["../../types/mp4box.d.ts", "src/**/*"],
+  "exclude": ["src/**/__tests__/*"]
 }

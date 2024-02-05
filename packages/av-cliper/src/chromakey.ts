@@ -7,7 +7,7 @@ const vertexShader = `#version 300 es
     gl_Position = a_position;
     v_texCoord = a_texCoord;
   }
-`
+`;
 
 const fragmentShader = `#version 300 es
 precision mediump float;
@@ -49,80 +49,80 @@ void main() {
   rgba.rgb = mix(vec3(desat, desat, desat), rgba.rgb, spillVal);
   FragColor = rgba;
 }
-`
+`;
 
-const POINT_POS = [-1, 1, -1, -1, 1, -1, 1, -1, 1, 1, -1, 1]
-const TEX_COORD_POS = [0, 1, 0, 0, 1, 0, 1, 0, 1, 1, 0, 1]
+const POINT_POS = [-1, 1, -1, -1, 1, -1, 1, -1, 1, 1, -1, 1];
+const TEX_COORD_POS = [0, 1, 0, 0, 1, 0, 1, 0, 1, 1, 0, 1];
 
 //  初始化着色器程序，让 WebGL 知道如何绘制我们的数据
 function initShaderProgram(
   gl: WebGLRenderingContext,
   vsSource: string,
-  fsSource: string
+  fsSource: string,
 ) {
-  const vertexShader = loadShader(gl, gl.VERTEX_SHADER, vsSource)!
-  const fragmentShader = loadShader(gl, gl.FRAGMENT_SHADER, fsSource)!
+  const vertexShader = loadShader(gl, gl.VERTEX_SHADER, vsSource)!;
+  const fragmentShader = loadShader(gl, gl.FRAGMENT_SHADER, fsSource)!;
 
   // 创建着色器程序
-  const shaderProgram = gl.createProgram()!
-  gl.attachShader(shaderProgram, vertexShader)
-  gl.attachShader(shaderProgram, fragmentShader)
-  gl.linkProgram(shaderProgram)
+  const shaderProgram = gl.createProgram()!;
+  gl.attachShader(shaderProgram, vertexShader);
+  gl.attachShader(shaderProgram, fragmentShader);
+  gl.linkProgram(shaderProgram);
 
   if (!gl.getProgramParameter(shaderProgram, gl.LINK_STATUS)) {
     throw Error(
       gl.getProgramInfoLog(shaderProgram) ??
-      'Unable to initialize the shader program'
-    )
+        "Unable to initialize the shader program",
+    );
   }
 
-  return shaderProgram
+  return shaderProgram;
 }
 
 // 创建指定类型的着色器，上传 source 源码并编译
 function loadShader(gl: WebGLRenderingContext, type: number, source: string) {
-  const shader = gl.createShader(type)!
+  const shader = gl.createShader(type)!;
 
   // Send the source to the shader object
-  gl.shaderSource(shader, source)
+  gl.shaderSource(shader, source);
 
   // Compile the shader program
-  gl.compileShader(shader)
+  gl.compileShader(shader);
 
   // See if it compiled successfully
   if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
-    const errMsg = gl.getShaderInfoLog(shader)
-    gl.deleteShader(shader)
-    throw Error(errMsg ?? 'An error occurred compiling the shaders')
+    const errMsg = gl.getShaderInfoLog(shader);
+    gl.deleteShader(shader);
+    throw Error(errMsg ?? "An error occurred compiling the shaders");
   }
 
-  return shader
+  return shader;
 }
 
 function updateTexture(
   gl: WebGLRenderingContext,
   img: TImgSource,
-  texture: WebGLTexture
+  texture: WebGLTexture,
 ) {
-  gl.bindTexture(gl.TEXTURE_2D, texture)
-  gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, img)
-  gl.drawArrays(gl.TRIANGLES, 0, 6)
+  gl.bindTexture(gl.TEXTURE_2D, texture);
+  gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, img);
+  gl.drawArrays(gl.TRIANGLES, 0, 6);
 }
 
 function initTexture(gl: WebGLRenderingContext) {
-  const texture = gl.createTexture()
-  if (texture == null) throw Error('Create WebGL texture error')
-  gl.bindTexture(gl.TEXTURE_2D, texture)
+  const texture = gl.createTexture();
+  if (texture == null) throw Error("Create WebGL texture error");
+  gl.bindTexture(gl.TEXTURE_2D, texture);
 
   // put a single pixel in the texture so we can use it immediately.
-  const level = 0
-  const internalFormat = gl.RGBA
-  const width = 1
-  const height = 1
-  const border = 0
-  const srcFormat = gl.RGBA
-  const srcType = gl.UNSIGNED_BYTE
-  const pixel = new Uint8Array([0, 0, 255, 255]) // opaque blue
+  const level = 0;
+  const internalFormat = gl.RGBA;
+  const width = 1;
+  const height = 1;
+  const border = 0;
+  const srcFormat = gl.RGBA;
+  const srcType = gl.UNSIGNED_BYTE;
+  const pixel = new Uint8Array([0, 0, 255, 255]); // opaque blue
   gl.texImage2D(
     gl.TEXTURE_2D,
     level,
@@ -132,86 +132,96 @@ function initTexture(gl: WebGLRenderingContext) {
     border,
     srcFormat,
     srcType,
-    pixel
-  )
+    pixel,
+  );
 
-  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR)
-  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR)
-  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE)
-  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE)
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
 
-  return texture
+  return texture;
 }
 
 interface IChromakeyOpts {
-  keyColor: [number, number, number]
-  similarity: number
-  smoothness: number
-  spill: number
+  keyColor: [number, number, number];
+  similarity: number;
+  smoothness: number;
+  spill: number;
 }
 
-function initCvs(opts: {
-  width: number
-  height: number
-} & IChromakeyOpts) {
-  const cvs = 'document' in globalThis
-    ? globalThis.document.createElement('canvas')
-    : new OffscreenCanvas(opts.width, opts.height)
-  cvs.width = opts.width
-  cvs.height = opts.height
+function initCvs(
+  opts: {
+    width: number;
+    height: number;
+  } & IChromakeyOpts,
+) {
+  const cvs =
+    "document" in globalThis
+      ? globalThis.document.createElement("canvas")
+      : new OffscreenCanvas(opts.width, opts.height);
+  cvs.width = opts.width;
+  cvs.height = opts.height;
 
-  const gl = cvs.getContext('webgl2', {
+  const gl = cvs.getContext("webgl2", {
     premultipliedAlpha: false,
-    alpha: true
-  }) as (WebGL2RenderingContext | null)
+    alpha: true,
+  }) as WebGL2RenderingContext | null;
 
-  if (gl == null) throw Error('Cant create gl context')
+  if (gl == null) throw Error("Cant create gl context");
 
-  const shaderProgram = initShaderProgram(gl, vertexShader, fragmentShader)
-  gl.useProgram(shaderProgram)
+  const shaderProgram = initShaderProgram(gl, vertexShader, fragmentShader);
+  gl.useProgram(shaderProgram);
 
-  gl.uniform3fv(gl.getUniformLocation(shaderProgram, 'keyColor'),
-    opts.keyColor.map(v => v / 255),
-  )
-  gl.uniform1f(gl.getUniformLocation(shaderProgram, 'similarity'), opts.similarity)
-  gl.uniform1f(gl.getUniformLocation(shaderProgram, 'smoothness'), opts.smoothness)
-  gl.uniform1f(gl.getUniformLocation(shaderProgram, 'spill'), opts.spill)
+  gl.uniform3fv(
+    gl.getUniformLocation(shaderProgram, "keyColor"),
+    opts.keyColor.map((v) => v / 255),
+  );
+  gl.uniform1f(
+    gl.getUniformLocation(shaderProgram, "similarity"),
+    opts.similarity,
+  );
+  gl.uniform1f(
+    gl.getUniformLocation(shaderProgram, "smoothness"),
+    opts.smoothness,
+  );
+  gl.uniform1f(gl.getUniformLocation(shaderProgram, "spill"), opts.spill);
 
-  const posBuffer = gl.createBuffer()
-  gl.bindBuffer(gl.ARRAY_BUFFER, posBuffer)
-  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(POINT_POS), gl.STATIC_DRAW)
-  const a_position = gl.getAttribLocation(shaderProgram, 'a_position')
+  const posBuffer = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, posBuffer);
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(POINT_POS), gl.STATIC_DRAW);
+  const a_position = gl.getAttribLocation(shaderProgram, "a_position");
   gl.vertexAttribPointer(
     a_position,
     2,
     gl.FLOAT,
     false,
     Float32Array.BYTES_PER_ELEMENT * 2,
-    0
-  )
-  gl.enableVertexAttribArray(a_position)
+    0,
+  );
+  gl.enableVertexAttribArray(a_position);
 
-  const texCoordBuffer = gl.createBuffer()
-  gl.bindBuffer(gl.ARRAY_BUFFER, texCoordBuffer)
+  const texCoordBuffer = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, texCoordBuffer);
   gl.bufferData(
     gl.ARRAY_BUFFER,
     new Float32Array(TEX_COORD_POS),
-    gl.STATIC_DRAW
-  )
-  const a_texCoord = gl.getAttribLocation(shaderProgram, 'a_texCoord')
+    gl.STATIC_DRAW,
+  );
+  const a_texCoord = gl.getAttribLocation(shaderProgram, "a_texCoord");
   gl.vertexAttribPointer(
     a_texCoord,
     2,
     gl.FLOAT,
     false,
     Float32Array.BYTES_PER_ELEMENT * 2,
-    0
-  )
-  gl.enableVertexAttribArray(a_texCoord)
+    0,
+  );
+  gl.enableVertexAttribArray(a_texCoord);
 
-  gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, 1)
+  gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, 1);
 
-  return { cvs, gl }
+  return { cvs, gl };
 }
 
 type TImgSource =
@@ -220,22 +230,22 @@ type TImgSource =
   | HTMLImageElement
   | ImageBitmap
   | OffscreenCanvas
-  | VideoFrame
+  | VideoFrame;
 
 function getSourceWH(imgSource: TImgSource) {
   return imgSource instanceof VideoFrame
     ? { width: imgSource.codedWidth, height: imgSource.codedHeight }
-    : { width: imgSource.width, height: imgSource.height }
+    : { width: imgSource.width, height: imgSource.height };
 }
 
 function getKeyColor(imgSource: TImgSource) {
-  const cvs = new OffscreenCanvas(1, 1)
-  const ctx = cvs.getContext('2d')!
-  ctx.drawImage(imgSource, 0, 0)
+  const cvs = new OffscreenCanvas(1, 1);
+  const ctx = cvs.getContext("2d")!;
+  ctx.drawImage(imgSource, 0, 0);
   const {
-    data: [r, g, b]
-  } = ctx.getImageData(0, 0, 1, 1)
-  return [r, g, b] as [number, number, number]
+    data: [r, g, b],
+  } = ctx.getImageData(0, 0, 1, 1);
+  return [r, g, b] as [number, number, number];
 }
 
 /**
@@ -252,41 +262,43 @@ function getKeyColor(imgSource: TImgSource) {
  * }
  */
 export const createChromakey = (
-  opts: Omit<IChromakeyOpts, 'keyColor'> & { keyColor?: [number, number, number] }
+  opts: Omit<IChromakeyOpts, "keyColor"> & {
+    keyColor?: [number, number, number];
+  },
 ) => {
-  let cvs: HTMLCanvasElement | OffscreenCanvas | null = null
-  let gl: WebGLRenderingContext | null = null
-  let keyC = opts.keyColor
-  let texture: WebGLTexture | null = null
+  let cvs: HTMLCanvasElement | OffscreenCanvas | null = null;
+  let gl: WebGLRenderingContext | null = null;
+  let keyC = opts.keyColor;
+  let texture: WebGLTexture | null = null;
 
   return async (imgSource: TImgSource) => {
     if (cvs == null || gl == null || texture == null) {
-      if (keyC == null) keyC = getKeyColor(imgSource)
-        ; ({ cvs, gl } = initCvs({
-          ...getSourceWH(imgSource),
-          keyColor: keyC,
-          ...opts
-        }))
-      texture = initTexture(gl)
+      if (keyC == null) keyC = getKeyColor(imgSource);
+      ({ cvs, gl } = initCvs({
+        ...getSourceWH(imgSource),
+        keyColor: keyC,
+        ...opts,
+      }));
+      texture = initTexture(gl);
     }
 
-    updateTexture(gl, imgSource, texture)
+    updateTexture(gl, imgSource, texture);
 
     if (
       globalThis.VideoFrame != null &&
       imgSource instanceof globalThis.VideoFrame
     ) {
       const rs = new VideoFrame(cvs, {
-        alpha: 'keep',
+        alpha: "keep",
         timestamp: imgSource.timestamp,
-        duration: imgSource.duration ?? undefined
-      })
-      imgSource.close()
-      return rs
+        duration: imgSource.duration ?? undefined,
+      });
+      imgSource.close();
+      return rs;
     }
 
     return createImageBitmap(cvs, {
-      imageOrientation: imgSource instanceof ImageBitmap ? 'flipY' : 'none'
-    })
-  }
-}
+      imageOrientation: imgSource instanceof ImageBitmap ? "flipY" : "none",
+    });
+  };
+};

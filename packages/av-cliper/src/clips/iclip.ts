@@ -4,23 +4,23 @@ export interface IClip {
    * @param time 时间，单位 微秒
    */
   tick: (time: number) => Promise<{
-    video?: VideoFrame | ImageBitmap
-    audio?: Float32Array[]
-    state: 'done' | 'success'
-  }>
+    video?: VideoFrame | ImageBitmap;
+    audio?: Float32Array[];
+    state: "done" | "success";
+  }>;
 
   tickInterceptor?: <T extends IClip>(
     tickTime: number,
-    tickRet: Awaited<ReturnType<T['tick']>>
-  ) => Promise<ReturnType<T['tick']>>
+    tickRet: Awaited<ReturnType<T["tick"]>>,
+  ) => Promise<ReturnType<T["tick"]>>;
 
-  ready: Promise<{ width: number; height: number; duration: number }>
+  ready: Promise<{ width: number; height: number; duration: number }>;
 
-  destroy: () => void
+  destroy: () => void;
 }
 
 export const DEFAULT_AUDIO_CONF = {
   sampleRate: 48000,
   channelCount: 2,
-  codec: 'mp4a.40.2'
-}
+  codec: "mp4a.40.2",
+};
