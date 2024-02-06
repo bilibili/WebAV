@@ -1,16 +1,21 @@
-import { Log } from '@webav/av-cliper';
+import { Log, EventTool } from '@webav/av-cliper';
 import MuxMP4Worker from './mux-mp4-worker?worker&inline';
 import { EWorkerMsg, IRecorderConf, IStream, IWorkerOpts } from './types';
 
-type TState = 'inactive' | 'recording' | 'paused';
+type TState = 'inactive' | 'recording' | 'paused' | 'stopped';
 export class AVRecorder {
   #state: TState = 'inactive';
-  get state(): 'inactive' | 'recording' | 'paused' {
+  get state(): TState {
     return this.#state;
   }
   set state(_: TState) {
     throw new Error('state is readonly');
   }
+
+  #evtTool = new EventTool<{
+    stateChange: (state: TState) => void;
+  }>();
+  on = this.#evtTool.on;
 
   #ms;
 
@@ -83,7 +88,7 @@ export class AVRecorder {
         type: EWorkerMsg.Start,
         data: workerOpts,
       },
-      Object.values(streams),
+      Object.values(streams)
     );
 
     return await new Promise<void>((resolve) => {
@@ -92,6 +97,7 @@ export class AVRecorder {
         switch (type) {
           case EWorkerMsg.OutputStream:
             this.#state = 'recording';
+            this.#evtTool.emit('stateChange', this.#state);
             this.outputStream = data;
             resolve();
             break;
@@ -101,14 +107,18 @@ export class AVRecorder {
   }
 
   pause(): void {
+    this.#state = 'paused';
+    this.#evtTool.emit('stateChange', this.#state);
     this.#worker?.postMessage({ type: EWorkerMsg.Paused, data: true });
   }
   resume(): void {
+    this.#state = 'recording';
+    this.#evtTool.emit('stateChange', this.#state);
     this.#worker?.postMessage({ type: EWorkerMsg.Paused, data: false });
   }
 
   async stop(): Promise<void> {
-    this.#state = 'inactive';
+    this.#state = 'stopped';
     const worker = this.#worker;
     if (worker == null) return;
 
@@ -124,6 +134,7 @@ export class AVRecorder {
             });
             this.outputStream = null;
             resolve();
+            this.#evtTool.emit('stateChange', this.#state);
             break;
         }
       });

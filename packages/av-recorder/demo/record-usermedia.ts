@@ -31,6 +31,9 @@ startEl?.addEventListener('click', () => {
       width: 1280,
       height: 720,
     });
+    recorder.on('stateChange', (state) => {
+      console.log('stateChange:', state);
+    });
     await recorder.start();
 
     const writer = await createFileWriter('mp4');
@@ -64,7 +67,7 @@ pauseEl?.addEventListener('click', () => {
   })().catch(console.error);
 });
 const continueEl = document.querySelector(
-  '#continueRecod',
+  '#continueRecod'
 ) as HTMLButtonElement;
 continueEl?.addEventListener('click', () => {
   (async () => {
@@ -78,7 +81,7 @@ continueEl?.addEventListener('click', () => {
 });
 
 async function createFileWriter(
-  extName: string,
+  extName: string
 ): Promise<FileSystemWritableFileStream> {
   const fileHandle = await window.showSaveFilePicker({
     suggestedName: `WebAV-export-${Date.now()}.${extName}`,
