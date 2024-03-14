@@ -16,9 +16,11 @@ sidebar: false
 在 DEMO 下方有对应源码，添加依赖后复制 DEMO 源码，就能在项目中运行。
 
 ```shell
-npm install @webav-cliper
+npm install @webav/av-cliper
 
-yarn add @webav-cliper
+# or
+
+yarn add @webav/av-cliper
 ```
 
 ## API
