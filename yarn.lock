@@ -5633,10 +5633,10 @@ onetime@^2.0.0:
   dependencies:
     mimic-fn "^1.0.0"
 
-opfs-tools@^0.1.1:
-  version "0.1.1"
-  resolved "https://registry.npmjs.org/opfs-tools/-/opfs-tools-0.1.1.tgz#25c42085cdc32fb9f83cdd602e9c41e0bf9aa0d0"
-  integrity sha512-F+UroKcPfU2/ZzT/4/hONIEbdFHkD/oWwpzH3rkaz+EiDm0W6b2vqNAp1LrWClGrERZ19X3ceRixYL0ZdXcpjA==
+opfs-tools@^0.2.1:
+  version "0.2.1"
+  resolved "https://registry.npmjs.org/opfs-tools/-/opfs-tools-0.2.1.tgz#9c931830f8bc835c6f809b87f8d0629b7d3bae7e"
+  integrity sha512-g3SurinMDG6gaFuQ2tkmzZV+c54bbc4B1HTmHUcROURtzlQgXNf4X6pAvCKtgRLcMpKlZ+2fcduowmm3Zdl7qg==
 
 optionator@^0.8.1:
   version "0.8.3"
