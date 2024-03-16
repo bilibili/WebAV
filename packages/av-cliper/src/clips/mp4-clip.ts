@@ -18,8 +18,6 @@ let CLIP_ID = 0;
 export class MP4Clip implements IClip {
   #log = Log.create(`MP4Clip id:${CLIP_ID++},`);
 
-  #videoFrames: VideoFrame[] = [];
-
   ready: IClip['ready'];
 
   #destroyed = false;
@@ -166,13 +164,39 @@ export class MP4Clip implements IClip {
     };
   })();
 
+  #decoding = false;
+  #decodeCusorIdx = 0;
+  #videoFrames: VideoFrame[] = [];
   async #nextVideo(time: number): Promise<VideoFrame | null> {
     if (this.#videoFrames.length === 0) {
-      if (this.#destroyed || this.#decodeEnded) {
+      if (
+        this.#destroyed ||
+        // decode completed
+        (!this.#decoding && this.#decodeCusorIdx >= this.#videoSamples.length)
+      ) {
         return null;
       }
 
-      await sleep(50);
+      if (this.#decoding) {
+        await sleep(15);
+      } else {
+        let endIdx = this.#decodeCusorIdx + 1;
+        for (; endIdx < this.#videoSamples.length; endIdx++) {
+          if (this.#videoSamples[endIdx].is_sync) break;
+        }
+
+        this.#decoding = true;
+        this.#gopVDec?.decode(
+          this.#videoSamples
+            .slice(this.#decodeCusorIdx, endIdx)
+            .map((s) => new EncodedVideoChunk(sample2ChunkOpts(s))),
+          (vf, done) => {
+            if (vf != null) this.#videoFrames.push(vf);
+            if (done) this.#decoding = false;
+          },
+        );
+        this.#decodeCusorIdx = endIdx;
+      }
       return this.#nextVideo(time);
     }
 
@@ -181,8 +205,9 @@ export class MP4Clip implements IClip {
       return null;
     }
     if (time > rs.timestamp + (rs.duration ?? 0)) {
+      rs.close();
       // 过期，找下一帧
-      this.#videoFrames.shift()?.close();
+      this.#videoFrames.shift();
       return this.#nextVideo(time);
     }
 
@@ -215,23 +240,6 @@ export class MP4Clip implements IClip {
     return audio;
   }
 
-  #findVideoFrame = (time: number) => {
-    const gop = findGoPSampleByTime(
-      time,
-      [0, this.#videoSamples.length],
-      this.#videoSamples,
-    );
-    return new Promise<VideoFrame | null>((resolve) => {
-      this.#gopVDec?.decode(
-        gop.map((s) => new EncodedVideoChunk(sample2ChunkOpts(s))),
-        (vf, done) => {
-          if (done) resolve(vf);
-          else vf?.close();
-        },
-      );
-    });
-  };
-
   // 默认直接返回
   tickInterceptor: NonNullable<IClip['tickInterceptor']> = async (_, tickRet) =>
     tickRet;
@@ -243,7 +251,7 @@ export class MP4Clip implements IClip {
     audio: Float32Array[];
     state: 'success' | 'done';
   }> {
-    // if (time < this.#ts) throw Error('time not allow rollback');
+    if (time < this.#ts) throw Error('time not allow rollback');
     if (time >= this.#meta.duration) {
       return await this.tickInterceptor<MP4Clip>(time, {
         audio: [],
@@ -255,9 +263,8 @@ export class MP4Clip implements IClip {
     //   ? await this.#nextAudio(time - this.#ts)
     //   : [];
     const audio: Float32Array[] = [];
-    // const video = await this.#nextVideo(time);
-    const video = await this.#findVideoFrame(time);
-    // this.#ts = time;
+    const video = await this.#nextVideo(time);
+    this.#ts = time;
     if (video == null) {
       return await this.tickInterceptor<MP4Clip>(time, {
         audio,
@@ -274,7 +281,20 @@ export class MP4Clip implements IClip {
 
   async getVideoFrame(time: number): Promise<VideoFrame | null> {
     if (time < 0 || time > this.#meta.duration) return null;
-    return await this.#findVideoFrame(time);
+    const gop = findGoPSampleByTime(
+      time,
+      [0, this.#videoSamples.length],
+      this.#videoSamples,
+    );
+    return new Promise<VideoFrame | null>((resolve) => {
+      this.#gopVDec?.decode(
+        gop.map((s) => new EncodedVideoChunk(sample2ChunkOpts(s))),
+        (vf, done) => {
+          if (done) resolve(vf);
+          else vf?.close();
+        },
+      );
+    });
   }
 
   deleteRange(startTime: number, endTime: number) {}
@@ -282,8 +302,8 @@ export class MP4Clip implements IClip {
   destroy(): void {
     if (this.#destroyed) return;
     this.#log.info(
-      // 'MP4Clip destroy, ts:',
-      // this.#ts,
+      'MP4Clip destroy, ts:',
+      this.#ts,
       ', remainder frame count:',
       this.#videoFrames.length,
       ', decodeEnded:',
