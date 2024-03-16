@@ -252,3 +252,54 @@ export function throttle<F extends (...args: any[]) => any>(
     }
   };
 }
+
+// 封装 decoder，一次解析一个 GOP
+export function createGoPVideoDecoder(conf: VideoDecoderConfig) {
+  type OutputHandle = (vf: VideoFrame | null, done: boolean) => void;
+
+  let curCb: ((vf: VideoFrame) => void) | null = null;
+  const vdec = new VideoDecoder({
+    output: (vf) => {
+      curCb?.(vf);
+    },
+    error: Log.error,
+  });
+  vdec.configure(conf);
+
+  let tasks: Array<{
+    chunks: EncodedVideoChunk[];
+    cb: (vf: VideoFrame | null, done: boolean) => void;
+  }> = [];
+
+  async function run() {
+    if (curCb != null) return;
+
+    const t = tasks.shift();
+    if (t == null) return;
+    let i = 0;
+    curCb = (vf) => {
+      i += 1;
+      const done = i >= t.chunks.length;
+      t.cb(vf, done);
+      if (done) {
+        curCb = null;
+        run().catch(Log.error);
+      }
+    };
+    if (t.chunks.length <= 0) {
+      t.cb(null, true);
+      curCb = null;
+      run().catch(Log.error);
+      return;
+    }
+    for (const chunk of t.chunks) vdec.decode(chunk);
+    await vdec.flush();
+  }
+
+  return {
+    decode(chunks: EncodedVideoChunk[], cb: OutputHandle) {
+      tasks.push({ chunks, cb });
+      run().catch(Log.error);
+    },
+  };
+}

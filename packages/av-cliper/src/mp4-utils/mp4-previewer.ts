@@ -1,6 +1,5 @@
 import { MP4File, MP4Info, MP4Sample } from '@webav/mp4box.js';
-import { autoReadStream } from '../av-utils';
-import { Log } from '../log';
+import { autoReadStream, createGoPVideoDecoder } from '../av-utils';
 import { extractFileConfig, sample2ChunkOpts } from './mp4box-utils';
 import { file } from 'opfs-tools';
 import { SampleTransform } from './sample-transform';
@@ -18,7 +17,7 @@ export class MP4Previewer {
 
   #opfsFile = file(Math.random().toString());
 
-  #wrapDecoder: ReturnType<typeof wrapVideoDecoder> | null = null;
+  #wrapDecoder: ReturnType<typeof createGoPVideoDecoder> | null = null;
 
   #cvs: OffscreenCanvas | null = null;
   #ctx: OffscreenCanvasRenderingContext2D | null = null;
@@ -54,7 +53,7 @@ export class MP4Previewer {
             this.#cvs = new OffscreenCanvas(width, height);
             this.#ctx = this.#cvs.getContext('2d');
 
-            this.#wrapDecoder = wrapVideoDecoder(videoDecoderConf);
+            this.#wrapDecoder = createGoPVideoDecoder(videoDecoderConf);
           }
           if (chunkType === 'samples') {
             if (data.type === 'video') {
@@ -123,7 +122,7 @@ export class MP4Previewer {
           new EncodedVideoChunk(
             sample2ChunkOpts({
               ...s,
-              data: await reader.read(s.offset, s.size),
+              data: await reader.read(s.offset, { at: s.size }),
             }),
           ),
       ),
@@ -131,10 +130,10 @@ export class MP4Previewer {
     await reader.close();
     if (chunks.length === 0) return Promise.resolve(null);
 
-    return new Promise<VideoFrame>((resolve) => {
+    return new Promise<VideoFrame | null>((resolve) => {
       this.#wrapDecoder?.decode(chunks, (vf, done) => {
         if (done) resolve(vf);
-        else vf.close();
+        else vf?.close();
       });
     });
   }
@@ -149,49 +148,4 @@ export class MP4Previewer {
     this.#ctx.clearRect(0, 0, this.#cvs.width, this.#cvs.height);
     return src;
   }
-}
-
-// 封装 decoder，一次解析一个 GOP
-function wrapVideoDecoder(conf: VideoDecoderConfig) {
-  type OutputHandle = (vf: VideoFrame, done: boolean) => void;
-
-  let curCb: ((vf: VideoFrame) => void) | null = null;
-  const vdec = new VideoDecoder({
-    output: (vf) => {
-      curCb?.(vf);
-    },
-    error: Log.error,
-  });
-  vdec.configure(conf);
-
-  let tasks: Array<{
-    chunks: EncodedVideoChunk[];
-    cb: (vf: VideoFrame, done: boolean) => void;
-  }> = [];
-
-  async function run() {
-    if (curCb != null) return;
-
-    const t = tasks.shift();
-    if (t == null) return;
-    let i = 0;
-    curCb = (vf) => {
-      i += 1;
-      const done = i >= t.chunks.length;
-      t.cb(vf, done);
-      if (done) {
-        curCb = null;
-        run().catch(Log.error);
-      }
-    };
-    for (const chunk of t.chunks) vdec.decode(chunk);
-    await vdec.flush();
-  }
-
-  return {
-    decode(chunks: EncodedVideoChunk[], cb: OutputHandle) {
-      tasks.push({ chunks, cb });
-      run().catch(Log.error);
-    },
-  };
 }

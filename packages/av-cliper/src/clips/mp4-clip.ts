@@ -3,12 +3,13 @@ import {
   audioResample,
   autoReadStream,
   concatFloat32Array,
+  createGoPVideoDecoder,
   extractPCM4AudioData,
   sleep,
 } from '../av-utils';
 import { Log } from '../log';
 import { demuxcode } from '../mp4-utils';
-import { extractFileConfig } from '../mp4-utils/mp4box-utils';
+import { extractFileConfig, sample2ChunkOpts } from '../mp4-utils/mp4box-utils';
 import { SampleTransform } from '../mp4-utils/sample-transform';
 import { DEFAULT_AUDIO_CONF, IClip } from './iclip';
 
@@ -44,9 +45,11 @@ export class MP4Clip implements IClip {
 
   // #cacheFile = file(`/.cache/mp4clip/${Math.random()}`);
 
-  #videoSamples: MP4Sample[] = [];
+  #videoSamples: Array<MP4Sample> = [];
 
   #audioSamples: MP4Sample[] = [];
+
+  #gopVDec: ReturnType<typeof createGoPVideoDecoder> | null = null;
 
   constructor(
     rs: ReadableStream<Uint8Array>,
@@ -73,6 +76,7 @@ export class MP4Clip implements IClip {
             );
 
             if (videoDecoderConf != null) {
+              this.#gopVDec = createGoPVideoDecoder(videoDecoderConf);
               // vdecoder.configure(videoDecoderConf);
             } else {
               stopRead();
@@ -87,7 +91,15 @@ export class MP4Clip implements IClip {
             }
           } else if (chunkType === 'samples') {
             if (data.type === 'video') {
-              this.#videoSamples = this.#videoSamples.concat(data.samples);
+              this.#videoSamples = this.#videoSamples.concat(
+                data.samples.map((s) => ({
+                  ...s,
+                  cts: (s.cts / s.timescale) * 1e6,
+                  dts: (s.dts / s.timescale) * 1e6,
+                  duration: (s.duration / s.timescale) * 1e6,
+                  timescale: 1e6,
+                })),
+              );
             } else if (data.type === 'audio') {
               this.#audioSamples = this.#audioSamples.concat(data.samples);
             }
@@ -102,9 +114,7 @@ export class MP4Clip implements IClip {
           const videoTrack = mp4Info.videoTracks[0];
           const width = videoTrack.track_width;
           const height = videoTrack.track_height;
-          const duration =
-            ((lastSampele.cts + lastSampele.duration) / lastSampele.timescale) *
-            1e6;
+          const duration = lastSampele.cts + lastSampele.duration;
           this.#meta = {
             duration,
             width,
@@ -205,6 +215,23 @@ export class MP4Clip implements IClip {
     return audio;
   }
 
+  #findVideoFrame = (time: number) => {
+    const gop = findGoPSampleByTime(
+      time,
+      [0, this.#videoSamples.length],
+      this.#videoSamples,
+    );
+    return new Promise<VideoFrame | null>((resolve) => {
+      this.#gopVDec?.decode(
+        gop.map((s) => new EncodedVideoChunk(sample2ChunkOpts(s))),
+        (vf, done) => {
+          if (done) resolve(vf);
+          else vf?.close();
+        },
+      );
+    });
+  };
+
   // 默认直接返回
   tickInterceptor: NonNullable<IClip['tickInterceptor']> = async (_, tickRet) =>
     tickRet;
@@ -216,19 +243,21 @@ export class MP4Clip implements IClip {
     audio: Float32Array[];
     state: 'success' | 'done';
   }> {
-    if (time < this.#ts) throw Error('time not allow rollback');
-    if (this.#decodeEnded && time >= this.#meta.duration) {
+    // if (time < this.#ts) throw Error('time not allow rollback');
+    if (time >= this.#meta.duration) {
       return await this.tickInterceptor<MP4Clip>(time, {
         audio: [],
         state: 'done',
       });
     }
 
-    const audio = this.#hasAudioTrack
-      ? await this.#nextAudio(time - this.#ts)
-      : [];
-    const video = await this.#nextVideo(time);
-    this.#ts = time;
+    // const audio = this.#hasAudioTrack
+    //   ? await this.#nextAudio(time - this.#ts)
+    //   : [];
+    const audio: Float32Array[] = [];
+    // const video = await this.#nextVideo(time);
+    const video = await this.#findVideoFrame(time);
+    // this.#ts = time;
     if (video == null) {
       return await this.tickInterceptor<MP4Clip>(time, {
         audio,
@@ -248,8 +277,8 @@ export class MP4Clip implements IClip {
   destroy(): void {
     if (this.#destroyed) return;
     this.#log.info(
-      'MP4Clip destroy, ts:',
-      this.#ts,
+      // 'MP4Clip destroy, ts:',
+      // this.#ts,
       ', remainder frame count:',
       this.#videoFrames.length,
       ', decodeEnded:',
@@ -291,4 +320,35 @@ function createPromiseQueue<T extends any>(onResult: (data: T) => void) {
       .then((rs) => updateRs(rs, emitIdx))
       .catch((err) => updateRs(err, emitIdx));
   };
+}
+
+function findGoPSampleByTime(
+  time: number,
+  range: [number, number],
+  samples: MP4Sample[],
+): MP4Sample[] {
+  const idx = Math.floor((range[1] - range[0]) / 2) + range[0];
+  const s = samples[idx];
+  if (s == null) throw Error('not found GoP');
+
+  const start = s.cts;
+  const end = s.cts + s.duration;
+  if (time >= start && time <= end) {
+    const syncIdx = findLastSyncSampleIdx(idx);
+    return samples.slice(syncIdx, idx);
+  } else if (time < start) {
+    if (idx <= range[0]) return [];
+    return findGoPSampleByTime(time, [0, idx], samples);
+  } else {
+    if (idx > range[1]) return [];
+    return findGoPSampleByTime(time, [idx + 1, range[1]], samples);
+  }
+
+  function findLastSyncSampleIdx(sampleIdx: number) {
+    for (let i = sampleIdx; i >= 0; i--) {
+      if (samples[i].is_sync) return i;
+    }
+
+    throw Error('not found sync sample');
+  }
 }
