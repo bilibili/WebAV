@@ -1,5 +1,16 @@
 export * from './dom-utils';
-export * from './av-utils';
+export {
+  concatFloat32Array,
+  concatPCMFragments,
+  extractPCM4AudioData,
+  extractPCM4AudioBuffer,
+  adjustAudioDataVolume,
+  decodeImg,
+  mixinPCM,
+  audioResample,
+  ringSliceFloat32Array,
+  autoReadStream,
+} from './av-utils';
 export * from './mp4-utils';
 export { createChromakey } from './chromakey';
 
