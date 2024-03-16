@@ -1,21 +1,23 @@
+import { MP4File, MP4Info, MP4Sample } from '@webav/mp4box.js';
 import {
   audioResample,
+  autoReadStream,
   concatFloat32Array,
   extractPCM4AudioData,
   sleep,
 } from '../av-utils';
 import { Log } from '../log';
 import { demuxcode } from '../mp4-utils';
+import { extractFileConfig } from '../mp4-utils/mp4box-utils';
+import { SampleTransform } from '../mp4-utils/sample-transform';
 import { DEFAULT_AUDIO_CONF, IClip } from './iclip';
 
 let CLIP_ID = 0;
 
 export class MP4Clip implements IClip {
-  #log = Log.create(`id:${CLIP_ID++},`);
+  #log = Log.create(`MP4Clip id:${CLIP_ID++},`);
 
   #videoFrames: VideoFrame[] = [];
-
-  #ts = 0;
 
   ready: IClip['ready'];
 
@@ -40,69 +42,79 @@ export class MP4Clip implements IClip {
 
   #demuxcoder: ReturnType<typeof demuxcode> | null = null;
 
+  // #cacheFile = file(`/.cache/mp4clip/${Math.random()}`);
+
+  #videoSamples: MP4Sample[] = [];
+
+  #audioSamples: MP4Sample[] = [];
+
   constructor(
     rs: ReadableStream<Uint8Array>,
     opts: {
       audio?: boolean | { volume: number };
-      start?: number;
-      end?: number;
     } = {},
   ) {
-    this.ready = new Promise((resolve) => {
-      let lastVf: VideoFrame | null = null;
+    this.ready = new Promise((resolve, reject) => {
       this.#volume =
         typeof opts.audio === 'object' && 'volume' in opts.audio
           ? opts.audio.volume
           : 1;
-      this.#demuxcoder = demuxcode(
-        rs,
-        {
-          audio: opts.audio !== false,
-          start: (opts.start ?? 0) * 1e6,
-          end: (opts.end ?? Infinity) * 1e6,
-        },
-        {
-          onReady: (info) => {
-            if (opts.audio !== false) {
-              this.#hasAudioTrack = info.audioTracks.length > 0;
-            }
-
-            const videoTrack = info.videoTracks[0];
-            this.#meta = {
-              duration: 0,
-              width: videoTrack.track_width,
-              height: videoTrack.track_height,
-              audioSampleRate: DEFAULT_AUDIO_CONF.sampleRate,
-              audioChanCount: DEFAULT_AUDIO_CONF.channelCount,
-            };
-            this.#log.info('MP4Clip info:', info);
-            resolve({
-              width: videoTrack.track_width,
-              height: videoTrack.track_height,
-              duration:
-                // fragment mp4 的duration 在 onComplete 回调中才知道
-                videoTrack.duration === 0
-                  ? -1
-                  : (videoTrack.duration / videoTrack.timescale) * 1e6,
-            });
-          },
-          onVideoOutput: (vf) => {
-            this.#videoFrames.push(vf);
-            lastVf = vf;
-            // 最后一帧的 timestamp 可能为 0
-            this.#meta.duration = Math.max(
-              this.#meta.duration,
-              vf.timestamp + (vf.duration ?? 0),
+      // let mp4File: MP4File;
+      let mp4Info: MP4Info;
+      const stopRead = autoReadStream(rs.pipeThrough(new SampleTransform()), {
+        onChunk: async ({ chunkType, data }) => {
+          if (chunkType === 'ready') {
+            this.#log.info('mp4BoxFile is ready', data);
+            // mp4File = data.file;
+            mp4Info = data.info;
+            const { videoDecoderConf, audioDecoderConf } = extractFileConfig(
+              data.file,
+              data.info,
             );
-          },
-          onAudioOutput: this.#audioData2PCMBuf,
-          onComplete: () => {
-            this.#decodeEnded = true;
-            this.#log.info('MP4Clip decode complete');
-            if (lastVf == null) throw Error('mp4 parse error, no video frame');
-          },
+
+            if (videoDecoderConf != null) {
+              // vdecoder.configure(videoDecoderConf);
+            } else {
+              stopRead();
+              reject(
+                Error(
+                  'MP4 file does not include a video track or uses an unsupported codec',
+                ),
+              );
+            }
+            if (opts.audio && audioDecoderConf != null) {
+              // adecoder.configure(audioDecoderConf);
+            }
+          } else if (chunkType === 'samples') {
+            if (data.type === 'video') {
+              this.#videoSamples = this.#videoSamples.concat(data.samples);
+            } else if (data.type === 'audio') {
+              this.#audioSamples = this.#audioSamples.concat(data.samples);
+            }
+          }
         },
-      );
+        onDone: () => {
+          const lastSampele = this.#videoSamples.at(-1);
+          if (mp4Info == null || lastSampele == null) {
+            reject(Error('MP4Clip stream is done, but not emit ready'));
+            return;
+          }
+          const videoTrack = mp4Info.videoTracks[0];
+          const width = videoTrack.track_width;
+          const height = videoTrack.track_height;
+          const duration =
+            ((lastSampele.cts + lastSampele.duration) / lastSampele.timescale) *
+            1e6;
+          this.#meta = {
+            duration,
+            width,
+            height,
+            audioSampleRate: DEFAULT_AUDIO_CONF.sampleRate,
+            audioChanCount: DEFAULT_AUDIO_CONF.channelCount,
+          };
+          resolve({ duration, width, height });
+        },
+      });
     });
   }
 
@@ -197,6 +209,8 @@ export class MP4Clip implements IClip {
   tickInterceptor: NonNullable<IClip['tickInterceptor']> = async (_, tickRet) =>
     tickRet;
 
+  // last tick time
+  #ts = 0;
   async tick(time: number): Promise<{
     video?: VideoFrame;
     audio: Float32Array[];
@@ -228,6 +242,8 @@ export class MP4Clip implements IClip {
       state: 'success',
     });
   }
+
+  deleteRange(startTime: number, endTime: number) {}
 
   destroy(): void {
     if (this.#destroyed) return;
