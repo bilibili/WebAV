@@ -2,13 +2,14 @@ import { resolve } from 'path';
 import { defineConfig } from 'vitest/config';
 export default defineConfig({
   test: {
-    environment: 'jsdom',
-    coverage: {
-      provider: 'istanbul', // or 'c8'
+    browser: {
+      enabled: true,
+      name: 'edge', // browser name is required
+      headless: true,
     },
-    onConsoleLog(msg) {
-      if (msg.includes('log test')) return false;
-    },
+    // coverage: {
+    //   provider: 'istanbul', // or 'c8'
+    // },
   },
   build: {
     sourcemap: true,

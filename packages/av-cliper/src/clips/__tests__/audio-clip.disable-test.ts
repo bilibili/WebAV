@@ -1,14 +1,14 @@
 import { beforeEach, expect, test } from 'vitest';
-import { AudioBufferMock } from '../../__tests__/mock';
+// import { AudioBufferMock } from '../../__tests__/mock';
 import { AudioClip, DEFAULT_AUDIO_CONF, concatAudioClip } from '..';
 
-beforeEach(() => {
-  AudioBufferMock.duration = 10;
-  // duration 10s
-  AudioBufferMock.getChannelData.mockReturnValue(
-    new Float32Array(DEFAULT_AUDIO_CONF.sampleRate * 10),
-  );
-});
+// beforeEach(() => {
+//   AudioBufferMock.duration = 10;
+//   // duration 10s
+//   AudioBufferMock.getChannelData.mockReturnValue(
+//     new Float32Array(DEFAULT_AUDIO_CONF.sampleRate * 10),
+//   );
+// });
 
 test('AudioClip tick', async () => {
   const clip = new AudioClip(new ReadableStream());
@@ -33,9 +33,9 @@ test('AudioClip tick', async () => {
 });
 
 test('AudioClip volume', async () => {
-  AudioBufferMock.getChannelData.mockReturnValueOnce(
-    new Float32Array(Array(DEFAULT_AUDIO_CONF.sampleRate * 10).fill(1)),
-  );
+  // AudioBufferMock.getChannelData.mockReturnValueOnce(
+  //   new Float32Array(Array(DEFAULT_AUDIO_CONF.sampleRate * 10).fill(1)),
+  // );
   const clip = new AudioClip(new ReadableStream(), { volume: 0.1 });
   await clip.ready;
   const {

@@ -1,5 +1,5 @@
 import { test, expect } from 'vitest';
-import './mock';
+// import './mock';
 import { concatFloat32Array, concatPCMFragments, mixinPCM } from '../av-utils';
 
 test('concatArrayBuffer', () => {

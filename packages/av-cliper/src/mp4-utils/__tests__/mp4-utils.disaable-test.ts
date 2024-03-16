@@ -1,4 +1,4 @@
-import '../../__tests__/mock';
+// import '../../__tests__/mock';
 import { beforeAll, describe, expect, test, vi } from 'vitest';
 import mp4box from '@webav/mp4box.js';
 import { file2stream } from '..';

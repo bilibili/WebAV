@@ -1,5 +1,5 @@
 import { expect, test } from 'vitest';
-import '../../__tests__/mock';
+// import '../../__tests__/mock';
 import { EmbedSubtitlesClip } from '../embed-subtitles-clip';
 
 const txt1 = `
