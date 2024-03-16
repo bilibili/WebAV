@@ -272,6 +272,11 @@ export class MP4Clip implements IClip {
     });
   }
 
+  async getVideoFrame(time: number): Promise<VideoFrame | null> {
+    if (time < 0 || time > this.#meta.duration) return null;
+    return await this.#findVideoFrame(time);
+  }
+
   deleteRange(startTime: number, endTime: number) {}
 
   destroy(): void {
