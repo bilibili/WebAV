@@ -11,7 +11,14 @@ export {
   ringSliceFloat32Array,
   autoReadStream,
 } from './av-utils';
-export * from './mp4-utils';
+export {
+  recodemux,
+  file2stream,
+  fastConcatMP4,
+  mp4StreamToOPFSFile,
+  mixinMP4AndAudio,
+  MP4Previewer,
+} from './mp4-utils';
 export { createChromakey } from './chromakey';
 
 export * from './rect';
