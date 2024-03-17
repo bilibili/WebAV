@@ -1,10 +1,9 @@
-import { MP4File, MP4Info, MP4Sample } from '@webav/mp4box.js';
+import { MP4Info, MP4Sample } from '@webav/mp4box.js';
 import {
-  audioResample,
   autoReadStream,
-  concatFloat32Array,
+  concatPCMFragments,
+  createAudioChunksDecoder,
   createGoPVideoDecoder,
-  extractPCM4AudioData,
   sleep,
 } from '../av-utils';
 import { Log } from '../log';
@@ -37,17 +36,16 @@ export class MP4Clip implements IClip {
 
   #volume = 1;
 
-  #hasAudioTrack = false;
-
   #demuxcoder: ReturnType<typeof demuxcode> | null = null;
 
   // #cacheFile = file(`/.cache/mp4clip/${Math.random()}`);
 
-  #videoSamples: Array<MP4Sample> = [];
+  #videoSamples: MP4Sample[] = [];
 
   #audioSamples: MP4Sample[] = [];
 
-  #gopVDec: ReturnType<typeof createGoPVideoDecoder> | null = null;
+  #videoGoPDec: ReturnType<typeof createGoPVideoDecoder> | null = null;
+  #audioChunksDec: ReturnType<typeof createAudioChunksDecoder> | null = null;
 
   constructor(
     rs: ReadableStream<Uint8Array>,
@@ -74,8 +72,7 @@ export class MP4Clip implements IClip {
             );
 
             if (videoDecoderConf != null) {
-              this.#gopVDec = createGoPVideoDecoder(videoDecoderConf);
-              // vdecoder.configure(videoDecoderConf);
+              this.#videoGoPDec = createGoPVideoDecoder(videoDecoderConf);
             } else {
               stopRead();
               reject(
@@ -85,7 +82,10 @@ export class MP4Clip implements IClip {
               );
             }
             if (opts.audio && audioDecoderConf != null) {
-              // adecoder.configure(audioDecoderConf);
+              this.#audioChunksDec = createAudioChunksDecoder(
+                audioDecoderConf,
+                DEFAULT_AUDIO_CONF.sampleRate,
+              );
             }
           } else if (chunkType === 'samples') {
             if (data.type === 'video') {
@@ -126,76 +126,77 @@ export class MP4Clip implements IClip {
     });
   }
 
-  #audioData2PCMBuf = (() => {
-    const resampleQ = createPromiseQueue<Float32Array[]>((resampedPCM) => {
-      if (resampedPCM instanceof Error) throw resampedPCM;
+  // #audioData2PCMBuf = (() => {
+  //   const resampleQ = createPromiseQueue<Float32Array[]>((resampedPCM) => {
+  //     if (resampedPCM instanceof Error) throw resampedPCM;
 
-      this.#audioChan0 = concatFloat32Array([this.#audioChan0, resampedPCM[0]]);
-      this.#audioChan1 = concatFloat32Array([
-        this.#audioChan1,
-        resampedPCM[1] ?? resampedPCM[0],
-      ]);
-    });
+  //     this.#audioChan0 = concatFloat32Array([this.#audioChan0, resampedPCM[0]]);
+  //     this.#audioChan1 = concatFloat32Array([
+  //       this.#audioChan1,
+  //       resampedPCM[1] ?? resampedPCM[0],
+  //     ]);
+  //   });
 
-    return (ad: AudioData) => {
-      const pcmArr = extractPCM4AudioData(ad);
-      // 音量调节
-      if (this.#volume !== 1) {
-        for (const pcm of pcmArr)
-          for (let i = 0; i < pcm.length; i++) pcm[i] *= this.#volume;
-      }
+  //   return (ad: AudioData) => {
+  //     const pcmArr = extractPCM4AudioData(ad);
+  //     // 音量调节
+  //     if (this.#volume !== 1) {
+  //       for (const pcm of pcmArr)
+  //         for (let i = 0; i < pcm.length; i++) pcm[i] *= this.#volume;
+  //     }
 
-      if (ad.sampleRate !== DEFAULT_AUDIO_CONF.sampleRate) {
-        resampleQ(() =>
-          audioResample(pcmArr, ad.sampleRate, {
-            rate: DEFAULT_AUDIO_CONF.sampleRate,
-            chanCount: DEFAULT_AUDIO_CONF.channelCount,
-          }),
-        );
-      } else {
-        this.#audioChan0 = concatFloat32Array([this.#audioChan0, pcmArr[0]]);
-        this.#audioChan1 = concatFloat32Array([
-          this.#audioChan1,
-          pcmArr[1] ?? pcmArr[0],
-        ]);
-      }
+  //     if (ad.sampleRate !== DEFAULT_AUDIO_CONF.sampleRate) {
+  //       resampleQ(() =>
+  //         audioResample(pcmArr, ad.sampleRate, {
+  //           rate: DEFAULT_AUDIO_CONF.sampleRate,
+  //           chanCount: DEFAULT_AUDIO_CONF.channelCount,
+  //         }),
+  //       );
+  //     } else {
+  //       this.#audioChan0 = concatFloat32Array([this.#audioChan0, pcmArr[0]]);
+  //       this.#audioChan1 = concatFloat32Array([
+  //         this.#audioChan1,
+  //         pcmArr[1] ?? pcmArr[0],
+  //       ]);
+  //     }
 
-      ad.close();
-    };
-  })();
+  //     ad.close();
+  //   };
+  // })();
 
-  #decoding = false;
-  #decodeCusorIdx = 0;
+  #videoDecoding = false;
+  #videoDecCusorIdx = 0;
   #videoFrames: VideoFrame[] = [];
   async #nextVideo(time: number): Promise<VideoFrame | null> {
     if (this.#videoFrames.length === 0) {
       if (
         this.#destroyed ||
         // decode completed
-        (!this.#decoding && this.#decodeCusorIdx >= this.#videoSamples.length)
+        (!this.#videoDecoding &&
+          this.#videoDecCusorIdx >= this.#videoSamples.length)
       ) {
         return null;
       }
 
-      if (this.#decoding) {
+      if (this.#videoDecoding) {
         await sleep(15);
       } else {
-        let endIdx = this.#decodeCusorIdx + 1;
+        let endIdx = this.#videoDecCusorIdx + 1;
         for (; endIdx < this.#videoSamples.length; endIdx++) {
           if (this.#videoSamples[endIdx].is_sync) break;
         }
 
-        this.#decoding = true;
-        this.#gopVDec?.decode(
+        this.#videoDecoding = true;
+        this.#videoGoPDec?.decode(
           this.#videoSamples
-            .slice(this.#decodeCusorIdx, endIdx)
+            .slice(this.#videoDecCusorIdx, endIdx)
             .map((s) => new EncodedVideoChunk(sample2ChunkOpts(s))),
           (vf, done) => {
             if (vf != null) this.#videoFrames.push(vf);
-            if (done) this.#decoding = false;
+            if (done) this.#videoDecoding = false;
           },
         );
-        this.#decodeCusorIdx = endIdx;
+        this.#videoDecCusorIdx = endIdx;
       }
       return this.#nextVideo(time);
     }
@@ -215,29 +216,65 @@ export class MP4Clip implements IClip {
     return rs;
   }
 
+  #pcmData: [Float32Array, Float32Array] = [
+    // left chan
+    new Float32Array(0),
+    // right chan
+    new Float32Array(0),
+  ];
+  #audioDecCusorIdx = 0;
+  #audioDecoding = false;
   async #nextAudio(deltaTime: number): Promise<Float32Array[]> {
     const frameCnt = Math.ceil(deltaTime * (this.#meta.audioSampleRate / 1e6));
-    if (frameCnt === 0) return [];
-    // 小心避免死循环
     if (
-      !this.#decodeEnded &&
-      !this.#destroyed &&
-      this.#audioChan0.length < frameCnt
+      this.#audioChunksDec == null ||
+      this.#destroyed ||
+      // decode completed
+      this.#audioDecCusorIdx >= this.#audioSamples.length ||
+      frameCnt === 0
     ) {
-      await sleep(50);
-      return this.#nextAudio(deltaTime);
+      return [];
     }
 
-    const audio = [
-      this.#audioChan0.slice(0, frameCnt),
-      this.#audioChan1.slice(0, frameCnt),
-    ];
-
-    this.#audioChan0 = this.#audioChan0.slice(frameCnt);
-    if (this.#meta.audioChanCount > 1) {
-      this.#audioChan1 = this.#audioChan1.slice(frameCnt);
+    if (this.#pcmData[0].length > frameCnt) {
+      const audio = [
+        this.#pcmData[0].slice(0, frameCnt),
+        this.#pcmData[1].slice(0, frameCnt),
+      ];
+      this.#pcmData[0] = this.#pcmData[0].slice(frameCnt);
+      this.#pcmData[1] = this.#pcmData[1].slice(frameCnt);
+      return audio;
     }
-    return audio;
+
+    if (this.#audioDecoding) {
+      await sleep(15);
+    } else {
+      const endIdx = this.#audioDecCusorIdx + 10;
+      this.#audioDecoding = true;
+      this.#audioChunksDec.decode(
+        this.#audioSamples
+          .slice(this.#audioDecCusorIdx, endIdx)
+          .map((s) => new EncodedAudioChunk(sample2ChunkOpts(s))),
+        (pcmArr, done) => {
+          if (pcmArr.length === 0) return;
+          // 音量调节
+          if (this.#volume !== 1) {
+            for (const pcm of pcmArr)
+              for (let i = 0; i < pcm.length; i++) pcm[i] *= this.#volume;
+          }
+          // 补齐双声道
+          if (pcmArr.length === 1) pcmArr = [pcmArr[0], pcmArr[0]];
+
+          this.#pcmData = concatPCMFragments([this.#pcmData, pcmArr]) as [
+            Float32Array,
+            Float32Array,
+          ];
+          if (done) this.#audioDecoding = false;
+        },
+      );
+      this.#audioDecCusorIdx = endIdx;
+    }
+    return this.#nextAudio(deltaTime);
   }
 
   // 默认直接返回
@@ -259,10 +296,8 @@ export class MP4Clip implements IClip {
       });
     }
 
-    // const audio = this.#hasAudioTrack
-    //   ? await this.#nextAudio(time - this.#ts)
-    //   : [];
-    const audio: Float32Array[] = [];
+    const audio = await this.#nextAudio(time - this.#ts);
+    // const audio: Float32Array[] = [];
     const video = await this.#nextVideo(time);
     this.#ts = time;
     if (video == null) {
@@ -287,7 +322,7 @@ export class MP4Clip implements IClip {
       this.#videoSamples,
     );
     return new Promise<VideoFrame | null>((resolve) => {
-      this.#gopVDec?.decode(
+      this.#videoGoPDec?.decode(
         gop.map((s) => new EncodedVideoChunk(sample2ChunkOpts(s))),
         (vf, done) => {
           if (done) resolve(vf);
@@ -316,35 +351,6 @@ export class MP4Clip implements IClip {
     this.#videoFrames.forEach((f) => f.close());
     this.#videoFrames = [];
   }
-}
-
-// 并行执行任务，但按顺序emit结果
-function createPromiseQueue<T extends any>(onResult: (data: T) => void) {
-  const rsCache: T[] = [];
-  let waitingIdx = 0;
-
-  function updateRs(rs: T, emitIdx: number) {
-    rsCache[emitIdx] = rs;
-    emitRs();
-  }
-
-  function emitRs() {
-    const rs = rsCache[waitingIdx];
-    if (rs == null) return;
-    onResult(rs);
-
-    waitingIdx += 1;
-    emitRs();
-  }
-
-  let addIdx = 0;
-  return (task: () => Promise<T>) => {
-    const emitIdx = addIdx;
-    addIdx += 1;
-    task()
-      .then((rs) => updateRs(rs, emitIdx))
-      .catch((err) => updateRs(err, emitIdx));
-  };
 }
 
 function findGoPSampleByTime(

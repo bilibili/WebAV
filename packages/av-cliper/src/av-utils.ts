@@ -266,16 +266,19 @@ export function createGoPVideoDecoder(conf: VideoDecoderConfig) {
   });
   vdec.configure(conf);
 
-  let tasks: Array<{
-    chunks: EncodedVideoChunk[];
-    cb: (vf: VideoFrame | null, done: boolean) => void;
-  }> = [];
+  let tasks: Array<{ chunks: EncodedVideoChunk[]; cb: OutputHandle }> = [];
 
   async function run() {
     if (curCb != null) return;
 
     const t = tasks.shift();
     if (t == null) return;
+    if (t.chunks.length <= 0) {
+      t.cb(null, true);
+      run().catch(Log.error);
+      return;
+    }
+
     let i = 0;
     curCb = (vf) => {
       i += 1;
@@ -286,12 +289,6 @@ export function createGoPVideoDecoder(conf: VideoDecoderConfig) {
         run().catch(Log.error);
       }
     };
-    if (t.chunks.length <= 0) {
-      t.cb(null, true);
-      curCb = null;
-      run().catch(Log.error);
-      return;
-    }
     for (const chunk of t.chunks) vdec.decode(chunk);
     await vdec.flush();
   }
@@ -301,5 +298,99 @@ export function createGoPVideoDecoder(conf: VideoDecoderConfig) {
       tasks.push({ chunks, cb });
       run().catch(Log.error);
     },
+  };
+}
+
+export function createAudioChunksDecoder(
+  decoderConf: AudioDecoderConfig,
+  resampleRate: number,
+) {
+  type OutputHandle = (pcm: Float32Array[], done: boolean) => void;
+
+  let curCb: ((pcm: Float32Array[]) => void) | null = null;
+  const needResample = resampleRate !== decoderConf.sampleRate;
+  const queue = createPromiseQueue<Float32Array[]>((resampedPCM) => {
+    curCb?.(resampedPCM);
+  });
+
+  const adec = new AudioDecoder({
+    output: (ad) => {
+      const pcm = extractPCM4AudioData(ad);
+      if (needResample) {
+        queue(() =>
+          audioResample(pcm, ad.sampleRate, {
+            rate: resampleRate,
+            chanCount: ad.numberOfChannels,
+          }),
+        );
+      } else {
+        curCb?.(pcm);
+      }
+      ad.close();
+    },
+    error: Log.error,
+  });
+  adec.configure(decoderConf);
+
+  let tasks: Array<{ chunks: EncodedAudioChunk[]; cb: OutputHandle }> = [];
+  async function run() {
+    if (curCb != null) return;
+
+    const t = tasks.shift();
+    if (t == null) return;
+    if (t.chunks.length <= 0) {
+      t.cb([], true);
+      run().catch(Log.error);
+      return;
+    }
+
+    let i = 0;
+    curCb = (pcm) => {
+      i += 1;
+      const done = i >= t.chunks.length;
+      t.cb(pcm, done);
+      if (done) {
+        curCb = null;
+        run().catch(Log.error);
+      }
+    };
+    for (const chunk of t.chunks) adec.decode(chunk);
+    await adec.flush();
+  }
+
+  return {
+    decode(chunks: EncodedAudioChunk[], cb: OutputHandle) {
+      tasks.push({ chunks, cb });
+      run().catch(Log.error);
+    },
+  };
+}
+
+// 并行执行任务，但按顺序emit结果
+function createPromiseQueue<T extends any>(onResult: (data: T) => void) {
+  const rsCache: T[] = [];
+  let waitingIdx = 0;
+
+  function updateRs(rs: T, emitIdx: number) {
+    rsCache[emitIdx] = rs;
+    emitRs();
+  }
+
+  function emitRs() {
+    const rs = rsCache[waitingIdx];
+    if (rs == null) return;
+    onResult(rs);
+
+    waitingIdx += 1;
+    emitRs();
+  }
+
+  let addIdx = 0;
+  return (task: () => Promise<T>) => {
+    const emitIdx = addIdx;
+    addIdx += 1;
+    task()
+      .then((rs) => updateRs(rs, emitIdx))
+      .catch((err) => updateRs(err, emitIdx));
   };
 }
