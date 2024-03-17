@@ -124,52 +124,54 @@ export class MP4Clip implements IClip {
   #videoDecCusorIdx = 0;
   #videoFrames: VideoFrame[] = [];
   async #nextVideo(time: number): Promise<VideoFrame | null> {
-    if (this.#videoFrames.length === 0) {
-      if (
-        this.#destroyed ||
-        // decode completed
-        (!this.#videoDecoding &&
-          this.#videoDecCusorIdx >= this.#videoSamples.length)
-      ) {
-        return null;
-      }
+    if (this.#destroyed) return null;
 
-      if (this.#videoDecoding) {
-        await sleep(15);
-      } else {
-        let endIdx = this.#videoDecCusorIdx + 1;
-        for (; endIdx < this.#videoSamples.length; endIdx++) {
-          if (this.#videoSamples[endIdx].is_sync) break;
-        }
-
-        this.#videoDecoding = true;
-        this.#videoGoPDec?.decode(
-          this.#videoSamples
-            .slice(this.#videoDecCusorIdx, endIdx)
-            .map((s) => new EncodedVideoChunk(sample2ChunkOpts(s))),
-          (vf, done) => {
-            if (vf != null) this.#videoFrames.push(vf);
-            if (done) this.#videoDecoding = false;
-          },
-        );
-        this.#videoDecCusorIdx = endIdx;
+    if (this.#videoFrames.length > 0) {
+      const rs = this.#videoFrames[0];
+      if (time < rs.timestamp) return null;
+      // 弹出第一帧
+      this.#videoFrames.shift();
+      // 第一帧过期，找下一帧
+      if (time > rs.timestamp + (rs.duration ?? 0)) {
+        rs.close();
+        return this.#nextVideo(time);
       }
-      return this.#nextVideo(time);
+      // 符合期望
+      return rs;
     }
 
-    const rs = this.#videoFrames[0];
-    if (time < rs.timestamp) {
+    // decode completed
+    if (
+      !this.#videoDecoding &&
+      this.#videoDecCusorIdx >= this.#videoSamples.length
+    ) {
       return null;
     }
-    if (time > rs.timestamp + (rs.duration ?? 0)) {
-      rs.close();
-      // 过期，找下一帧
-      this.#videoFrames.shift();
-      return this.#nextVideo(time);
-    }
 
-    this.#videoFrames.shift();
-    return rs;
+    // 缺少帧数据
+    if (this.#videoDecoding) {
+      // 解码中，等待，然后重试
+      await sleep(15);
+    } else {
+      // 启动解码任务，然后重试
+      let endIdx = this.#videoDecCusorIdx + 1;
+      for (; endIdx < this.#videoSamples.length; endIdx++) {
+        if (this.#videoSamples[endIdx].is_sync) break;
+      }
+
+      this.#videoDecoding = true;
+      this.#videoGoPDec?.decode(
+        this.#videoSamples
+          .slice(this.#videoDecCusorIdx, endIdx)
+          .map((s) => new EncodedVideoChunk(sample2ChunkOpts(s))),
+        (vf, done) => {
+          if (vf != null) this.#videoFrames.push(vf);
+          if (done) this.#videoDecoding = false;
+        },
+      );
+      this.#videoDecCusorIdx = endIdx;
+    }
+    return this.#nextVideo(time);
   }
 
   #pcmData: [Float32Array, Float32Array] = [
@@ -180,16 +182,11 @@ export class MP4Clip implements IClip {
   #audioDecoding = false;
   async #nextAudio(deltaTime: number): Promise<Float32Array[]> {
     const frameCnt = Math.ceil(deltaTime * (this.#meta.audioSampleRate / 1e6));
-    if (
-      this.#audioChunksDec == null ||
-      this.#destroyed ||
-      // decode completed
-      this.#audioDecCusorIdx >= this.#audioSamples.length ||
-      frameCnt === 0
-    ) {
+    if (this.#audioChunksDec == null || this.#destroyed || frameCnt === 0) {
       return [];
     }
 
+    // 数据满足需要
     if (this.#pcmData[0].length > frameCnt) {
       const audio = [
         this.#pcmData[0].slice(0, frameCnt),
@@ -200,9 +197,14 @@ export class MP4Clip implements IClip {
       return audio;
     }
 
+    // decode completed
+    if (this.#audioDecCusorIdx >= this.#audioSamples.length) return [];
+
     if (this.#audioDecoding) {
+      // 解码中，等待
       await sleep(15);
     } else {
+      // 启动解码任务
       const endIdx = this.#audioDecCusorIdx + 10;
       this.#audioDecoding = true;
       this.#audioChunksDec.decode(
@@ -250,9 +252,10 @@ export class MP4Clip implements IClip {
       });
     }
 
-    const audio = await this.#nextAudio(time - this.#ts);
-    // const audio: Float32Array[] = [];
-    const video = await this.#nextVideo(time);
+    const [audio, video] = await Promise.all([
+      this.#nextAudio(time - this.#ts),
+      this.#nextVideo(time),
+    ]);
     this.#ts = time;
     if (video == null) {
       return await this.tickInterceptor<MP4Clip>(time, {
