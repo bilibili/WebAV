@@ -20,7 +20,6 @@ export class MP4Clip implements IClip {
   ready: IClip['ready'];
 
   #destroyed = false;
-  #decodeEnded = false;
 
   #meta = {
     // 微秒
@@ -31,14 +30,9 @@ export class MP4Clip implements IClip {
     audioChanCount: DEFAULT_AUDIO_CONF.channelCount,
   };
 
-  #audioChan0 = new Float32Array(0);
-  #audioChan1 = new Float32Array(0);
-
   #volume = 1;
 
   #demuxcoder: ReturnType<typeof demuxcode> | null = null;
-
-  // #cacheFile = file(`/.cache/mp4clip/${Math.random()}`);
 
   #videoSamples: MP4Sample[] = [];
 
@@ -126,44 +120,6 @@ export class MP4Clip implements IClip {
     });
   }
 
-  // #audioData2PCMBuf = (() => {
-  //   const resampleQ = createPromiseQueue<Float32Array[]>((resampedPCM) => {
-  //     if (resampedPCM instanceof Error) throw resampedPCM;
-
-  //     this.#audioChan0 = concatFloat32Array([this.#audioChan0, resampedPCM[0]]);
-  //     this.#audioChan1 = concatFloat32Array([
-  //       this.#audioChan1,
-  //       resampedPCM[1] ?? resampedPCM[0],
-  //     ]);
-  //   });
-
-  //   return (ad: AudioData) => {
-  //     const pcmArr = extractPCM4AudioData(ad);
-  //     // 音量调节
-  //     if (this.#volume !== 1) {
-  //       for (const pcm of pcmArr)
-  //         for (let i = 0; i < pcm.length; i++) pcm[i] *= this.#volume;
-  //     }
-
-  //     if (ad.sampleRate !== DEFAULT_AUDIO_CONF.sampleRate) {
-  //       resampleQ(() =>
-  //         audioResample(pcmArr, ad.sampleRate, {
-  //           rate: DEFAULT_AUDIO_CONF.sampleRate,
-  //           chanCount: DEFAULT_AUDIO_CONF.channelCount,
-  //         }),
-  //       );
-  //     } else {
-  //       this.#audioChan0 = concatFloat32Array([this.#audioChan0, pcmArr[0]]);
-  //       this.#audioChan1 = concatFloat32Array([
-  //         this.#audioChan1,
-  //         pcmArr[1] ?? pcmArr[0],
-  //       ]);
-  //     }
-
-  //     ad.close();
-  //   };
-  // })();
-
   #videoDecoding = false;
   #videoDecCusorIdx = 0;
   #videoFrames: VideoFrame[] = [];
@@ -217,10 +173,8 @@ export class MP4Clip implements IClip {
   }
 
   #pcmData: [Float32Array, Float32Array] = [
-    // left chan
-    new Float32Array(0),
-    // right chan
-    new Float32Array(0),
+    new Float32Array(0), // left chan
+    new Float32Array(0), // right chan
   ];
   #audioDecCusorIdx = 0;
   #audioDecoding = false;
@@ -341,8 +295,6 @@ export class MP4Clip implements IClip {
       this.#ts,
       ', remainder frame count:',
       this.#videoFrames.length,
-      ', decodeEnded:',
-      this.#decodeEnded,
     );
     this.#destroyed = true;
 
