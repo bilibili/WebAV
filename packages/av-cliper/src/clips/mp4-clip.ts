@@ -7,7 +7,6 @@ import {
   sleep,
 } from '../av-utils';
 import { Log } from '../log';
-import { demuxcode } from '../mp4-utils';
 import { extractFileConfig, sample2ChunkOpts } from '../mp4-utils/mp4box-utils';
 import { SampleTransform } from '../mp4-utils/sample-transform';
 import { DEFAULT_AUDIO_CONF, IClip } from './iclip';
@@ -31,8 +30,6 @@ export class MP4Clip implements IClip {
   };
 
   #volume = 1;
-
-  #demuxcoder: ReturnType<typeof demuxcode> | null = null;
 
   #videoSamples: MP4Sample[] = [];
 
@@ -301,8 +298,6 @@ export class MP4Clip implements IClip {
     );
     this.#destroyed = true;
 
-    this.#demuxcoder?.stop();
-    this.#demuxcoder = null;
     this.#videoFrames.forEach((f) => f.close());
     this.#videoFrames = [];
   }
