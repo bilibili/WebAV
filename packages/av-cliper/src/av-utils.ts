@@ -309,7 +309,7 @@ export function createAudioChunksDecoder(
 
   let curCb: ((pcm: Float32Array[]) => void) | null = null;
   const needResample = resampleRate !== decoderConf.sampleRate;
-  const queue = createPromiseQueue<Float32Array[]>((resampedPCM) => {
+  const resampleQ = createPromiseQueue<Float32Array[]>((resampedPCM) => {
     curCb?.(resampedPCM);
   });
 
@@ -317,7 +317,7 @@ export function createAudioChunksDecoder(
     output: (ad) => {
       const pcm = extractPCM4AudioData(ad);
       if (needResample) {
-        queue(() =>
+        resampleQ(() =>
           audioResample(pcm, ad.sampleRate, {
             rate: resampleRate,
             chanCount: ad.numberOfChannels,
