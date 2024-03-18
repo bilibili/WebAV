@@ -355,7 +355,6 @@ export function createAudioChunksDecoder(
       }
     };
     for (const chunk of t.chunks) adec.decode(chunk);
-    await adec.flush();
   }
 
   return {
