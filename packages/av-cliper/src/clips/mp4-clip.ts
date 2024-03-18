@@ -148,18 +148,13 @@ export class MP4Clip implements IClip {
       return rs;
     }
 
-    // decode completed
-    if (
-      !this.#videoDecoding &&
-      this.#videoDecCusorIdx >= this.#videoSamples.length
-    ) {
-      return null;
-    }
-
     // 缺少帧数据
     if (this.#videoDecoding) {
       // 解码中，等待，然后重试
       await sleep(15);
+    } else if (this.#videoDecCusorIdx >= this.#videoSamples.length) {
+      // decode completed
+      return null;
     } else {
       // todo: 丢弃 cts < time 的 sample
       // 启动解码任务，然后重试
@@ -172,15 +167,13 @@ export class MP4Clip implements IClip {
         if (s.deleted) delCnt += 1;
       }
 
-      if (delCnt < endIdx - this.#videoDecCusorIdx) {
-        const gopSample = this.#videoSamples
+      if (delCnt < endIdx - this.#videoDecCusorIdx - 1) {
+        const videoGoP = this.#videoSamples
           .slice(this.#videoDecCusorIdx, endIdx)
           .map((s) => new EncodedVideoChunk(sample2ChunkOpts(s)));
-
         this.#videoDecoding = true;
         let discardCnt = delCnt;
-
-        this.#videoGoPDec?.decode(gopSample, (vf, done) => {
+        this.#videoGoPDec?.decode(videoGoP, (vf, done) => {
           if (discardCnt > 0) {
             vf?.close();
             discardCnt -= 1;
@@ -218,20 +211,26 @@ export class MP4Clip implements IClip {
       return audio;
     }
 
-    // decode completed
-    if (this.#audioDecCusorIdx >= this.#audioSamples.length) return [];
-
     if (this.#audioDecoding) {
       // 解码中，等待
       await sleep(15);
+    } else if (this.#audioDecCusorIdx >= this.#audioSamples.length - 1) {
+      // decode completed
+      return [];
     } else {
       // 启动解码任务
-      const endIdx = this.#audioDecCusorIdx + 10;
+      const samples = [];
+      for (let i = this.#audioDecCusorIdx; i < this.#audioSamples.length; i++) {
+        this.#audioDecCusorIdx = i;
+        const s = this.#audioSamples[i];
+        if (s.deleted) continue;
+        if (samples.length > 10) break;
+        samples.push(s);
+      }
+
       this.#audioDecoding = true;
       this.#audioChunksDec.decode(
-        this.#audioSamples
-          .slice(this.#audioDecCusorIdx, endIdx)
-          .map((s) => new EncodedAudioChunk(sample2ChunkOpts(s))),
+        samples.map((s) => new EncodedAudioChunk(sample2ChunkOpts(s))),
         (pcmArr, done) => {
           if (pcmArr.length === 0) return;
           // 音量调节
@@ -249,7 +248,6 @@ export class MP4Clip implements IClip {
           if (done) this.#audioDecoding = false;
         },
       );
-      this.#audioDecCusorIdx = endIdx;
     }
     return this.#nextAudio(deltaTime);
   }
@@ -316,6 +314,7 @@ export class MP4Clip implements IClip {
 
     _del(this.#videoSamples, startTime, endTime);
     _del(this.#audioSamples, startTime, endTime);
+    this.#meta.duration -= endTime - startTime;
 
     function _del(
       samples: Array<MP4Sample & { deleted?: boolean }>,
@@ -327,6 +326,7 @@ export class MP4Clip implements IClip {
 
         if (s.cts >= startTime && s.cts <= endTime) {
           s.deleted = true;
+          s.cts = -1;
         } else if (s.cts > endTime) {
           s.cts -= endTime - startTime;
         }
