@@ -11,6 +11,7 @@ export default defineConfig({
     //   provider: 'istanbul', // or 'c8'
     // },
   },
+  publicDir: resolve(__dirname, '../../doc-site/public'),
   build: {
     sourcemap: true,
     lib: {

@@ -31,9 +31,9 @@ export class MP4Clip implements IClip {
 
   #volume = 1;
 
-  #videoSamples: MP4Sample[] = [];
+  #videoSamples: Array<MP4Sample & { deleted?: boolean }> = [];
 
-  #audioSamples: MP4Sample[] = [];
+  #audioSamples: Array<MP4Sample & { deleted?: boolean }> = [];
 
   #videoGoPDec: ReturnType<typeof createGoPVideoDecoder> | null = null;
   #audioChunksDec: ReturnType<typeof createAudioChunksDecoder> | null = null;
@@ -89,8 +89,19 @@ export class MP4Clip implements IClip {
                   timescale: 1e6,
                 })),
               );
+              // data.samples.forEach((s) => {
+              //   console.log(111111, s.cts / 1000, s.dts / 1000);
+              // });
             } else if (data.type === 'audio') {
-              this.#audioSamples = this.#audioSamples.concat(data.samples);
+              this.#audioSamples = this.#audioSamples.concat(
+                data.samples.map((s) => ({
+                  ...s,
+                  cts: (s.cts / s.timescale) * 1e6,
+                  dts: (s.dts / s.timescale) * 1e6,
+                  duration: (s.duration / s.timescale) * 1e6,
+                  timescale: 1e6,
+                })),
+              );
             }
           }
         },
@@ -150,22 +161,35 @@ export class MP4Clip implements IClip {
       // 解码中，等待，然后重试
       await sleep(15);
     } else {
+      // todo: 丢弃 cts < time 的 sample
       // 启动解码任务，然后重试
       let endIdx = this.#videoDecCusorIdx + 1;
+      let delCnt = 0;
       for (; endIdx < this.#videoSamples.length; endIdx++) {
-        if (this.#videoSamples[endIdx].is_sync) break;
+        // 找一个 GoP，所以是下一个关键帧结束
+        const s = this.#videoSamples[endIdx];
+        if (s.is_sync) break;
+        if (s.deleted) delCnt += 1;
       }
 
-      this.#videoDecoding = true;
-      this.#videoGoPDec?.decode(
-        this.#videoSamples
+      if (delCnt < endIdx - this.#videoDecCusorIdx) {
+        const gopSample = this.#videoSamples
           .slice(this.#videoDecCusorIdx, endIdx)
-          .map((s) => new EncodedVideoChunk(sample2ChunkOpts(s))),
-        (vf, done) => {
-          if (vf != null) this.#videoFrames.push(vf);
+          .map((s) => new EncodedVideoChunk(sample2ChunkOpts(s)));
+
+        this.#videoDecoding = true;
+        let discardCnt = delCnt;
+
+        this.#videoGoPDec?.decode(gopSample, (vf, done) => {
+          if (discardCnt > 0) {
+            vf?.close();
+            discardCnt -= 1;
+          } else if (vf != null) {
+            this.#videoFrames.push(vf);
+          }
           if (done) this.#videoDecoding = false;
-        },
-      );
+        });
+      }
       this.#videoDecCusorIdx = endIdx;
     }
     return this.#nextVideo(time);
@@ -286,7 +310,29 @@ export class MP4Clip implements IClip {
     });
   }
 
-  deleteRange(startTime: number, endTime: number) {}
+  deleteRange(startTime: number, endTime: number) {
+    if (endTime <= startTime)
+      throw Error('endTime must be greater than startTime');
+
+    _del(this.#videoSamples, startTime, endTime);
+    _del(this.#audioSamples, startTime, endTime);
+
+    function _del(
+      samples: Array<MP4Sample & { deleted?: boolean }>,
+      startTime: number,
+      endTime: number,
+    ) {
+      for (const s of samples) {
+        if (s.deleted) continue;
+
+        if (s.cts >= startTime && s.cts <= endTime) {
+          s.deleted = true;
+        } else if (s.cts > endTime) {
+          s.cts -= endTime - startTime;
+        }
+      }
+    }
+  }
 
   destroy(): void {
     if (this.#destroyed) return;

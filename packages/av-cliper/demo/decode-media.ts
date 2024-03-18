@@ -132,6 +132,7 @@ document.querySelector('#decode-video')?.addEventListener('click', () => {
     const resp1 = await fetch(videos[videoType]);
     const clip = new MP4Clip(resp1.body!);
     await clip.ready;
+    // clip.deleteRange(5e6, 10e6);
 
     if (speed.value === 'fastest') {
       fastestDecode();
