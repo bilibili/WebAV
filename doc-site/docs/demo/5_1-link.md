@@ -2,7 +2,7 @@
 nav: DEMO
 group:
   title: 其它
-  order: 5
+  order: 6
 
 order: 1
 ---
