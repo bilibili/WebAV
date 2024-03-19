@@ -37,9 +37,9 @@ test('delete range', async () => {
     return tickRet;
   };
   await clip.ready;
-  clip.deleteRange(0.5e6, 1e6);
+  clip.deleteRange(0e6, 0.5e6);
   await fastestDecode(clip);
   clip.destroy();
 
-  expect(frameCnt).toBe(10);
+  expect(frameCnt).toBe(12);
 });
