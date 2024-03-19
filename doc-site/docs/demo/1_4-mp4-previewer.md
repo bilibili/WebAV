@@ -12,18 +12,33 @@ order: 4
 ```tsx
 import React, { useState, useEffect } from 'react';
 import { Slider } from 'antd';
-import { MP4Previewer } from '@webav/av-cliper';
+import { MP4Clip } from '@webav/av-cliper';
 import { assetsPrefix } from './utils';
 
+// const videoSrc = assetsPrefix(['video/bunny_0.mp4']);
 const videoSrc = assetsPrefix(['video/webav1.mp4']);
 
-let previewer;
-let mp4Info;
+let clip;
 let mp4Dur;
+let convtr;
 async function start() {
-  previewer = new MP4Previewer((await fetch(videoSrc)).body!);
-  mp4Info = await previewer.getInfo();
-  mp4Dur = Number((mp4Info.duration / mp4Info.timescale).toFixed(0));
+  clip = new MP4Clip((await fetch(videoSrc)).body!);
+  const { duration, width, height } = await clip.ready;
+  mp4Dur = Math.round(duration / 1e6);
+  convtr = createVF2BlobConvtr(width, height);
+}
+
+// 将 VideoFrame 转换成 blob url，传递给 img src
+function createVF2BlobConvtr(width: number, height: number) {
+  const cvs = new OffscreenCanvas(width, height);
+  const ctx = cvs.getContext('2d')!;
+
+  return async (vf: VideoFrame) => {
+    ctx.drawImage(vf, 0, 0, width, height);
+    const pngBlob = await cvs.convertToBlob();
+    vf.close();
+    return URL.createObjectURL(pngBlob);
+  };
 }
 
 export default function UI() {
@@ -50,7 +65,7 @@ export default function UI() {
               max={duration}
               step={0.1}
               onChange={async (val) => {
-                setImgSrc(await previewer.getImage(val));
+                setImgSrc(await convtr(await clip.getVideoFrame(val * 1e6)));
               }}
             />
           </div>
@@ -62,9 +77,3 @@ export default function UI() {
   );
 }
 ```
-
-:::info
-如果只是为了绘制图像，使用视频帧更合适，`await previewer.getVideoFrame(time)`。
-
-**注意**，视频帧使用完需要立即调用 `videoFrame.close()`
-:::
