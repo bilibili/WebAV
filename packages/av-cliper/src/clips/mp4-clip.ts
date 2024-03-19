@@ -93,9 +93,6 @@ export class MP4Clip implements IClip {
                   timescale: 1e6,
                 })),
               );
-              // data.samples.forEach((s) => {
-              //   console.log(111111, s.cts / 1000, s.dts / 1000);
-              // });
             } else if (data.type === 'audio') {
               this.#audioSamples = this.#audioSamples.concat(
                 data.samples.map((s) => ({
@@ -294,6 +291,7 @@ export class MP4Clip implements IClip {
     });
   }
 
+  // fixme: compatible frame type B
   async getVideoFrame(time: number): Promise<VideoFrame | null> {
     if (time < 0 || time > this.#meta.duration) return null;
     const gop = findGoPSampleByTime(
@@ -340,8 +338,11 @@ export class MP4Clip implements IClip {
     if (vdec == null) return Promise.resolve([]);
 
     const { width, height } = this.#meta;
-    const cvs = new OffscreenCanvas(100, Math.round(height * (100 / width)));
-    const ctx = cvs.getContext('2d')!;
+    const convtr = createVF2BlobConvtr(
+      100,
+      Math.round(height * (100 / width)),
+      { quality: 0.1, type: 'image/png' },
+    );
 
     return new Promise<Array<{ ts: number; img: Blob }>>((resolve) => {
       const pngPromises: Array<{ ts: number; img: Promise<Blob> }> = [];
@@ -362,12 +363,10 @@ export class MP4Clip implements IClip {
           .map(sample2VideoChunk),
         (vf, done) => {
           if (vf == null) return;
-          ctx.drawImage(vf, 0, 0, 100, cvs.height);
           pngPromises.push({
             ts: vf.timestamp,
-            img: cvs.convertToBlob({ quality: 0.1, type: 'image/png' }),
+            img: convtr(vf),
           });
-          vf.close();
 
           if (done) resolver();
         },
@@ -392,6 +391,22 @@ export class MP4Clip implements IClip {
 
 function sample2VideoChunk(s: MP4Sample) {
   return new EncodedVideoChunk(sample2ChunkOpts(s));
+}
+
+function createVF2BlobConvtr(
+  width: number,
+  height: number,
+  opts?: ImageEncodeOptions,
+) {
+  const cvs = new OffscreenCanvas(width, height);
+  const ctx = cvs.getContext('2d')!;
+
+  return async (vf: VideoFrame) => {
+    ctx.drawImage(vf, 0, 0, width, height);
+    const blob = await cvs.convertToBlob(opts);
+    vf.close();
+    return blob;
+  };
 }
 
 function findGoPSampleByTime(
