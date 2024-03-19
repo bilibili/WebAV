@@ -51,3 +51,9 @@ test('delete range', async () => {
 
   expect(frameCnt).toBe(205);
 });
+
+test('thumbnails', async () => {
+  const clip = new MP4Clip((await fetch(mp4_bunny)).body!);
+  await clip.ready;
+  expect((await clip.thumbnails()).length).toBe(9);
+});

@@ -174,7 +174,7 @@ export class MP4Clip implements IClip {
       if (delCnt < endIdx - this.#videoDecCusorIdx - 1) {
         const videoGoP = this.#videoSamples
           .slice(this.#videoDecCusorIdx, endIdx)
-          .map((s) => new EncodedVideoChunk(sample2ChunkOpts(s)));
+          .map(sample2VideoChunk);
         this.#videoDecoding = true;
         let discardCnt = delCnt;
         this.#videoGoPDec?.decode(videoGoP, (vf, done) => {
@@ -302,13 +302,10 @@ export class MP4Clip implements IClip {
       this.#videoSamples,
     );
     return new Promise<VideoFrame | null>((resolve) => {
-      this.#videoGoPDec?.decode(
-        gop.map((s) => new EncodedVideoChunk(sample2ChunkOpts(s))),
-        (vf, done) => {
-          if (done) resolve(vf);
-          else vf?.close();
-        },
-      );
+      this.#videoGoPDec?.decode(gop.map(sample2VideoChunk), (vf, done) => {
+        if (done) resolve(vf);
+        else vf?.close();
+      });
     });
   }
 
@@ -338,6 +335,46 @@ export class MP4Clip implements IClip {
     }
   }
 
+  thumbnails(): Promise<Array<{ ts: number; img: Blob }>> {
+    const vdec = this.#videoGoPDec;
+    if (vdec == null) return Promise.resolve([]);
+
+    const { width, height } = this.#meta;
+    const cvs = new OffscreenCanvas(100, Math.round(height * (100 / width)));
+    const ctx = cvs.getContext('2d')!;
+
+    return new Promise<Array<{ ts: number; img: Blob }>>((resolve) => {
+      const pngPromises: Array<{ ts: number; img: Promise<Blob> }> = [];
+      async function resolver() {
+        resolve(
+          await Promise.all(
+            pngPromises.map(async (it) => ({
+              ts: it.ts,
+              img: await it.img,
+            })),
+          ),
+        );
+      }
+
+      vdec.decode(
+        this.#videoSamples
+          .filter((s) => !s.deleted && s.is_sync)
+          .map(sample2VideoChunk),
+        (vf, done) => {
+          if (vf == null) return;
+          ctx.drawImage(vf, 0, 0, 100, cvs.height);
+          pngPromises.push({
+            ts: vf.timestamp,
+            img: cvs.convertToBlob({ quality: 0.1, type: 'image/png' }),
+          });
+          vf.close();
+
+          if (done) resolver();
+        },
+      );
+    });
+  }
+
   destroy(): void {
     if (this.#destroyed) return;
     this.#log.info(
@@ -351,6 +388,10 @@ export class MP4Clip implements IClip {
     this.#videoFrames.forEach((f) => f.close());
     this.#videoFrames = [];
   }
+}
+
+function sample2VideoChunk(s: MP4Sample) {
+  return new EncodedVideoChunk(sample2ChunkOpts(s));
 }
 
 function findGoPSampleByTime(
