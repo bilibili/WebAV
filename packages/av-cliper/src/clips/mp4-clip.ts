@@ -29,6 +29,10 @@ export class MP4Clip implements IClip {
     audioChanCount: DEFAULT_AUDIO_CONF.channelCount,
   };
 
+  get meta() {
+    return this.#meta;
+  }
+
   #volume = 1;
 
   #videoSamples: Array<MP4Sample & { deleted?: boolean }> = [];
