@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import { assetsPrefix } from './utils';
 
 const videos = assetsPrefix({
-  'bunny.mp4': 'video/bunny-avc.mp4',
+  'bunny.mp4': 'video/bunny.mp4',
   'bear.mp4': 'video/bear-vp9.mp4',
 });
 
