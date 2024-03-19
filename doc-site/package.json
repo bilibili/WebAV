@@ -14,11 +14,13 @@
   "devDependencies": {
     "@commitlint/cli": "^17.1.2",
     "@commitlint/config-conventional": "^17.1.0",
+    "@umijs/plugins": "^4.1.2",
     "dumi": "^2.2.13",
     "gh-pages": "^6.1.0",
     "husky": "^8.0.1",
     "lint-staged": "^13.0.3",
-    "prettier": "^2.7.1"
+    "prettier": "^2.7.1",
+    "tailwindcss": "^3.4.1"
   },
   "dependencies": {
     "@webav/av-canvas": "file:../packages/av-canvas",

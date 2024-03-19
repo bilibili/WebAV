@@ -1,6 +1,9 @@
 import { defineConfig } from 'dumi';
 
 export default defineConfig({
+  plugins: ['@umijs/plugins/dist/tailwindcss'],
+  tailwindcss: {}, //在umi中，表示启用该插件
+
   analytics: { ga_v2: 'G-MC335K4KV6' },
   themeConfig: {
     name: 'WebAV',
