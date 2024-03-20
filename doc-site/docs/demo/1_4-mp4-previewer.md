@@ -15,8 +15,7 @@ import { Slider } from 'antd';
 import { MP4Clip } from '@webav/av-cliper';
 import { assetsPrefix } from './utils';
 
-// const videoSrc = assetsPrefix(['video/bunny_0.mp4']);
-const videoSrc = assetsPrefix(['video/webav1.mp4']);
+const videoSrc = assetsPrefix(['video/bunny_0.mp4']);
 
 let clip;
 let mp4Dur;
@@ -33,7 +32,8 @@ function createVF2BlobConvtr(width: number, height: number) {
   const cvs = new OffscreenCanvas(width, height);
   const ctx = cvs.getContext('2d')!;
 
-  return async (vf: VideoFrame) => {
+  return async (vf: VideoFrame | null) => {
+    if (vf == null) return '';
     ctx.drawImage(vf, 0, 0, width, height);
     const pngBlob = await cvs.convertToBlob();
     vf.close();

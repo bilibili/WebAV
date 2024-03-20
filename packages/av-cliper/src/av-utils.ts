@@ -282,9 +282,9 @@ export function createGoPVideoDecoder(conf: VideoDecoderConfig) {
     let i = 0;
     curCb = (vf) => {
       i += 1;
-      const done = i >= t.chunks.length;
-      t.cb(vf, done);
-      if (done) {
+      t.cb(vf, false);
+      if (i >= t.chunks.length) {
+        t.cb(null, true);
         curCb = null;
         run().catch(Log.error);
       }

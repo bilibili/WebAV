@@ -4,6 +4,7 @@ import { extractFileConfig, sample2ChunkOpts } from './mp4box-utils';
 import { file } from 'opfs-tools';
 import { SampleTransform } from './sample-transform';
 
+// !!! Deprecated, use MP4Clip.getVideoFrame
 export class MP4Previewer {
   #ready: Promise<MP4Info>;
 
@@ -94,7 +95,6 @@ export class MP4Previewer {
     if (time > info.duration / info.timescale) return null;
 
     let timeMapping = time * info.timescale;
-    // todo: 二分查找
     let start = 0;
     let end = 0;
     for (let i = 0; i < this.#videoSamples.length; i += 1) {

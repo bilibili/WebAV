@@ -291,18 +291,33 @@ export class MP4Clip implements IClip {
     });
   }
 
-  // fixme: compatible frame type B
   async getVideoFrame(time: number): Promise<VideoFrame | null> {
     if (time < 0 || time > this.#meta.duration) return null;
-    const gop = findGoPSampleByTime(
-      time,
-      [0, this.#videoSamples.length],
-      this.#videoSamples,
-    );
+    const gop = findGoPSampleByTime(time, this.#videoSamples);
+    let finded = false;
+    let lastVf: VideoFrame | null = null;
     return new Promise<VideoFrame | null>((resolve) => {
       this.#videoGoPDec?.decode(gop.map(sample2VideoChunk), (vf, done) => {
-        if (done) resolve(vf);
-        else vf?.close();
+        if (done) resolve(lastVf);
+        if (vf == null) return;
+        if (finded) {
+          vf.close();
+          return;
+        }
+
+        if (time < vf.timestamp) {
+          finded = true;
+          resolve(lastVf);
+          return;
+        }
+
+        lastVf?.close();
+        if (time >= vf.timestamp && time <= vf.timestamp + (vf.duration ?? 0)) {
+          finded = true;
+          resolve(vf);
+        } else {
+          lastVf = vf;
+        }
       });
     });
   }
@@ -409,33 +424,29 @@ function createVF2BlobConvtr(
   };
 }
 
-function findGoPSampleByTime(
-  time: number,
-  range: [number, number],
-  samples: MP4Sample[],
-): MP4Sample[] {
-  const idx = Math.floor((range[1] - range[0]) / 2) + range[0];
-  const s = samples[idx];
-  if (s == null) throw Error('not found GoP');
-
-  const start = s.cts;
-  const end = s.cts + s.duration;
-  if (time >= start && time <= end) {
-    const syncIdx = findLastSyncSampleIdx(idx);
-    return samples.slice(syncIdx, idx);
-  } else if (time < start) {
-    if (idx <= range[0]) return [];
-    return findGoPSampleByTime(time, [0, idx], samples);
-  } else {
-    if (idx > range[1]) return [];
-    return findGoPSampleByTime(time, [idx + 1, range[1]], samples);
-  }
-
-  function findLastSyncSampleIdx(sampleIdx: number) {
-    for (let i = sampleIdx; i >= 0; i--) {
-      if (samples[i].is_sync) return i;
+function findGoPSampleByTime(time: number, samples: MP4Sample[]): MP4Sample[] {
+  let end = -1;
+  let lastSyncIdx = -1;
+  let finded = false;
+  for (let i = 0; i < samples.length; i++) {
+    const s = samples[i];
+    if (s.is_sync) {
+      if (finded) {
+        end = i;
+        break;
+      } else if (time >= s.cts) {
+        lastSyncIdx = i;
+      }
     }
-
-    throw Error('not found sync sample');
+    if (time >= s.cts && time <= s.cts + s.duration) {
+      finded = true;
+      if (s.is_sync) {
+        end = i + 1;
+        break;
+      }
+    }
   }
+  if (lastSyncIdx === -1) return [];
+
+  return samples.slice(lastSyncIdx, end === -1 ? samples.length : end);
 }
