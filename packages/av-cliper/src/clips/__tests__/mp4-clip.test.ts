@@ -47,7 +47,7 @@ test('delete range', async () => {
   await fastestDecode(clip);
   clip.destroy();
 
-  expect(frameCnt).toBe(205);
+  expect(frameCnt).toBe(240);
 });
 
 test('thumbnails', async () => {

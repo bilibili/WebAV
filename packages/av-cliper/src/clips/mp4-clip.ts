@@ -160,30 +160,33 @@ export class MP4Clip implements IClip {
       // todo: 丢弃 cts < time 的 sample
       // 启动解码任务，然后重试
       let endIdx = this.#videoDecCusorIdx + 1;
-      // fixme: 删除的帧 timestamp = -1，不应该计数，避免 B 帧异常
-      let delCnt = 0;
       for (; endIdx < this.#videoSamples.length; endIdx++) {
         // 找一个 GoP，所以是下一个关键帧结束
         const s = this.#videoSamples[endIdx];
         if (s.is_sync) break;
-        if (s.deleted) delCnt += 1;
       }
 
-      if (delCnt < endIdx - this.#videoDecCusorIdx - 1) {
-        const videoGoP = this.#videoSamples
-          .slice(this.#videoDecCusorIdx, endIdx)
-          .map(sample2VideoChunk);
+      const gopSamples = this.#videoSamples.slice(
+        this.#videoDecCusorIdx,
+        endIdx,
+      );
+      // 任意一帧未被删除，则需要解码整个 GoP，兼容 B 帧
+      if (gopSamples.some((s) => !s.deleted)) {
         this.#videoDecoding = true;
-        let discardCnt = delCnt;
-        this.#videoGoPDec?.decode(videoGoP, (vf, done) => {
-          if (discardCnt > 0) {
-            vf?.close();
-            discardCnt -= 1;
-          } else if (vf != null) {
-            this.#videoFrames.push(vf);
-          }
-          if (done) this.#videoDecoding = false;
-        });
+        this.#videoGoPDec?.decode(
+          gopSamples.map(sample2VideoChunk),
+          (vf, done) => {
+            if (vf != null) {
+              // deleted frame
+              if (vf.timestamp === -1) {
+                vf.close();
+              } else {
+                this.#videoFrames.push(vf);
+              }
+            }
+            if (done) this.#videoDecoding = false;
+          },
+        );
       }
       this.#videoDecCusorIdx = endIdx;
     }
