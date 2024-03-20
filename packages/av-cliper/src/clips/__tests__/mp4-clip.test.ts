@@ -7,10 +7,8 @@ async function fastestDecode(clip: MP4Clip) {
   let time = 0;
   while (true) {
     const { state, video } = await clip.tick(time);
+    video?.close();
     if (state === 'done') break;
-    if (video != null && state === 'success') {
-      video.close();
-    }
     time += 33000;
   }
 }
@@ -56,4 +54,12 @@ test('thumbnails', async () => {
   const clip = new MP4Clip((await fetch(mp4_bunny)).body!);
   await clip.ready;
   expect((await clip.thumbnails()).length).toBe(9);
+});
+
+const mp4_bunny_1 = `//${location.host}/video/bunny_1.mp4`;
+test('getVideoFrame', async () => {
+  const clip = new MP4Clip((await fetch(mp4_bunny_1)).body!);
+  await clip.ready;
+  let vf = await clip.getVideoFrame(0);
+  expect(vf).toBe(null);
 });

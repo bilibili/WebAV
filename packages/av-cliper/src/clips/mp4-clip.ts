@@ -160,6 +160,7 @@ export class MP4Clip implements IClip {
       // todo: 丢弃 cts < time 的 sample
       // 启动解码任务，然后重试
       let endIdx = this.#videoDecCusorIdx + 1;
+      // fixme: 删除的帧 timestamp = -1，不应该计数，避免 B 帧异常
       let delCnt = 0;
       for (; endIdx < this.#videoSamples.length; endIdx++) {
         // 找一个 GoP，所以是下一个关键帧结束
@@ -377,13 +378,12 @@ export class MP4Clip implements IClip {
           .filter((s) => !s.deleted && s.is_sync)
           .map(sample2VideoChunk),
         (vf, done) => {
+          if (done) resolver();
           if (vf == null) return;
           pngPromises.push({
             ts: vf.timestamp,
             img: convtr(vf),
           });
-
-          if (done) resolver();
         },
       );
     });
@@ -418,8 +418,8 @@ function createVF2BlobConvtr(
 
   return async (vf: VideoFrame) => {
     ctx.drawImage(vf, 0, 0, width, height);
-    const blob = await cvs.convertToBlob(opts);
     vf.close();
+    const blob = await cvs.convertToBlob(opts);
     return blob;
   };
 }
