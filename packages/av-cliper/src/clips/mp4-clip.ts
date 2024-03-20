@@ -157,24 +157,25 @@ export class MP4Clip implements IClip {
       // decode completed
       return null;
     } else {
-      // todo: 丢弃 cts < time 的 sample
       // 启动解码任务，然后重试
       let endIdx = this.#videoDecCusorIdx + 1;
+      // 该 GoP 时间区间有时间匹配，且未被删除的帧
+      let hasValidFrame = false;
       for (; endIdx < this.#videoSamples.length; endIdx++) {
-        // 找一个 GoP，所以是下一个关键帧结束
         const s = this.#videoSamples[endIdx];
+        if (!hasValidFrame && !s.deleted && time < s.cts + s.duration) {
+          hasValidFrame = true;
+        }
+        // 找一个 GoP，所以是下一个关键帧结束
         if (s.is_sync) break;
       }
 
-      const gopSamples = this.#videoSamples.slice(
-        this.#videoDecCusorIdx,
-        endIdx,
-      );
-      // 任意一帧未被删除，则需要解码整个 GoP，兼容 B 帧
-      if (gopSamples.some((s) => !s.deleted)) {
+      if (hasValidFrame) {
         this.#videoDecoding = true;
         this.#videoGoPDec?.decode(
-          gopSamples.map(sample2VideoChunk),
+          this.#videoSamples
+            .slice(this.#videoDecCusorIdx, endIdx)
+            .map(sample2VideoChunk),
           (vf, done) => {
             if (vf != null) {
               // deleted frame
