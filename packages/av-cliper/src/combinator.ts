@@ -145,7 +145,8 @@ export class Combinator {
     await sprite.ready;
     this.#log.info('Combinator add sprite ready:', sprite.name);
     this.#comItems.push({
-      sprite,
+      sprite: await sprite.clone(),
+      // sprite,
       offset: (opts.offset ?? 0) * 1e6,
       duration: opts.duration == null ? sprite.duration : opts.duration * 1e6,
       main: opts.main ?? false,

@@ -54,6 +54,7 @@ test('thumbnails', async () => {
   const clip = new MP4Clip((await fetch(mp4_bunny)).body!);
   await clip.ready;
   expect((await clip.thumbnails()).length).toBe(9);
+  clip.destroy();
 });
 
 const mp4_bunny_1 = `//${location.host}/video/bunny_1.mp4`;
@@ -62,4 +63,20 @@ test('getVideoFrame', async () => {
   await clip.ready;
   let vf = await clip.getVideoFrame(0);
   expect(vf).toBe(null);
+  clip.destroy();
+});
+
+test('clone mp4clip', async () => {
+  const clip = new MP4Clip((await fetch(mp4_bunny_1)).body!);
+  await clip.ready;
+  clip.deleteRange(0, 10e6);
+  const tickInterceptor = (_, __) => __;
+  clip.tickInterceptor = tickInterceptor;
+
+  const cloned = await clip.clone();
+  expect(cloned.meta).toEqual(clip.meta);
+  expect(cloned.tickInterceptor).toEqual(tickInterceptor);
+
+  cloned.destroy();
+  clip.destroy();
 });

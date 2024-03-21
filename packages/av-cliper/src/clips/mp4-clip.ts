@@ -1,4 +1,5 @@
 import { MP4Info, MP4Sample } from '@webav/mp4box.js';
+import { file } from 'opfs-tools';
 import {
   autoReadStream,
   concatPCMFragments,
@@ -42,90 +43,117 @@ export class MP4Clip implements IClip {
   #videoGoPDec: ReturnType<typeof createGoPVideoDecoder> | null = null;
   #audioChunksDec: ReturnType<typeof createAudioChunksDecoder> | null = null;
 
+  #cacheFile = file(
+    `/.cache/mp4clip/${Date.now()}-${Math.random().toString().slice(-4)}.mp4`,
+  );
+
+  #opts: {
+    audio?: boolean | { volume: number };
+  } = { audio: false };
+
   constructor(
-    rs: ReadableStream<Uint8Array>,
+    source: ReadableStream<Uint8Array>,
     opts: {
       audio?: boolean | { volume: number };
     } = {},
   ) {
-    this.ready = new Promise((resolve, reject) => {
-      this.#volume =
-        typeof opts.audio === 'object' && 'volume' in opts.audio
-          ? opts.audio.volume
-          : 1;
-      // let mp4File: MP4File;
-      let mp4Info: MP4Info;
-      const stopRead = autoReadStream(rs.pipeThrough(new SampleTransform()), {
-        onChunk: async ({ chunkType, data }) => {
-          if (chunkType === 'ready') {
-            this.#log.info('mp4BoxFile is ready', data);
-            // mp4File = data.file;
-            mp4Info = data.info;
-            const { videoDecoderConf, audioDecoderConf } = extractFileConfig(
-              data.file,
-              data.info,
-            );
+    this.#opts = { ...opts };
+    this.#volume =
+      typeof opts.audio === 'object' && 'volume' in opts.audio
+        ? opts.audio.volume
+        : 1;
 
-            if (videoDecoderConf != null) {
-              this.#videoGoPDec = createGoPVideoDecoder(videoDecoderConf);
-            } else {
-              stopRead();
-              reject(
-                Error(
-                  'MP4 file does not include a video track or uses an unsupported codec',
-                ),
+    this.ready = new Promise(async (resolve, reject) => {
+      const writer = await this.#cacheFile.createWriter();
+
+      let mp4Info: MP4Info;
+      const stopRead = autoReadStream(
+        source
+          .pipeThrough(
+            new TransformStream({
+              transform: (data, ctrl) => {
+                ctrl.enqueue(data);
+                writer.write(data.slice(0));
+              },
+              flush: async () => {
+                await writer.flush();
+                await writer.close();
+              },
+            }),
+          )
+          .pipeThrough(new SampleTransform()),
+        {
+          onChunk: async ({ chunkType, data }) => {
+            if (chunkType === 'ready') {
+              this.#log.info('mp4BoxFile is ready', data);
+              // mp4File = data.file;
+              mp4Info = data.info;
+              const { videoDecoderConf, audioDecoderConf } = extractFileConfig(
+                data.file,
+                data.info,
               );
+
+              if (videoDecoderConf != null) {
+                this.#videoGoPDec = createGoPVideoDecoder(videoDecoderConf);
+              } else {
+                stopRead();
+                reject(
+                  Error(
+                    'MP4 file does not include a video track or uses an unsupported codec',
+                  ),
+                );
+              }
+              if (opts.audio && audioDecoderConf != null) {
+                this.#audioChunksDec = createAudioChunksDecoder(
+                  audioDecoderConf,
+                  DEFAULT_AUDIO_CONF.sampleRate,
+                );
+              }
+            } else if (chunkType === 'samples') {
+              if (data.type === 'video') {
+                this.#videoSamples = this.#videoSamples.concat(
+                  data.samples.map((s) => ({
+                    ...s,
+                    cts: (s.cts / s.timescale) * 1e6,
+                    dts: (s.dts / s.timescale) * 1e6,
+                    duration: (s.duration / s.timescale) * 1e6,
+                    timescale: 1e6,
+                  })),
+                );
+              } else if (data.type === 'audio') {
+                this.#audioSamples = this.#audioSamples.concat(
+                  data.samples.map((s) => ({
+                    ...s,
+                    cts: (s.cts / s.timescale) * 1e6,
+                    dts: (s.dts / s.timescale) * 1e6,
+                    duration: (s.duration / s.timescale) * 1e6,
+                    timescale: 1e6,
+                  })),
+                );
+              }
             }
-            if (opts.audio && audioDecoderConf != null) {
-              this.#audioChunksDec = createAudioChunksDecoder(
-                audioDecoderConf,
-                DEFAULT_AUDIO_CONF.sampleRate,
-              );
+          },
+          onDone: () => {
+            const lastSampele = this.#videoSamples.at(-1);
+            if (mp4Info == null || lastSampele == null) {
+              reject(Error('MP4Clip stream is done, but not emit ready'));
+              return;
             }
-          } else if (chunkType === 'samples') {
-            if (data.type === 'video') {
-              this.#videoSamples = this.#videoSamples.concat(
-                data.samples.map((s) => ({
-                  ...s,
-                  cts: (s.cts / s.timescale) * 1e6,
-                  dts: (s.dts / s.timescale) * 1e6,
-                  duration: (s.duration / s.timescale) * 1e6,
-                  timescale: 1e6,
-                })),
-              );
-            } else if (data.type === 'audio') {
-              this.#audioSamples = this.#audioSamples.concat(
-                data.samples.map((s) => ({
-                  ...s,
-                  cts: (s.cts / s.timescale) * 1e6,
-                  dts: (s.dts / s.timescale) * 1e6,
-                  duration: (s.duration / s.timescale) * 1e6,
-                  timescale: 1e6,
-                })),
-              );
-            }
-          }
+            const videoTrack = mp4Info.videoTracks[0];
+            const width = videoTrack.track_width;
+            const height = videoTrack.track_height;
+            const duration = lastSampele.cts + lastSampele.duration;
+            this.#meta = {
+              duration,
+              width,
+              height,
+              audioSampleRate: DEFAULT_AUDIO_CONF.sampleRate,
+              audioChanCount: DEFAULT_AUDIO_CONF.channelCount,
+            };
+            resolve({ duration, width, height });
+          },
         },
-        onDone: () => {
-          const lastSampele = this.#videoSamples.at(-1);
-          if (mp4Info == null || lastSampele == null) {
-            reject(Error('MP4Clip stream is done, but not emit ready'));
-            return;
-          }
-          const videoTrack = mp4Info.videoTracks[0];
-          const width = videoTrack.track_width;
-          const height = videoTrack.track_height;
-          const duration = lastSampele.cts + lastSampele.duration;
-          this.#meta = {
-            duration,
-            width,
-            height,
-            audioSampleRate: DEFAULT_AUDIO_CONF.sampleRate,
-            audioChanCount: DEFAULT_AUDIO_CONF.channelCount,
-          };
-          resolve({ duration, width, height });
-        },
-      });
+      );
     });
   }
 
@@ -136,17 +164,17 @@ export class MP4Clip implements IClip {
     if (this.#destroyed) return null;
 
     if (this.#videoFrames.length > 0) {
-      const rs = this.#videoFrames[0];
-      if (time < rs.timestamp) return null;
+      const vf = this.#videoFrames[0];
+      if (time < vf.timestamp) return null;
       // 弹出第一帧
       this.#videoFrames.shift();
       // 第一帧过期，找下一帧
-      if (time > rs.timestamp + (rs.duration ?? 0)) {
-        rs.close();
+      if (time > vf.timestamp + (vf.duration ?? 0)) {
+        vf.close();
         return this.#nextVideo(time);
       }
       // 符合期望
-      return rs;
+      return vf;
     }
 
     // 缺少帧数据
@@ -259,8 +287,7 @@ export class MP4Clip implements IClip {
   }
 
   // 默认直接返回
-  tickInterceptor: NonNullable<IClip['tickInterceptor']> = async (_, tickRet) =>
-    tickRet;
+  tickInterceptor = async (_: number, tickRet: any) => tickRet;
 
   // last tick time
   #ts = 0;
@@ -271,7 +298,7 @@ export class MP4Clip implements IClip {
   }> {
     if (time < this.#ts) throw Error('time not allow rollback');
     if (time >= this.#meta.duration) {
-      return await this.tickInterceptor<MP4Clip>(time, {
+      return await this.tickInterceptor(time, {
         audio: [],
         state: 'done',
       });
@@ -283,13 +310,13 @@ export class MP4Clip implements IClip {
     ]);
     this.#ts = time;
     if (video == null) {
-      return await this.tickInterceptor<MP4Clip>(time, {
+      return await this.tickInterceptor(time, {
         audio,
         state: 'success',
       });
     }
 
-    return await this.tickInterceptor<MP4Clip>(time, {
+    return await this.tickInterceptor(time, {
       video,
       audio,
       state: 'success',
@@ -393,6 +420,16 @@ export class MP4Clip implements IClip {
     });
   }
 
+  async clone() {
+    const clip = new MP4Clip(await this.#cacheFile.stream(), this.#opts);
+    await clip.ready;
+    clip.#meta = { ...this.#meta };
+    clip.#audioSamples = [...this.#audioSamples];
+    clip.#videoFrames = [...this.#videoFrames];
+    clip.tickInterceptor = this.tickInterceptor;
+    return clip as this;
+  }
+
   destroy(): void {
     if (this.#destroyed) return;
     this.#log.info(
@@ -402,6 +439,7 @@ export class MP4Clip implements IClip {
       this.#videoFrames.length,
     );
     this.#destroyed = true;
+    this.#cacheFile.remove().catch(this.#log.error);
 
     this.#videoFrames.forEach((f) => f.close());
     this.#videoFrames = [];
