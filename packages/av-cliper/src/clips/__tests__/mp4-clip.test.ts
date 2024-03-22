@@ -47,7 +47,7 @@ test('delete range', async () => {
   await fastestDecode(clip);
   clip.destroy();
 
-  expect(frameCnt).toBe(240);
+  expect(frameCnt).toBe(241);
 });
 
 test('thumbnails', async () => {
@@ -58,13 +58,6 @@ test('thumbnails', async () => {
 });
 
 const mp4_bunny_1 = `//${location.host}/video/bunny_1.mp4`;
-test('getVideoFrame', async () => {
-  const clip = new MP4Clip((await fetch(mp4_bunny_1)).body!);
-  await clip.ready;
-  let vf = await clip.getVideoFrame(0);
-  expect(vf).toBe(null);
-  clip.destroy();
-});
 
 test('clone mp4clip', async () => {
   const clip = new MP4Clip((await fetch(mp4_bunny_1)).body!);

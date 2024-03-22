@@ -4,7 +4,6 @@ import {
   autoReadStream,
   concatPCMFragments,
   createAudioChunksDecoder,
-  createGoPVideoDecoder,
   sleep,
 } from '../av-utils';
 import { Log } from '../log';
@@ -40,8 +39,16 @@ export class MP4Clip implements IClip {
 
   #audioSamples: Array<MP4Sample & { deleted?: boolean }> = [];
 
-  #videoGoPDec: ReturnType<typeof createGoPVideoDecoder> | null = null;
   #audioChunksDec: ReturnType<typeof createAudioChunksDecoder> | null = null;
+  #videoTicker: VideoFrameTicker | null = null;
+
+  #decoderConf: {
+    video: VideoDecoderConfig | null;
+    audio: AudioDecoderConfig | null;
+  } = {
+    video: null,
+    audio: null,
+  };
 
   #cacheFile = file(
     `/.cache/mp4clip/${Date.now()}-${Math.random().toString().slice(-4)}.mp4`,
@@ -88,14 +95,11 @@ export class MP4Clip implements IClip {
               this.#log.info('mp4BoxFile is ready', data);
               // mp4File = data.file;
               mp4Info = data.info;
-              const { videoDecoderConf, audioDecoderConf } = extractFileConfig(
-                data.file,
-                data.info,
-              );
-
-              if (videoDecoderConf != null) {
-                this.#videoGoPDec = createGoPVideoDecoder(videoDecoderConf);
-              } else {
+              let { videoDecoderConf: vc, audioDecoderConf: ac } =
+                extractFileConfig(data.file, data.info);
+              this.#decoderConf.video = vc ?? null;
+              this.#decoderConf.audio = ac ?? null;
+              if (vc == null) {
                 stopRead();
                 reject(
                   Error(
@@ -103,9 +107,9 @@ export class MP4Clip implements IClip {
                   ),
                 );
               }
-              if (opts.audio && audioDecoderConf != null) {
+              if (opts.audio && this.#decoderConf.audio != null) {
                 this.#audioChunksDec = createAudioChunksDecoder(
-                  audioDecoderConf,
+                  this.#decoderConf.audio,
                   DEFAULT_AUDIO_CONF.sampleRate,
                 );
               }
@@ -135,10 +139,18 @@ export class MP4Clip implements IClip {
           },
           onDone: () => {
             const lastSampele = this.#videoSamples.at(-1);
-            if (mp4Info == null || lastSampele == null) {
+            if (
+              mp4Info == null ||
+              lastSampele == null ||
+              this.#decoderConf.video == null
+            ) {
               reject(Error('MP4Clip stream is done, but not emit ready'));
               return;
             }
+            this.#videoTicker = new VideoFrameTicker(
+              this.#videoSamples,
+              this.#decoderConf.video,
+            );
             const videoTrack = mp4Info.videoTracks[0];
             const width = videoTrack.track_width;
             const height = videoTrack.track_height;
@@ -155,71 +167,6 @@ export class MP4Clip implements IClip {
         },
       );
     });
-  }
-
-  #videoDecoding = false;
-  #videoDecCusorIdx = 0;
-  #videoFrames: VideoFrame[] = [];
-  async #nextVideo(time: number): Promise<VideoFrame | null> {
-    if (this.#destroyed) return null;
-
-    if (this.#videoFrames.length > 0) {
-      const vf = this.#videoFrames[0];
-      if (time < vf.timestamp) return null;
-      // 弹出第一帧
-      this.#videoFrames.shift();
-      // 第一帧过期，找下一帧
-      if (time > vf.timestamp + (vf.duration ?? 0)) {
-        vf.close();
-        return this.#nextVideo(time);
-      }
-      // 符合期望
-      return vf;
-    }
-
-    // 缺少帧数据
-    if (this.#videoDecoding) {
-      // 解码中，等待，然后重试
-      await sleep(15);
-    } else if (this.#videoDecCusorIdx >= this.#videoSamples.length) {
-      // decode completed
-      return null;
-    } else {
-      // 启动解码任务，然后重试
-      let endIdx = this.#videoDecCusorIdx + 1;
-      // 该 GoP 时间区间有时间匹配，且未被删除的帧
-      let hasValidFrame = false;
-      for (; endIdx < this.#videoSamples.length; endIdx++) {
-        const s = this.#videoSamples[endIdx];
-        if (!hasValidFrame && !s.deleted && time < s.cts + s.duration) {
-          hasValidFrame = true;
-        }
-        // 找一个 GoP，所以是下一个关键帧结束
-        if (s.is_sync) break;
-      }
-
-      if (hasValidFrame) {
-        this.#videoDecoding = true;
-        this.#videoGoPDec?.decode(
-          this.#videoSamples
-            .slice(this.#videoDecCusorIdx, endIdx)
-            .map(sample2VideoChunk),
-          (vf, done) => {
-            if (vf != null) {
-              // deleted frame
-              if (vf.timestamp === -1) {
-                vf.close();
-              } else {
-                this.#videoFrames.push(vf);
-              }
-            }
-            if (done) this.#videoDecoding = false;
-          },
-        );
-      }
-      this.#videoDecCusorIdx = endIdx;
-    }
-    return this.#nextVideo(time);
   }
 
   #pcmData: [Float32Array, Float32Array] = [
@@ -289,14 +236,12 @@ export class MP4Clip implements IClip {
   // 默认直接返回
   tickInterceptor = async (_: number, tickRet: any) => tickRet;
 
-  // last tick time
   #ts = 0;
   async tick(time: number): Promise<{
     video?: VideoFrame;
     audio: Float32Array[];
     state: 'success' | 'done';
   }> {
-    if (time < this.#ts) throw Error('time not allow rollback');
     if (time >= this.#meta.duration) {
       return await this.tickInterceptor(time, {
         audio: [],
@@ -306,7 +251,7 @@ export class MP4Clip implements IClip {
 
     const [audio, video] = await Promise.all([
       this.#nextAudio(time - this.#ts),
-      this.#nextVideo(time),
+      this.#videoTicker?.tick(time),
     ]);
     this.#ts = time;
     if (video == null) {
@@ -320,37 +265,6 @@ export class MP4Clip implements IClip {
       video,
       audio,
       state: 'success',
-    });
-  }
-
-  async getVideoFrame(time: number): Promise<VideoFrame | null> {
-    if (time < 0 || time > this.#meta.duration) return null;
-    const gop = findGoPSampleByTime(time, this.#videoSamples);
-    let finded = false;
-    let lastVf: VideoFrame | null = null;
-    return new Promise<VideoFrame | null>((resolve) => {
-      this.#videoGoPDec?.decode(gop.map(sample2VideoChunk), (vf, done) => {
-        if (done) resolve(lastVf);
-        if (vf == null) return;
-        if (finded) {
-          vf.close();
-          return;
-        }
-
-        if (time < vf.timestamp) {
-          finded = true;
-          resolve(lastVf);
-          return;
-        }
-
-        lastVf?.close();
-        if (time >= vf.timestamp && time <= vf.timestamp + (vf.duration ?? 0)) {
-          finded = true;
-          resolve(vf);
-        } else {
-          lastVf = vf;
-        }
-      });
     });
   }
 
@@ -381,8 +295,8 @@ export class MP4Clip implements IClip {
   }
 
   thumbnails(): Promise<Array<{ ts: number; img: Blob }>> {
-    const vdec = this.#videoGoPDec;
-    if (vdec == null) return Promise.resolve([]);
+    const vc = this.#decoderConf.video;
+    if (vc == null) return Promise.resolve([]);
 
     const { width, height } = this.#meta;
     const convtr = createVF2BlobConvtr(
@@ -391,7 +305,7 @@ export class MP4Clip implements IClip {
       { quality: 0.1, type: 'image/png' },
     );
 
-    return new Promise<Array<{ ts: number; img: Blob }>>((resolve) => {
+    return new Promise<Array<{ ts: number; img: Blob }>>(async (resolve) => {
       const pngPromises: Array<{ ts: number; img: Promise<Blob> }> = [];
       async function resolver() {
         resolve(
@@ -404,19 +318,31 @@ export class MP4Clip implements IClip {
         );
       }
 
-      vdec.decode(
-        this.#videoSamples
-          .filter((s) => !s.deleted && s.is_sync)
-          .map(sample2VideoChunk),
-        (vf, done) => {
-          if (done) resolver();
-          if (vf == null) return;
+      const samples = this.#videoSamples
+        .filter((s) => !s.deleted && s.is_sync)
+        .map(sample2VideoChunk);
+      if (samples.length === 0) {
+        resolver();
+        return;
+      }
+
+      let cnt = 0;
+      const dec = new VideoDecoder({
+        output: (vf) => {
+          cnt += 1;
           pngPromises.push({
             ts: vf.timestamp,
             img: convtr(vf),
           });
+          if (cnt === samples.length) resolver();
         },
-      );
+        error: Log.error,
+      });
+      dec.configure(vc);
+      samples.forEach((c) => {
+        dec.decode(c);
+      });
+      await dec.flush();
     });
   }
 
@@ -432,18 +358,129 @@ export class MP4Clip implements IClip {
 
   destroy(): void {
     if (this.#destroyed) return;
-    this.#log.info(
-      'MP4Clip destroy, ts:',
-      this.#ts,
-      ', remainder frame count:',
-      this.#videoFrames.length,
-    );
+    this.#log.info('MP4Clip destroy, ts:', this.#ts);
     this.#destroyed = true;
     this.#cacheFile.remove().catch(this.#log.error);
 
+    this.#videoTicker?.destroy();
+  }
+}
+
+class VideoFrameTicker {
+  #dec!: VideoDecoder;
+  constructor(
+    public samples: Array<MP4Sample & { deleted?: boolean }>,
+    public conf: VideoDecoderConfig,
+  ) {
+    this.#reset();
+  }
+
+  #ts = 0;
+  #videoDecCusorIdx = 0;
+  #videoFrames: VideoFrame[] = [];
+  #outputFrameCnt = 0;
+  #inputChunkCnt = 0;
+  #parseFrame = async (
+    time: number,
+    dec: VideoDecoder,
+    aborter: { abort: boolean },
+  ): Promise<VideoFrame | null> => {
+    if (dec.state === 'closed' || aborter.abort) return null;
+
+    if (this.#videoFrames.length > 0) {
+      const vf = this.#videoFrames[0];
+      if (time < vf.timestamp) return null;
+      // 弹出第一帧
+      this.#videoFrames.shift();
+      // 第一帧过期，找下一帧
+      if (time > vf.timestamp + (vf.duration ?? 0)) {
+        vf.close();
+        return this.#parseFrame(time, dec, aborter);
+      }
+      // 符合期望
+      return vf;
+    }
+
+    // 缺少帧数据
+    if (this.#outputFrameCnt < this.#inputChunkCnt) {
+      // 解码中，等待，然后重试
+      await sleep(15);
+    } else if (this.#videoDecCusorIdx >= this.samples.length) {
+      // decode completed
+      return null;
+    } else {
+      // 启动解码任务，然后重试
+      let endIdx = this.#videoDecCusorIdx + 1;
+      // 该 GoP 时间区间有时间匹配，且未被删除的帧
+      let hasValidFrame = false;
+      for (; endIdx < this.samples.length; endIdx++) {
+        const s = this.samples[endIdx];
+        if (!hasValidFrame && !s.deleted && time < s.cts + s.duration) {
+          hasValidFrame = true;
+        }
+        // 找一个 GoP，所以是下一个关键帧结束
+        if (s.is_sync) break;
+      }
+
+      if (hasValidFrame) {
+        const chunks = this.samples
+          .slice(this.#videoDecCusorIdx, endIdx)
+          .map(sample2VideoChunk);
+        this.#inputChunkCnt += chunks.length;
+        chunks.forEach((c) => {
+          dec.decode(c);
+        });
+        dec.flush().catch(Log.error);
+      }
+      this.#videoDecCusorIdx = endIdx;
+    }
+    return this.#parseFrame(time, dec, aborter);
+  };
+
+  #destroyed = false;
+  #curAborter = { abort: false };
+  tick = async (time: number): Promise<VideoFrame | null> => {
+    if (this.#destroyed) return null;
+    if (time < this.#ts || time - this.#ts > 3e6) {
+      this.#reset();
+    }
+
+    this.#curAborter.abort = true;
+    this.#ts = time;
+
+    return new Promise(async (reslove) => {
+      this.#curAborter = { abort: false };
+      reslove(await this.#parseFrame(time, this.#dec, this.#curAborter));
+    });
+  };
+
+  #reset = () => {
     this.#videoFrames.forEach((f) => f.close());
     this.#videoFrames = [];
-  }
+    this.#videoDecCusorIdx = 0;
+    this.#inputChunkCnt = 0;
+    this.#outputFrameCnt = 0;
+    try {
+      this.#dec?.close();
+    } catch (error) {
+      Log.error(error);
+    }
+    this.#dec = new VideoDecoder({
+      output: (vf) => {
+        this.#outputFrameCnt += 1;
+        this.#videoFrames.push(vf);
+      },
+      error: Log.error,
+    });
+    this.#dec.configure(this.conf);
+  };
+
+  destroy = () => {
+    this.#destroyed = true;
+    this.#curAborter.abort = true;
+    this.#videoFrames.forEach((f) => f.close());
+    this.#videoFrames = [];
+  };
 }
 
 function sample2VideoChunk(s: MP4Sample) {
