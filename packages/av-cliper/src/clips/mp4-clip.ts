@@ -425,7 +425,7 @@ export class MP4Clip implements IClip {
     await clip.ready;
     clip.#meta = { ...this.#meta };
     clip.#audioSamples = [...this.#audioSamples];
-    clip.#videoFrames = [...this.#videoFrames];
+    clip.#videoSamples = [...this.#videoSamples];
     clip.tickInterceptor = this.tickInterceptor;
     return clip as this;
   }
