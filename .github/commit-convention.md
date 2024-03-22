@@ -15,7 +15,7 @@ Messages must be matched by the following regex:
 Appears under "Features" header, `av-canvas` subheader:
 
 ```
-feat(av-canvas): add 'comments' option
+feat(av-canvas): add 'video-sprite' feature
 ```
 
 Appears under "Bug Fixes" header, `event-tool` subheader, with a link to issue #00:
@@ -37,7 +37,7 @@ BREAKING CHANGE: The performance enhancement now relies on WebGL.
 The following commit and commit `667ecc1` do not appear in the changelog if they are under the same release. If not, the revert commit appears under the "Reverts" header.
 
 ```
-revert: feat(av-canvas): add 'comments' option
+revert: feat(av-canvas): add 'video-sprite' feature
 
 This reverts commit 667ecc1654a317a13331b17617d973392f415f02.
 ```

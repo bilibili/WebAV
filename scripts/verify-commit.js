@@ -1,8 +1,8 @@
 import pico from 'picocolors';
 import { readFileSync } from 'node:fs';
-import path from 'node:path';
+import { resolve } from 'node:path';
 
-const msgPath = path.resolve('.git/COMMIT_EDITMSG');
+const msgPath = resolve('.git/COMMIT_EDITMSG');
 const msg = readFileSync(msgPath, 'utf-8').trim();
 
 const commitRE =
@@ -17,7 +17,7 @@ if (!commitRE.test(msg)) {
       pico.red(
         `  Proper commit message format is required for automated changelog generation. Examples:\n\n`,
       ) +
-      `    ${pico.green(`feat(av-canvas): add 'comments' option`)}\n` +
+      `    ${pico.green(`feat(av-canvas): add 'video-sprite' feature`)}\n` +
       `    ${pico.green(
         `fix(event-tool): clear listeners on listener interface (close #00)`,
       )}\n\n` +
