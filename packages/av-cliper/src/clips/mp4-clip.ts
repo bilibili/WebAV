@@ -1,5 +1,4 @@
 import { MP4Info, MP4Sample } from '@webav/mp4box.js';
-import { file } from 'opfs-tools';
 import {
   autoReadStream,
   concatPCMFragments,
@@ -13,6 +12,10 @@ import { DEFAULT_AUDIO_CONF, IClip } from './iclip';
 
 let CLIP_ID = 0;
 
+type MPClipCloneArgs = Omit<
+  Awaited<ReturnType<typeof parseMP4Stream>>,
+  'videoTicker'
+>;
 export class MP4Clip implements IClip {
   #log = Log.create(`MP4Clip id:${CLIP_ID++},`);
 
@@ -50,16 +53,12 @@ export class MP4Clip implements IClip {
     audio: null,
   };
 
-  #cacheFile = file(
-    `/.cache/mp4clip/${Date.now()}-${Math.random().toString().slice(-4)}.mp4`,
-  );
-
   #opts: {
     audio?: boolean | { volume: number };
   } = { audio: false };
 
   constructor(
-    source: ReadableStream<Uint8Array>,
+    source: ReadableStream<Uint8Array> | MPClipCloneArgs,
     opts: {
       audio?: boolean | { volume: number };
     } = {},
@@ -70,103 +69,37 @@ export class MP4Clip implements IClip {
         ? opts.audio.volume
         : 1;
 
-    this.ready = new Promise(async (resolve, reject) => {
-      const writer = await this.#cacheFile.createWriter();
-
-      let mp4Info: MP4Info;
-      const stopRead = autoReadStream(
-        source
-          .pipeThrough(
-            new TransformStream({
-              transform: (data, ctrl) => {
-                ctrl.enqueue(data);
-                writer.write(data.slice(0));
-              },
-              flush: async () => {
-                await writer.flush();
-                await writer.close();
-              },
-            }),
-          )
-          .pipeThrough(new SampleTransform()),
-        {
-          onChunk: async ({ chunkType, data }) => {
-            if (chunkType === 'ready') {
-              this.#log.info('mp4BoxFile is ready', data);
-              // mp4File = data.file;
-              mp4Info = data.info;
-              let { videoDecoderConf: vc, audioDecoderConf: ac } =
-                extractFileConfig(data.file, data.info);
-              this.#decoderConf.video = vc ?? null;
-              this.#decoderConf.audio = ac ?? null;
-              if (vc == null) {
-                stopRead();
-                reject(
-                  Error(
-                    'MP4 file does not include a video track or uses an unsupported codec',
-                  ),
-                );
-              }
-              if (opts.audio && this.#decoderConf.audio != null) {
-                this.#audioChunksDec = createAudioChunksDecoder(
-                  this.#decoderConf.audio,
-                  DEFAULT_AUDIO_CONF.sampleRate,
-                );
-              }
-            } else if (chunkType === 'samples') {
-              if (data.type === 'video') {
-                this.#videoSamples = this.#videoSamples.concat(
-                  data.samples.map((s) => ({
-                    ...s,
-                    cts: (s.cts / s.timescale) * 1e6,
-                    dts: (s.dts / s.timescale) * 1e6,
-                    duration: (s.duration / s.timescale) * 1e6,
-                    timescale: 1e6,
-                  })),
-                );
-              } else if (data.type === 'audio') {
-                this.#audioSamples = this.#audioSamples.concat(
-                  data.samples.map((s) => ({
-                    ...s,
-                    cts: (s.cts / s.timescale) * 1e6,
-                    dts: (s.dts / s.timescale) * 1e6,
-                    duration: (s.duration / s.timescale) * 1e6,
-                    timescale: 1e6,
-                  })),
-                );
-              }
-            }
-          },
-          onDone: () => {
-            const lastSampele = this.#videoSamples.at(-1);
-            if (
-              mp4Info == null ||
-              lastSampele == null ||
-              this.#decoderConf.video == null
-            ) {
-              reject(Error('MP4Clip stream is done, but not emit ready'));
-              return;
-            }
-            this.#videoTicker = new VideoFrameTicker(
-              this.#videoSamples,
-              this.#decoderConf.video,
-            );
-            const videoTrack = mp4Info.videoTracks[0];
-            const width = videoTrack.track_width;
-            const height = videoTrack.track_height;
-            const duration = lastSampele.cts + lastSampele.duration;
-            this.#meta = {
-              duration,
-              width,
-              height,
-              audioSampleRate: DEFAULT_AUDIO_CONF.sampleRate,
-              audioChanCount: DEFAULT_AUDIO_CONF.channelCount,
-            };
-            resolve({ duration, width, height });
-          },
+    if (source instanceof ReadableStream) {
+      this.ready = parseMP4Stream(source, this.#opts).then(
+        ({
+          audioChunksDec,
+          videoSamples,
+          audioSamples,
+          videoTicker,
+          decoderConf,
+          meta,
+        }) => {
+          this.#audioChunksDec = audioChunksDec;
+          this.#videoSamples = videoSamples;
+          this.#audioSamples = audioSamples;
+          this.#decoderConf = decoderConf;
+          this.#videoTicker = videoTicker;
+          this.#meta = meta;
+          return meta;
         },
       );
-    });
+    } else {
+      this.#audioChunksDec = source.audioChunksDec;
+      this.#videoSamples = source.videoSamples;
+      this.#audioSamples = source.audioSamples;
+      this.#decoderConf = source.decoderConf;
+      this.#videoTicker = new VideoFrameTicker(
+        source.videoSamples,
+        source.decoderConf.video!,
+      );
+      this.#meta = source.meta;
+      this.ready = Promise.resolve(this.meta);
+    }
   }
 
   #pcmData: [Float32Array, Float32Array] = [
@@ -347,11 +280,19 @@ export class MP4Clip implements IClip {
   }
 
   async clone() {
-    const clip = new MP4Clip(await this.#cacheFile.stream(), this.#opts);
+    await this.ready;
+    const videoSamples = [...this.#videoSamples];
+    const clip = new MP4Clip(
+      {
+        audioChunksDec: this.#audioChunksDec,
+        videoSamples: videoSamples,
+        audioSamples: [...this.#audioSamples],
+        decoderConf: this.#decoderConf,
+        meta: { ...this.#meta },
+      },
+      this.#opts,
+    );
     await clip.ready;
-    clip.#meta = { ...this.#meta };
-    clip.#audioSamples = [...this.#audioSamples];
-    clip.#videoSamples = [...this.#videoSamples];
     clip.tickInterceptor = this.tickInterceptor;
     return clip as this;
   }
@@ -360,10 +301,121 @@ export class MP4Clip implements IClip {
     if (this.#destroyed) return;
     this.#log.info('MP4Clip destroy, ts:', this.#ts);
     this.#destroyed = true;
-    this.#cacheFile.remove().catch(this.#log.error);
 
     this.#videoTicker?.destroy();
   }
+}
+
+async function parseMP4Stream(
+  source: ReadableStream<Uint8Array>,
+  opts: {
+    audio?: boolean | { volume: number };
+  } = {},
+) {
+  let mp4Info: MP4Info;
+  const decoderConf: {
+    video: VideoDecoderConfig | null;
+    audio: AudioDecoderConfig | null;
+  } = { video: null, audio: null };
+  let audioChunksDec: ReturnType<typeof createAudioChunksDecoder> | null = null;
+  let videoSamples: Array<MP4Sample & { deleted?: boolean }> = [];
+  let audioSamples: Array<MP4Sample & { deleted?: boolean }> = [];
+  let meta = {
+    // 微秒
+    duration: 0,
+    width: 0,
+    height: 0,
+    audioSampleRate: DEFAULT_AUDIO_CONF.sampleRate,
+    audioChanCount: DEFAULT_AUDIO_CONF.channelCount,
+  };
+  return new Promise<{
+    audioChunksDec: ReturnType<typeof createAudioChunksDecoder> | null;
+    videoSamples: typeof videoSamples;
+    audioSamples: typeof audioSamples;
+    videoTicker: VideoFrameTicker;
+    decoderConf: typeof decoderConf;
+    meta: typeof meta;
+  }>(async (resolve, reject) => {
+    const stopRead = autoReadStream(source.pipeThrough(new SampleTransform()), {
+      onChunk: async ({ chunkType, data }) => {
+        if (chunkType === 'ready') {
+          Log.info('mp4BoxFile is ready', data);
+          // mp4File = data.file;
+          mp4Info = data.info;
+          let { videoDecoderConf: vc, audioDecoderConf: ac } =
+            extractFileConfig(data.file, data.info);
+          decoderConf.video = vc ?? null;
+          decoderConf.audio = ac ?? null;
+          if (vc == null) {
+            stopRead();
+            reject(
+              Error(
+                'MP4 file does not include a video track or uses an unsupported codec',
+              ),
+            );
+          }
+          if (opts.audio && decoderConf.audio != null) {
+            audioChunksDec = createAudioChunksDecoder(
+              decoderConf.audio,
+              DEFAULT_AUDIO_CONF.sampleRate,
+            );
+          }
+        } else if (chunkType === 'samples') {
+          if (data.type === 'video') {
+            videoSamples = videoSamples.concat(
+              data.samples.map((s) => ({
+                ...s,
+                cts: (s.cts / s.timescale) * 1e6,
+                dts: (s.dts / s.timescale) * 1e6,
+                duration: (s.duration / s.timescale) * 1e6,
+                timescale: 1e6,
+              })),
+            );
+          } else if (data.type === 'audio') {
+            audioSamples = audioSamples.concat(
+              data.samples.map((s) => ({
+                ...s,
+                cts: (s.cts / s.timescale) * 1e6,
+                dts: (s.dts / s.timescale) * 1e6,
+                duration: (s.duration / s.timescale) * 1e6,
+                timescale: 1e6,
+              })),
+            );
+          }
+        }
+      },
+      onDone: () => {
+        const lastSampele = videoSamples.at(-1);
+        if (
+          mp4Info == null ||
+          lastSampele == null ||
+          decoderConf.video == null
+        ) {
+          reject(Error('MP4Clip stream is done, but not emit ready'));
+          return;
+        }
+        const videoTrack = mp4Info.videoTracks[0];
+        const width = videoTrack.track_width;
+        const height = videoTrack.track_height;
+        const duration = lastSampele.cts + lastSampele.duration;
+        meta = {
+          duration,
+          width,
+          height,
+          audioSampleRate: DEFAULT_AUDIO_CONF.sampleRate,
+          audioChanCount: DEFAULT_AUDIO_CONF.channelCount,
+        };
+        resolve({
+          audioChunksDec,
+          videoSamples,
+          audioSamples,
+          videoTicker: new VideoFrameTicker(videoSamples, decoderConf.video),
+          decoderConf,
+          meta,
+        });
+      },
+    });
+  });
 }
 
 class VideoFrameTicker {
