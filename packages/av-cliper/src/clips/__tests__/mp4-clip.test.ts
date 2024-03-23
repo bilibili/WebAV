@@ -73,3 +73,11 @@ test('clone mp4clip', async () => {
   cloned.destroy();
   clip.destroy();
 });
+
+test('preview frame by time', async () => {
+  const clip = new MP4Clip((await fetch(mp4_bunny_1)).body!);
+  await clip.ready;
+  expect((await clip.tick(1e6)).video?.timestamp).toBe(1e6);
+  expect((await clip.tick(1e6)).video?.timestamp).toBe(1e6);
+  clip.destroy();
+});

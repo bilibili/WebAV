@@ -493,7 +493,7 @@ class VideoFrameTicker {
   #curAborter = { abort: false };
   tick = async (time: number): Promise<VideoFrame | null> => {
     if (this.#destroyed) return null;
-    if (time < this.#ts || time - this.#ts > 3e6) {
+    if (time <= this.#ts || time - this.#ts > 3e6) {
       this.#reset();
     }
 
