@@ -9,9 +9,8 @@ const commitRE =
   /^(revert: )?(feat|fix|docs|dx|style|refactor|perf|test|workflow|build|ci|chore|types|wip|release)(\(.+\))?: .+/;
 
 if (!commitRE.test(msg)) {
-  console.log();
   console.error(
-    `  ${pico.white(pico.bgRed(' ERROR '))} ${pico.red(
+    `\n  ${pico.white(pico.bgRed(' ERROR '))} ${pico.red(
       `invalid commit message format.`,
     )}\n\n` +
       pico.red(
