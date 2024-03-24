@@ -25,8 +25,8 @@
     "pre-commit": "yarn lint-staged"
   },
   "lint-staged": {
-    "*": [
-      "prettier --write --ignore-unknown"
+    "*.{json,ts,tsx,js,md}": [
+      "prettier --write"
     ]
   }
 }
