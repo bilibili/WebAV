@@ -38,16 +38,16 @@ test('delete range', async () => {
   const { duration } = await clip.ready;
   // 时长 60s
   expect(Math.round(duration / 1e6)).toBe(60);
-  // 删除前 25s
+  // 删除前 25s, 剩余 35s
   clip.deleteRange(0, 25e6);
-  // 删除后 25s
-  clip.deleteRange(10e6, 35e6);
+  // 删除 10s 后的 50s(超出视频长度)，实际删除 10～35s
+  clip.deleteRange(10e6, 50e6);
   // 剩余 10s
   expect(Math.round(clip.meta.duration / 1e6)).toBe(10);
   await fastestDecode(clip);
   clip.destroy();
 
-  expect(frameCnt).toBe(241);
+  expect(frameCnt).toBe(240);
 });
 
 test('thumbnails', async () => {

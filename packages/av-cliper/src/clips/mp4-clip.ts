@@ -208,6 +208,12 @@ export class MP4Clip implements IClip {
     _del(this.#videoSamples, startTime, endTime);
     _del(this.#audioSamples, startTime, endTime);
     this.#meta.duration -= endTime - startTime;
+    for (let i = this.#videoSamples.length - 1; i >= 0; i--) {
+      const s = this.#videoSamples[i];
+      if (s.deleted) continue;
+      this.#meta.duration = s.cts + s.duration;
+      break;
+    }
 
     function _del(
       samples: Array<MP4Sample & { deleted?: boolean }>,

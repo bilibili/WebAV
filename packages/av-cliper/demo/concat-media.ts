@@ -82,12 +82,17 @@ document.querySelector('#mp4-img')?.addEventListener('click', () => {
 
 document.querySelector('#mp4-mp3')?.addEventListener('click', () => {
   (async () => {
-    const resList = ['./video/webav1.mp4', './audio/44.1kHz-2chan.mp3'];
+    const resList = ['./video/bunny_0.mp4', './audio/44.1kHz-2chan.mp3'];
     const { loadStream } = playOutputStream(resList, playerContiner);
 
-    // const resp1 = await fetch('./video/pri-bunny_avc_frag.mp4')
     const resp1 = await fetch(resList[0]);
-    const spr1 = new OffscreenSprite('spr1', new MP4Clip(resp1.body!));
+    const mp4Clip = new MP4Clip(resp1.body!);
+    await mp4Clip.ready;
+    // mp4Clip.deleteRange(10e6, 15e6);
+    const spr1 = new OffscreenSprite('spr1', mp4Clip);
+    await spr1.ready;
+    spr1.rect.w = 1280;
+    spr1.rect.h = 720;
 
     const resp2 = await fetch(resList[1]);
     const spr2 = new OffscreenSprite(
@@ -101,7 +106,7 @@ document.querySelector('#mp4-mp3')?.addEventListener('click', () => {
       width: 1280,
       height: 720,
     });
-    await com.add(spr1, { duration: 10, main: true });
+    await com.add(spr1, { main: true });
     await com.add(spr2);
 
     await loadStream(com.output(), com);
