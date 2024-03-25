@@ -94,10 +94,16 @@ This repo uses lerna + yarn to manage packages.
 
 若你有意贡献代码，建议先跟通过 Github Issue、Discussions、微信（`liujun_fenghen`）与作者讨论
 
+## Sponsor 赞助
+
+如果该项目对你有帮助，扫描二维码请作者喝奶茶 ：）   
+If this project has been helpful to you, please scan the QR code to treat the author to a milk tea ：）
+
+<img src="https://github.com/hughfenghen/WebAV/assets/3307051/4b25836a-3f85-4160-b0bf-6c8360fad9a4" width=200 />
+<img src="https://github.com/hughfenghen/WebAV/assets/3307051/b0d8ff07-71c9-46c1-af33-019420d17c06" width=200 />
+
 ---
 
 加微信 `liujun_fenghen` 备注 WebAV 邀请进入微信群
-
-[Web 音视频系列文章](https://hughfenghen.github.io/tag/WebAV/)
 
 [Plan](./plan.md)
