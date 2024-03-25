@@ -26,6 +26,17 @@ This is an experimental project attempting to provide easy-to-use APIs for handl
   Record MediaStream, export MP4 stream.  
   录制 MediaStream，导出 MP4 流。
 
+## Site
+
+[API](https://hughfenghen.github.io/WebAV/guide)
+
+[DEMO](https://hughfenghen.github.io/WebAV/demo/)  
+Here you can find rich demos that you can experience online immediately.  
+这里有丰富的可立即在线体验的 DEMO。
+
+[Articles by the author (zh_CN)](https://hughfenghen.github.io/WebAV/article)  
+[作者写的相关文章](https://hughfenghen.github.io/WebAV/article)
+
 ## Features
 
 - Audio/Video Clipper [AVCliper](packages/av-cliper/README.md)
@@ -54,10 +65,6 @@ This is an experimental project attempting to provide easy-to-use APIs for handl
   - 资源类型：视频、音频、图片、文字
 - 录制 [AVRecorder](packages/av-recorder/README.md)
   - 从 MediaStream、AVCanvas 中录制视频，导出 MP4
-
-## DEMO
-
-<https://hughfenghen.github.io/WebAV/demo/>
 
 ## Development
 
