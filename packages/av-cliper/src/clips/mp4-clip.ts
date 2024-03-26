@@ -560,30 +560,3 @@ function createVF2BlobConvtr(
     return blob;
   };
 }
-
-function findGoPSampleByTime(time: number, samples: MP4Sample[]): MP4Sample[] {
-  let end = -1;
-  let lastSyncIdx = -1;
-  let finded = false;
-  for (let i = 0; i < samples.length; i++) {
-    const s = samples[i];
-    if (s.is_sync) {
-      if (finded) {
-        end = i;
-        break;
-      } else if (time >= s.cts) {
-        lastSyncIdx = i;
-      }
-    }
-    if (time >= s.cts && time <= s.cts + s.duration) {
-      finded = true;
-      if (s.is_sync) {
-        end = i + 1;
-        break;
-      }
-    }
-  }
-  if (lastSyncIdx === -1) return [];
-
-  return samples.slice(lastSyncIdx, end === -1 ? samples.length : end);
-}
