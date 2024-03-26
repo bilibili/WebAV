@@ -11,7 +11,10 @@
     },
     "version": {
       "message": "version: %s",
-      "allowBranch": "main"
+      "allowBranch": [
+        "main",
+        "feat/cut"
+      ]
     }
   }
 }
