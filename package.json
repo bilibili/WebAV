@@ -23,9 +23,6 @@
   "workspaces": [
     "packages/*"
   ],
-  "resolutions": {
-    "npm-packlist": "1.1.12"
-  },
   "simple-git-hooks": {
     "commit-msg": "node scripts/verify-commit.js",
     "pre-commit": "yarn lint-staged"
