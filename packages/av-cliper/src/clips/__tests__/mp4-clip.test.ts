@@ -29,7 +29,7 @@ test('fastest decode', async () => {
 
 const m4aUrl = `//${location.host}/audio/44.1kHz-2chan.m4a`;
 test('decode m4a', async () => {
-  const clip = new MP4Clip((await fetch(m4aUrl)).body!);
+  const clip = new MP4Clip((await fetch(m4aUrl)).body!, { audio: true });
   await clip.ready;
   clip.destroy();
 
@@ -89,4 +89,30 @@ test('preview frame by time', async () => {
   expect((await clip.tick(1e6)).video?.timestamp).toBe(1e6);
   expect((await clip.tick(1e6)).video?.timestamp).toBe(1e6);
   clip.destroy();
+});
+
+test('split track', async () => {
+  const clip = new MP4Clip((await fetch(mp4_bunny_1)).body!, { audio: true });
+  await clip.ready;
+  const trackClips = await clip.splitTrack();
+  expect(trackClips.length).toBe(2);
+  // video clip
+  expect(trackClips[0].meta.width).toBe(640);
+  expect(trackClips[0].meta.audioChanCount).toBe(0);
+  expect(Math.round(trackClips[0].meta.duration / 1e6)).toBe(21);
+  // audio clip
+  expect(trackClips[1].meta.width).toBe(0);
+  expect(trackClips[1].meta.audioChanCount).toBe(2);
+  expect(Math.round(trackClips[1].meta.duration / 1e6)).toBe(21);
+});
+
+test('split when only has video track', async () => {
+  const clip = new MP4Clip((await fetch(mp4_bunny_1)).body!, { audio: false });
+  await clip.ready;
+  const trackClips = await clip.splitTrack();
+  expect(trackClips.length).toBe(1);
+  // video clip
+  expect(trackClips[0].meta.width).toBe(640);
+  expect(trackClips[0].meta.audioChanCount).toBe(0);
+  expect(Math.round(trackClips[0].meta.duration / 1e6)).toBe(21);
 });

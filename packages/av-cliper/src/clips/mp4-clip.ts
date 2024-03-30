@@ -16,6 +16,12 @@ type MPClipCloneArgs = Omit<
   Awaited<ReturnType<typeof parseMP4Stream>>,
   'videoTicker'
 >;
+
+interface MP4DecoderConf {
+  video: VideoDecoderConfig | null;
+  audio: AudioDecoderConfig | null;
+}
+
 export class MP4Clip implements IClip {
   #log = Log.create(`MP4Clip id:${CLIP_ID++},`);
 
@@ -28,8 +34,8 @@ export class MP4Clip implements IClip {
     duration: 0,
     width: 0,
     height: 0,
-    audioSampleRate: DEFAULT_AUDIO_CONF.sampleRate,
-    audioChanCount: DEFAULT_AUDIO_CONF.channelCount,
+    audioSampleRate: 0,
+    audioChanCount: 0,
   };
 
   get meta() {
@@ -77,28 +83,64 @@ export class MP4Clip implements IClip {
           audioSamples,
           videoTicker,
           decoderConf,
-          meta,
         }) => {
           this.#audioChunksDec = audioChunksDec;
           this.#videoSamples = videoSamples;
           this.#audioSamples = audioSamples;
           this.#decoderConf = decoderConf;
           this.#videoTicker = videoTicker;
-          this.#meta = meta;
-          return meta;
+          this.#meta = genMeta(decoderConf, videoSamples, audioSamples);
+          return this.#meta;
         },
       );
     } else {
-      this.#audioChunksDec = source.audioChunksDec;
       this.#videoSamples = source.videoSamples;
       this.#audioSamples = source.audioSamples;
       this.#decoderConf = source.decoderConf;
-      this.#videoTicker = new VideoFrameTicker(
+      if (source.decoderConf.video != null && source.videoSamples.length > 0) {
+        this.#videoTicker = new VideoFrameTicker(
+          source.videoSamples,
+          source.decoderConf.video,
+        );
+      }
+      if (source.decoderConf.audio != null && source.audioSamples.length > 0) {
+        this.#audioChunksDec = source.audioChunksDec;
+      }
+      this.#meta = genMeta(
+        source.decoderConf,
         source.videoSamples,
-        source.decoderConf.video!,
+        source.audioSamples,
       );
-      this.#meta = source.meta;
-      this.ready = Promise.resolve(this.meta);
+      this.ready = Promise.resolve(this.#meta);
+    }
+
+    function genMeta(
+      decoderConf: MP4DecoderConf,
+      videoSamples: MP4Sample[],
+      audioSamples: MP4Sample[],
+    ) {
+      const meta = {
+        duration: 0,
+        width: 0,
+        height: 0,
+        audioSampleRate: 0,
+        audioChanCount: 0,
+      };
+      if (decoderConf.video != null && videoSamples.length > 0) {
+        meta.width = decoderConf.video.codedWidth ?? 0;
+        meta.height = decoderConf.video.codedHeight ?? 0;
+      }
+      if (decoderConf.audio != null && audioSamples.length > 0) {
+        meta.audioSampleRate = DEFAULT_AUDIO_CONF.sampleRate;
+        meta.audioChanCount = DEFAULT_AUDIO_CONF.channelCount;
+      }
+
+      const lastSampele = videoSamples.at(-1) ?? audioSamples.at(-1);
+      if (lastSampele != null) {
+        meta.duration = lastSampele.cts + lastSampele.duration;
+      }
+
+      return meta;
     }
   }
 
@@ -293,13 +335,57 @@ export class MP4Clip implements IClip {
         videoSamples: [...this.#videoSamples],
         audioSamples: [...this.#audioSamples],
         decoderConf: this.#decoderConf,
-        meta: { ...this.#meta },
       },
       this.#opts,
     );
     await clip.ready;
     clip.tickInterceptor = this.tickInterceptor;
     return clip as this;
+  }
+
+  /**
+   * 拆分 MP4Clip 为仅包含视频轨道和音频轨道的 MP4Clip
+   * @returns Mp4CLip[]
+   */
+  async splitTrack() {
+    await this.ready;
+    const clips: MP4Clip[] = [];
+    if (this.#videoSamples.length > 0) {
+      const videoClip = new MP4Clip(
+        {
+          audioChunksDec: null,
+          videoSamples: [...this.#videoSamples],
+          audioSamples: [],
+          decoderConf: {
+            video: this.#decoderConf.video,
+            audio: null,
+          },
+        },
+        this.#opts,
+      );
+      await videoClip.ready;
+      videoClip.tickInterceptor = this.tickInterceptor;
+      clips.push(videoClip);
+    }
+    if (this.#audioSamples.length > 0) {
+      const audioClip = new MP4Clip(
+        {
+          audioChunksDec: this.#audioChunksDec,
+          videoSamples: [],
+          audioSamples: [...this.#audioSamples],
+          decoderConf: {
+            audio: this.#decoderConf.audio,
+            video: null,
+          },
+        },
+        this.#opts,
+      );
+      await audioClip.ready;
+      audioClip.tickInterceptor = this.tickInterceptor;
+      clips.push(audioClip);
+    }
+
+    return clips;
   }
 
   destroy(): void {
@@ -318,28 +404,17 @@ async function parseMP4Stream(
   } = {},
 ) {
   let mp4Info: MP4Info;
-  const decoderConf: {
-    video: VideoDecoderConfig | null;
-    audio: AudioDecoderConfig | null;
-  } = { video: null, audio: null };
+  const decoderConf: MP4DecoderConf = { video: null, audio: null };
   let audioChunksDec: ReturnType<typeof createAudioChunksDecoder> | null = null;
   let videoSamples: Array<MP4Sample & { deleted?: boolean }> = [];
   let audioSamples: Array<MP4Sample & { deleted?: boolean }> = [];
-  let meta = {
-    // 微秒
-    duration: 0,
-    width: 0,
-    height: 0,
-    audioSampleRate: DEFAULT_AUDIO_CONF.sampleRate,
-    audioChanCount: DEFAULT_AUDIO_CONF.channelCount,
-  };
+
   return new Promise<{
     audioChunksDec: ReturnType<typeof createAudioChunksDecoder> | null;
     videoSamples: typeof videoSamples;
     audioSamples: typeof audioSamples;
     videoTicker: VideoFrameTicker | null;
     decoderConf: typeof decoderConf;
-    meta: typeof meta;
   }>(async (resolve, reject) => {
     const stopRead = autoReadStream(source.pipeThrough(new SampleTransform()), {
       onChunk: async ({ chunkType, data }) => {
@@ -368,7 +443,7 @@ async function parseMP4Stream(
             videoSamples = videoSamples.concat(
               data.samples.map(normalizeTimescale),
             );
-          } else if (data.type === 'audio') {
+          } else if (data.type === 'audio' && opts.audio) {
             audioSamples = audioSamples.concat(
               data.samples.map(normalizeTimescale),
             );
@@ -384,24 +459,16 @@ async function parseMP4Stream(
           reject(Error('MP4Clip stream not contain any sample'));
           return;
         }
-        const videoTrack = mp4Info.videoTracks[0];
-        meta = {
-          duration: lastSampele.cts + lastSampele.duration,
-          width: videoTrack?.track_width ?? 0,
-          height: videoTrack?.track_height ?? 0,
-          audioSampleRate: DEFAULT_AUDIO_CONF.sampleRate,
-          audioChanCount: DEFAULT_AUDIO_CONF.channelCount,
-        };
         resolve({
           audioChunksDec,
           videoSamples,
           audioSamples,
+          // todo: remove
           videoTicker:
             decoderConf.video == null
               ? null
               : new VideoFrameTicker(videoSamples, decoderConf.video),
           decoderConf,
-          meta,
         });
       },
     });
