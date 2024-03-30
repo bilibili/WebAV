@@ -27,6 +27,15 @@ test('fastest decode', async () => {
   expect(frameCnt).toBe(23);
 });
 
+const m4aUrl = `//${location.host}/audio/44.1kHz-2chan.m4a`;
+test('decode m4a', async () => {
+  const clip = new MP4Clip((await fetch(m4aUrl)).body!);
+  await clip.ready;
+  clip.destroy();
+
+  expect(Math.round(clip.meta.duration / 1e6)).toBe(122);
+});
+
 const mp4_bunny = `//${location.host}/video/bunny.mp4`;
 test('delete range', async () => {
   const clip = new MP4Clip((await fetch(mp4_bunny)).body!, { audio: true });

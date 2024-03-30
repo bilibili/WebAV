@@ -287,11 +287,10 @@ export class MP4Clip implements IClip {
 
   async clone() {
     await this.ready;
-    const videoSamples = [...this.#videoSamples];
     const clip = new MP4Clip(
       {
         audioChunksDec: this.#audioChunksDec,
-        videoSamples: videoSamples,
+        videoSamples: [...this.#videoSamples],
         audioSamples: [...this.#audioSamples],
         decoderConf: this.#decoderConf,
         meta: { ...this.#meta },
@@ -338,7 +337,7 @@ async function parseMP4Stream(
     audioChunksDec: ReturnType<typeof createAudioChunksDecoder> | null;
     videoSamples: typeof videoSamples;
     audioSamples: typeof audioSamples;
-    videoTicker: VideoFrameTicker;
+    videoTicker: VideoFrameTicker | null;
     decoderConf: typeof decoderConf;
     meta: typeof meta;
   }>(async (resolve, reject) => {
@@ -352,12 +351,10 @@ async function parseMP4Stream(
             extractFileConfig(data.file, data.info);
           decoderConf.video = vc ?? null;
           decoderConf.audio = ac ?? null;
-          if (vc == null) {
+          if (vc == null && ac == null) {
             stopRead();
             reject(
-              Error(
-                'MP4 file does not include a video track or uses an unsupported codec',
-              ),
+              Error('MP4Clip must contain at least one video or audio track'),
             );
           }
           if (opts.audio && decoderConf.audio != null) {
@@ -369,45 +366,29 @@ async function parseMP4Stream(
         } else if (chunkType === 'samples') {
           if (data.type === 'video') {
             videoSamples = videoSamples.concat(
-              data.samples.map((s) => ({
-                ...s,
-                cts: (s.cts / s.timescale) * 1e6,
-                dts: (s.dts / s.timescale) * 1e6,
-                duration: (s.duration / s.timescale) * 1e6,
-                timescale: 1e6,
-              })),
+              data.samples.map(normalizeTimescale),
             );
           } else if (data.type === 'audio') {
             audioSamples = audioSamples.concat(
-              data.samples.map((s) => ({
-                ...s,
-                cts: (s.cts / s.timescale) * 1e6,
-                dts: (s.dts / s.timescale) * 1e6,
-                duration: (s.duration / s.timescale) * 1e6,
-                timescale: 1e6,
-              })),
+              data.samples.map(normalizeTimescale),
             );
           }
         }
       },
       onDone: () => {
-        const lastSampele = videoSamples.at(-1);
-        if (
-          mp4Info == null ||
-          lastSampele == null ||
-          decoderConf.video == null
-        ) {
+        const lastSampele = videoSamples.at(-1) ?? audioSamples.at(-1);
+        if (mp4Info == null) {
           reject(Error('MP4Clip stream is done, but not emit ready'));
+          return;
+        } else if (lastSampele == null) {
+          reject(Error('MP4Clip stream not contain any sample'));
           return;
         }
         const videoTrack = mp4Info.videoTracks[0];
-        const width = videoTrack.track_width;
-        const height = videoTrack.track_height;
-        const duration = lastSampele.cts + lastSampele.duration;
         meta = {
-          duration,
-          width,
-          height,
+          duration: lastSampele.cts + lastSampele.duration,
+          width: videoTrack?.track_width ?? 0,
+          height: videoTrack?.track_height ?? 0,
           audioSampleRate: DEFAULT_AUDIO_CONF.sampleRate,
           audioChanCount: DEFAULT_AUDIO_CONF.channelCount,
         };
@@ -415,13 +396,26 @@ async function parseMP4Stream(
           audioChunksDec,
           videoSamples,
           audioSamples,
-          videoTicker: new VideoFrameTicker(videoSamples, decoderConf.video),
+          videoTicker:
+            decoderConf.video == null
+              ? null
+              : new VideoFrameTicker(videoSamples, decoderConf.video),
           decoderConf,
           meta,
         });
       },
     });
   });
+
+  function normalizeTimescale(s: MP4Sample) {
+    return {
+      ...s,
+      cts: (s.cts / s.timescale) * 1e6,
+      dts: (s.dts / s.timescale) * 1e6,
+      duration: (s.duration / s.timescale) * 1e6,
+      timescale: 1e6,
+    };
+  }
 }
 
 class VideoFrameTicker {
