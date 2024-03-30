@@ -12,7 +12,9 @@ order: 2
 `AVCanvas` 基于 Canvas 封装，可以添加各种素材，支持用户与之交互，或通过程序添加素材、控制素材位置来制作动画；  
 素材包括：摄像头、麦克风、屏幕、文字、图片、音视频文件。
 
-使用 `AVRecorder` 可以录制 `AVCanvas`，输出 MP4 文件。
+使用 `AVRecorder` 可以录制 `AVCanvas`，输出 MP4 文件；`AVCanvas` 添加音频素材，输出的视频文件就会包含音轨。
+
+你也可以使用原生 canvas 或第三方库（如 fabric.js）绘制图像内容，然后录制从 canvas 捕获的流，`new AVRecorder(canvas.captureStream())`。
 
 <code src="./recorder-avcanvas.tsx"></code>
 
