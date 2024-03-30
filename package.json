@@ -2,6 +2,7 @@
   "name": "root",
   "private": true,
   "type": "module",
+  "version": "0.1.0",
   "devDependencies": {
     "conventional-changelog-cli": "^4.1.0",
     "lerna": "^3.22.1",
@@ -9,7 +10,9 @@
     "rimraf": "^5.0.1",
     "simple-git-hooks": "^2.11.0",
     "ts-standard": "^12.0.2",
-    "typedoc": "^0.25.4"
+    "typedoc": "^0.25.4",
+    "simple-git-hooks": "^2.11.0",
+    "lint-staged": "^15.2.2"
   },
   "scripts": {
     "build": "lerna run build",
@@ -25,8 +28,14 @@
   "resolutions": {
     "npm-packlist": "1.1.12"
   },
-  "version": "0.1.0",
   "simple-git-hooks": {
     "commit-msg": "node scripts/verify-commit.js"
+  "simple-git-hooks": {
+    "pre-commit": "yarn lint-staged"
+  },
+  "lint-staged": {
+    "*.{json,ts,tsx,js,md}": [
+      "prettier --write"
+    ]
   }
 }
