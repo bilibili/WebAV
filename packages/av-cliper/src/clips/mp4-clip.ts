@@ -61,13 +61,13 @@ export class MP4Clip implements IClip {
 
   #opts: {
     audio?: boolean | { volume: number };
-  } = { audio: false };
+  } = { audio: true };
 
   constructor(
     source: ReadableStream<Uint8Array> | MPClipCloneArgs,
     opts: {
       audio?: boolean | { volume: number };
-    } = {},
+    } = { audio: true },
   ) {
     this.#opts = { ...opts };
     this.#volume =
