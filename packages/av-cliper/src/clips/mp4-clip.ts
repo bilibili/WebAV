@@ -22,6 +22,10 @@ interface MP4DecoderConf {
   audio: AudioDecoderConfig | null;
 }
 
+interface MP4ClipOpts {
+  audio?: boolean | { volume: number };
+}
+
 export class MP4Clip implements IClip {
   #log = Log.create(`MP4Clip id:${CLIP_ID++},`);
 
@@ -59,9 +63,7 @@ export class MP4Clip implements IClip {
     audio: null,
   };
 
-  #opts: {
-    audio?: boolean | { volume: number };
-  } = { audio: true };
+  #opts: MP4ClipOpts = { audio: true };
 
   constructor(
     source: ReadableStream<Uint8Array> | MPClipCloneArgs,
@@ -75,43 +77,48 @@ export class MP4Clip implements IClip {
         ? opts.audio.volume
         : 1;
 
-    if (source instanceof ReadableStream) {
-      this.ready = parseMP4Stream(source, this.#opts).then(
-        ({
-          audioChunksDec,
-          videoSamples,
-          audioSamples,
-          videoTicker,
-          decoderConf,
-        }) => {
-          this.#audioChunksDec = audioChunksDec;
-          this.#videoSamples = videoSamples;
-          this.#audioSamples = audioSamples;
-          this.#decoderConf = decoderConf;
-          this.#videoTicker = videoTicker;
-          this.#meta = genMeta(decoderConf, videoSamples, audioSamples);
-          return this.#meta;
-        },
+    this.ready = (
+      source instanceof ReadableStream
+        ? parseMP4Stream(source, this.#opts)
+        : Promise.resolve(source)
+    ).then(({ videoSamples, audioSamples, decoderConf }) => {
+      this.#videoSamples = videoSamples;
+      this.#audioSamples = audioSamples;
+      this.#decoderConf = decoderConf;
+      const { videoTicker, audioChunksDec } = genDeocder(
+        decoderConf,
+        videoSamples,
+        audioSamples,
+        this.#opts,
       );
-    } else {
-      this.#videoSamples = source.videoSamples;
-      this.#audioSamples = source.audioSamples;
-      this.#decoderConf = source.decoderConf;
-      if (source.decoderConf.video != null && source.videoSamples.length > 0) {
-        this.#videoTicker = new VideoFrameTicker(
-          source.videoSamples,
-          source.decoderConf.video,
-        );
-      }
-      if (source.decoderConf.audio != null && source.audioSamples.length > 0) {
-        this.#audioChunksDec = source.audioChunksDec;
-      }
-      this.#meta = genMeta(
-        source.decoderConf,
-        source.videoSamples,
-        source.audioSamples,
-      );
-      this.ready = Promise.resolve(this.#meta);
+      this.#videoTicker = videoTicker;
+      this.#audioChunksDec = audioChunksDec;
+
+      this.#meta = genMeta(decoderConf, videoSamples, audioSamples);
+      return this.#meta;
+    });
+
+    function genDeocder(
+      decoderConf: MP4DecoderConf,
+      videoSamples: MP4Sample[],
+      audioSamples: MP4Sample[],
+      opts: MP4ClipOpts,
+    ) {
+      return {
+        audioChunksDec:
+          opts.audio === false ||
+          decoderConf.audio == null ||
+          audioSamples.length === 0
+            ? null
+            : createAudioChunksDecoder(
+                decoderConf.audio,
+                DEFAULT_AUDIO_CONF.sampleRate,
+              ),
+        videoTicker:
+          decoderConf.video == null || videoSamples.length === 0
+            ? null
+            : new VideoFrameTicker(videoSamples, decoderConf.video),
+      };
     }
 
     function genMeta(
@@ -331,7 +338,6 @@ export class MP4Clip implements IClip {
     await this.ready;
     const clip = new MP4Clip(
       {
-        audioChunksDec: this.#audioChunksDec,
         videoSamples: [...this.#videoSamples],
         audioSamples: [...this.#audioSamples],
         decoderConf: this.#decoderConf,
@@ -353,7 +359,6 @@ export class MP4Clip implements IClip {
     if (this.#videoSamples.length > 0) {
       const videoClip = new MP4Clip(
         {
-          audioChunksDec: null,
           videoSamples: [...this.#videoSamples],
           audioSamples: [],
           decoderConf: {
@@ -370,7 +375,6 @@ export class MP4Clip implements IClip {
     if (this.#audioSamples.length > 0) {
       const audioClip = new MP4Clip(
         {
-          audioChunksDec: this.#audioChunksDec,
           videoSamples: [],
           audioSamples: [...this.#audioSamples],
           decoderConf: {
@@ -399,21 +403,16 @@ export class MP4Clip implements IClip {
 
 async function parseMP4Stream(
   source: ReadableStream<Uint8Array>,
-  opts: {
-    audio?: boolean | { volume: number };
-  } = {},
+  opts: MP4ClipOpts = {},
 ) {
   let mp4Info: MP4Info;
   const decoderConf: MP4DecoderConf = { video: null, audio: null };
-  let audioChunksDec: ReturnType<typeof createAudioChunksDecoder> | null = null;
   let videoSamples: Array<MP4Sample & { deleted?: boolean }> = [];
   let audioSamples: Array<MP4Sample & { deleted?: boolean }> = [];
 
   return new Promise<{
-    audioChunksDec: ReturnType<typeof createAudioChunksDecoder> | null;
     videoSamples: typeof videoSamples;
     audioSamples: typeof audioSamples;
-    videoTicker: VideoFrameTicker | null;
     decoderConf: typeof decoderConf;
   }>(async (resolve, reject) => {
     const stopRead = autoReadStream(source.pipeThrough(new SampleTransform()), {
@@ -430,12 +429,6 @@ async function parseMP4Stream(
             stopRead();
             reject(
               Error('MP4Clip must contain at least one video or audio track'),
-            );
-          }
-          if (opts.audio && decoderConf.audio != null) {
-            audioChunksDec = createAudioChunksDecoder(
-              decoderConf.audio,
-              DEFAULT_AUDIO_CONF.sampleRate,
             );
           }
         } else if (chunkType === 'samples') {
@@ -460,14 +453,8 @@ async function parseMP4Stream(
           return;
         }
         resolve({
-          audioChunksDec,
           videoSamples,
           audioSamples,
-          // todo: remove
-          videoTicker:
-            decoderConf.video == null
-              ? null
-              : new VideoFrameTicker(videoSamples, decoderConf.video),
           decoderConf,
         });
       },
