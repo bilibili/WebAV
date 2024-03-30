@@ -22,26 +22,10 @@ const videoSrc = assetsPrefix(['video/bunny_0.mp4']);
 
 let clip;
 let mp4Dur;
-let convtr;
 async function start() {
   clip = new MP4Clip((await fetch(videoSrc)).body!);
   const { duration, width, height } = await clip.ready;
   mp4Dur = Math.round(duration / 1e6);
-  convtr = createVF2BlobConvtr(width, height);
-}
-
-// 将 VideoFrame 转换成 blob url，传递给 img src
-function createVF2BlobConvtr(width: number, height: number) {
-  const cvs = new OffscreenCanvas(width, height);
-  const ctx = cvs.getContext('2d')!;
-
-  return async (vf: VideoFrame | null) => {
-    if (vf == null) return '';
-    ctx.drawImage(vf, 0, 0, width, height);
-    const pngBlob = await cvs.convertToBlob();
-    vf.close();
-    return URL.createObjectURL(pngBlob);
-  };
 }
 
 let timer;
