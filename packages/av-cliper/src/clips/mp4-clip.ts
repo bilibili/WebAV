@@ -12,10 +12,8 @@ import { DEFAULT_AUDIO_CONF, IClip } from './iclip';
 
 let CLIP_ID = 0;
 
-type MPClipCloneArgs = Omit<
-  Awaited<ReturnType<typeof parseMP4Stream>>,
-  'videoTicker'
->;
+// 用于内部创建 MP4Clip 实例
+type MPClipCloneArgs = Awaited<ReturnType<typeof parseMP4Stream>>;
 
 interface MP4DecoderConf {
   video: VideoDecoderConfig | null;
@@ -53,7 +51,7 @@ export class MP4Clip implements IClip {
   #audioSamples: Array<MP4Sample & { deleted?: boolean }> = [];
 
   #audioChunksDec: ReturnType<typeof createAudioChunksDecoder> | null = null;
-  #videoTicker: VideoFrameTicker | null = null;
+  #videoFrameFinder: VideoFrameFinder | null = null;
 
   #decoderConf: {
     video: VideoDecoderConfig | null;
@@ -85,13 +83,13 @@ export class MP4Clip implements IClip {
       this.#videoSamples = videoSamples;
       this.#audioSamples = audioSamples;
       this.#decoderConf = decoderConf;
-      const { videoTicker, audioChunksDec } = genDeocder(
+      const { videoFrameFinder, audioChunksDec } = genDeocder(
         decoderConf,
         videoSamples,
         audioSamples,
         this.#opts,
       );
-      this.#videoTicker = videoTicker;
+      this.#videoFrameFinder = videoFrameFinder;
       this.#audioChunksDec = audioChunksDec;
 
       this.#meta = genMeta(decoderConf, videoSamples, audioSamples);
@@ -114,10 +112,10 @@ export class MP4Clip implements IClip {
                 decoderConf.audio,
                 DEFAULT_AUDIO_CONF.sampleRate,
               ),
-        videoTicker:
+        videoFrameFinder:
           decoderConf.video == null || videoSamples.length === 0
             ? null
-            : new VideoFrameTicker(videoSamples, decoderConf.video),
+            : new VideoFrameFinder(videoSamples, decoderConf.video),
       };
     }
 
@@ -233,7 +231,7 @@ export class MP4Clip implements IClip {
 
     const [audio, video] = await Promise.all([
       this.#nextAudio(time - this.#ts),
-      this.#videoTicker?.tick(time),
+      this.#videoFrameFinder?.find(time),
     ]);
     this.#ts = time;
     if (video == null) {
@@ -397,7 +395,7 @@ export class MP4Clip implements IClip {
     this.#log.info('MP4Clip destroy, ts:', this.#ts);
     this.#destroyed = true;
 
-    this.#videoTicker?.destroy();
+    this.#videoFrameFinder?.destroy();
   }
 }
 
@@ -472,7 +470,7 @@ async function parseMP4Stream(
   }
 }
 
-class VideoFrameTicker {
+class VideoFrameFinder {
   #dec!: VideoDecoder;
   constructor(
     public samples: Array<MP4Sample & { deleted?: boolean }>,
@@ -545,7 +543,7 @@ class VideoFrameTicker {
 
   #destroyed = false;
   #curAborter = { abort: false };
-  tick = async (time: number): Promise<VideoFrame | null> => {
+  find = async (time: number): Promise<VideoFrame | null> => {
     if (this.#destroyed) return null;
     if (time <= this.#ts || time - this.#ts > 3e6) {
       this.#reset();
