@@ -30,7 +30,7 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v2
         with:
-          node-version: 16 # 或者您需要的 Node.js 版本
+          node-version: 18 # 或者您需要的 Node.js 版本
 
       - name: Install packages dependencies
         run: yarn install --frozen-lockfile
