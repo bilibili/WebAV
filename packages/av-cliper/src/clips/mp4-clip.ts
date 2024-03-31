@@ -409,25 +409,38 @@ async function parseMP4Stream(
 }
 
 class VideoFrameFinder {
-  #dec!: VideoDecoder;
+  #dec: VideoDecoder | null = null;
   constructor(
     public samples: Array<MP4Sample & { deleted?: boolean }>,
     public conf: VideoDecoderConfig,
-  ) {
-    this.#reset();
-  }
+  ) {}
 
   #ts = 0;
+  #curAborter = { abort: false };
+  find = async (time: number): Promise<VideoFrame | null> => {
+    if (this.#dec == null || time <= this.#ts || time - this.#ts > 3e6) {
+      this.#reset();
+    }
+
+    this.#curAborter.abort = true;
+    this.#ts = time;
+
+    return new Promise(async (reslove) => {
+      this.#curAborter = { abort: false };
+      reslove(await this.#parseFrame(time, this.#dec, this.#curAborter));
+    });
+  };
+
   #videoDecCusorIdx = 0;
   #videoFrames: VideoFrame[] = [];
   #outputFrameCnt = 0;
   #inputChunkCnt = 0;
   #parseFrame = async (
     time: number,
-    dec: VideoDecoder,
+    dec: VideoDecoder | null,
     aborter: { abort: boolean },
   ): Promise<VideoFrame | null> => {
-    if (this.#destroyed || dec.state === 'closed' || aborter.abort) return null;
+    if (dec == null || dec.state === 'closed' || aborter.abort) return null;
 
     if (this.#videoFrames.length > 0) {
       const vf = this.#videoFrames[0];
@@ -479,24 +492,6 @@ class VideoFrameFinder {
     return this.#parseFrame(time, dec, aborter);
   };
 
-  #destroyed = false;
-  #curAborter = { abort: false };
-  find = async (time: number): Promise<VideoFrame | null> => {
-    if (this.#destroyed) return null;
-    // todo: 首次 0，会出发重置
-    if (time <= this.#ts || time - this.#ts > 3e6) {
-      this.#reset();
-    }
-
-    this.#curAborter.abort = true;
-    this.#ts = time;
-
-    return new Promise(async (reslove) => {
-      this.#curAborter = { abort: false };
-      reslove(await this.#parseFrame(time, this.#dec, this.#curAborter));
-    });
-  };
-
   #reset = () => {
     this.#videoFrames.forEach((f) => f.close());
     this.#videoFrames = [];
@@ -519,7 +514,8 @@ class VideoFrameFinder {
   };
 
   destroy = () => {
-    this.#destroyed = true;
+    this.#dec?.close();
+    this.#dec = null;
     this.#curAborter.abort = true;
     this.#videoFrames.forEach((f) => f.close());
     this.#videoFrames = [];
@@ -536,17 +532,13 @@ class AudioFrameFinder {
   ) {
     this.#volume = opts.volume;
     this.#sampleRate = opts.targetSampleRate;
-    this.#reset();
   }
 
-  #audioChunksDec: ReturnType<typeof createAudioChunksDecoder> | null = null;
-  #destroyed = false;
+  #dec: ReturnType<typeof createAudioChunksDecoder> | null = null;
   #curAborter = { abort: false };
   find = async (time: number): Promise<Float32Array[]> => {
-    if (this.#destroyed) return [];
     // 前后获取音频数据差异不能超过 100ms
-    if (time <= this.#ts || time - this.#ts > 0.1e6) {
-      // todo: 首次重置
+    if (this.#dec == null || time <= this.#ts || time - this.#ts > 0.1e6) {
       this.#reset();
       this.#ts = time;
       for (let i = 0; i < this.samples.length; i++) {
@@ -563,13 +555,7 @@ class AudioFrameFinder {
 
     return new Promise(async (reslove) => {
       this.#curAborter = { abort: false };
-      reslove(
-        await this.#parseFrame(
-          deltaTime,
-          this.#audioChunksDec,
-          this.#curAborter,
-        ),
-      );
+      reslove(await this.#parseFrame(deltaTime, this.#dec, this.#curAborter));
     });
   };
 
@@ -585,7 +571,7 @@ class AudioFrameFinder {
     dec: ReturnType<typeof createAudioChunksDecoder> | null = null,
     aborter: { abort: boolean },
   ): Promise<Float32Array[]> => {
-    if (this.#destroyed || dec == null || aborter.abort) return [];
+    if (dec == null || aborter.abort) return [];
 
     const frameCnt = Math.ceil(deltaTime * (this.#sampleRate / 1e6));
     if (frameCnt === 0) return [];
@@ -649,14 +635,14 @@ class AudioFrameFinder {
       new Float32Array(0), // left chan
       new Float32Array(0), // right chan
     ];
-    this.#audioChunksDec = createAudioChunksDecoder(
+    this.#dec = createAudioChunksDecoder(
       this.conf,
       DEFAULT_AUDIO_CONF.sampleRate,
     );
   };
 
   destroy = () => {
-    this.#destroyed = true;
+    this.#dec = null;
     this.#curAborter.abort = true;
     this.#pcmData = [
       new Float32Array(0), // left chan
