@@ -498,11 +498,7 @@ class VideoFrameFinder {
     this.#videoDecCusorIdx = 0;
     this.#inputChunkCnt = 0;
     this.#outputFrameCnt = 0;
-    try {
-      this.#dec?.close();
-    } catch (error) {
-      Log.error(error);
-    }
+    this.#dec?.close();
     this.#dec = new VideoDecoder({
       output: (vf) => {
         this.#outputFrameCnt += 1;
