@@ -1,15 +1,6 @@
 import { resolve } from 'path';
-import { defineConfig } from 'vitest/config';
+import { defineConfig } from 'vite';
 export default defineConfig({
-  test: {
-    environment: 'jsdom',
-    coverage: {
-      provider: 'istanbul', // or 'c8'
-    },
-    onConsoleLog(msg) {
-      if (msg.includes('log test')) return false;
-    },
-  },
   build: {
     sourcemap: true,
     lib: {

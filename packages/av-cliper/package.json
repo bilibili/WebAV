@@ -1,6 +1,6 @@
 {
   "name": "@webav/av-cliper",
-  "version": "0.3.3",
+  "version": "0.3.4-beta.0",
   "private": false,
   "repository": "https://github.com/hughfenghen/WebAV",
   "keywords": [
@@ -20,7 +20,7 @@
   "main": "dist/av-cliper.umd.cjs",
   "scripts": {
     "dev": "vite demo --config demo-vite.config.ts",
-    "test": "vitest",
+    "test": "vitest --config test-vite.config.ts",
     "test:coverage": "vitest run --coverage",
     "build": "vite build && tsc -p build.tsconfig.json --outDir dist",
     "build:dev": "rimraf dist && concurrently --kill-others \"vite build --watch\" \"tsc -p build.tsconfig.json --outDir dist --watch\"",
@@ -31,18 +31,20 @@
     "dist"
   ],
   "devDependencies": {
+    "@vitest/browser": "^1.4.0",
     "@vitest/coverage-istanbul": "^0.29.8",
     "concurrently": "^8.2.0",
     "jsdom": "^21.1.1",
     "prettier": "^3.2.5",
     "typescript": "^4.9.3",
-    "vite": "^4.2.0",
-    "vitest": "^0.29.7"
+    "vite": "^5.1.6",
+    "vitest": "^1.4.0",
+    "webdriverio": "^8.34.0"
   },
   "dependencies": {
     "@types/dom-webcodecs": "^0.1.7",
     "@webav/mp4box.js": "0.5.3-fenghen",
-    "opfs-tools": "^0.1.1",
+    "opfs-tools": "^0.3.0",
     "wave-resampler": "^1.0.0"
   }
 }

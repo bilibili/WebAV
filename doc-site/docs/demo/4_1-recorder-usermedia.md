@@ -2,7 +2,7 @@
 nav: DEMO
 group:
   title: 视频录制
-  order: 4
+  order: 5
 
 order: 1
 ---

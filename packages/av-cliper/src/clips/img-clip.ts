@@ -17,7 +17,10 @@ export class ImgClip implements IClip {
   #frames: VideoFrame[] = [];
 
   constructor(
-    dataSource: ImageBitmap | { type: 'image/gif'; stream: ReadableStream },
+    dataSource:
+      | ImageBitmap
+      | VideoFrame[]
+      | { type: 'image/gif'; stream: ReadableStream },
   ) {
     if (dataSource instanceof ImageBitmap) {
       this.#img = dataSource;
@@ -28,6 +31,19 @@ export class ImgClip implements IClip {
         height: dataSource.height,
         duration: Infinity,
       });
+    } else if (Array.isArray(dataSource)) {
+      this.#frames = dataSource;
+      const frame = this.#frames[0];
+      if (frame == null) throw Error('The frame count must be greater than 0');
+      this.#meta = {
+        width: frame.displayWidth,
+        height: frame.displayHeight,
+        duration: this.#frames.reduce(
+          (acc, cur) => acc + (cur.duration ?? 0),
+          0,
+        ),
+      };
+      this.ready = Promise.resolve({ ...this.#meta, duration: Infinity });
     } else {
       this.ready = this.#gifInit(dataSource.stream, dataSource.type).then(
         () => ({
@@ -63,6 +79,7 @@ export class ImgClip implements IClip {
       };
     }
     const tt = time % this.#meta.duration;
+    // console.log(55555, time, tt, this.#meta);
     return {
       video: (
         this.#frames.find(
@@ -71,6 +88,11 @@ export class ImgClip implements IClip {
       ).clone(),
       state: 'success',
     };
+  }
+
+  async clone() {
+    await this.ready;
+    return new ImgClip(this.#img ?? this.#frames) as this;
   }
 
   destroy(): void {

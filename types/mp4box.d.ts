@@ -259,7 +259,7 @@ declare module '@webav/mp4box.js' {
     onSamples: (id: number, user: any, samples: MP4Sample[]) => void;
     onError?: (e: string) => void;
 
-    appendBuffer: (data: MP4ArrayBuffer) => number;
+    appendBuffer: (data: MP4ArrayBuffer) => number | undefined;
     start: () => void;
     seek: (time: number, useRAP?: boolean) => { offset: number; time: number };
     stop: () => void;

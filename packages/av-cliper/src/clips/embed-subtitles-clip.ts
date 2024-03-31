@@ -68,7 +68,10 @@ export class EmbedSubtitlesClip implements IClip {
   #lineHeight = 0;
   #linePadding = 0;
 
+  #content;
+
   constructor(content: string, opts: IEmbedSubtitlesOpts) {
+    this.#content = content;
     this.#subtitles = parseSrt(content).map(({ start, end, text }) => ({
       start: start * 1e6,
       end: end * 1e6,
@@ -220,6 +223,10 @@ export class EmbedSubtitlesClip implements IClip {
     this.#lastVF = vf;
 
     return { video: vf.clone(), state: 'success' };
+  }
+
+  async clone() {
+    return new EmbedSubtitlesClip(this.#content, this.#opts) as this;
   }
 
   destroy() {

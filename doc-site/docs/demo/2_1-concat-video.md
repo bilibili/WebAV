@@ -2,7 +2,7 @@
 nav: DEMO
 group:
   title: 合成
-  order: 2
+  order: 3
 
 order: 1
 ---

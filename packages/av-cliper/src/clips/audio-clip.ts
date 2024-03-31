@@ -120,6 +120,10 @@ export class AudioClip implements IClip {
     return { audio, state: 'success' };
   }
 
+  async clone() {
+    return new AudioClip(this.getPCMData(), this.#opts) as this;
+  }
+
   destroy(): void {
     this.#chan0Buf = new Float32Array(0);
     this.#chan1Buf = new Float32Array(0);

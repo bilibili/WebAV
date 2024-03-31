@@ -10,9 +10,12 @@ export class OffscreenSprite extends BaseSprite {
   #lastVf: VideoFrame | ImageBitmap | null = null;
 
   /**
-   * 在视频帧的持续时长
+   * Clip duration
    */
-  duration = Infinity;
+  #duration = Infinity;
+  get duration() {
+    return this.#duration;
+  }
 
   #destroyed = false;
 
@@ -22,7 +25,7 @@ export class OffscreenSprite extends BaseSprite {
     this.ready = clip.ready.then(({ width, height, duration }) => {
       this.rect.w = width;
       this.rect.h = height;
-      this.duration = duration;
+      this.#duration = duration;
     });
   }
 
@@ -58,6 +61,13 @@ export class OffscreenSprite extends BaseSprite {
       audio: audio ?? [],
       done: false,
     };
+  }
+
+  async clone() {
+    const spr = new OffscreenSprite(this.name, await this.#clip.clone());
+    await spr.ready;
+    this.copyStateTo(spr);
+    return spr;
   }
 
   destroy(): void {

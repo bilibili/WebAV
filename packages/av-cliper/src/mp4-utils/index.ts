@@ -39,7 +39,7 @@ interface IWorkerOpts {
   bitrate: number;
 }
 
-export function demuxcode(
+export function _deprecated_demuxcode(
   stream: ReadableStream<Uint8Array>,
   opts: { audio: boolean; start: number; end: number },
   cbs: {
