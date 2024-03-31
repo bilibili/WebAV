@@ -6,7 +6,7 @@ const msgPath = resolve('.git/COMMIT_EDITMSG');
 const msg = readFileSync(msgPath, 'utf-8').trim();
 
 const commitRE =
-  /^(Merge branch)|((revert: )?(feat|fix|docs|dx|style|refactor|perf|test|workflow|build|ci|chore|types|wip|release)(\(.+\))?: .+)/;
+  /^(Merge branch)|((revert: )?(feat|fix|docs|dx|style|refactor|perf|test|workflow|build|ci|chore|types|wip|release|version)(\(.+\))?: .+)/;
 
 if (!commitRE.test(msg)) {
   console.error(

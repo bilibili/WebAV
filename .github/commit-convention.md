@@ -21,7 +21,7 @@ feat(av-canvas): add 'video-sprite' feature
 Appears under "Bug Fixes" header, `event-tool` subheader, with a link to issue #00:
 
 ```
-fix(event-tool): clear listeners on listener interface
+fix(av-cliper): MP4Clip.clone throw error
 
 close #00
 ```
