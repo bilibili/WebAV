@@ -2,7 +2,7 @@
 
 ## v1.0
 
-- Sprite 构造移除参数第一个参数 name，实际很少用
+- 移除 Sprite 构造参数的第一个参数 name，实际很少用
 - 转场特效
 - 滤镜
 - 重构单测用例，转为 vitest browser mode
