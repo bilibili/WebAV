@@ -9,6 +9,7 @@ interface IComItem {
   offset: number;
   duration: number;
   sprite: OffscreenSprite;
+  expired: boolean;
   /**
    * main 资源时间结束时会终结合并流程；
    * 比如合并 mp4（main） + mp3 + img， 所有资源可以缺省持续时间（duration）；
@@ -150,6 +151,7 @@ export class Combinator {
       offset: (opts.offset ?? 0) * 1e6,
       duration: opts.duration == null ? sprite.duration : opts.duration * 1e6,
       main: opts.main ?? false,
+      expired: false,
     });
     this.#comItems.sort((a, b) => a.sprite.zIndex - b.sprite.zIndex);
   }
@@ -249,9 +251,9 @@ export class Combinator {
         ctx.fillRect(0, 0, width, height);
 
         const audios: Float32Array[][] = [];
-        for (let i = 0; !stoped && i < this.#comItems.length; i++) {
-          const it = this.#comItems[i];
-          if (ts < it.offset) continue;
+        for (const it of this.#comItems) {
+          if (stoped) break;
+          if (ts < it.offset || it.expired) continue;
 
           ctx.save();
           const { audio, done } = await it.sprite.offscreenRender(
@@ -270,7 +272,7 @@ export class Combinator {
             }
 
             it.sprite.destroy();
-            this.#comItems.splice(i, 1);
+            it.expired = true;
           }
         }
 
