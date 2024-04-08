@@ -62,7 +62,12 @@ test('delete range', async () => {
 test('thumbnails', async () => {
   const clip = new MP4Clip((await fetch(mp4_bunny)).body!);
   await clip.ready;
-  expect((await clip.thumbnails()).length).toBe(9);
+  const thumbnails = await clip.thumbnails();
+  expect(thumbnails.length).toBe(9);
+  expect((await createImageBitmap(thumbnails[0].img)).width).toBe(100);
+  const thumbnails150 = await clip.thumbnails(150);
+  expect(thumbnails150.length).toBe(9);
+  expect((await createImageBitmap(thumbnails150[0].img)).width).toBe(150);
   clip.destroy();
 });
 
