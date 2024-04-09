@@ -2,7 +2,7 @@
   "name": "root",
   "private": true,
   "type": "module",
-  "version": "0.1.0",
+  "version": "0.4.2",
   "devDependencies": {
     "conventional-changelog-cli": "^4.1.0",
     "lerna": "^3.22.1",
