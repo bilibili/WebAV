@@ -217,14 +217,14 @@ export class MP4Clip implements IClip {
     }
   }
 
-  thumbnails(): Promise<Array<{ ts: number; img: Blob }>> {
+  thumbnails(imgWidth = 100): Promise<Array<{ ts: number; img: Blob }>> {
     const vc = this.#decoderConf.video;
     if (vc == null) return Promise.resolve([]);
 
     const { width, height } = this.#meta;
     const convtr = createVF2BlobConvtr(
-      100,
-      Math.round(height * (100 / width)),
+      imgWidth,
+      Math.round(height * (imgWidth / width)),
       { quality: 0.1, type: 'image/png' },
     );
 
