@@ -622,7 +622,7 @@ class AudioFrameFinder {
         this.#decCusorIdx = i;
         const s = this.samples[i];
         if (s.deleted) continue;
-        if (samples.length > 10) break;
+        if (samples.length >= 10) break;
         samples.push(s);
       }
 
@@ -679,24 +679,28 @@ function createAudioChunksDecoder(
 ) {
   type OutputHandle = (pcm: Float32Array[], done: boolean) => void;
 
-  let curCb: ((pcm: Float32Array[]) => void) | null = null;
+  let curCb: ((pcm: Float32Array[], done: boolean) => void) | null = null;
   const needResample = resampleRate !== decoderConf.sampleRate;
-  const resampleQ = createPromiseQueue<Float32Array[]>((resampedPCM) => {
-    curCb?.(resampedPCM);
-  });
+  const resampleQ = createPromiseQueue<[Float32Array[], boolean]>(
+    ([resampedPCM, done]) => {
+      curCb?.(resampedPCM, done);
+    },
+  );
 
   const adec = new AudioDecoder({
     output: (ad) => {
       const pcm = extractPCM4AudioData(ad);
+      const done = adec.decodeQueueSize === 0;
       if (needResample) {
-        resampleQ(() =>
-          audioResample(pcm, ad.sampleRate, {
+        resampleQ(async () => [
+          await audioResample(pcm, ad.sampleRate, {
             rate: resampleRate,
             chanCount: ad.numberOfChannels,
           }),
-        );
+          done,
+        ]);
       } else {
-        curCb?.(pcm);
+        curCb?.(pcm, done);
       }
       ad.close();
     },
@@ -716,10 +720,7 @@ function createAudioChunksDecoder(
       return;
     }
 
-    let i = 0;
-    curCb = (pcm) => {
-      i += 1;
-      const done = i >= t.chunks.length;
+    curCb = (pcm, done) => {
       t.cb(pcm, done);
       if (done) {
         curCb = null;
