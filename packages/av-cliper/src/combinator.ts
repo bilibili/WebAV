@@ -318,7 +318,10 @@ export class Combinator {
       }
     };
 
-    _run().catch(this.#log.error);
+    _run().catch((err) => {
+      this.#log.error(err);
+      exit();
+    });
 
     // 初始 1 避免 NaN
     let maxEncodeQSize = 1;

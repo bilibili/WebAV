@@ -94,6 +94,7 @@ export class MP4Clip implements IClip {
       this.#audioFrameFinder = audioFrameFinder;
 
       this.#meta = genMeta(decoderConf, videoSamples, audioSamples);
+      this.#log.info('MP4Clip meta:', this.#meta);
       return this.#meta;
     });
 
@@ -166,10 +167,34 @@ export class MP4Clip implements IClip {
       });
     }
 
-    const [audio, video] = await Promise.all([
-      this.#audioFrameFinder?.find(time) ?? [],
-      this.#videoFrameFinder?.find(time),
+    let audioReady = false;
+    let videoReady = false;
+    let timeoutTimer = 0;
+    const [audio, video] = await Promise.race([
+      Promise.all([
+        this.#audioFrameFinder?.find(time).then((rs) => {
+          audioReady = true;
+          return rs;
+        }) ?? [],
+        this.#videoFrameFinder?.find(time).then((rs) => {
+          videoReady = true;
+          return rs;
+        }),
+      ]),
+      new Promise<[]>((_, reject) => {
+        timeoutTimer = setTimeout(
+          () =>
+            reject(
+              Error(
+                `MP4Clip.tick timeout, ${JSON.stringify({ videoReady, audioReady })}`,
+              ),
+            ),
+          3000,
+        );
+      }),
     ]);
+    clearTimeout(timeoutTimer);
+
     this.#ts = time;
     if (video == null) {
       return await this.tickInterceptor(time, {
@@ -354,7 +379,6 @@ async function parseMP4Stream(
     const stopRead = autoReadStream(source.pipeThrough(new SampleTransform()), {
       onChunk: async ({ chunkType, data }) => {
         if (chunkType === 'ready') {
-          Log.info('mp4BoxFile is ready', data);
           // mp4File = data.file;
           mp4Info = data.info;
           let { videoDecoderConf: vc, audioDecoderConf: ac } =
@@ -367,6 +391,7 @@ async function parseMP4Stream(
               Error('MP4Clip must contain at least one video or audio track'),
             );
           }
+          Log.info('mp4BoxFile moov ready', decoderConf);
         } else if (chunkType === 'samples') {
           if (data.type === 'video') {
             videoSamples = videoSamples.concat(
@@ -388,6 +413,7 @@ async function parseMP4Stream(
           reject(Error('MP4Clip stream not contain any sample'));
           return;
         }
+        Log.info('mp4 stream parsed');
         resolve({
           videoSamples,
           audioSamples,
