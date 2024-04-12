@@ -242,7 +242,21 @@ export class MP4Clip implements IClip {
     }
   }
 
-  thumbnails(imgWidth = 100): Promise<Array<{ ts: number; img: Blob }>> {
+  /**
+   * Generate video thumbnails, if interval isn't set, it will generate thumbnails by keyframes
+   *
+   * @param imgWidth thumbnail width, default 100
+   * @param start start time in microseconds, default 0
+   * @param end end time in microseconds, default video duration
+   * @param interval interval time in microseconds
+   *
+   */
+  thumbnails(
+    imgWidth = 100,
+    start = 0,
+    end = this.#meta.duration,
+    interval?: number,
+  ): Promise<Array<{ ts: number; img: Blob }>> {
     const vc = this.#decoderConf.video;
     if (vc == null) return Promise.resolve([]);
 
@@ -266,31 +280,47 @@ export class MP4Clip implements IClip {
         );
       }
 
-      const samples = this.#videoSamples
-        .filter((s) => !s.deleted && s.is_sync)
-        .map(sample2VideoChunk);
-      if (samples.length === 0) {
-        resolver();
-        return;
+      function pushPngPromise(vf: VideoFrame) {
+        pngPromises.push({
+          ts: vf.timestamp,
+          img: convtr(vf),
+        });
       }
 
-      let cnt = 0;
-      const dec = new VideoDecoder({
-        output: (vf) => {
-          cnt += 1;
-          pngPromises.push({
-            ts: vf.timestamp,
-            img: convtr(vf),
-          });
-          if (cnt === samples.length) resolver();
-        },
-        error: Log.error,
-      });
-      dec.configure(vc);
-      samples.forEach((c) => {
-        dec.decode(c);
-      });
-      await dec.flush();
+      if (interval) {
+        let cur = start;
+        while (cur <= end) {
+          const vf = await this.#videoFrameFinder?.find(cur);
+          if (vf) pushPngPromise(vf);
+          cur += interval;
+        }
+        resolver();
+      } else {
+        const samples = this.#videoSamples
+          .filter(
+            (s) => !s.deleted && s.is_sync && s.cts >= start && s.cts <= end,
+          )
+          .map(sample2VideoChunk);
+        if (samples.length === 0) {
+          resolver();
+          return;
+        }
+
+        let cnt = 0;
+        const dec = new VideoDecoder({
+          output: (vf) => {
+            cnt += 1;
+            pushPngPromise(vf);
+            if (cnt === samples.length) resolver();
+          },
+          error: Log.error,
+        });
+        dec.configure(vc);
+        samples.forEach((c) => {
+          dec.decode(c);
+        });
+        await dec.flush();
+      }
     });
   }
 
