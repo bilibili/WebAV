@@ -67,7 +67,7 @@ test('thumbnails', async () => {
   expect((await createImageBitmap(thumbnails[0].img)).width).toBe(100);
   const thumbnails150 = await clip.thumbnails(150, {
     start: 1e6,
-    end: 1e7,
+    end: 10e6,
     step: 1e6,
   });
   expect(thumbnails150.length).toBe(10);
