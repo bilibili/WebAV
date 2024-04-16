@@ -243,19 +243,15 @@ export class MP4Clip implements IClip {
   }
 
   /**
-   * Generate video thumbnails, if interval isn't set, it will generate thumbnails by keyframes
+   * Generate thumbnails, default generate 100px width thumbnails by every key frame.
    *
    * @param imgWidth thumbnail width, default 100
-   * @param start start time in microseconds, default 0
-   * @param end end time in microseconds, default video duration
-   * @param interval interval time in microseconds
-   *
+   * @param opts Partial<ThumbnailOpts>
+   * @returns Promise<Array<{ ts: number; img: Blob }>>
    */
   thumbnails(
     imgWidth = 100,
-    start = 0,
-    end = this.#meta.duration,
-    interval?: number,
+    opts?: Partial<ThumbnailOpts>,
   ): Promise<Array<{ ts: number; img: Blob }>> {
     const vc = this.#decoderConf.video;
     if (vc == null) return Promise.resolve([]);
@@ -287,12 +283,25 @@ export class MP4Clip implements IClip {
         });
       }
 
-      if (interval) {
+      const { start = 0, end = this.#meta.duration, step } = opts ?? {};
+      if (step) {
+        if (
+          this.#decoderConf.video == null ||
+          this.#videoSamples.length === 0
+        ) {
+          resolver();
+          return;
+        }
         let cur = start;
+        // 创建一个新的 VideoFrameFinder 实例，避免与 tick 方法共用而导致冲突
+        const videoFrameFinder = new VideoFrameFinder(
+          this.#videoSamples,
+          this.#decoderConf.video,
+        );
         while (cur <= end) {
-          const vf = await this.#videoFrameFinder?.find(cur);
+          const vf = await videoFrameFinder.find(cur);
           if (vf) pushPngPromise(vf);
-          cur += interval;
+          cur += step;
         }
         resolver();
       } else {
@@ -816,3 +825,9 @@ function createVF2BlobConvtr(
     return blob;
   };
 }
+
+export type ThumbnailOpts = {
+  start: number;
+  end: number;
+  step: number;
+};
