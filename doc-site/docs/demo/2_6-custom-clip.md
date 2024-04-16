@@ -73,6 +73,10 @@ class CountdownClip implements IClip {
     };
   }
 
+  clone() {
+    return new CountdownClip(this.#duration);
+  }
+
   destroy() {
     this.#cvsEl.remove();
   }
