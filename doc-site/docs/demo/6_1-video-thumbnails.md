@@ -21,7 +21,13 @@ const resList = assetsPrefix(['video/bunny.mp4']);
 async function start() {
   const clip = new MP4Clip((await fetch(resList[0])).body!);
   await clip.ready;
-  return await clip.thumbnails();
+  let t = performance.now();
+  const imgList = await clip.thumbnails();
+  const cost = ((performance.now() - t) / 1000).toFixed(2);
+  return {
+    imgList,
+    cost,
+  };
 }
 
 export default function UI() {
@@ -31,15 +37,15 @@ export default function UI() {
   const [cost, setCost] = useState(0);
 
   useEffect(() => {
-    let startTime = performance.now();
     (async () => {
+      const { imgList, cost } = await start();
       setImgList(
-        (await start()).map((it) => ({
+        imgList.map((it) => ({
           ts: it.ts,
           img: URL.createObjectURL(it.img),
         })),
       );
-      setCost(((performance.now() - startTime) / 1000).toFixed(2));
+      setCost(cost);
     })();
   }, []);
 
@@ -83,7 +89,17 @@ const resList = assetsPrefix(['video/bunny.mp4']);
 async function start() {
   const clip = new MP4Clip((await fetch(resList[0])).body!);
   await clip.ready;
-  return await clip.thumbnails(200, { start: 10e6, end: 20e6, step: 1e6 });
+  let t = performance.now();
+  const imgList = await clip.thumbnails(200, {
+    start: 10e6,
+    end: 20e6,
+    step: 1e6,
+  });
+  const cost = ((performance.now() - t) / 1000).toFixed(2);
+  return {
+    imgList,
+    cost,
+  };
 }
 
 export default function UI() {
@@ -93,15 +109,15 @@ export default function UI() {
   const [cost, setCost] = useState(0);
 
   useEffect(() => {
-    let startTime = performance.now();
     (async () => {
+      const { imgList, cost } = await start();
       setImgList(
-        (await start()).map((it) => ({
+        imgList.map((it) => ({
           ts: it.ts,
           img: URL.createObjectURL(it.img),
         })),
       );
-      setCost(((performance.now() - startTime) / 1000).toFixed(2));
+      setCost(cost);
     })();
   }, []);
 
@@ -125,3 +141,7 @@ export default function UI() {
   );
 }
 ```
+
+:::info
+DEMO 中的“耗时”包括：解码视频帧 + 编码缩略图的消耗，不包含网络加载视频资源消耗的时间。
+:::
