@@ -66,7 +66,12 @@ export default function UI() {
 
 ## 自定义步长
 
-可以通过指定视频时间段、步长（单位微秒）来获取视频帧。该 DEMO 从视频 10s - 60s 之间每隔 10s 抽取一帧。
+指定视频时间区间、步长（单位微秒）来获取视频帧的缩略图，用于当时间轴组件放大后，获取更多的细节帧。  
+该 DEMO 从视频 10s - 20s 之间每隔 1s 抽取一帧，缩略图宽度 200px。
+
+:::info
+时间区间不宜过大，避免生成缩略图耗时太长。
+:::
 
 ```tsx
 import { useState, useEffect } from 'react';
@@ -78,7 +83,7 @@ const resList = assetsPrefix(['video/bunny.mp4']);
 async function start() {
   const clip = new MP4Clip((await fetch(resList[0])).body!);
   await clip.ready;
-  return await clip.thumbnails(200, { start: 10e6, end: 60e6, step: 10e6 });
+  return await clip.thumbnails(200, { start: 10e6, end: 20e6, step: 1e6 });
 }
 
 export default function UI() {
