@@ -112,9 +112,8 @@ function init(opts: IWorkerOpts, onEnded: TClearFn): TClearFn {
   let stopEncodeAudio: TClearFn | null = null;
 
   const recoder = recodemux({
-    video: opts.video,
+    video: { ...opts.video, bitrate: opts.bitrate ?? 3_000_000 },
     audio: opts.audio,
-    bitrate: opts.bitrate ?? 3_000_000,
   });
 
   let stoped = false;
