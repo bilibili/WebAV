@@ -116,7 +116,7 @@ document.querySelector('#mp4-mp3')?.addEventListener('click', () => {
 document.querySelector('#mix-audio')?.addEventListener('click', () => {
   (async () => {
     const resList = ['./audio/44.1kHz-2chan.m4a', './audio/16kHz-1chan.mp3'];
-    const { loadStream } = playOutputStream(resList, playerContiner);
+    const { loadStream } = playOutputStream(resList, playerContiner, 'audio');
 
     const resp1 = await fetch(resList[0]);
     const resp2 = await fetch(resList[1]);
@@ -126,7 +126,7 @@ document.querySelector('#mix-audio')?.addEventListener('click', () => {
     );
     const spr2 = new OffscreenSprite('2', new AudioClip(resp2.body!));
 
-    const com = new Combinator({ width: 1280, height: 720 });
+    const com = new Combinator({});
     await com.add(spr1, { offset: 0, duration: 5 });
     await com.add(spr2, { offset: 0, duration: 4 });
 

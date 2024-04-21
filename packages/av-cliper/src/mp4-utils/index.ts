@@ -30,13 +30,13 @@ interface IWorkerOpts {
     height: number;
     expectFPS: number;
     codec: string;
-  };
+    bitrate: number;
+  } | null;
   audio: {
     codec: 'opus' | 'aac';
     sampleRate: number;
     channelCount: number;
   } | null;
-  bitrate: number;
 }
 
 export function _deprecated_demuxcode(
@@ -180,39 +180,39 @@ export function recodemux(opts: IWorkerOpts): {
   const avSyncEvtTool = new EventTool<
     Record<'VideoReady' | 'AudioReady', () => void>
   >();
-  const vEncoder = encodeVideoTrack(opts, mp4file, avSyncEvtTool);
-  let aEncoder: AudioEncoder | null = null;
-  if (opts.audio == null) {
-    avSyncEvtTool.emit('AudioReady');
-  } else {
-    aEncoder = encodeAudioTrack(opts.audio, mp4file, avSyncEvtTool);
-  }
+  let vEncoder =
+    opts.video != null
+      ? encodeVideoTrack(opts.video, mp4file, avSyncEvtTool)
+      : null;
+  let aEncoder =
+    opts.audio != null
+      ? encodeAudioTrack(opts.audio, mp4file, avSyncEvtTool)
+      : null;
+  if (opts.video == null) avSyncEvtTool.emit('VideoReady');
+  if (opts.audio == null) avSyncEvtTool.emit('AudioReady');
 
-  let maxSize = 0;
   return {
     encodeVideo: (vf, opts) => {
-      vEncoder.encode(vf, opts);
+      vEncoder?.encode(vf, opts);
       vf.close();
-
-      if (vEncoder.encodeQueueSize > maxSize)
-        maxSize = vEncoder.encodeQueueSize;
     },
     encodeAudio: (ad) => {
       if (aEncoder == null) return;
       aEncoder.encode(ad);
       ad.close();
     },
-    getEecodeQueueSize: () => vEncoder.encodeQueueSize,
+    getEecodeQueueSize: () =>
+      vEncoder?.encodeQueueSize ?? aEncoder?.encodeQueueSize ?? 0,
     flush: async () => {
       await Promise.all([
-        vEncoder.state === 'configured' ? vEncoder.flush() : null,
+        vEncoder?.state === 'configured' ? vEncoder.flush() : null,
         aEncoder?.state === 'configured' ? aEncoder.flush() : null,
       ]);
       return;
     },
     close: () => {
       avSyncEvtTool.destroy();
-      if (vEncoder.state === 'configured') vEncoder.close();
+      if (vEncoder?.state === 'configured') vEncoder.close();
       if (aEncoder?.state === 'configured') aEncoder.close();
     },
     mp4file,
@@ -220,20 +220,20 @@ export function recodemux(opts: IWorkerOpts): {
 }
 
 function encodeVideoTrack(
-  opts: IWorkerOpts,
+  opts: NonNullable<IWorkerOpts['video']>,
   mp4File: MP4File,
   avSyncEvtTool: EventTool<Record<'VideoReady' | 'AudioReady', () => void>>,
 ): VideoEncoder {
   const videoTrackOpts = {
     // 微秒
     timescale: 1e6,
-    width: opts.video.width,
-    height: opts.video.height,
+    width: opts.width,
+    height: opts.height,
     brands: ['isom', 'iso2', 'avc1', 'mp42', 'mp41'],
     avcDecoderConfigRecord: null as ArrayBuffer | undefined | null,
   };
 
-  let trackId: number;
+  let trackId = -1;
   let cache: EncodedVideoChunk[] = [];
   let audioReady = false;
   avSyncEvtTool.once('AudioReady', () => {
@@ -245,7 +245,7 @@ function encodeVideoTrack(
     cache = [];
   });
   const encoder = createVideoEncoder(opts, (chunk, meta) => {
-    if (trackId == null && meta != null) {
+    if (trackId === -1 && meta != null) {
       videoTrackOpts.avcDecoderConfigRecord = meta.decoderConfig
         ?.description as ArrayBuffer;
       trackId = mp4File.addTrack(videoTrackOpts);
@@ -265,7 +265,7 @@ function encodeVideoTrack(
 }
 
 function createVideoEncoder(
-  opts: IWorkerOpts,
+  videoOpts: NonNullable<IWorkerOpts['video']>,
   outHandler: EncodedVideoChunkOutputCallback,
 ): VideoEncoder {
   const encoder = new VideoEncoder({
@@ -273,13 +273,12 @@ function createVideoEncoder(
     output: outHandler,
   });
 
-  const videoOpts = opts.video;
   encoder.configure({
-    codec: opts.video.codec,
+    codec: videoOpts.codec,
     framerate: videoOpts.expectFPS,
     // hardwareAcceleration: 'prefer-hardware',
     // 码率
-    bitrate: opts.bitrate,
+    bitrate: videoOpts.bitrate,
     width: videoOpts.width,
     height: videoOpts.height,
     // H264 不支持背景透明度
@@ -305,7 +304,7 @@ function encodeAudioTrack(
     type: audioOpts.codec === 'aac' ? 'mp4a' : 'Opus',
   };
 
-  let trackId = 0;
+  let trackId = -1;
   let cache: EncodedAudioChunk[] = [];
   let videoReady = false;
   avSyncEvtTool.once('VideoReady', () => {
@@ -320,7 +319,7 @@ function encodeAudioTrack(
   const encoder = new AudioEncoder({
     error: Log.error,
     output: (chunk, meta) => {
-      if (trackId === 0) {
+      if (trackId === -1) {
         // 某些设备不会输出 description
         const desc = meta.decoderConfig?.description;
         trackId = mp4File.addTrack({
