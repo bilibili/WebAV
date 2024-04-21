@@ -7,11 +7,13 @@ export function CombinatorPlay({
   onStart,
   com,
   stream,
+  mediaType = 'video',
 }: {
   list: string[];
   onStart: () => void;
   com?: Combinator | null;
   stream?: ReadableStream | null;
+  mediaType: 'video' | 'audio';
 }) {
   const [state, setState] = useState('');
   const [videoSrc, setVideoSrc] = useState('');
@@ -57,7 +59,9 @@ export function CombinatorPlay({
         {videoSrc.length > 0 && (
           <a
             href={videoSrc}
-            download={`WebAV-${Date.now()}.mp4`}
+            download={`WebAV-${Date.now()}.${
+              mediaType === 'video' ? 'mp4' : 'm4a'
+            }`}
             target="_self"
             style={{ marginLeft: '16px', textDecoration: 'none' }}
           >
@@ -65,18 +69,21 @@ export function CombinatorPlay({
           </a>
         )}
       </div>
-      {videoSrc.length > 0 && (
-        <video
-          src={videoSrc}
-          controls
-          autoPlay
-          style={{
-            width: '600px',
-            height: '333px',
-            display: 'block',
-          }}
-        ></video>
-      )}
+      {videoSrc.length > 0 &&
+        (mediaType === 'video' ? (
+          <video
+            src={videoSrc}
+            controls
+            autoPlay
+            style={{
+              width: '600px',
+              height: '333px',
+              display: 'block',
+            }}
+          ></video>
+        ) : (
+          <audio src={videoSrc} controls autoPlay></audio>
+        ))}
     </div>
   );
 }
