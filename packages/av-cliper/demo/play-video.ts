@@ -1,6 +1,10 @@
 import { Combinator } from '../src';
 
-export function playOutputStream(resourceList: string[], attachEl: Element) {
+export function playOutputStream(
+  resourceList: string[],
+  attachEl: Element,
+  mediaElType: 'video' | 'audio' = 'video',
+) {
   const container = document.createElement('div');
   attachEl.appendChild(container);
 
@@ -16,14 +20,16 @@ export function playOutputStream(resourceList: string[], attachEl: Element) {
   stateEl.textContent = 'loading...';
   container.appendChild(stateEl);
 
-  const videoEl = document.createElement('video');
-  videoEl.controls = true;
-  videoEl.autoplay = true;
-  videoEl.style.cssText = `
-    width: 900px;
-    height: 500px;
-    display: block;
-  `;
+  const mediaEl = document.createElement(mediaElType);
+  mediaEl.controls = true;
+  mediaEl.autoplay = true;
+  if (mediaElType === 'video') {
+    mediaEl.style.cssText = `
+      width: 900px;
+      height: 500px;
+      display: block;
+    `;
+  }
 
   const btnContiner = document.createElement('div');
   container.appendChild(btnContiner);
@@ -33,7 +39,7 @@ export function playOutputStream(resourceList: string[], attachEl: Element) {
   closeEl.style.marginRight = '16px';
 
   btnContiner.appendChild(closeEl);
-  container.appendChild(videoEl);
+  container.appendChild(mediaEl);
 
   let timeStart = performance.now();
   return {
@@ -43,7 +49,7 @@ export function playOutputStream(resourceList: string[], attachEl: Element) {
         closed = true;
         com?.destroy();
         container.remove();
-        URL.revokeObjectURL(videoEl.src);
+        URL.revokeObjectURL(mediaEl.src);
       };
 
       com?.on('OutputProgress', (v) => {
@@ -54,24 +60,26 @@ export function playOutputStream(resourceList: string[], attachEl: Element) {
       const src = await new Response(stream).blob();
       if (closed) return;
 
-      videoEl.src = URL.createObjectURL(src);
+      mediaEl.src = URL.createObjectURL(src);
       stateEl.textContent = `cost: ${Math.round(
         performance.now() - timeStart,
       )}ms`;
 
-      btnContiner.appendChild(createDownloadBtn(videoEl.src));
+      btnContiner.appendChild(
+        createDownloadBtn(mediaEl.src, mediaElType === 'video' ? 'mp4' : 'm4a'),
+      );
     },
   };
 }
 
-function createDownloadBtn(url: string) {
+function createDownloadBtn(url: string, suffix: 'mp4' | 'm4a') {
   const downloadEl = document.createElement('button');
   downloadEl.textContent = 'download';
   downloadEl.onclick = () => {
     const aEl = document.createElement('a');
     document.body.appendChild(aEl);
     aEl.setAttribute('href', url);
-    aEl.setAttribute('download', `WebAV-export-${Date.now()}.mp4`);
+    aEl.setAttribute('download', `WebAV-export-${Date.now()}.${suffix}`);
     aEl.setAttribute('target', '_self');
     aEl.click();
   };

@@ -19,8 +19,8 @@ interface IComItem {
 }
 
 interface ICombinatorOpts {
-  width: number;
-  height: number;
+  width?: number;
+  height?: number;
   bitrate?: number;
   bgColor?: string;
   videoCodec?: string;
@@ -106,13 +106,15 @@ export class Combinator {
 
   #opts;
 
+  #hasVideoTrack: boolean;
+
   #evtTool = new EventTool<{
     OutputProgress: (progress: number) => void;
   }>();
   on = this.#evtTool.on;
 
   constructor(opts: ICombinatorOpts) {
-    const { width, height } = opts;
+    const { width = 0, height = 0 } = opts;
     this.#cvs = new OffscreenCanvas(width, height);
     // this.#cvs = document.querySelector('#canvas') as HTMLCanvasElement
     const ctx = this.#cvs.getContext('2d', { alpha: false });
@@ -120,19 +122,23 @@ export class Combinator {
     this.#ctx = ctx;
     this.#opts = Object.assign({ bgColor: '#000' }, opts);
 
+    this.#hasVideoTrack = width * height > 0;
+
     this.#remux = recodemux({
-      video: {
-        width,
-        height,
-        expectFPS: 30,
-        codec: opts.videoCodec ?? 'avc1.42E032',
-      },
+      video: this.#hasVideoTrack
+        ? {
+            width,
+            height,
+            expectFPS: 30,
+            codec: opts.videoCodec ?? 'avc1.42E032',
+            bitrate: opts.bitrate ?? 2_000_000,
+          }
+        : null,
       audio: {
         codec: 'aac',
         sampleRate: DEFAULT_AUDIO_CONF.sampleRate,
         channelCount: DEFAULT_AUDIO_CONF.channelCount,
       },
-      bitrate: opts.bitrate ?? 2_000_000,
     });
 
     TOTAL_COM_ENCODE_QSIZE.set(this, this.#remux.getEecodeQueueSize);
@@ -300,19 +306,23 @@ export class Combinator {
             }),
           );
         }
-        const vf = new VideoFrame(this.#cvs, {
-          duration: timeSlice,
-          timestamp: ts,
-        });
+
+        if (this.#hasVideoTrack) {
+          const vf = new VideoFrame(this.#cvs, {
+            duration: timeSlice,
+            timestamp: ts,
+          });
+
+          this.#remux.encodeVideo(vf, {
+            keyFrame: frameCnt % 150 === 0,
+          });
+          ctx.resetTransform();
+          ctx.clearRect(0, 0, width, height);
+
+          frameCnt += 1;
+        }
+
         ts += timeSlice;
-
-        this.#remux.encodeVideo(vf, {
-          keyFrame: frameCnt % 150 === 0,
-        });
-        ctx.resetTransform();
-        ctx.clearRect(0, 0, width, height);
-
-        frameCnt += 1;
 
         await encoderIdle();
       }
