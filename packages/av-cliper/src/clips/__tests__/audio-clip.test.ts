@@ -53,13 +53,13 @@ test('AudioClip loop', async () => {
   });
   await clip.ready;
   // 接近尾端
-  await clip.tick(120e6);
-  // 超过尾端 1s
+  await clip.tick(121e6);
+  // 超过音频长度 1s
   const {
     audio: [chan0],
-  } = await clip.tick(130e6);
+  } = await clip.tick(123e6);
   // 超过音频长度，也能获取完整的 10s 数据
-  expect(chan0.length).toBe(DEFAULT_AUDIO_CONF.sampleRate * 10);
+  expect(chan0.length).toBe(DEFAULT_AUDIO_CONF.sampleRate * 2);
 });
 
 test('concatAudioClip', async () => {
@@ -74,4 +74,22 @@ test('concatAudioClip', async () => {
 
   const { state: s2 } = await clip.tick(130e6);
   expect(s2).toBe('done');
+});
+
+test('seek', async () => {
+  const clip = new AudioClip((await fetch(m4a_44kHz_2chan)).body!, {
+    loop: true,
+  });
+  await clip.ready;
+  // seek to 10s
+  const { audio: audio0 } = await clip.tick(10e6);
+  expect(audio0[0].length).toBe(0);
+  const { audio: audio1 } = await clip.tick(11e6);
+  expect(audio1[0].length).toBe(DEFAULT_AUDIO_CONF.sampleRate * 1);
+
+  // seek to 9s
+  const { audio: audio2 } = await clip.tick(9e6);
+  expect(audio2[0].length).toBe(0);
+  const { audio: audio3 } = await clip.tick(11e6);
+  expect(audio3[0].length).toBe(DEFAULT_AUDIO_CONF.sampleRate * 2);
 });
