@@ -154,7 +154,6 @@ export class MP4Clip implements IClip {
   // 默认直接返回
   tickInterceptor = async (_: number, tickRet: any) => tickRet;
 
-  #ts = 0;
   async tick(time: number): Promise<{
     video?: VideoFrame;
     audio: Float32Array[];
@@ -195,7 +194,6 @@ export class MP4Clip implements IClip {
     ]);
     clearTimeout(timeoutTimer);
 
-    this.#ts = time;
     if (video == null) {
       return await this.tickInterceptor(time, {
         audio,
@@ -393,7 +391,7 @@ export class MP4Clip implements IClip {
 
   destroy(): void {
     if (this.#destroyed) return;
-    this.#log.info('MP4Clip destroy, ts:', this.#ts);
+    this.#log.info('MP4Clip destroy');
     this.#destroyed = true;
 
     this.#videoFrameFinder?.destroy();

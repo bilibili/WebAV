@@ -29,11 +29,6 @@ export class AudioClip implements IClip {
     return [this.#chan0Buf, this.#chan1Buf];
   }
 
-  // 微秒
-  #ts = 0;
-
-  #frameOffset = 0;
-
   #opts;
 
   constructor(
@@ -89,21 +84,39 @@ export class AudioClip implements IClip {
     );
   }
 
+  // 微秒
+  #ts = 0;
+  #frameOffset = 0;
+  /**
+   * Return the audio PCM data corresponding to the difference between the last and current moments. If the difference exceeds 3 seconds or the current time is less than the previous time, reset the state.
+   * CN: 返回上次与当前时刻差对应的音频 PCM 数据；若差值超过 3s 或当前时间小于上次时间，则重置状态
+   */
   async tick(time: number): Promise<{
     audio: Float32Array[];
     state: 'success' | 'done';
   }> {
-    if (time < this.#ts) throw Error('time not allow rollback');
     if (!this.#opts.loop && time >= this.#meta.duration) {
       // 待观察：如果time跨度较大，返回done，理论上会丢失一些音频帧
       return { audio: [], state: 'done' };
     }
 
     const deltaTime = time - this.#ts;
-    this.#ts = time;
 
+    // reset
+    if (time < this.#ts || deltaTime > 3e6) {
+      this.#ts = time;
+      this.#frameOffset = Math.ceil(
+        (this.#ts / 1e6) * DEFAULT_AUDIO_CONF.sampleRate,
+      );
+      return {
+        audio: [new Float32Array(0), new Float32Array(0)],
+        state: 'success',
+      };
+    }
+
+    this.#ts = time;
     const frameCnt = Math.ceil(
-      deltaTime * (DEFAULT_AUDIO_CONF.sampleRate / 1e6),
+      (deltaTime / 1e6) * DEFAULT_AUDIO_CONF.sampleRate,
     );
     const endIdx = this.#frameOffset + frameCnt;
     const audio = this.#opts.loop
