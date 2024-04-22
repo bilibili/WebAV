@@ -87,6 +87,10 @@ export class AudioClip implements IClip {
   // 微秒
   #ts = 0;
   #frameOffset = 0;
+  /**
+   * Return the audio PCM data corresponding to the difference between the last and current moments. If the difference exceeds 3 seconds or the current time is less than the previous time, reset the state.
+   * CN: 返回上次与当前时刻差对应的音频 PCM 数据；若差值超过 3s 或当前时间小于上次时间，则重置状态
+   */
   async tick(time: number): Promise<{
     audio: Float32Array[];
     state: 'success' | 'done';
