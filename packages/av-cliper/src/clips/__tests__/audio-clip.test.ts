@@ -93,3 +93,14 @@ test('seek', async () => {
   const { audio: audio3 } = await clip.tick(11e6);
   expect(audio3[0].length).toBe(DEFAULT_AUDIO_CONF.sampleRate * 2);
 });
+
+test('split by time', async () => {
+  const clip = new AudioClip((await fetch(m4a_44kHz_2chan)).body!);
+  const [preClip1, postClip2] = await clip.split(60e6);
+  expect(Math.round(preClip1.meta.duration / 1e6)).toBe(60);
+  expect(Math.round(postClip2.meta.duration / 1e6)).toBe(62);
+
+  const [preClip11, postClip12] = await preClip1.split(30e6);
+  expect(Math.round(preClip11.meta.duration / 1e6)).toBe(30);
+  expect(Math.round(postClip12.meta.duration / 1e6)).toBe(30);
+});
