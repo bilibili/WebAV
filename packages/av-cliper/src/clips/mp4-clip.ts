@@ -25,6 +25,14 @@ interface MP4ClipOpts {
   audio?: boolean | { volume: number };
 }
 
+type ExtMP4Sample = MP4Sample & { deleted?: boolean };
+
+type ThumbnailOpts = {
+  start: number;
+  end: number;
+  step: number;
+};
+
 export class MP4Clip implements IClip {
   #log = Log.create(`MP4Clip id:${CLIP_ID++},`);
 
@@ -47,9 +55,9 @@ export class MP4Clip implements IClip {
 
   #volume = 1;
 
-  #videoSamples: Array<MP4Sample & { deleted?: boolean }> = [];
+  #videoSamples: ExtMP4Sample[] = [];
 
-  #audioSamples: Array<MP4Sample & { deleted?: boolean }> = [];
+  #audioSamples: ExtMP4Sample[] = [];
 
   #videoFrameFinder: VideoFrameFinder | null = null;
   #audioFrameFinder: AudioFrameFinder | null = null;
@@ -100,8 +108,8 @@ export class MP4Clip implements IClip {
 
     function genDeocder(
       decoderConf: MP4DecoderConf,
-      videoSamples: MP4Sample[],
-      audioSamples: MP4Sample[],
+      videoSamples: ExtMP4Sample[],
+      audioSamples: ExtMP4Sample[],
       volume: number | null,
     ) {
       return {
@@ -123,8 +131,8 @@ export class MP4Clip implements IClip {
 
     function genMeta(
       decoderConf: MP4DecoderConf,
-      videoSamples: MP4Sample[],
-      audioSamples: MP4Sample[],
+      videoSamples: ExtMP4Sample[],
+      audioSamples: ExtMP4Sample[],
     ) {
       const meta = {
         duration: 0,
@@ -142,8 +150,15 @@ export class MP4Clip implements IClip {
         meta.audioChanCount = DEFAULT_AUDIO_CONF.channelCount;
       }
 
-      const lastSampele = videoSamples.at(-1) ?? audioSamples.at(-1);
-      if (lastSampele != null) {
+      if (videoSamples.length > 0) {
+        for (let i = videoSamples.length - 1; i >= 0; i--) {
+          const s = videoSamples[i];
+          if (s.deleted) continue;
+          meta.duration = s.cts + s.duration;
+          break;
+        }
+      } else if (audioSamples.length > 0) {
+        const lastSampele = audioSamples.at(-1)!;
         meta.duration = lastSampele.cts + lastSampele.duration;
       }
 
@@ -332,6 +347,40 @@ export class MP4Clip implements IClip {
         await dec.flush();
       }
     });
+  }
+
+  async split(time: number) {
+    await this.ready;
+
+    if (time <= 0 || time >= this.#meta.duration)
+      throw Error('"time" out of bounds');
+
+    const [preVideoSlice, nextVideoSlice] = splitVideoSampleByTime(
+      this.#videoSamples,
+      time,
+    );
+    const [preAudioSlice, nextAudioSlice] = splitAudioSampleByTime(
+      this.#audioSamples,
+      time,
+    );
+    const preClip = new MP4Clip(
+      {
+        videoSamples: preVideoSlice,
+        audioSamples: preAudioSlice,
+        decoderConf: this.#decoderConf,
+      },
+      this.#opts,
+    );
+    const nextClip = new MP4Clip(
+      {
+        videoSamples: nextVideoSlice,
+        audioSamples: nextAudioSlice,
+        decoderConf: this.#decoderConf,
+      },
+      this.#opts,
+    );
+
+    return [preClip, nextClip];
   }
 
   async clone() {
@@ -827,8 +876,63 @@ function createVF2BlobConvtr(
   };
 }
 
-export type ThumbnailOpts = {
-  start: number;
-  end: number;
-  step: number;
-};
+function splitVideoSampleByTime(videoSamples: ExtMP4Sample[], time: number) {
+  let gopStartIdx = 0;
+  let gopEndIdx = 0;
+  let hitIdx = -1;
+  for (let i = 0; i < videoSamples.length; i++) {
+    const s = videoSamples[i];
+    if (hitIdx === -1 && time < s.cts) hitIdx = i - 1;
+    if (s.is_sync) {
+      if (hitIdx === -1) {
+        gopStartIdx = i;
+      } else {
+        gopEndIdx = i;
+        break;
+      }
+    }
+  }
+
+  const hitSample = videoSamples[hitIdx];
+  if (hitSample == null) throw Error('Not found video sample by time');
+
+  const preSlice = videoSamples
+    .slice(0, gopEndIdx === 0 ? videoSamples.length : gopEndIdx)
+    .map((s) => ({ ...s }));
+  for (let i = gopStartIdx; i < preSlice.length; i++) {
+    const s = preSlice[i];
+    if (time < s.cts) {
+      s.deleted = true;
+      s.cts = -1;
+    }
+  }
+
+  const nextSlice = videoSamples
+    .slice(hitSample.is_sync ? gopEndIdx : gopStartIdx)
+    .map((s) => ({ ...s, cts: s.cts - time }));
+  for (let i = 0; i < gopEndIdx - gopEndIdx; i++) {
+    const s = preSlice[i];
+    if (s.cts < 0) {
+      s.deleted = true;
+      s.cts = -1;
+    }
+  }
+
+  return [preSlice, nextSlice];
+}
+
+function splitAudioSampleByTime(audioSamples: ExtMP4Sample[], time: number) {
+  let hitIdx = -1;
+  for (let i = 0; i < audioSamples.length; i++) {
+    const s = audioSamples[i];
+    if (time > s.cts) continue;
+    hitIdx = i;
+    break;
+  }
+  if (hitIdx === -1) throw Error('Not found audio sample by time');
+  const preSlice = audioSamples.slice(0, hitIdx);
+  const nextSlice = audioSamples
+    .slice(0, hitIdx)
+    .map((s) => ({ ...s, cts: s.cts - time }));
+  return [preSlice, nextSlice];
+}
