@@ -208,6 +208,9 @@ export class MP4Clip implements IClip {
     });
   }
 
+  /**
+   * @deprecated
+   */
   deleteRange(startTime: number, endTime: number) {
     if (endTime <= startTime)
       throw Error('endTime must be greater than startTime');

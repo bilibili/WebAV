@@ -29,12 +29,16 @@ async function start() {
 }
 
 let timer;
+const audioCtx = new AudioContext();
+let audioSource;
 function play(ctx, initTime, updateTime) {
   let curTime = initTime;
+  let startAt = 0;
+  let first = true;
 
-  clearInterval(timer);
+  stop();
   timer = setInterval(async () => {
-    const { state, video } = await clip.tick(Math.round(curTime));
+    const { state, video, audio } = await clip.tick(Math.round(curTime));
     curTime += (1000 / 30) * 1000;
     updateTime(curTime);
     if (state === 'done') {
@@ -46,7 +50,32 @@ function play(ctx, initTime, updateTime) {
       ctx.drawImage(video, 0, 0, 900, 500);
       video.close();
     }
+
+    if (first) {
+      // 首次播放丢弃当前音频数据
+      // 比如 seek 到 10s，播放的音频数据应该是从第 10s 开始，需要丢弃前面音频数据
+      first = false;
+      return;
+    }
+
+    const len = audio[0]?.length ?? 0;
+    if (len === 0) return;
+    const buf = audioCtx.createBuffer(2, len, 48000);
+    buf.copyToChannel(audio[0], 0);
+    buf.copyToChannel(audio[1], 1);
+    audioSource = audioCtx.createBufferSource();
+    audioSource.buffer = buf;
+    audioSource.connect(audioCtx.destination);
+    startAt = Math.max(audioCtx.currentTime, startAt);
+    audioSource.start(startAt);
+
+    startAt += buf.duration;
   }, 1000 / 30);
+}
+
+function stop() {
+  audioSource?.stop();
+  clearInterval(timer);
 }
 
 export default function UI() {
@@ -67,7 +96,7 @@ export default function UI() {
 
   async function preview(val) {
     setPlaying(false);
-    clearInterval(timer);
+    stop();
     setCurTime(val);
     const time = val * 1e6;
     console.log('preview time:', time);
@@ -98,7 +127,7 @@ export default function UI() {
           <Button
             onClick={() => {
               if (playing) {
-                clearInterval(timer);
+                stop();
               } else {
                 console.log(curTime);
                 play(ctx, curTime * 1e6, (playTime) => {
@@ -121,7 +150,7 @@ export default function UI() {
         }}
       />
       <div className="flex items-center">
-        <span>裁剪</span>
+        <span>裁剪(弃用 deleteRange 即将有新的实现)</span>
         <div className="flex-1 ml-4">
           <Slider
             range
