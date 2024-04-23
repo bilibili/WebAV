@@ -2,6 +2,8 @@ import { decodeImg } from '../av-utils';
 import { Log } from '../log';
 import { IClip } from './iclip';
 
+type AnimateImgType = 'avif' | 'webp' | 'png' | 'gif';
+
 export class ImgClip implements IClip {
   ready: IClip['ready'];
 
@@ -12,6 +14,10 @@ export class ImgClip implements IClip {
     height: 0,
   };
 
+  get meta() {
+    return { ...this.#meta };
+  }
+
   #img: ImageBitmap | null = null;
 
   #frames: VideoFrame[] = [];
@@ -20,7 +26,7 @@ export class ImgClip implements IClip {
     dataSource:
       | ImageBitmap
       | VideoFrame[]
-      | { type: 'image/gif'; stream: ReadableStream },
+      | { type: `image/${AnimateImgType}`; stream: ReadableStream },
   ) {
     if (dataSource instanceof ImageBitmap) {
       this.#img = dataSource;
@@ -45,17 +51,21 @@ export class ImgClip implements IClip {
       };
       this.ready = Promise.resolve({ ...this.#meta, duration: Infinity });
     } else {
-      this.ready = this.#gifInit(dataSource.stream, dataSource.type).then(
-        () => ({
-          width: this.#meta.width,
-          height: this.#meta.height,
-          duration: Infinity,
-        }),
-      );
+      this.ready = this.#initAnimateImg(
+        dataSource.stream,
+        dataSource.type,
+      ).then(() => ({
+        width: this.#meta.width,
+        height: this.#meta.height,
+        duration: Infinity,
+      }));
     }
   }
 
-  async #gifInit(stream: ReadableStream, type: string) {
+  async #initAnimateImg(
+    stream: ReadableStream,
+    type: `image/${AnimateImgType}`,
+  ) {
     this.#frames = await decodeImg(stream, type);
     const firstVf = this.#frames[0];
     if (firstVf == null) throw Error('No frame available in gif');
@@ -88,6 +98,31 @@ export class ImgClip implements IClip {
       ).clone(),
       state: 'success',
     };
+  }
+
+  async split(time: number) {
+    await this.ready;
+    if (this.#img != null) {
+      return [new ImgClip(this.#img), new ImgClip(this.#img)];
+    }
+    let hitIdx = -1;
+    for (let i = 0; i < this.#frames.length; i++) {
+      const vf = this.#frames[i];
+      if (time > vf.timestamp) continue;
+      hitIdx = i;
+      break;
+    }
+    if (hitIdx === -1) throw Error('Not found frame by time');
+    const preSlice = this.#frames
+      .slice(0, hitIdx)
+      .map((vf) => new VideoFrame(vf));
+    const postSlice = this.#frames.slice(hitIdx).map(
+      (vf) =>
+        new VideoFrame(vf, {
+          timestamp: vf.timestamp - time,
+        }),
+    );
+    return [new ImgClip(preSlice), new ImgClip(postSlice)] as this[];
   }
 
   async clone() {
