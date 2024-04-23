@@ -355,11 +355,11 @@ export class MP4Clip implements IClip {
     if (time <= 0 || time >= this.#meta.duration)
       throw Error('"time" out of bounds');
 
-    const [preVideoSlice, nextVideoSlice] = splitVideoSampleByTime(
+    const [preVideoSlice, postVideoSlice] = splitVideoSampleByTime(
       this.#videoSamples,
       time,
     );
-    const [preAudioSlice, nextAudioSlice] = splitAudioSampleByTime(
+    const [preAudioSlice, postAudioSlice] = splitAudioSampleByTime(
       this.#audioSamples,
       time,
     );
@@ -371,16 +371,16 @@ export class MP4Clip implements IClip {
       },
       this.#opts,
     );
-    const nextClip = new MP4Clip(
+    const postClip = new MP4Clip(
       {
-        videoSamples: nextVideoSlice,
-        audioSamples: nextAudioSlice,
+        videoSamples: postVideoSlice,
+        audioSamples: postAudioSlice,
         decoderConf: this.#decoderConf,
       },
       this.#opts,
     );
 
-    return [preClip, nextClip];
+    return [preClip, postClip];
   }
 
   async clone() {
@@ -907,7 +907,7 @@ function splitVideoSampleByTime(videoSamples: ExtMP4Sample[], time: number) {
     }
   }
 
-  const nextSlice = videoSamples
+  const postSlice = videoSamples
     .slice(hitSample.is_sync ? gopEndIdx : gopStartIdx)
     .map((s) => ({ ...s, cts: s.cts - time }));
   for (let i = 0; i < gopEndIdx - gopEndIdx; i++) {
@@ -918,7 +918,7 @@ function splitVideoSampleByTime(videoSamples: ExtMP4Sample[], time: number) {
     }
   }
 
-  return [preSlice, nextSlice];
+  return [preSlice, postSlice];
 }
 
 function splitAudioSampleByTime(audioSamples: ExtMP4Sample[], time: number) {
@@ -931,8 +931,8 @@ function splitAudioSampleByTime(audioSamples: ExtMP4Sample[], time: number) {
   }
   if (hitIdx === -1) throw Error('Not found audio sample by time');
   const preSlice = audioSamples.slice(0, hitIdx);
-  const nextSlice = audioSamples
+  const postSlice = audioSamples
     .slice(0, hitIdx)
     .map((s) => ({ ...s, cts: s.cts - time }));
-  return [preSlice, nextSlice];
+  return [preSlice, postSlice];
 }

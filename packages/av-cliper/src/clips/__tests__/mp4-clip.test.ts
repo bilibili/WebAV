@@ -128,13 +128,13 @@ test('splitTrack when only has video track', async () => {
 
 test('split MP4Clip by time', async () => {
   const clip = new MP4Clip((await fetch(mp4_bunny_1)).body!);
-  const [preClip1, nextClip2] = await clip.split(10e6);
+  const [preClip1, postClip2] = await clip.split(10e6);
   expect(Math.round(preClip1.meta.duration / 1e6)).toEqual(10);
-  expect(Math.round(nextClip2.meta.duration / 1e6)).toEqual(11);
+  expect(Math.round(postClip2.meta.duration / 1e6)).toEqual(11);
   expect(preClip1.meta.audioChanCount).toBe(2);
-  expect(nextClip2.meta.audioChanCount).toBe(2);
+  expect(postClip2.meta.audioChanCount).toBe(2);
   // second split
-  const [preClip11, nextClip12] = await preClip1.split(5e6);
+  const [preClip11, postClip12] = await preClip1.split(5e6);
   expect(Math.round(preClip11.meta.duration / 1e6)).toEqual(5);
-  expect(Math.round(nextClip12.meta.duration / 1e6)).toEqual(5);
+  expect(Math.round(postClip12.meta.duration / 1e6)).toEqual(5);
 });
