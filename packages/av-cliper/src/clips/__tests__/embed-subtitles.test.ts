@@ -1,5 +1,4 @@
 import { expect, test } from 'vitest';
-// import '../../__tests__/mock';
 import { EmbedSubtitlesClip } from '../embed-subtitles-clip';
 
 const txt1 = `
@@ -79,4 +78,16 @@ test('EmbedSubtitles digital', async () => {
   // 显示第一个字幕
   expect(vf1?.timestamp).toBe(342000);
   expect(vf1?.duration).toBe(3218000 - 342000);
+});
+
+test('split by time', async () => {
+  const clip = new EmbedSubtitlesClip(txt1, {
+    videoWidth: 1280,
+    videoHeight: 720,
+  });
+  await clip.ready;
+  const [preClip, postClip] = await clip.split(30e6);
+  expect(clip.meta.duration).toBe(
+    preClip.meta.duration + postClip.meta.duration,
+  );
 });

@@ -29,14 +29,26 @@ declare global {
   }
 }
 
+interface SubtitleStruct {
+  start: number;
+  end: number;
+  text: string;
+}
+
 export class EmbedSubtitlesClip implements IClip {
   ready: IClip['ready'];
 
-  #subtitles: Array<{
-    start: number;
-    end: number;
-    text: string;
-  }> = [];
+  #subtitles: SubtitleStruct[] = [];
+
+  #meta = {
+    width: 0,
+    height: 0,
+    duration: 0,
+  };
+
+  get meta() {
+    return { ...this.#meta };
+  }
 
   #opts: Required<IEmbedSubtitlesOpts> = {
     color: '#FFF',
@@ -68,15 +80,14 @@ export class EmbedSubtitlesClip implements IClip {
   #lineHeight = 0;
   #linePadding = 0;
 
-  #content;
-
-  constructor(content: string, opts: IEmbedSubtitlesOpts) {
-    this.#content = content;
-    this.#subtitles = parseSrt(content).map(({ start, end, text }) => ({
-      start: start * 1e6,
-      end: end * 1e6,
-      text,
-    }));
+  constructor(content: string | SubtitleStruct[], opts: IEmbedSubtitlesOpts) {
+    this.#subtitles = Array.isArray(content)
+      ? content
+      : parseSrt(content).map(({ start, end, text }) => ({
+          start: start * 1e6,
+          end: end * 1e6,
+          text,
+        }));
     if (this.#subtitles.length === 0) throw Error('No subtitles content');
 
     this.#opts = Object.assign(this.#opts, opts);
@@ -94,12 +105,13 @@ export class EmbedSubtitlesClip implements IClip {
     this.#ctx.textBaseline = 'top';
     this.#ctx.letterSpacing = letterSpacing ?? '0px';
 
-    // 字幕的宽高 由视频画面内容决定
-    this.ready = Promise.resolve({
+    this.#meta = {
       width: videoWidth,
       height: videoHeight,
       duration: this.#subtitles.at(-1)?.end ?? 0,
-    });
+    };
+    // 字幕的宽高 由视频画面内容决定
+    this.ready = Promise.resolve(this.meta);
   }
 
   #renderTxt(txt: string) {
@@ -225,8 +237,41 @@ export class EmbedSubtitlesClip implements IClip {
     return { video: vf.clone(), state: 'success' };
   }
 
+  async split(time: number) {
+    await this.ready;
+    let hitIdx = -1;
+    for (let i = 0; i < this.#subtitles.length; i++) {
+      const sub = this.#subtitles[i];
+      if (time > sub.start) continue;
+      hitIdx = i;
+      break;
+    }
+    if (hitIdx === -1) throw Error('Not found subtitle by time');
+    const preSlice = this.#subtitles.slice(0, hitIdx).map((s) => ({ ...s }));
+    let preLastIt = preSlice.at(-1);
+    let postFirstIt = null;
+    // 切割时间命中字幕区间，需要将当前字幕元素拆成前后两份
+    if (preLastIt != null && preLastIt.end > time) {
+      postFirstIt = {
+        start: 0,
+        end: preLastIt.end - time,
+        text: preLastIt.text,
+      };
+
+      preLastIt.end = time;
+    }
+    const postSlice = this.#subtitles
+      .slice(hitIdx)
+      .map((s) => ({ ...s, start: s.start - time, end: s.end - time }));
+    if (postFirstIt != null) postSlice.unshift(postFirstIt);
+    return [
+      new EmbedSubtitlesClip(preSlice, this.#opts),
+      new EmbedSubtitlesClip(postSlice, this.#opts),
+    ] as this[];
+  }
+
   async clone() {
-    return new EmbedSubtitlesClip(this.#content, this.#opts) as this;
+    return new EmbedSubtitlesClip(this.#subtitles.slice(0), this.#opts) as this;
   }
 
   destroy() {
