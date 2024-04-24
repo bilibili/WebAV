@@ -115,7 +115,7 @@ test('split track', async () => {
   expect(Math.round(trackClips[1].meta.duration / 1e6)).toBe(21);
 });
 
-test('split when only has video track', async () => {
+test('splitTrack when only has video track', async () => {
   const clip = new MP4Clip((await fetch(mp4_bunny_1)).body!, { audio: false });
   await clip.ready;
   const trackClips = await clip.splitTrack();
@@ -124,4 +124,17 @@ test('split when only has video track', async () => {
   expect(trackClips[0].meta.width).toBe(640);
   expect(trackClips[0].meta.audioChanCount).toBe(0);
   expect(Math.round(trackClips[0].meta.duration / 1e6)).toBe(21);
+});
+
+test('split MP4Clip by time', async () => {
+  const clip = new MP4Clip((await fetch(mp4_bunny_1)).body!);
+  const [preClip1, postClip2] = await clip.split(10e6);
+  expect(Math.round(preClip1.meta.duration / 1e6)).toEqual(10);
+  expect(Math.round(postClip2.meta.duration / 1e6)).toEqual(11);
+  expect(preClip1.meta.audioChanCount).toBe(2);
+  expect(postClip2.meta.audioChanCount).toBe(2);
+  // second split
+  const [preClip11, postClip12] = await preClip1.split(5e6);
+  expect(Math.round(preClip11.meta.duration / 1e6)).toEqual(5);
+  expect(Math.round(postClip12.meta.duration / 1e6)).toEqual(5);
 });

@@ -92,7 +92,7 @@ export async function decodeImg(
   };
   const imageDecoder = new ImageDecoder(init);
 
-  await Promise.all([imageDecoder.completed, imageDecoder.tracks.ready])
+  await Promise.all([imageDecoder.completed, imageDecoder.tracks.ready]);
 
   let frameCnt = imageDecoder.tracks.selectedTrack?.frameCount ?? 1;
 
@@ -209,8 +209,8 @@ export function autoReadStream<ST extends ReadableStream>(
   stream: ST,
   cbs: {
     onChunk: ST extends ReadableStream<infer DT>
-    ? (chunk: DT) => Promise<void>
-    : never;
+      ? (chunk: DT) => Promise<void>
+      : never;
     onDone: () => void;
   },
 ) {

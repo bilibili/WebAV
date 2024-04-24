@@ -23,6 +23,14 @@ export class AudioClip implements IClip {
     height: 0,
   };
 
+  get meta() {
+    return {
+      duration: this.#meta.duration,
+      sampleRate: DEFAULT_AUDIO_CONF.sampleRate,
+      chanCount: 2,
+    };
+  }
+
   #chan0Buf = new Float32Array();
   #chan1Buf = new Float32Array();
   getPCMData(): Float32Array[] {
@@ -131,6 +139,20 @@ export class AudioClip implements IClip {
     this.#frameOffset = endIdx;
 
     return { audio, state: 'success' };
+  }
+
+  async split(time: number) {
+    await this.ready;
+    const frameCnt = Math.ceil((time / 1e6) * DEFAULT_AUDIO_CONF.sampleRate);
+    const preSlice = new AudioClip(
+      this.getPCMData().map((chan) => chan.slice(0, frameCnt)),
+      this.#opts,
+    );
+    const postSlice = new AudioClip(
+      this.getPCMData().map((chan) => chan.slice(frameCnt)),
+      this.#opts,
+    );
+    return [preSlice, postSlice];
   }
 
   async clone() {
