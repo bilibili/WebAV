@@ -150,7 +150,7 @@ export default function UI() {
         }}
       />
       <div className="flex items-center">
-        <span>裁剪(弃用 deleteRange 即将有新的实现)</span>
+        <span>裁剪(deleteRange 已弃用)</span>
         <div className="flex-1 ml-4">
           <Slider
             range
@@ -178,3 +178,8 @@ export default function UI() {
   );
 }
 ```
+
+:::warning
+示例中裁剪使用 `deleteRange` 方法已弃用，建议使用 `split` 按时间将素材切割成两份，实现裁剪功能。  
+`split` 用法详情查看单测用例，未来得及更新 DEMO。
+:::
