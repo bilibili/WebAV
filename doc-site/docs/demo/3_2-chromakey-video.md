@@ -28,7 +28,7 @@ const resList = assetsPrefix(['video/chromakey-test.mp4', 'img/bunny.png']);
 const chromakey = createChromakey({
   // 未设置 keyColor 默认取左上角第一个像素的颜色值
   // keyColor: '#00FF00'
-  similarity: 0.4,
+  similarity: 0.33,
   smoothness: 0.1,
   spill: 0.1,
 });
