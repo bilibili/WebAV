@@ -5,3 +5,4 @@ export * from './mp4-clip';
 export * from './img-clip';
 export * from './audio-clip';
 export * from './embed-subtitles-clip';
+export { parseHLSStream } from './m3u8-parser';
