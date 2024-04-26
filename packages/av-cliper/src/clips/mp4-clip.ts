@@ -465,6 +465,8 @@ async function parseMP4Stream(
     audioSamples: typeof audioSamples;
     decoderConf: typeof decoderConf;
   }>(async (resolve, reject) => {
+    let videoDeltaTS = -1;
+    let audioDeltaTS = -1;
     const stopRead = autoReadStream(source.pipeThrough(new SampleTransform()), {
       onChunk: async ({ chunkType, data }) => {
         if (chunkType === 'ready') {
@@ -483,12 +485,14 @@ async function parseMP4Stream(
           Log.info('mp4BoxFile moov ready', decoderConf);
         } else if (chunkType === 'samples') {
           if (data.type === 'video') {
+            if (videoDeltaTS === -1) videoDeltaTS = data.samples[0].dts;
             videoSamples = videoSamples.concat(
-              data.samples.map(normalizeTimescale),
+              data.samples.map((s) => normalizeTimescale(s, videoDeltaTS)),
             );
           } else if (data.type === 'audio' && opts.audio) {
+            if (audioDeltaTS === -1) audioDeltaTS = data.samples[0].dts;
             audioSamples = audioSamples.concat(
-              data.samples.map(normalizeTimescale),
+              data.samples.map((s) => normalizeTimescale(s, audioDeltaTS)),
             );
           }
         }
@@ -512,11 +516,11 @@ async function parseMP4Stream(
     });
   });
 
-  function normalizeTimescale(s: MP4Sample) {
+  function normalizeTimescale(s: MP4Sample, delta = 0) {
     return {
       ...s,
-      cts: (s.cts / s.timescale) * 1e6,
-      dts: (s.dts / s.timescale) * 1e6,
+      cts: ((s.cts - delta) / s.timescale) * 1e6,
+      dts: ((s.dts - delta) / s.timescale) * 1e6,
       duration: (s.duration / s.timescale) * 1e6,
       timescale: 1e6,
     };
