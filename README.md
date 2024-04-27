@@ -35,7 +35,8 @@ Here you can find rich demos that you can experience online immediately.
 这里有丰富的可立即在线体验的 DEMO。
 
 [Articles by the author (zh_CN)](https://hughfenghen.github.io/WebAV/article)  
-[作者写的相关文章](https://hughfenghen.github.io/WebAV/article)
+[作者写的相关文章](https://hughfenghen.github.io/WebAV/article)  
+[Web 音视频知识图谱](https://github.com/hughfenghen/WebAV-KnowledgeGraph)
 
 ## Features
 
