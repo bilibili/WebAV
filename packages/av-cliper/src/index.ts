@@ -24,6 +24,8 @@ export { createChromakey } from './chromakey';
 export * from './clips';
 export { OffscreenSprite } from './sprite/offscreen-sprite';
 export { BaseSprite } from './sprite/base-sprite';
+export { Rect } from './sprite/rect';
+export type { TCtrlKey } from './sprite/rect';
 export { Combinator } from './combinator';
 
 export * from './log';

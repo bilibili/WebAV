@@ -110,7 +110,7 @@ export class AVCanvas {
   #render(): void {
     const cvsCtx = this.#cvsCtx;
     const list = this.spriteManager.getSprites();
-    list.forEach((r) => r.render(cvsCtx));
+    list.forEach((r) => r._render(cvsCtx));
 
     cvsCtx.resetTransform();
   }
