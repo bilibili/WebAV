@@ -33,6 +33,10 @@ export abstract class BaseSprite {
 
   initReady = Promise.resolve();
 
+  /**
+   * @deprecated
+   * `name` arg is deprecated
+   */
   constructor(public name: string) {}
 
   _render(
