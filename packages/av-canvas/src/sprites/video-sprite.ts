@@ -79,7 +79,7 @@ export class VideoSprite extends BaseSprite {
 
   render(ctx: CanvasRenderingContext2D): void {
     if (this.#videoEl == null) return;
-    super.render(ctx);
+    super._render(ctx);
     const { w, h } = this.rect;
     ctx.drawImage(this.#videoEl, -w / 2, -h / 2, w, h);
   }

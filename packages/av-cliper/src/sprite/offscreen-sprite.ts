@@ -37,7 +37,7 @@ export class OffscreenSprite extends BaseSprite {
     done: boolean;
   }> {
     this.animate(time);
-    super.render(ctx);
+    super._render(ctx);
     const { w, h } = this.rect;
     const { video, audio, state } = await this.#clip.tick(time);
     if (state === 'done') {

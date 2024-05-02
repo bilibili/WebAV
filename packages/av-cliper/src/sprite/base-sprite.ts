@@ -35,7 +35,7 @@ export abstract class BaseSprite {
 
   constructor(public name: string) {}
 
-  render(
+  _render(
     ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D,
   ): void {
     const {
