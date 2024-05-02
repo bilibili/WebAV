@@ -21,10 +21,9 @@ export {
 } from './mp4-utils';
 export { createChromakey } from './chromakey';
 
-export * from './rect';
 export * from './clips';
-export { OffscreenSprite } from './offscreen-sprite';
-export { BaseSprite } from './base-sprite';
+export { OffscreenSprite } from './sprite/offscreen-sprite';
+export { BaseSprite } from './sprite/base-sprite';
 export { Combinator } from './combinator';
 
 export * from './log';

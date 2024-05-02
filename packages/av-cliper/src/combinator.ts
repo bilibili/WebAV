@@ -1,4 +1,4 @@
-import { OffscreenSprite } from './offscreen-sprite';
+import { OffscreenSprite } from './sprite/offscreen-sprite';
 import { file2stream, recodemux } from './mp4-utils';
 import { Log } from './log';
 import { mixinPCM, sleep, throttle } from './av-utils';

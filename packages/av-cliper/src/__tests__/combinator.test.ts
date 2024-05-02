@@ -1,5 +1,5 @@
 import { test, expect } from 'vitest';
-import { OffscreenSprite } from '../offscreen-sprite';
+import { OffscreenSprite } from '../sprite/offscreen-sprite';
 import { AudioClip, MP4Clip } from '../clips';
 import { Combinator } from '../combinator';
 

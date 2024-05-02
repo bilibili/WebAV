@@ -1,6 +1,6 @@
 import { BaseSprite } from './base-sprite';
-import { IClip } from './clips';
-import { Log } from './log';
+import { IClip } from '../clips';
+import { Log } from '../log';
 
 export class OffscreenSprite extends BaseSprite {
   #clip: IClip;

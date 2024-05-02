@@ -1,7 +1,7 @@
 import { AudioClip, ImgClip, MP4Clip, concatAudioClip } from '../src/clips';
 import { Combinator } from '../src/combinator';
 import { Log } from '../src/log';
-import { OffscreenSprite } from '../src/offscreen-sprite';
+import { OffscreenSprite } from '../src/sprite/offscreen-sprite';
 import { renderTxt2ImgBitmap } from '../src/dom-utils';
 import { EmbedSubtitlesClip } from '../src/clips/embed-subtitles-clip';
 import { playOutputStream } from './play-video';
