@@ -1,3 +1,4 @@
+import { workerTimer } from '@webav/av-cliper';
 import { Log, Rect, TCtrlKey } from '@webav/av-cliper';
 import { renderCtrls } from './sprites/render-ctrl';
 import { ESpriteManagerEvt, SpriteManager } from './sprites/sprite-manager';
@@ -27,15 +28,15 @@ export class AVCanvas {
   #destroyed = false;
 
   #clears: Array<() => void> = [];
+  #stopRender: () => void;
 
   constructor(
     container: HTMLElement,
     opts: {
-      resolution: IResolution;
       bgColor: string;
-    },
+    } & IResolution,
   ) {
-    this.#cvsEl = createInitCvsEl(opts.resolution);
+    this.#cvsEl = createInitCvsEl(opts);
     const ctx = this.#cvsEl.getContext('2d', { alpha: false });
     if (ctx == null) throw Error('canvas context is null');
     this.#cvsCtx = ctx;
@@ -61,26 +62,45 @@ export class AVCanvas {
       }),
     );
 
-    const loop = (): void => {
-      if (this.#destroyed) return;
-
+    this.#stopRender = workerTimer(() => {
       this.#cvsCtx.fillStyle = opts.bgColor;
-      this.#cvsCtx.fillRect(
-        0,
-        0,
-        opts.resolution.width,
-        opts.resolution.height,
-      );
+      this.#cvsCtx.fillRect(0, 0, this.#cvsEl.width, this.#cvsEl.height);
       this.#render();
-      requestAnimationFrame(loop);
-    };
-    loop();
+    }, 1000 / 30);
 
     // ;(window as any).cvsEl = this.#cvsEl
   }
 
+  #curTime = 0;
+  #render(): void {
+    const cvsCtx = this.#cvsCtx;
+    if (
+      this.#curTime >= this.#playState.start &&
+      this.#curTime < this.#playState.end
+    ) {
+      this.#curTime += this.#playState.step;
+    }
+
+    const list = this.spriteManager.getSprites();
+    list.forEach((r) => r.render(cvsCtx, this.#curTime));
+
+    cvsCtx.resetTransform();
+  }
+
+  #playState: Parameters<AVCanvas['play']>[0] = { start: 0, end: 0, step: 0 };
+  play(opts: { start: number; end: number; step: number }) {
+    this.#curTime = opts.start;
+    this.#playState = opts;
+  }
+  pause() {
+    this.#playState.step = 0;
+  }
+
   destroy(): void {
+    if (this.#destroyed) return;
     this.#destroyed = true;
+
+    this.#stopRender();
     this.#cvsEl.remove();
     this.#clears.forEach((fn) => fn());
     this.spriteManager.destroy();
@@ -105,14 +125,6 @@ export class AVCanvas {
       ms.getTracks().map((t) => t.kind),
     );
     return ms;
-  }
-
-  #render(): void {
-    const cvsCtx = this.#cvsCtx;
-    const list = this.spriteManager.getSprites();
-    list.forEach((r) => r._render(cvsCtx));
-
-    cvsCtx.resetTransform();
   }
 }
 

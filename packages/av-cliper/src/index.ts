@@ -20,6 +20,7 @@ export {
   MP4Previewer,
 } from './mp4-utils';
 export { createChromakey } from './chromakey';
+export { workerTimer } from './worker-timer';
 
 export * from './clips';
 export { OffscreenSprite } from './sprite/offscreen-sprite';
