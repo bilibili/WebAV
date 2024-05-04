@@ -25,7 +25,7 @@ export { workerTimer } from './worker-timer';
 export * from './clips';
 export { OffscreenSprite } from './sprite/offscreen-sprite';
 export { Sprite } from './sprite/sprite';
-export { Rect } from './sprite/rect';
+export { Rect, CTRL_KEYS } from './sprite/rect';
 export type { TCtrlKey } from './sprite/rect';
 export { Combinator } from './combinator';
 

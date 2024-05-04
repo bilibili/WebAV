@@ -1,6 +1,6 @@
 import { ICvsRatio } from '../types';
 import { createEl } from '../utils';
-import { BaseSprite, CTRL_KEYS, TCtrlKey } from '@webav/av-cliper';
+import { Sprite, CTRL_KEYS, TCtrlKey } from '@webav/av-cliper';
 import { ESpriteManagerEvt, SpriteManager } from './sprite-manager';
 
 export function renderCtrls(
@@ -96,7 +96,7 @@ function createRectAndCtrlEl(container: HTMLElement): {
 }
 
 function syncCtrlElPos(
-  s: BaseSprite,
+  s: Sprite,
   rectEl: HTMLElement,
   ctrlsEl: Record<TCtrlKey, HTMLElement>,
   cvsRatio: ICvsRatio,
