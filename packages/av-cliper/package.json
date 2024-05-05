@@ -23,7 +23,7 @@
     "test": "vitest --config test-vite.config.ts",
     "test:coverage": "vitest run --coverage",
     "build": "vite build && tsc -p build.tsconfig.json --outDir dist",
-    "build:dev": "rimraf dist && concurrently --kill-others \"vite build --watch\" \"tsc -p build.tsconfig.json --outDir dist --watch\"",
+    "build:dev": "vite build --watch --emptyOutDir false & tsc -p build.tsconfig.json --outDir dist --watch",
     "build:api": "typedoc src/index.ts --out ../../doc-site/public/_api/av-cliper",
     "prepublishOnly": "yarn build"
   },
@@ -33,7 +33,6 @@
   "devDependencies": {
     "@vitest/browser": "^1.4.0",
     "@vitest/coverage-istanbul": "^0.29.8",
-    "concurrently": "^8.2.0",
     "jsdom": "^21.1.1",
     "prettier": "^3.2.5",
     "typescript": "^4.9.3",
