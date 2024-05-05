@@ -1,5 +1,4 @@
-import { workerTimer } from '@webav/av-cliper';
-import { Log, Rect, TCtrlKey } from '@webav/av-cliper';
+import { workerTimer, mixinPCM, Log, Rect, TCtrlKey } from '@webav/av-cliper';
 import { renderCtrls } from './sprites/render-ctrl';
 import { ESpriteManagerEvt, SpriteManager } from './sprites/sprite-manager';
 import { activeSprite, draggabelSprite } from './sprites/sprite-op';
@@ -71,18 +70,36 @@ export class AVCanvas {
     // ;(window as any).cvsEl = this.#cvsEl
   }
 
+  #audioCtx = new AudioContext();
   #curTime = 0e6;
   #render() {
     const cvsCtx = this.#cvsCtx;
     if (
+      this.#playState.step !== 0 &&
       this.#curTime >= this.#playState.start &&
       this.#curTime < this.#playState.end
     ) {
       this.#curTime += this.#playState.step;
+    } else {
+      this.#playState.step = 0;
     }
 
+    const audios: Float32Array[][] = [];
     for (const s of this.spriteManager.getSprites()) {
-      s.render(cvsCtx, this.#curTime);
+      const { audio } = s.render(cvsCtx, this.#curTime);
+      audios.push(audio);
+    }
+    if (this.#playState.step !== 0 && audios.length > 0) {
+      this.#playState.audioPlayAt = Math.max(
+        this.#audioCtx.currentTime,
+        this.#playState.audioPlayAt,
+      );
+      const duration = renderPCM(
+        mixinPCM(audios),
+        this.#playState.audioPlayAt,
+        this.#audioCtx,
+      );
+      this.#playState.audioPlayAt += duration;
     }
 
     cvsCtx.resetTransform();
@@ -91,7 +108,10 @@ export class AVCanvas {
   #playState = {
     start: 0,
     end: 20e6,
+    // paused state when step equal 0
     step: 0,
+    // step: (1000 / 30) * 1000,
+    audioPlayAt: 0,
   };
   play(opts: { start: number; end: number; playbackRate: number }) {
     this.#curTime = opts.start;
@@ -99,6 +119,7 @@ export class AVCanvas {
     this.#playState.end = opts.end;
     // AVCanvas 30FPS，将播放速率转换成步长
     this.#playState.step = opts.playbackRate * (1000 / 30) * 1000;
+    this.#playState.audioPlayAt = 0;
   }
   pause() {
     this.#playState.step = 0;
@@ -134,6 +155,20 @@ export class AVCanvas {
     );
     return ms;
   }
+}
+
+function renderPCM(pcm: Float32Array, at: number, ctx: AudioContext) {
+  const len = pcm.length;
+  if (len === 0) return 0;
+  // streo is default
+  const buf = ctx.createBuffer(2, pcm.length / 2, 48000);
+  buf.copyToChannel(new Float32Array(pcm, 0, pcm.byteLength / 2), 0);
+  buf.copyToChannel(new Float32Array(pcm, pcm.byteLength / 2), 1);
+  const audioSource = ctx.createBufferSource();
+  audioSource.buffer = buf;
+  audioSource.connect(ctx.destination);
+  audioSource.start(at);
+  return buf.duration;
 }
 
 /**
