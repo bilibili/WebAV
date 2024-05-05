@@ -19,7 +19,7 @@
   "module": "dist/av-canvas.js",
   "main": "dist/av-canvas.umd.cjs",
   "scripts": {
-    "dev": "vite demo",
+    "dev": "vite demo --config demo-vite.config.ts",
     "test": "vitest",
     "test:coverage": "vitest run --coverage",
     "build": "vite build && tsc -p build.tsconfig.json --outDir dist",
