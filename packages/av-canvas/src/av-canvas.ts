@@ -71,8 +71,8 @@ export class AVCanvas {
     // ;(window as any).cvsEl = this.#cvsEl
   }
 
-  #curTime = 0;
-  #render(): void {
+  #curTime = 0e6;
+  #render() {
     const cvsCtx = this.#cvsCtx;
     if (
       this.#curTime >= this.#playState.start &&
@@ -81,16 +81,24 @@ export class AVCanvas {
       this.#curTime += this.#playState.step;
     }
 
-    const list = this.spriteManager.getSprites();
-    list.forEach((r) => r.render(cvsCtx, this.#curTime));
+    for (const s of this.spriteManager.getSprites()) {
+      s.render(cvsCtx, this.#curTime);
+    }
 
     cvsCtx.resetTransform();
   }
 
-  #playState: Parameters<AVCanvas['play']>[0] = { start: 0, end: 0, step: 0 };
-  play(opts: { start: number; end: number; step: number }) {
+  #playState = {
+    start: 0,
+    end: 20e6,
+    step: 0,
+  };
+  play(opts: { start: number; end: number; playbackRate: number }) {
     this.#curTime = opts.start;
-    this.#playState = opts;
+    this.#playState.start = opts.start;
+    this.#playState.end = opts.end;
+    // AVCanvas 30FPS，将播放速率转换成步长
+    this.#playState.step = opts.playbackRate * (1000 / 30) * 1000;
   }
   pause() {
     this.#playState.step = 0;
