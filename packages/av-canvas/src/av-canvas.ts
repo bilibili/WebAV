@@ -70,8 +70,8 @@ export class AVCanvas {
     // ;(window as any).cvsEl = this.#cvsEl
   }
 
-  #audioCtx = new AudioContext();
   #curTime = 0e6;
+  #audioCtx = new AudioContext();
   #render() {
     const cvsCtx = this.#cvsCtx;
     if (
@@ -113,15 +113,19 @@ export class AVCanvas {
     // step: (1000 / 30) * 1000,
     audioPlayAt: 0,
   };
-  play(opts: { start: number; end: number; playbackRate: number }) {
+  play(opts: { start: number; end: number; playbackRate?: number }) {
     this.#curTime = opts.start;
     this.#playState.start = opts.start;
     this.#playState.end = opts.end;
     // AVCanvas 30FPS，将播放速率转换成步长
-    this.#playState.step = opts.playbackRate * (1000 / 30) * 1000;
+    this.#playState.step = (opts.playbackRate ?? 1) * (1000 / 30) * 1000;
     this.#playState.audioPlayAt = 0;
   }
   pause() {
+    this.#playState.step = 0;
+  }
+  previewFrame(time: number) {
+    this.#curTime = time;
     this.#playState.step = 0;
   }
 
