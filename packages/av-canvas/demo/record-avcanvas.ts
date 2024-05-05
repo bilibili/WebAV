@@ -1,4 +1,4 @@
-import { Sprite, MP4Clip } from '@webav/av-cliper';
+import { VisibleSprite, MP4Clip } from '@webav/av-cliper';
 import {
   AVCanvas,
   //   AudioSprite,
@@ -30,7 +30,7 @@ document.querySelector('#userMedia')?.addEventListener('click', () => {
     // });
     // await avCvs.spriteManager.addSprite(vs);
     const clip = new MP4Clip((await fetch('./video/bunny.mp4')).body!);
-    await avCvs.spriteManager.addSprite(new Sprite(clip));
+    await avCvs.spriteManager.addSprite(new VisibleSprite(clip));
   })().catch(console.error);
 });
 

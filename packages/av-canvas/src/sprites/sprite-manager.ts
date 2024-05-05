@@ -1,5 +1,5 @@
 import { EventTool } from '../event-tool';
-import { Sprite } from '@webav/av-cliper';
+import { VisibleSprite } from '@webav/av-cliper';
 
 export enum ESpriteManagerEvt {
   ActiveSpriteChange = 'activeSpriteChange',
@@ -7,13 +7,13 @@ export enum ESpriteManagerEvt {
 }
 
 export class SpriteManager {
-  #sprites: Sprite[] = [];
+  #sprites: VisibleSprite[] = [];
 
-  #activeSprite: Sprite | null = null;
+  #activeSprite: VisibleSprite | null = null;
 
   #evtTool = new EventTool<{
-    [ESpriteManagerEvt.AddSprite]: (s: Sprite) => void;
-    [ESpriteManagerEvt.ActiveSpriteChange]: (s: Sprite | null) => void;
+    [ESpriteManagerEvt.AddSprite]: (s: VisibleSprite) => void;
+    [ESpriteManagerEvt.ActiveSpriteChange]: (s: VisibleSprite | null) => void;
   }>();
 
   audioCtx = new AudioContext();
@@ -22,10 +22,10 @@ export class SpriteManager {
 
   on = this.#evtTool.on;
 
-  get activeSprite(): Sprite | null {
+  get activeSprite(): VisibleSprite | null {
     return this.#activeSprite;
   }
-  set activeSprite(s: Sprite | null) {
+  set activeSprite(s: VisibleSprite | null) {
     if (s === this.#activeSprite) return;
     this.#activeSprite = s;
     this.#evtTool.emit(ESpriteManagerEvt.ActiveSpriteChange, s);
@@ -35,7 +35,7 @@ export class SpriteManager {
     this.#bgAudio();
   }
 
-  async addSprite<S extends Sprite>(s: S): Promise<void> {
+  async addSprite<S extends VisibleSprite>(s: S): Promise<void> {
     await s.initReady;
     this.#sprites.push(s);
     this.#sprites = this.#sprites.sort((a, b) => a.zIndex - b.zIndex);
@@ -51,12 +51,12 @@ export class SpriteManager {
     this.#sprites = this.#sprites.sort((a, b) => a.zIndex - b.zIndex);
   }
 
-  removeSprite(spr: Sprite): void {
+  removeSprite(spr: VisibleSprite): void {
     this.#sprites = this.#sprites.filter((s) => s !== spr);
     spr.destroy();
   }
 
-  getSprites(): Sprite[] {
+  getSprites(): VisibleSprite[] {
     return [...this.#sprites];
   }
 

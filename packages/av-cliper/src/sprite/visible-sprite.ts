@@ -2,7 +2,7 @@ import { BaseSprite } from './base-sprite';
 import { IClip } from '../clips';
 import { Log } from '../log';
 
-export class Sprite extends BaseSprite {
+export class VisibleSprite extends BaseSprite {
   /**
    * Clip duration
    */
