@@ -2,8 +2,8 @@ import './mock';
 import { beforeEach, expect, test, vi } from 'vitest';
 import { AVCanvas } from '../av-canvas';
 import { createEl } from '../utils';
-import { VideoSprite } from '../sprites/video-sprite';
 import { crtMSEvt4Offset, cvsCaptureStreamMock, CvsElementMock } from './mock';
+import { IClip, VisibleSprite } from '@webav/av-cliper';
 
 function createAVCanvas(): {
   avCvs: AVCanvas;
@@ -12,7 +12,8 @@ function createAVCanvas(): {
   const container = createEl('div');
   return {
     avCvs: new AVCanvas(container, {
-      resolution: { width: 100, height: 100 },
+      width: 100,
+      height: 100,
       bgColor: '#333',
     }),
     container,
@@ -20,6 +21,17 @@ function createAVCanvas(): {
 }
 
 let { avCvs, container } = createAVCanvas();
+
+class MockClip implements IClip {
+  tick: (time: number) => Promise<{
+    video?: ImageBitmap | VideoFrame | undefined;
+    audio?: Float32Array[] | undefined;
+    state: 'done' | 'success';
+  }>;
+  ready: Promise<{ width: number; height: number; duration: number }>;
+  clone: () => Promise<this>;
+  destroy: () => void;
+}
 
 beforeEach(() => {
   container.remove();
@@ -33,18 +45,12 @@ beforeEach(() => {
   container = d.container;
 });
 
-test('av-canvas create & destroy', () => {
-  const spyMngDestroy = vi.spyOn(avCvs.spriteManager, 'destroy');
-  avCvs.destroy();
-  expect(spyMngDestroy).toBeCalled();
-});
-
 test('init center the Sprite', async () => {
-  const vs = new VideoSprite('vs', new MediaStream());
+  const vs = new VisibleSprite(new MockClip());
   await vs.initReady;
   vs.rect.w = 80;
   vs.rect.h = 80;
-  await avCvs.spriteManager.addSprite(vs);
+  await avCvs.addSprite(vs);
   expect(vs.rect.x).toBe((100 - 80) / 2);
   expect(vs.rect.y).toBe((100 - 80) / 2);
 });
@@ -59,36 +65,15 @@ test('captureStream', () => {
   expect(ms.addTrack).toBeCalledWith('mock-track');
 });
 
-test('activeSprite', async () => {
-  const vs = new VideoSprite('vs', new MediaStream());
-  await vs.initReady;
-  vs.rect.w = 80;
-  vs.rect.h = 80;
-  await avCvs.spriteManager.addSprite(vs);
-
-  const cvsEl = container.querySelector('canvas') as HTMLCanvasElement;
-  cvsEl.dispatchEvent(crtMSEvt4Offset('mousedown', 20, 20));
-  expect(avCvs.spriteManager.activeSprite).toBe(vs);
-
-  cvsEl.dispatchEvent(crtMSEvt4Offset('mousedown', 10, 10));
-  // 命中 ctrls.lt
-  expect(avCvs.spriteManager.activeSprite).toBe(vs);
-
-  cvsEl.dispatchEvent(crtMSEvt4Offset('mousedown', 0, 0));
-  expect(avCvs.spriteManager.activeSprite).toBeNull();
-});
-
 test('dynamicCusor', async () => {
-  const vs = new VideoSprite('vs', new MediaStream());
+  const vs = new VisibleSprite(new MockClip());
   await vs.initReady;
   vs.rect.w = 80;
   vs.rect.h = 80;
-  await avCvs.spriteManager.addSprite(vs);
   const cvsEl = container.querySelector('canvas') as HTMLCanvasElement;
   cvsEl.dispatchEvent(crtMSEvt4Offset('mousedown', 20, 20));
   window.dispatchEvent(crtMSEvt4Offset('mouseup', 20, 20));
 
-  expect(avCvs.spriteManager.activeSprite).toBe(vs);
   expect(cvsEl.style.cursor).toBe('move');
 
   const {

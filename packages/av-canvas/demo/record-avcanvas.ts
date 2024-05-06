@@ -30,7 +30,7 @@ document.querySelector('#userMedia')?.addEventListener('click', () => {
     // });
     // await avCvs.spriteManager.addSprite(vs);
     const clip = new MP4Clip((await fetch('./video/bunny.mp4')).body!);
-    await avCvs.spriteManager.addSprite(new VisibleSprite(clip));
+    await avCvs.addSprite(new VisibleSprite(clip));
   })().catch(console.error);
 });
 

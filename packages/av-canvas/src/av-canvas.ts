@@ -20,7 +20,7 @@ function createInitCvsEl(resolution: IResolution): HTMLCanvasElement {
 export class AVCanvas {
   #cvsEl: HTMLCanvasElement;
 
-  spriteManager: SpriteManager;
+  #spriteManager: SpriteManager;
 
   #cvsCtx: CanvasRenderingContext2D;
 
@@ -42,16 +42,16 @@ export class AVCanvas {
     container.appendChild(this.#cvsEl);
 
     Rect.CTRL_SIZE = 14 / (this.#cvsEl.clientWidth / this.#cvsEl.width);
-    this.spriteManager = new SpriteManager();
+    this.#spriteManager = new SpriteManager();
 
     this.#clears.push(
       // 鼠标样式、控制 sprite 依赖 activeSprite，
       // activeSprite 需要在他们之前监听到 mousedown 事件 (代码顺序需要靠前)
-      activeSprite(this.#cvsEl, this.spriteManager),
-      dynamicCusor(this.#cvsEl, this.spriteManager),
-      draggabelSprite(this.#cvsEl, this.spriteManager),
-      renderCtrls(container, this.#cvsEl, this.spriteManager),
-      this.spriteManager.on(ESpriteManagerEvt.AddSprite, (s) => {
+      activeSprite(this.#cvsEl, this.#spriteManager),
+      dynamicCusor(this.#cvsEl, this.#spriteManager),
+      draggabelSprite(this.#cvsEl, this.#spriteManager),
+      renderCtrls(container, this.#cvsEl, this.#spriteManager),
+      this.#spriteManager.on(ESpriteManagerEvt.AddSprite, (s) => {
         const { rect } = s;
         // 默认居中
         if (rect.x === 0 && rect.y === 0) {
@@ -85,7 +85,7 @@ export class AVCanvas {
     }
 
     const audios: Float32Array[][] = [];
-    for (const s of this.spriteManager.getSprites()) {
+    for (const s of this.#spriteManager.getSprites()) {
       const { audio } = s.render(cvsCtx, this.#curTime);
       audios.push(audio);
     }
@@ -129,27 +129,34 @@ export class AVCanvas {
     this.#playState.step = 0;
   }
 
+  // proxy to SpriteManager
+  addSprite: SpriteManager['addSprite'] = (...args) =>
+    this.#spriteManager.addSprite(...args);
+  removeSprite: SpriteManager['removeSprite'] = (...args) =>
+    this.#spriteManager.removeSprite(...args);
+
   destroy(): void {
     if (this.#destroyed) return;
     this.#destroyed = true;
 
+    this.#audioCtx.close();
     this.#stopRender();
     this.#cvsEl.remove();
     this.#clears.forEach((fn) => fn());
-    this.spriteManager.destroy();
+    this.#spriteManager.destroy();
   }
 
   captureStream(): MediaStream {
-    if (this.spriteManager.audioCtx.state === 'suspended') {
+    if (this.#spriteManager.audioCtx.state === 'suspended') {
       Log.info('AVCanvas.captureStream resume AudioContext');
-      this.spriteManager.audioCtx.resume().catch(Log.error);
+      this.#spriteManager.audioCtx.resume().catch(Log.error);
     }
 
     const ms = new MediaStream();
     this.#cvsEl
       .captureStream()
       .getTracks()
-      .concat(this.spriteManager.audioMSDest.stream.getTracks())
+      .concat(this.#spriteManager.audioMSDest.stream.getTracks())
       .forEach((t) => {
         ms.addTrack(t);
       });
