@@ -141,10 +141,22 @@ export class AVCanvas {
     // step: (1000 / 30) * 1000,
     audioPlayAt: 0,
   };
-  play(opts: { start: number; end: number; playbackRate?: number }) {
+  play(opts: { start: number; end?: number; playbackRate?: number }) {
+    const end =
+      opts.end ??
+      Math.max(
+        ...this.#spriteManager
+          .getSprites()
+          .map((sw) => sw.offset + sw.duration),
+      );
+    if (!Number.isFinite(end) || opts.start >= end || opts.start < 0) {
+      throw Error(
+        `Invalid time parameter, ${JSON.stringify({ start: opts.start, end })}`,
+      );
+    }
     this.#curTime = opts.start;
     this.#playState.start = opts.start;
-    this.#playState.end = opts.end;
+    this.#playState.end = end;
     // AVCanvas 30FPS，将播放速率转换成步长
     this.#playState.step = (opts.playbackRate ?? 1) * (1000 / 30) * 1000;
     this.#playState.audioPlayAt = 0;
