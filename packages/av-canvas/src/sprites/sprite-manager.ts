@@ -1,5 +1,4 @@
-import { EventTool } from '../event-tool';
-import { VisibleSprite } from '@webav/av-cliper';
+import { VisibleSprite, EventTool } from '@webav/av-cliper';
 
 export enum ESpriteManagerEvt {
   ActiveSpriteChange = 'activeSpriteChange',
