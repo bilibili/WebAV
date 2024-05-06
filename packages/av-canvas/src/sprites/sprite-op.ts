@@ -1,6 +1,6 @@
 import { SpriteManager } from './sprite-manager';
 import { ICvsRatio, IPoint } from '../types';
-import { Sprite, Rect, TCtrlKey } from '@webav/av-cliper';
+import { VisibleSprite, Rect, TCtrlKey } from '@webav/av-cliper';
 
 /**
  * 鼠标点击，激活 sprite
@@ -37,7 +37,7 @@ export function activeSprite(
         .getSprites()
         // 排在后面的层级更高
         .reverse()
-        .find((s) => s.rect.checkHit(ofx, ofy)) ?? null;
+        .find((sw) => sw.sprite.rect.checkHit(ofx, ofy))?.sprite ?? null;
   };
 
   cvsEl.addEventListener('mousedown', onCvsMouseDown);
@@ -71,7 +71,7 @@ export function draggabelSprite(
   let startRect: Rect | null = null;
   let mvLimit: Record<'xl' | 'xr' | 'yt' | 'yb', number> | null = null;
 
-  let hitSpr: Sprite | null = null;
+  let hitSpr: VisibleSprite | null = null;
   // sprMng.activeSprite 在 av-canvas.ts -> activeSprite 中被赋值
   const onCvsMouseDown = (evt: MouseEvent): void => {
     // 鼠标左键才能拖拽移动
