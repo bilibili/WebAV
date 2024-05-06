@@ -211,7 +211,7 @@ export class AVCanvas {
     const com = new Combinator({ ...this.#opts, ...opts });
     for (const sw of this.#spriteManager.getSprites()) {
       const spr = new OffscreenSprite('', sw.sprite.getClip());
-      spr.rect = sw.sprite.rect.clone();
+      sw.sprite.copyStateTo(spr);
       await com.add(spr, { offset: sw.offset, duration: sw.duration });
     }
     return com;

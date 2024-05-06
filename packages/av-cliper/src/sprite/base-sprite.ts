@@ -106,7 +106,7 @@ export abstract class BaseSprite {
     }
   }
 
-  protected copyStateTo<T extends BaseSprite>(target: T) {
+  copyStateTo<T extends BaseSprite>(target: T) {
     target.#animatKeyFrame = this.#animatKeyFrame;
     target.#animatOpts = this.#animatOpts;
     target.visible = this.visible;
