@@ -131,7 +131,7 @@ export class Combinator {
             height,
             expectFPS: 30,
             codec: opts.videoCodec ?? 'avc1.42E032',
-            bitrate: opts.bitrate ?? 2_000_000,
+            bitrate: opts.bitrate ?? 5_000_000,
           }
         : null,
       audio: {
@@ -154,8 +154,8 @@ export class Combinator {
     this.#comItems.push({
       sprite: await sprite.clone(),
       // sprite,
-      offset: (opts.offset ?? 0) * 1e6,
-      duration: opts.duration == null ? sprite.duration : opts.duration * 1e6,
+      offset: opts.offset ?? 0,
+      duration: opts.duration == null ? sprite.duration : opts.duration,
       main: opts.main ?? false,
       expired: false,
     });
@@ -184,6 +184,7 @@ export class Combinator {
       );
     }
 
+    this.#log.info(`start combinate video, maxTime:${maxTime}`);
     let starTime = performance.now();
     const stopReCodeMux = this.#run(
       maxTime,
