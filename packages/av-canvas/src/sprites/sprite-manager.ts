@@ -6,8 +6,14 @@ export enum ESpriteManagerEvt {
   AddSprite = 'addSprite',
 }
 
+interface ISpriteWrap {
+  offset: number;
+  duration: number;
+  sprite: VisibleSprite;
+}
+
 export class SpriteManager {
-  #sprites: VisibleSprite[] = [];
+  #sprites: ISpriteWrap[] = [];
 
   #activeSprite: VisibleSprite | null = null;
 
@@ -35,10 +41,19 @@ export class SpriteManager {
     this.#bgAudio();
   }
 
-  async addSprite<S extends VisibleSprite>(s: S): Promise<void> {
+  async addSprite(
+    s: VisibleSprite,
+    opts: { offset?: number; duration?: number } = {},
+  ): Promise<void> {
     await s.initReady;
-    this.#sprites.push(s);
-    this.#sprites = this.#sprites.sort((a, b) => a.zIndex - b.zIndex);
+    this.#sprites.push({
+      sprite: s,
+      offset: opts.offset ?? 0,
+      duration: opts.duration ?? s.duration,
+    });
+    this.#sprites = this.#sprites.sort(
+      (a, b) => a.sprite.zIndex - b.sprite.zIndex,
+    );
     s.audioNode?.connect(this.audioMSDest);
 
     this.#evtTool.emit(ESpriteManagerEvt.AddSprite, s);
@@ -48,21 +63,22 @@ export class SpriteManager {
    * Sort in ascending order by sprite.zIndex
    */
   sortSprite() {
-    this.#sprites = this.#sprites.sort((a, b) => a.zIndex - b.zIndex);
+    // todo: auto sort
+    // this.#sprites = this.#sprites.sort((a, b) => a.zIndex - b.zIndex);
   }
 
   removeSprite(spr: VisibleSprite): void {
-    this.#sprites = this.#sprites.filter((s) => s !== spr);
+    this.#sprites = this.#sprites.filter((sw) => sw.sprite !== spr);
     spr.destroy();
   }
 
-  getSprites(): VisibleSprite[] {
+  getSprites(): ISpriteWrap[] {
     return [...this.#sprites];
   }
 
   destroy(): void {
     this.#evtTool.destroy();
-    this.#sprites.forEach((s) => s.destroy());
+    this.#sprites.forEach((sw) => sw.sprite.destroy());
     this.#sprites = [];
     this.audioMSDest.disconnect();
     this.audioCtx.close().catch(console.error);

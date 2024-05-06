@@ -1,11 +1,5 @@
-import { VisibleSprite, MP4Clip } from '@webav/av-cliper';
-import {
-  AVCanvas,
-  //   AudioSprite,
-  //   TextSprite,
-  //   ImgSprite,
-  //   VideoSprite,
-} from '../src/index';
+import { VisibleSprite, MP4Clip, ImgClip } from '@webav/av-cliper';
+import { AVCanvas } from '../src/index';
 import { AVRecorder } from '@webav/av-recorder';
 
 const avCvs = new AVCanvas(document.querySelector('#app') as HTMLElement, {
@@ -30,7 +24,27 @@ document.querySelector('#userMedia')?.addEventListener('click', () => {
     // });
     // await avCvs.spriteManager.addSprite(vs);
     const clip = new MP4Clip((await fetch('./video/bunny.mp4')).body!);
-    await avCvs.addSprite(new VisibleSprite(clip));
+    await avCvs.addSprite(new VisibleSprite(clip), {
+      offset: 0,
+      duration: 10e6,
+    });
+
+    const spr = new VisibleSprite(
+      new ImgClip({
+        type: 'image/gif',
+        stream: (await fetch('./img/animated.gif')).body!,
+      }),
+    );
+    await spr.initReady;
+    await avCvs.addSprite(spr, {
+      offset: 5e6,
+      duration: 10e6,
+    });
+    spr.rect.x = 0;
+    spr.rect.y = 0;
+    avCvs.play({ start: 0, end: 20e6 });
+
+    // avCvs.previewFrame(6e6);
   })().catch(console.error);
 });
 

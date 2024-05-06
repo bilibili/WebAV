@@ -74,21 +74,27 @@ export class AVCanvas {
   #audioCtx = new AudioContext();
   #render() {
     const cvsCtx = this.#cvsCtx;
+    let ts = this.#curTime;
     if (
       this.#playState.step !== 0 &&
-      this.#curTime >= this.#playState.start &&
-      this.#curTime < this.#playState.end
+      ts >= this.#playState.start &&
+      ts < this.#playState.end
     ) {
-      this.#curTime += this.#playState.step;
+      ts += this.#playState.step;
     } else {
       this.#playState.step = 0;
     }
+    this.#curTime = ts;
 
     const audios: Float32Array[][] = [];
-    for (const s of this.#spriteManager.getSprites()) {
-      const { audio } = s.render(cvsCtx, this.#curTime);
+    for (const it of this.#spriteManager.getSprites()) {
+      if (ts < it.offset || ts > it.offset + it.duration) continue;
+      cvsCtx.save();
+      const { audio } = it.sprite.render(cvsCtx, ts - it.offset);
+      cvsCtx.restore();
       audios.push(audio);
     }
+
     if (this.#playState.step !== 0 && audios.length > 0) {
       this.#playState.audioPlayAt = Math.max(
         this.#audioCtx.currentTime,
@@ -101,13 +107,12 @@ export class AVCanvas {
       );
       this.#playState.audioPlayAt += duration;
     }
-
     cvsCtx.resetTransform();
   }
 
   #playState = {
     start: 0,
-    end: 20e6,
+    end: 0,
     // paused state when step equal 0
     step: 0,
     // step: (1000 / 30) * 1000,
