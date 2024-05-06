@@ -5,6 +5,8 @@ import {
   Rect,
   TCtrlKey,
   EventTool,
+  Combinator,
+  OffscreenSprite,
 } from '@webav/av-cliper';
 import { renderCtrls } from './sprites/render-ctrl';
 import { ESpriteManagerEvt, SpriteManager } from './sprites/sprite-manager';
@@ -41,12 +43,15 @@ export class AVCanvas {
   }>();
   on = this.#evtTool.on;
 
+  #opts;
+
   constructor(
     container: HTMLElement,
     opts: {
       bgColor: string;
     } & IResolution,
   ) {
+    this.#opts = opts;
     this.#cvsEl = createInitCvsEl(opts);
     const ctx = this.#cvsEl.getContext('2d', { alpha: false });
     if (ctx == null) throw Error('canvas context is null');
@@ -188,6 +193,16 @@ export class AVCanvas {
       ms.getTracks().map((t) => t.kind),
     );
     return ms;
+  }
+
+  async createCombinator(opts: { bitrate?: number } = {}) {
+    const com = new Combinator({ ...this.#opts, ...opts });
+    for (const sw of this.#spriteManager.getSprites()) {
+      const spr = new OffscreenSprite('', sw.sprite.getClip());
+      spr.rect = sw.sprite.rect.clone();
+      await com.add(spr, { offset: sw.offset, duration: sw.duration });
+    }
+    return com;
   }
 }
 

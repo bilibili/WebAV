@@ -12,6 +12,10 @@ export class VisibleSprite extends BaseSprite {
   }
 
   #clip: IClip;
+  getClip() {
+    return this.#clip;
+  }
+
   constructor(clip: IClip) {
     super('');
     this.#clip = clip;
