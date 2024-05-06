@@ -1,4 +1,11 @@
-import { workerTimer, mixinPCM, Log, Rect, TCtrlKey } from '@webav/av-cliper';
+import {
+  workerTimer,
+  mixinPCM,
+  Log,
+  Rect,
+  TCtrlKey,
+  EventTool,
+} from '@webav/av-cliper';
 import { renderCtrls } from './sprites/render-ctrl';
 import { ESpriteManagerEvt, SpriteManager } from './sprites/sprite-manager';
 import { activeSprite, draggabelSprite } from './sprites/sprite-op';
@@ -28,6 +35,11 @@ export class AVCanvas {
 
   #clears: Array<() => void> = [];
   #stopRender: () => void;
+
+  #evtTool = new EventTool<{
+    timeupdate: (time: number) => void;
+  }>();
+  on = this.#evtTool.on;
 
   constructor(
     container: HTMLElement,
@@ -61,10 +73,16 @@ export class AVCanvas {
       }),
     );
 
+    let lastTime = this.#curTime;
     this.#stopRender = workerTimer(() => {
       this.#cvsCtx.fillStyle = opts.bgColor;
       this.#cvsCtx.fillRect(0, 0, this.#cvsEl.width, this.#cvsEl.height);
       this.#render();
+
+      if (lastTime !== this.#curTime) {
+        lastTime = this.#curTime;
+        this.#evtTool.emit('timeupdate', Math.round(lastTime));
+      }
     }, 1000 / 30);
 
     // ;(window as any).cvsEl = this.#cvsEl
