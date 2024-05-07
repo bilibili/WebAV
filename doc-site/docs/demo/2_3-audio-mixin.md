@@ -61,7 +61,6 @@ export default function UI() {
 
 将两个音频文件首尾相连，输出 m4a 音频文件。
 
-<!--
 ```tsx
 import {
   AudioClip,
@@ -80,8 +79,8 @@ const resList = assetsPrefix([
 async function start() {
   const clip = await concatAudioClip(
     await Promise.all(
-      resList.map(async (url) => new AudioClip((await fetch(url)).body!))
-    )
+      resList.map(async (url) => new AudioClip((await fetch(url)).body!)),
+    ),
   );
   const audioSpr = new OffscreenSprite(clip);
   audioSpr.time = { offset: 0, duration: 30e6 };
@@ -102,4 +101,4 @@ export default function UI() {
     ></CombinatorPlay>
   );
 }
-``` -->
+```
