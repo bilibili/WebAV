@@ -4,7 +4,6 @@ import { Log } from '../log';
 
 export class OffscreenSprite extends BaseSprite {
   #clip: IClip;
-  ready: Promise<void>;
 
   // 保持最近一帧，若 clip 在当前帧无数据，则绘制最近一帧
   #lastVf: VideoFrame | ImageBitmap | null = null;

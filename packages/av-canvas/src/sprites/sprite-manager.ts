@@ -35,7 +35,7 @@ export class SpriteManager {
   }
 
   async addSprite(vs: VisibleSprite): Promise<void> {
-    await vs.initReady;
+    await vs.ready;
     this.#sprites.push(vs);
     this.#sprites = this.#sprites.sort((a, b) => a.zIndex - b.zIndex);
     // todo: remove audioNode

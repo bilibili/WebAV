@@ -11,7 +11,7 @@ export class VisibleSprite extends BaseSprite {
   constructor(clip: IClip) {
     super();
     this.#clip = clip;
-    this.initReady = clip.ready.then(({ width, height, duration }) => {
+    this.ready = clip.ready.then(({ width, height, duration }) => {
       this.rect.w = width;
       this.rect.h = height;
       this.time.duration =

@@ -39,7 +39,7 @@ document.querySelector('#userMedia')?.addEventListener('click', () => {
       }),
     );
     await avCvs.addSprite(spr3);
-    await spr3.initReady;
+    await spr3.ready;
     // 修改空间坐标
     spr3.rect.x = 300;
     spr3.rect.y = 300;

@@ -49,7 +49,7 @@ export abstract class BaseSprite {
 
   audioNode: GainNode | null = null;
 
-  initReady = Promise.resolve();
+  ready = Promise.resolve();
 
   protected _render(
     ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D,

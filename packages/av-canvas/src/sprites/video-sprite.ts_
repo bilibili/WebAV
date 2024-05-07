@@ -14,7 +14,7 @@ export class VideoSprite extends BaseSprite {
     opts: IVideoSpriteOpts = {},
   ) {
     super(name);
-    this.initReady = (
+    this.ready = (
       source instanceof MediaStream
         ? this.#init4MS(source, opts)
         : this.#init4File(source, opts)

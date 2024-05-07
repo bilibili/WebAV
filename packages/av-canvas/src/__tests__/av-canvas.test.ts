@@ -42,7 +42,7 @@ beforeEach(() => {
 
 test('init center the Sprite', async () => {
   const vs = new VisibleSprite(new MockClip());
-  await vs.initReady;
+  await vs.ready;
   vs.rect.w = 80;
   vs.rect.h = 80;
   await avCvs.addSprite(vs);
