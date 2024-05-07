@@ -8,8 +8,7 @@
       "registry": "https://registry.npmjs.org"
     },
     "version": {
-      "message": "version: %s",
-      "allowBranch": ["main"]
+      "message": "version: %s"
     }
   }
 }
