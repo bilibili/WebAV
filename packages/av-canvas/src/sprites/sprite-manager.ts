@@ -5,14 +5,14 @@ export enum ESpriteManagerEvt {
   AddSprite = 'addSprite',
 }
 
-interface ISpriteWrap {
+interface SpriteWithTime {
   offset: number;
   duration: number;
   sprite: VisibleSprite;
 }
 
 export class SpriteManager {
-  #sprites: ISpriteWrap[] = [];
+  #sprites: SpriteWithTime[] = [];
 
   #activeSprite: VisibleSprite | null = null;
 
@@ -43,19 +43,22 @@ export class SpriteManager {
   async addSprite(
     s: VisibleSprite,
     opts: { offset?: number; duration?: number } = {},
-  ): Promise<void> {
+  ): Promise<SpriteWithTime> {
     await s.initReady;
-    this.#sprites.push({
+    const sprWithTime = {
       sprite: s,
       offset: opts.offset ?? 0,
       duration: opts.duration ?? s.duration,
-    });
+    };
+    this.#sprites.push(sprWithTime);
     this.#sprites = this.#sprites.sort(
       (a, b) => a.sprite.zIndex - b.sprite.zIndex,
     );
+    // todo: remove audioNode
     s.audioNode?.connect(this.audioMSDest);
 
     this.#evtTool.emit(ESpriteManagerEvt.AddSprite, s);
+    return sprWithTime;
   }
 
   /**
@@ -71,7 +74,7 @@ export class SpriteManager {
     spr.destroy();
   }
 
-  getSprites(): ISpriteWrap[] {
+  getSprites(): SpriteWithTime[] {
     return [...this.#sprites];
   }
 
