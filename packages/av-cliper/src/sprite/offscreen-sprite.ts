@@ -68,6 +68,7 @@ export class OffscreenSprite extends BaseSprite {
     this.#destroyed = true;
 
     Log.info('OffscreenSprite destroy');
+    super.destroy();
     this.#lastVf?.close();
     this.#lastVf = null;
     this.#clip.destroy();

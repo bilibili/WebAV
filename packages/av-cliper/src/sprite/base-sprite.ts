@@ -1,3 +1,4 @@
+import { EventTool } from '../event-tool';
 import { IRectBaseProps, Rect } from './rect';
 
 interface IAnimationOpts {
@@ -24,7 +25,19 @@ export abstract class BaseSprite {
 
   visible = true;
 
-  zIndex = 0;
+  #evtTool = new EventTool<{
+    zIndexChange: () => void;
+  }>();
+  on = this.#evtTool.on;
+
+  #zIndex = 0;
+  get zIndex(): number {
+    return this.#zIndex;
+  }
+  set zIndex(v: number) {
+    this.#zIndex = v;
+    this.#evtTool.emit('zIndexChange');
+  }
 
   opacity = 1;
 
@@ -116,7 +129,9 @@ export abstract class BaseSprite {
     target.time = { ...this.time };
   }
 
-  abstract destroy(): void;
+  protected destroy() {
+    this.#evtTool.destroy();
+  }
 }
 
 export function linearTimeFn(

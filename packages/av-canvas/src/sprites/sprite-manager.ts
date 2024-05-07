@@ -40,16 +40,11 @@ export class SpriteManager {
     this.#sprites = this.#sprites.sort((a, b) => a.zIndex - b.zIndex);
     // todo: remove audioNode
     vs.audioNode?.connect(this.audioMSDest);
+    vs.on('zIndexChange', () => {
+      this.#sprites = this.#sprites.sort((a, b) => a.zIndex - b.zIndex);
+    });
 
     this.#evtTool.emit(ESpriteManagerEvt.AddSprite, vs);
-  }
-
-  /**
-   * Sort in ascending order by sprite.zIndex
-   */
-  sortSprite() {
-    // todo: auto sort
-    // this.#sprites = this.#sprites.sort((a, b) => a.zIndex - b.zIndex);
   }
 
   removeSprite(spr: VisibleSprite): void {

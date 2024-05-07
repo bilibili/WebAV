@@ -41,11 +41,15 @@ document.querySelector('#userMedia')?.addEventListener('click', () => {
     await avCvs.addSprite(spr3);
     await spr3.initReady;
     // 修改空间坐标
-    spr3.rect.x = 0;
-    spr3.rect.y = 0;
+    spr3.rect.x = 300;
+    spr3.rect.y = 300;
     // 修改时间偏移
     spr3.time.offset = 4e6;
     spr3.time.duration = 10e6;
+    setTimeout(() => {
+      // 修改素材层级
+      spr3.zIndex = -1;
+    }, 6000);
 
     avCvs.play({ start: 0 });
     avCvs.on('timeupdate', (t) => {
