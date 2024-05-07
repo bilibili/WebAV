@@ -1,8 +1,7 @@
-import './mock';
-import { beforeEach, expect, test, vi } from 'vitest';
+import { beforeEach, expect, test } from 'vitest';
 import { AVCanvas } from '../av-canvas';
 import { createEl } from '../utils';
-import { crtMSEvt4Offset, cvsCaptureStreamMock, CvsElementMock } from './mock';
+import { crtMSEvt4Offset } from './mock';
 import { IClip, VisibleSprite } from '@webav/av-cliper';
 
 function createAVCanvas(): {
@@ -23,22 +22,18 @@ function createAVCanvas(): {
 let { avCvs, container } = createAVCanvas();
 
 class MockClip implements IClip {
-  tick: (time: number) => Promise<{
-    video?: ImageBitmap | VideoFrame | undefined;
-    audio?: Float32Array[] | undefined;
-    state: 'done' | 'success';
-  }>;
-  ready: Promise<{ width: number; height: number; duration: number }>;
-  clone: () => Promise<this>;
-  destroy: () => void;
+  tick = async () => {
+    return { audio: [], state: 'success' as const };
+  };
+  ready = Promise.resolve({ width: 0, height: 0, duration: 0 });
+  clone = async () => {
+    return new MockClip() as this;
+  };
+  destroy = () => {};
 }
 
 beforeEach(() => {
   container.remove();
-
-  // cvsRatio = { w: 1, h: 1 }
-  CvsElementMock.clientHeight.mockImplementation(() => 100);
-  CvsElementMock.clientWidth.mockImplementation(() => 100);
 
   const d = createAVCanvas();
   avCvs = d.avCvs;
@@ -56,18 +51,13 @@ test('init center the Sprite', async () => {
 });
 
 test('captureStream', () => {
-  const mockMS = new MediaStream();
-  cvsCaptureStreamMock.mockReturnValueOnce(mockMS);
-  vi.spyOn(mockMS, 'getTracks').mockReturnValue(['mock-track'] as any);
-
   const ms = avCvs.captureStream();
   expect(ms).toBeInstanceOf(MediaStream);
-  expect(ms.addTrack).toBeCalledWith('mock-track');
 });
 
 test('dynamicCusor', async () => {
   const vs = new VisibleSprite(new MockClip());
-  await vs.initReady;
+  await avCvs.addSprite(vs);
   vs.rect.w = 80;
   vs.rect.h = 80;
   const cvsEl = container.querySelector('canvas') as HTMLCanvasElement;

@@ -1,9 +1,19 @@
 import { beforeEach, describe, expect, test, vi } from 'vitest';
-import { crtMSEvt4Offset } from '../../__tests__/mock';
 import { SpriteManager } from '../sprite-manager';
 import { createEl } from '../../utils';
 import { draggabelSprite } from '../sprite-op';
-import { VideoSprite } from '../video-sprite';
+import { ImgClip, VisibleSprite } from '@webav/av-cliper';
+import { crtMSEvt4Offset } from '../../__tests__/mock';
+
+async function createSprite() {
+  const spr = new VisibleSprite(
+    new ImgClip({
+      type: 'image/gif',
+      stream: (await fetch('./img/animated.png')).body!,
+    }),
+  );
+  return spr;
+}
 
 let cvsEl = createEl('canvas') as HTMLCanvasElement;
 const cvsRatio = {
@@ -38,7 +48,7 @@ describe('draggabelSprite', () => {
   test('window on mouse event', async () => {
     const spyAEL = vi.spyOn(window, 'addEventListener');
     const spyREL = vi.spyOn(window, 'removeEventListener');
-    const vs = new VideoSprite('vs', new MediaStream());
+    const vs = await createSprite();
     vi.spyOn(vs.rect, 'checkHit').mockReturnValue(true);
     await sprMng.addSprite(vs);
     sprMng.activeSprite = vs;
@@ -63,7 +73,7 @@ describe('draggabelSprite', () => {
   });
 
   test('move sprite', async () => {
-    const vs = new VideoSprite('vs', new MediaStream());
+    const vs = await createSprite();
     vs.rect.w = 100;
     vs.rect.h = 100;
 
@@ -99,7 +109,7 @@ describe('draggabelSprite', () => {
 
 describe('scale sprite', () => {
   test('drag right ctrl', async () => {
-    const vs = new VideoSprite('vs', new MediaStream());
+    const vs = await createSprite();
     await sprMng.addSprite(vs);
     sprMng.activeSprite = vs;
     vs.rect.w = 100;
@@ -128,7 +138,7 @@ describe('scale sprite', () => {
   });
 
   test('drag rb(bottom right) ctrl', async () => {
-    const vs = new VideoSprite('vs', new MediaStream());
+    const vs = await createSprite();
     await sprMng.addSprite(vs);
     sprMng.activeSprite = vs;
     vs.rect.w = 100;
@@ -158,7 +168,7 @@ describe('scale sprite', () => {
 
 describe('rotate sprite', () => {
   test('rotate sprite', async () => {
-    const vs = new VideoSprite('vs', new MediaStream());
+    const vs = await createSprite();
     await sprMng.addSprite(vs);
     sprMng.activeSprite = vs;
     vs.rect.w = 100;
