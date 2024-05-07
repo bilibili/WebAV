@@ -22,7 +22,7 @@
     "dev": "vite demo",
     "test": "vitest",
     "test:coverage": "vitest run --coverage",
-    "build": "vite build && tsc -p build.tsconfig.json ",
+    "build": "vite build && tsc -p build.tsconfig.json --outDir dist",
     "build:api": "typedoc src/av-recorder.ts --out ../../doc-site/public/_api/av-recorder",
     "prepublishOnly": "yarn build"
   },
@@ -30,12 +30,7 @@
     "dist"
   ],
   "devDependencies": {
-    "@typescript/lib-dom": "npm:@types/web",
-    "@vitest/coverage-istanbul": "^0.29.8",
-    "jsdom": "^21.1.1",
-    "typescript": "^4.9.3",
-    "vite": "^4.2.0",
-    "vitest": "^0.29.7"
+    "@typescript/lib-dom": "npm:@types/web"
   },
   "dependencies": {
     "@types/dom-mediacapture-transform": "^0.1.5",

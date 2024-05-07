@@ -1,7 +1,21 @@
 {
-  "extends": "./build.tsconfig.json",
   "compilerOptions": {
-    "types": ["@types/dom-webcodecs"]
+    "types": ["@types/dom-webcodecs"],
+    "target": "ESNext",
+    "useDefineForClassFields": true,
+    "module": "ESNext",
+    "lib": ["ESNext", "DOM"],
+    "moduleResolution": "Node",
+    "strict": true,
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "esModuleInterop": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noImplicitReturns": true,
+    "declaration": true,
+    "emitDeclarationOnly": true,
+    "skipLibCheck": true
   },
   "include": ["../../types/mp4box.d.ts", "src", "demo"]
 }

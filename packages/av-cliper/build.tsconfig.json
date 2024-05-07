@@ -1,22 +1,5 @@
 {
-  "compilerOptions": {
-    "target": "ESNext",
-    "useDefineForClassFields": true,
-    "module": "ESNext",
-    "lib": ["ESNext", "DOM"],
-    "types": ["@types/dom-webcodecs"],
-    "moduleResolution": "Node",
-    "strict": true,
-    "resolveJsonModule": true,
-    "isolatedModules": true,
-    "esModuleInterop": true,
-    "noUnusedLocals": true,
-    "noUnusedParameters": true,
-    "noImplicitReturns": true,
-    "declaration": true,
-    "emitDeclarationOnly": true,
-    "skipLibCheck": true
-  },
+  "extends": "./tsconfig.json",
   "include": ["../../types/mp4box.d.ts", "src/**/*"],
-  "exclude": ["src/**/__tests__/*"]
+  "exclude": ["src/**/__tests__/*", "demo"]
 }
