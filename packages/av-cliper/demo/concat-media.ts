@@ -23,12 +23,10 @@ document.querySelector('#mp4-img')?.addEventListener('click', () => {
     const { loadStream } = playOutputStream(resList, playerContiner);
 
     const spr1 = new OffscreenSprite(
-      'spr1',
       new MP4Clip((await fetch(resList[0])).body!),
     );
 
     const spr2 = new OffscreenSprite(
-      'spr2',
       new ImgClip(
         await renderTxt2ImgBitmap(
           '水印',
@@ -36,6 +34,7 @@ document.querySelector('#mp4-img')?.addEventListener('click', () => {
         ),
       ),
     );
+    spr2.time = { offset: 0, duration: 5e6 };
     spr2.setAnimation(
       {
         '0%': { x: 0, y: 0 },
@@ -50,7 +49,6 @@ document.querySelector('#mp4-img')?.addEventListener('click', () => {
     spr2.opacity = 0.5;
 
     const spr3 = new OffscreenSprite(
-      'spr3',
       new ImgClip(
         await createImageBitmap(await (await fetch(resList[1])).blob()),
       ),
@@ -73,7 +71,7 @@ document.querySelector('#mp4-img')?.addEventListener('click', () => {
     });
 
     await com.add(spr1, { main: true });
-    await com.add(spr2, { offset: 0, duration: 5 });
+    await com.add(spr2);
     await com.add(spr3);
 
     await loadStream(com.output(), com);
@@ -89,14 +87,13 @@ document.querySelector('#mp4-mp3')?.addEventListener('click', () => {
     const mp4Clip = new MP4Clip(resp1.body!);
     await mp4Clip.ready;
     // mp4Clip.deleteRange(10e6, 15e6);
-    const spr1 = new OffscreenSprite('spr1', mp4Clip);
+    const spr1 = new OffscreenSprite(mp4Clip);
     await spr1.ready;
     spr1.rect.w = 1280;
     spr1.rect.h = 720;
 
     const resp2 = await fetch(resList[1]);
     const spr2 = new OffscreenSprite(
-      'spr2',
       new AudioClip(resp2.body!, {
         // volume: 2,
         loop: true,
@@ -121,14 +118,15 @@ document.querySelector('#mix-audio')?.addEventListener('click', () => {
     const resp1 = await fetch(resList[0]);
     const resp2 = await fetch(resList[1]);
     const spr1 = new OffscreenSprite(
-      '1',
       new AudioClip(resp1.body!, { volume: 0.5 }),
     );
-    const spr2 = new OffscreenSprite('2', new AudioClip(resp2.body!));
+    spr1.time = { offset: 0, duration: 5e6 };
+    const spr2 = new OffscreenSprite(new AudioClip(resp2.body!));
+    spr2.time = { offset: 0, duration: 4e6 };
 
     const com = new Combinator({});
-    await com.add(spr1, { offset: 0, duration: 5 });
-    await com.add(spr2, { offset: 0, duration: 4 });
+    await com.add(spr1);
+    await com.add(spr2);
 
     await loadStream(com.output(), com);
   })().catch(Log.error);
@@ -144,10 +142,11 @@ document.querySelector('#concat-audio')?.addEventListener('click', () => {
         resList.map(async (url) => new AudioClip((await fetch(url)).body!)),
       ),
     );
-    const spr1 = new OffscreenSprite('1', clip);
+    const spr1 = new OffscreenSprite(clip);
+    spr1.time = { offset: 0, duration: 30e6 };
 
     const com = new Combinator({ width: 1280, height: 720 });
-    await com.add(spr1, { offset: 0, duration: 30 });
+    await com.add(spr1);
 
     await loadStream(com.output(), com);
   })().catch(Log.error);
@@ -160,14 +159,15 @@ document.querySelector('#gif-m4a')?.addEventListener('click', () => {
 
     const resp1 = await fetch(resList[0]);
     const spr1 = new OffscreenSprite(
-      's1',
       new ImgClip({ type: 'image/gif', stream: resp1.body! }),
     );
     const resp2 = await fetch(resList[1]);
-    const spr2 = new OffscreenSprite('s2', new AudioClip(resp2.body!));
+    const spr2 = new OffscreenSprite(new AudioClip(resp2.body!));
     const com = new Combinator({ width: 1280, height: 720 });
-    await com.add(spr1, { duration: 10, offset: 0 });
-    await com.add(spr2, { duration: 10, offset: 0 });
+    spr1.time = { duration: 10e6, offset: 0 };
+    spr2.time = { duration: 10e6, offset: 0 };
+    await com.add(spr1);
+    await com.add(spr2);
 
     await loadStream(com.output(), com);
   })();
@@ -179,10 +179,9 @@ document.querySelector('#mp4-srt')?.addEventListener('click', () => {
     const { loadStream } = playOutputStream(resList, playerContiner);
 
     const resp1 = await fetch(resList[0]);
-    const spr1 = new OffscreenSprite('s1', new MP4Clip(resp1.body!));
+    const spr1 = new OffscreenSprite(new MP4Clip(resp1.body!));
     const resp2 = await fetch(resList[1]);
     const spr2 = new OffscreenSprite(
-      's2',
       new EmbedSubtitlesClip(await resp2.text(), {
         videoWidth: 1280,
         videoHeight: 720,
@@ -201,8 +200,10 @@ document.querySelector('#mp4-srt')?.addEventListener('click', () => {
       }),
     );
     const com = new Combinator({ width: 1280, height: 720 });
-    await com.add(spr1, { duration: 10, offset: 0 });
-    await com.add(spr2, { duration: 10, offset: 0 });
+    spr1.time = { duration: 10e6, offset: 0 };
+    spr2.time = { duration: 10e6, offset: 0 };
+    await com.add(spr1);
+    await com.add(spr2);
 
     await loadStream(com.output(), com);
   })();
@@ -222,7 +223,6 @@ document.querySelector('#mp4-chromakey')?.addEventListener('click', () => {
       spill: 0.1,
     });
     const originSpr = new OffscreenSprite(
-      'originSpr',
       new MP4Clip((await fetch(resList[0])).body!),
     );
     await originSpr.ready;
@@ -239,14 +239,13 @@ document.querySelector('#mp4-chromakey')?.addEventListener('click', () => {
       };
     };
 
-    const targetSpr = new OffscreenSprite('targetSpr', targetClip);
+    const targetSpr = new OffscreenSprite(targetClip);
     await targetSpr.ready;
     targetSpr.zIndex = 1;
     targetSpr.rect.x = originSpr.rect.x + targetSpr.rect.w + 100;
     targetSpr.rect.y = (height - targetSpr.rect.h) / 2;
 
     const bgImgSpr = new OffscreenSprite(
-      'bgImgSpr',
       new ImgClip(
         await createImageBitmap(await (await fetch(resList[1])).blob()),
       ),
@@ -295,11 +294,10 @@ document.querySelector('#complex')?.addEventListener('click', () => {
         };
         return clip;
       })
-      .map((clip) => new OffscreenSprite('spr', clip))
+      .map((clip) => new OffscreenSprite(clip))
       .map(async (spr, idx) => {
         const com = new Combinator({ width, height });
         const imgSpr = new OffscreenSprite(
-          'spr3',
           new ImgClip(
             await createImageBitmap(
               await (await fetch('./img/bunny.png')).blob(),

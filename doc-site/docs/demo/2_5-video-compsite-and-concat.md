@@ -59,11 +59,10 @@ async function start() {
       };
       return clip;
     })
-    .map((clip, idx) => new OffscreenSprite(`spr${idx}`, clip))
+    .map((clip, idx) => new OffscreenSprite(clip))
     .map(async (spr, idx) => {
       const com = new Combinator({ width, height });
       const imgSpr = new OffscreenSprite(
-        'imgSpr',
         new ImgClip(
           await createImageBitmap(await (await fetch(imgList[0])).blob()),
         ),

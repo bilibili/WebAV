@@ -38,18 +38,6 @@ export abstract class BaseSprite {
 
   initReady = Promise.resolve();
 
-  /**
-   * @deprecated
-   * `name` arg is deprecated
-   */
-  constructor(
-    public name: string,
-    opts: { time?: { offset: number; duration?: number } } = {},
-  ) {
-    this.time.offset = opts.time?.offset ?? 0;
-    this.time.duration = opts.time?.duration ?? 0;
-  }
-
   protected _render(
     ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D,
   ): void {
@@ -125,6 +113,7 @@ export abstract class BaseSprite {
     target.opacity = this.opacity;
     target.flip = this.flip;
     target.rect = this.rect.clone();
+    target.time = { ...this.time };
   }
 
   abstract destroy(): void;

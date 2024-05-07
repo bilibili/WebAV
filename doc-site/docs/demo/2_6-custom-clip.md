@@ -83,7 +83,7 @@ class CountdownClip implements IClip {
 }
 
 async function start() {
-  const spr = new OffscreenSprite('spr', new CountdownClip(5));
+  const spr = new OffscreenSprite(new CountdownClip(5));
 
   const com = new Combinator({ width: WIDTH, height: HEIGHT });
   await com.add(spr, { main: true });

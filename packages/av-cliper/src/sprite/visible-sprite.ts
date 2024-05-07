@@ -8,16 +8,14 @@ export class VisibleSprite extends BaseSprite {
     return this.#clip;
   }
 
-  constructor(
-    clip: IClip,
-    opts: { time?: { offset: number; duration?: number } } = {},
-  ) {
-    super('', opts);
+  constructor(clip: IClip) {
+    super();
     this.#clip = clip;
     this.initReady = clip.ready.then(({ width, height, duration }) => {
       this.rect.w = width;
       this.rect.h = height;
-      this.time.duration = opts.time?.duration ?? duration;
+      this.time.duration =
+        this.time.duration === 0 ? duration : this.time.duration;
     });
   }
 
@@ -65,7 +63,7 @@ export class VisibleSprite extends BaseSprite {
     if (this.#destroyed) return;
     this.#destroyed = true;
 
-    Log.info(`Sprite ${this.name} destroy`);
+    Log.info('VisibleSprite destroy');
     this.#lastVf?.close();
     this.#lastVf = null;
     this.#clip.destroy();

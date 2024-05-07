@@ -9,23 +9,16 @@ export class OffscreenSprite extends BaseSprite {
   // 保持最近一帧，若 clip 在当前帧无数据，则绘制最近一帧
   #lastVf: VideoFrame | ImageBitmap | null = null;
 
-  /**
-   * Clip duration
-   */
-  #duration = Infinity;
-  get duration() {
-    return this.#duration;
-  }
-
   #destroyed = false;
 
-  constructor(name: string, clip: IClip) {
-    super(name);
+  constructor(clip: IClip) {
+    super();
     this.#clip = clip;
     this.ready = clip.ready.then(({ width, height, duration }) => {
       this.rect.w = width;
       this.rect.h = height;
-      this.#duration = duration;
+      this.time.duration =
+        this.time.duration === 0 ? duration : this.time.duration;
     });
   }
 
@@ -64,7 +57,7 @@ export class OffscreenSprite extends BaseSprite {
   }
 
   async clone() {
-    const spr = new OffscreenSprite(this.name, await this.#clip.clone());
+    const spr = new OffscreenSprite(await this.#clip.clone());
     await spr.ready;
     this.copyStateTo(spr);
     return spr;
@@ -74,7 +67,7 @@ export class OffscreenSprite extends BaseSprite {
     if (this.#destroyed) return;
     this.#destroyed = true;
 
-    Log.info(`OffscreenSprite ${this.name} destroy`);
+    Log.info('OffscreenSprite destroy');
     this.#lastVf?.close();
     this.#lastVf = null;
     this.#clip.destroy();

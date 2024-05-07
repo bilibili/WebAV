@@ -13,7 +13,7 @@ export function CombinatorPlay({
   onStart: () => void;
   com?: Combinator | null;
   stream?: ReadableStream | null;
-  mediaType: 'video' | 'audio';
+  mediaType?: 'video' | 'audio';
 }) {
   const [state, setState] = useState('');
   const [videoSrc, setVideoSrc] = useState('');

@@ -26,17 +26,17 @@ const resList = assetsPrefix([
 ]);
 async function start() {
   const audioSpr1 = new OffscreenSprite(
-    'audioSpr1',
     new AudioClip((await fetch(resList[0])).body!, { volume: 0.5 }),
   );
+  audioSpr1.time = { offset: 0, duration: 5e6 };
   const audioSpr2 = new OffscreenSprite(
-    'audioSpr2',
     new AudioClip((await fetch(resList[1])).body!),
   );
+  audioSpr1.time = { offset: 0, duration: 4e6 };
 
   const com = new Combinator({});
-  await com.add(audioSpr1, { offset: 0, duration: 5 });
-  await com.add(audioSpr2, { offset: 0, duration: 4 });
+  await com.add(audioSpr1);
+  await com.add(audioSpr2);
   return com;
 }
 
@@ -82,10 +82,11 @@ async function start() {
       resList.map(async (url) => new AudioClip((await fetch(url)).body!)),
     ),
   );
-  const audioSpr = new OffscreenSprite('audioSpr', clip);
+  const audioSpr = new OffscreenSprite(clip);
+  audioSpr.time = { offset: 0, duration: 30e6 };
 
   const com = new Combinator({});
-  await com.add(audioSpr, { offset: 0, duration: 30 });
+  await com.add(audioSpr);
   return com;
 }
 

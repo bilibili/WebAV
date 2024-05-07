@@ -13,12 +13,10 @@ const resList = assetsPrefix(['video/webav1.mp4']);
 
 async function start() {
   const spr1 = new OffscreenSprite(
-    'spr1',
     new MP4Clip((await fetch(resList[0])).body!),
   );
 
   const spr2 = new OffscreenSprite(
-    'spr2',
     new ImgClip(
       await renderTxt2ImgBitmap(
         '水印',
@@ -26,6 +24,7 @@ async function start() {
       ),
     ),
   );
+  spr2.time = { offset: 0, duration: 5e6 };
   spr2.setAnimation(
     {
       '0%': { x: 0, y: 0 },
@@ -46,7 +45,7 @@ async function start() {
   });
 
   await com.add(spr1, { main: true });
-  await com.add(spr2, { offset: 0, duration: 5 });
+  await com.add(spr2);
   return com;
 }
 

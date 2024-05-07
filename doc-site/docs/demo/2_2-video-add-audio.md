@@ -23,12 +23,11 @@ const resList = assetsPrefix(['video/webav1.mp4', 'audio/44.1kHz-2chan.mp3']);
 
 async function start() {
   const videoSpr = new OffscreenSprite(
-    'videoSpr',
     new MP4Clip((await fetch(resList[0])).body!),
   );
+  videoSpr.time.duration = 10e6;
 
   const audioSpr = new OffscreenSprite(
-    'audioSpr',
     new AudioClip((await fetch(resList[1])).body!, {
       loop: true,
     }),
@@ -37,7 +36,7 @@ async function start() {
     width: 1280,
     height: 720,
   });
-  await com.add(videoSpr, { duration: 10, main: true });
+  await com.add(videoSpr, { main: true });
   await com.add(audioSpr);
   return com;
 }
@@ -75,16 +74,16 @@ const resList = assetsPrefix(['img/animated.gif', 'audio/44.1kHz-2chan.m4a']);
 
 async function start() {
   const gifSpr = new OffscreenSprite(
-    'gifSpr',
     new ImgClip({ type: 'image/gif', stream: (await fetch(resList[0])).body! }),
   );
+  gifSpr.time = { duration: 10e6, offset: 0 };
   const audioSpr = new OffscreenSprite(
-    's2',
     new AudioClip((await fetch(resList[1])).body!),
   );
+  audioSpr.time = { duration: 10e6, offset: 0 };
   const com = new Combinator({ width: 1280, height: 720 });
-  await com.add(gifSpr, { duration: 10, offset: 0 });
-  await com.add(audioSpr, { duration: 10, offset: 0 });
+  await com.add(gifSpr);
+  await com.add(audioSpr);
   return com;
 }
 

@@ -38,7 +38,6 @@ async function start() {
   const height = 720;
 
   const originSpr = new OffscreenSprite(
-    'originSpr',
     new MP4Clip((await fetch(resList[0])).body!),
   );
   await originSpr.ready;
@@ -55,14 +54,13 @@ async function start() {
     };
   };
 
-  const targetSpr = new OffscreenSprite('targetSpr', targetClip);
+  const targetSpr = new OffscreenSprite(targetClip);
   await targetSpr.ready;
   targetSpr.zIndex = 1;
   targetSpr.rect.x = originSpr.rect.x + targetSpr.rect.w + 100;
   targetSpr.rect.y = (height - targetSpr.rect.h) / 2;
 
   const bgImgSpr = new OffscreenSprite(
-    'bgImgSpr',
     new ImgClip(
       await createImageBitmap(await (await fetch(resList[1])).blob()),
     ),
