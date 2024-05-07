@@ -35,8 +35,8 @@ async function start() {
   audioSpr2.time = { offset: 0, duration: 4e6 };
 
   const com = new Combinator();
-  await com.add(audioSpr1);
-  await com.add(audioSpr2);
+  await com.addSprite(audioSpr1);
+  await com.addSprite(audioSpr2);
   return com;
 }
 
@@ -87,7 +87,7 @@ async function start() {
   audioSpr.time = { offset: 0, duration: 30e6 };
 
   const com = new Combinator();
-  await com.add(audioSpr);
+  await com.addSprite(audioSpr);
   return com;
 }
 

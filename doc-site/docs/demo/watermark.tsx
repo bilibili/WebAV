@@ -44,8 +44,8 @@ async function start() {
     bgColor: 'white',
   });
 
-  await com.add(spr1, { main: true });
-  await com.add(spr2);
+  await com.addSprite(spr1, { main: true });
+  await com.addSprite(spr2);
   return com;
 }
 

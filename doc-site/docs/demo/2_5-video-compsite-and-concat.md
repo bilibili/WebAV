@@ -69,8 +69,8 @@ async function start() {
       );
       await spr.ready;
       spr.rect.x = idx * spr.rect.w;
-      await com.add(imgSpr);
-      await com.add(spr, { main: true });
+      await com.addSprite(imgSpr);
+      await com.addSprite(spr, { main: true });
       return com.output();
     });
 

@@ -70,9 +70,9 @@ document.querySelector('#mp4-img')?.addEventListener('click', () => {
       bgColor: 'white',
     });
 
-    await com.add(spr1, { main: true });
-    await com.add(spr2);
-    await com.add(spr3);
+    await com.addSprite(spr1, { main: true });
+    await com.addSprite(spr2);
+    await com.addSprite(spr3);
 
     await loadStream(com.output(), com);
   })().catch(Log.error);
@@ -103,8 +103,8 @@ document.querySelector('#mp4-mp3')?.addEventListener('click', () => {
       width: 1280,
       height: 720,
     });
-    await com.add(spr1, { main: true });
-    await com.add(spr2);
+    await com.addSprite(spr1, { main: true });
+    await com.addSprite(spr2);
 
     await loadStream(com.output(), com);
   })().catch(Log.error);
@@ -125,8 +125,8 @@ document.querySelector('#mix-audio')?.addEventListener('click', () => {
     spr2.time = { offset: 0, duration: 4e6 };
 
     const com = new Combinator({});
-    await com.add(spr1);
-    await com.add(spr2);
+    await com.addSprite(spr1);
+    await com.addSprite(spr2);
 
     await loadStream(com.output(), com);
   })().catch(Log.error);
@@ -146,7 +146,7 @@ document.querySelector('#concat-audio')?.addEventListener('click', () => {
     spr1.time = { offset: 0, duration: 30e6 };
 
     const com = new Combinator({ width: 1280, height: 720 });
-    await com.add(spr1);
+    await com.addSprite(spr1);
 
     await loadStream(com.output(), com);
   })().catch(Log.error);
@@ -166,8 +166,8 @@ document.querySelector('#gif-m4a')?.addEventListener('click', () => {
     const com = new Combinator({ width: 1280, height: 720 });
     spr1.time = { duration: 10e6, offset: 0 };
     spr2.time = { duration: 10e6, offset: 0 };
-    await com.add(spr1);
-    await com.add(spr2);
+    await com.addSprite(spr1);
+    await com.addSprite(spr2);
 
     await loadStream(com.output(), com);
   })();
@@ -202,8 +202,8 @@ document.querySelector('#mp4-srt')?.addEventListener('click', () => {
     const com = new Combinator({ width: 1280, height: 720 });
     spr1.time = { duration: 10e6, offset: 0 };
     spr2.time = { duration: 10e6, offset: 0 };
-    await com.add(spr1);
-    await com.add(spr2);
+    await com.addSprite(spr1);
+    await com.addSprite(spr2);
 
     await loadStream(com.output(), com);
   })();
@@ -257,9 +257,9 @@ document.querySelector('#mp4-chromakey')?.addEventListener('click', () => {
       bgColor: 'white',
     });
 
-    await com.add(originSpr, { main: true });
-    await com.add(targetSpr);
-    await com.add(bgImgSpr);
+    await com.addSprite(originSpr, { main: true });
+    await com.addSprite(targetSpr);
+    await com.addSprite(bgImgSpr);
 
     await loadStream(com.output(), com);
   })().catch(Log.error);
@@ -306,8 +306,8 @@ document.querySelector('#complex')?.addEventListener('click', () => {
         );
         await spr.ready;
         spr.rect.x = idx * spr.rect.w;
-        await com.add(imgSpr);
-        await com.add(spr, { main: true });
+        await com.addSprite(imgSpr);
+        await com.addSprite(spr, { main: true });
         return com.output();
       });
 

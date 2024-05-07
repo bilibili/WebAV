@@ -15,8 +15,8 @@ test('Combinator ouput m4a', async () => {
   const com = new Combinator();
   spr1.time = { offset: 0, duration: 5e6 };
   spr2.time = { offset: 0, duration: 4e6 };
-  await com.add(spr1);
-  await com.add(spr2);
+  await com.addSprite(spr1);
+  await com.addSprite(spr2);
 
   const mp4Clip = new MP4Clip(com.output());
   await mp4Clip.ready;

@@ -47,8 +47,8 @@ async function start() {
   );
   srtSpr.time = { duration: 10e6, offset: 0 };
   const com = new Combinator({ width: 1280, height: 720 });
-  await com.add(videoSpr);
-  await com.add(srtSpr);
+  await com.addSprite(videoSpr);
+  await com.addSprite(srtSpr);
   return com;
 }
 

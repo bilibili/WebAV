@@ -36,8 +36,8 @@ async function start() {
     width: 1280,
     height: 720,
   });
-  await com.add(videoSpr, { main: true });
-  await com.add(audioSpr);
+  await com.addSprite(videoSpr, { main: true });
+  await com.addSprite(audioSpr);
   return com;
 }
 
@@ -82,8 +82,8 @@ async function start() {
   );
   audioSpr.time = { duration: 10e6, offset: 0 };
   const com = new Combinator({ width: 1280, height: 720 });
-  await com.add(gifSpr);
-  await com.add(audioSpr);
+  await com.addSprite(gifSpr);
+  await com.addSprite(audioSpr);
   return com;
 }
 

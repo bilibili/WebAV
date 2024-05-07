@@ -136,7 +136,10 @@ export class Combinator {
    * 比如合并 mp4（main） + mp3 + img， 所有资源可以缺省持续时间（duration）；
    * mp4（main）时间终点会终结合并流程
    */
-  async add(os: OffscreenSprite, opts: { main?: boolean } = {}): Promise<void> {
+  async addSprite(
+    os: OffscreenSprite,
+    opts: { main?: boolean } = {},
+  ): Promise<void> {
     this.#log.info('Combinator add sprite', os);
     const newOS = await os.clone();
     this.#log.info('Combinator add sprite ready', os);

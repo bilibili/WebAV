@@ -214,7 +214,7 @@ export class AVCanvas {
       const os = new OffscreenSprite(vs.getClip());
       os.time = { ...vs.time };
       vs.copyStateTo(os);
-      await com.add(os);
+      await com.addSprite(os);
     }
     return com;
   }

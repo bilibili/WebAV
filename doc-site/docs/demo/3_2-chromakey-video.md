@@ -68,9 +68,9 @@ async function start() {
 
   const com = new Combinator({ width, height, bgColor: 'white' });
 
-  await com.add(originSpr, { main: true });
-  await com.add(targetSpr);
-  await com.add(bgImgSpr);
+  await com.addSprite(originSpr, { main: true });
+  await com.addSprite(targetSpr);
+  await com.addSprite(bgImgSpr);
   return com;
 }
 
