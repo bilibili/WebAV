@@ -32,9 +32,9 @@ async function start() {
   const audioSpr2 = new OffscreenSprite(
     new AudioClip((await fetch(resList[1])).body!),
   );
-  audioSpr1.time = { offset: 0, duration: 4e6 };
+  audioSpr2.time = { offset: 0, duration: 4e6 };
 
-  const com = new Combinator({});
+  const com = new Combinator();
   await com.add(audioSpr1);
   await com.add(audioSpr2);
   return com;
@@ -61,6 +61,7 @@ export default function UI() {
 
 将两个音频文件首尾相连，输出 m4a 音频文件。
 
+<!--
 ```tsx
 import {
   AudioClip,
@@ -79,13 +80,13 @@ const resList = assetsPrefix([
 async function start() {
   const clip = await concatAudioClip(
     await Promise.all(
-      resList.map(async (url) => new AudioClip((await fetch(url)).body!)),
-    ),
+      resList.map(async (url) => new AudioClip((await fetch(url)).body!))
+    )
   );
   const audioSpr = new OffscreenSprite(clip);
   audioSpr.time = { offset: 0, duration: 30e6 };
 
-  const com = new Combinator({});
+  const com = new Combinator();
   await com.add(audioSpr);
   return com;
 }
@@ -101,4 +102,4 @@ export default function UI() {
     ></CombinatorPlay>
   );
 }
-```
+``` -->

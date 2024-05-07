@@ -156,7 +156,10 @@ export class AudioClip implements IClip {
   }
 
   async clone() {
-    return new AudioClip(this.getPCMData(), this.#opts) as this;
+    await this.ready;
+    const clip = new AudioClip(this.getPCMData(), this.#opts) as this;
+    await clip.ready;
+    return clip;
   }
 
   destroy(): void {
