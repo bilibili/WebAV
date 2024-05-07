@@ -110,10 +110,11 @@ export class AVCanvas {
     this.#curTime = ts;
 
     const audios: Float32Array[][] = [];
-    for (const it of this.#spriteManager.getSprites()) {
-      if (ts < it.offset || ts > it.offset + it.duration) continue;
+    for (const s of this.#spriteManager.getSprites()) {
+      if (ts < s.time.offset || ts > s.time.offset + s.time.duration) continue;
+
       cvsCtx.save();
-      const { audio } = it.sprite.render(cvsCtx, ts - it.offset);
+      const { audio } = s.render(cvsCtx, ts - s.time.offset);
       cvsCtx.restore();
       audios.push(audio);
     }
@@ -147,7 +148,7 @@ export class AVCanvas {
       Math.max(
         ...this.#spriteManager
           .getSprites()
-          .map((sw) => sw.offset + sw.duration),
+          .map((s) => s.time.offset + s.time.duration),
       );
     if (!Number.isFinite(end) || opts.start >= end || opts.start < 0) {
       throw Error(
@@ -209,10 +210,10 @@ export class AVCanvas {
 
   async createCombinator(opts: { bitrate?: number } = {}) {
     const com = new Combinator({ ...this.#opts, ...opts });
-    for (const sw of this.#spriteManager.getSprites()) {
-      const spr = new OffscreenSprite('', sw.sprite.getClip());
-      sw.sprite.copyStateTo(spr);
-      await com.add(spr, { offset: sw.offset, duration: sw.duration });
+    for (const s of this.#spriteManager.getSprites()) {
+      const spr = new OffscreenSprite('', s.getClip());
+      s.copyStateTo(spr);
+      await com.add(spr, { offset: s.time.offset, duration: s.time.duration });
     }
     return com;
   }

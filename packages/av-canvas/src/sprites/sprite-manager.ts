@@ -5,14 +5,8 @@ export enum ESpriteManagerEvt {
   AddSprite = 'addSprite',
 }
 
-interface SpriteWithTime {
-  offset: number;
-  duration: number;
-  sprite: VisibleSprite;
-}
-
 export class SpriteManager {
-  #sprites: SpriteWithTime[] = [];
+  #sprites: VisibleSprite[] = [];
 
   #activeSprite: VisibleSprite | null = null;
 
@@ -40,25 +34,14 @@ export class SpriteManager {
     this.#bgAudio();
   }
 
-  async addSprite(
-    s: VisibleSprite,
-    opts: { offset?: number; duration?: number } = {},
-  ): Promise<SpriteWithTime> {
-    await s.initReady;
-    const sprWithTime = {
-      sprite: s,
-      offset: opts.offset ?? 0,
-      duration: opts.duration ?? s.duration,
-    };
-    this.#sprites.push(sprWithTime);
-    this.#sprites = this.#sprites.sort(
-      (a, b) => a.sprite.zIndex - b.sprite.zIndex,
-    );
+  async addSprite(vs: VisibleSprite): Promise<void> {
+    await vs.initReady;
+    this.#sprites.push(vs);
+    this.#sprites = this.#sprites.sort((a, b) => a.zIndex - b.zIndex);
     // todo: remove audioNode
-    s.audioNode?.connect(this.audioMSDest);
+    vs.audioNode?.connect(this.audioMSDest);
 
-    this.#evtTool.emit(ESpriteManagerEvt.AddSprite, s);
-    return sprWithTime;
+    this.#evtTool.emit(ESpriteManagerEvt.AddSprite, vs);
   }
 
   /**
@@ -70,17 +53,17 @@ export class SpriteManager {
   }
 
   removeSprite(spr: VisibleSprite): void {
-    this.#sprites = this.#sprites.filter((sw) => sw.sprite !== spr);
+    this.#sprites = this.#sprites.filter((s) => s !== spr);
     spr.destroy();
   }
 
-  getSprites(): SpriteWithTime[] {
+  getSprites(): VisibleSprite[] {
     return [...this.#sprites];
   }
 
   destroy(): void {
     this.#evtTool.destroy();
-    this.#sprites.forEach((sw) => sw.sprite.destroy());
+    this.#sprites.forEach((s) => s.destroy());
     this.#sprites = [];
     this.audioMSDest.disconnect();
     this.audioCtx.close().catch(console.error);

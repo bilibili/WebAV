@@ -144,6 +144,7 @@ export class Combinator {
     TOTAL_COM_ENCODE_QSIZE.set(this, this.#remux.getEecodeQueueSize);
   }
 
+  // todo: refactor(remove) opts args
   async add(
     sprite: OffscreenSprite,
     opts: { offset?: number; duration?: number; main?: boolean } = {},

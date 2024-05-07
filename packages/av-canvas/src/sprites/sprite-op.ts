@@ -37,7 +37,7 @@ export function activeSprite(
         .getSprites()
         // 排在后面的层级更高
         .reverse()
-        .find((sw) => sw.sprite.rect.checkHit(ofx, ofy))?.sprite ?? null;
+        .find((s) => s.rect.checkHit(ofx, ofy)) ?? null;
   };
 
   cvsEl.addEventListener('mousedown', onCvsMouseDown);

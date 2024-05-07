@@ -3,26 +3,21 @@ import { IClip } from '../clips';
 import { Log } from '../log';
 
 export class VisibleSprite extends BaseSprite {
-  /**
-   * Clip duration
-   */
-  #duration = Infinity;
-  get duration() {
-    return this.#duration;
-  }
-
   #clip: IClip;
   getClip() {
     return this.#clip;
   }
 
-  constructor(clip: IClip) {
-    super('');
+  constructor(
+    clip: IClip,
+    opts: { time?: { offset: number; duration?: number } } = {},
+  ) {
+    super('', opts);
     this.#clip = clip;
     this.initReady = clip.ready.then(({ width, height, duration }) => {
       this.rect.w = width;
       this.rect.h = height;
-      this.#duration = duration;
+      this.time.duration = opts.time?.duration ?? duration;
     });
   }
 

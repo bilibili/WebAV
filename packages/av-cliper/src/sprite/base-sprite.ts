@@ -17,6 +17,11 @@ type TKeyFrameOpts = Partial<
 export abstract class BaseSprite {
   rect = new Rect();
 
+  time = {
+    offset: 0,
+    duration: 0,
+  };
+
   visible = true;
 
   zIndex = 0;
@@ -37,7 +42,13 @@ export abstract class BaseSprite {
    * @deprecated
    * `name` arg is deprecated
    */
-  constructor(public name: string) {}
+  constructor(
+    public name: string,
+    opts: { time?: { offset: number; duration?: number } } = {},
+  ) {
+    this.time.offset = opts.time?.offset ?? 0;
+    this.time.duration = opts.time?.duration ?? 0;
+  }
 
   protected _render(
     ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D,
