@@ -111,7 +111,13 @@ export class AVCanvas {
 
     const audios: Float32Array[][] = [];
     for (const s of this.#spriteManager.getSprites()) {
-      if (ts < s.time.offset || ts > s.time.offset + s.time.duration) continue;
+      if (
+        !s.visible ||
+        ts < s.time.offset ||
+        ts > s.time.offset + s.time.duration
+      ) {
+        continue;
+      }
 
       cvsCtx.save();
       const { audio } = s.render(cvsCtx, ts - s.time.offset);
