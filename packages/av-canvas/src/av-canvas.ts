@@ -78,14 +78,14 @@ export class AVCanvas {
       }),
     );
 
-    let lastTime = this.#curTime;
+    let lastTime = this.#renderTime;
     this.#stopRender = workerTimer(() => {
       this.#cvsCtx.fillStyle = opts.bgColor;
       this.#cvsCtx.fillRect(0, 0, this.#cvsEl.width, this.#cvsEl.height);
       this.#render();
 
-      if (lastTime !== this.#curTime) {
-        lastTime = this.#curTime;
+      if (lastTime !== this.#renderTime) {
+        lastTime = this.#renderTime;
         this.#evtTool.emit('timeupdate', Math.round(lastTime));
       }
     }, 1000 / 30);
@@ -93,11 +93,16 @@ export class AVCanvas {
     // ;(window as any).cvsEl = this.#cvsEl
   }
 
-  #curTime = 0e6;
+  #renderTime = 0e6;
+  #updateRenderTime(time: number) {
+    this.#renderTime = time;
+    this.#spriteManager.updateRenderTime(time);
+  }
+
   #audioCtx = new AudioContext();
   #render() {
     const cvsCtx = this.#cvsCtx;
-    let ts = this.#curTime;
+    let ts = this.#renderTime;
     if (
       this.#playState.step !== 0 &&
       ts >= this.#playState.start &&
@@ -107,23 +112,16 @@ export class AVCanvas {
     } else {
       this.#playState.step = 0;
     }
-    this.#curTime = ts;
+    this.#updateRenderTime(ts);
 
     const audios: Float32Array[][] = [];
     for (const s of this.#spriteManager.getSprites()) {
-      if (
-        !s.visible ||
-        ts < s.time.offset ||
-        ts > s.time.offset + s.time.duration
-      ) {
-        continue;
-      }
-
       cvsCtx.save();
       const { audio } = s.render(cvsCtx, ts - s.time.offset);
       cvsCtx.restore();
       audios.push(audio);
     }
+    cvsCtx.resetTransform();
 
     if (this.#playState.step !== 0 && audios.length > 0) {
       this.#playState.audioPlayAt = Math.max(
@@ -137,7 +135,6 @@ export class AVCanvas {
       );
       this.#playState.audioPlayAt += duration;
     }
-    cvsCtx.resetTransform();
   }
 
   #playState = {
@@ -153,7 +150,7 @@ export class AVCanvas {
       opts.end ??
       Math.max(
         ...this.#spriteManager
-          .getSprites()
+          .getSprites({ time: false })
           .map((s) => s.time.offset + s.time.duration),
       );
     if (!Number.isFinite(end) || opts.start >= end || opts.start < 0) {
@@ -161,7 +158,7 @@ export class AVCanvas {
         `Invalid time parameter, ${JSON.stringify({ start: opts.start, end })}`,
       );
     }
-    this.#curTime = opts.start;
+    this.#updateRenderTime(opts.start);
     this.#playState.start = opts.start;
     this.#playState.end = end;
     // AVCanvas 30FPS，将播放速率转换成步长
@@ -172,7 +169,7 @@ export class AVCanvas {
     this.#playState.step = 0;
   }
   previewFrame(time: number) {
-    this.#curTime = time;
+    this.#updateRenderTime(time);
     this.#playState.step = 0;
   }
 
@@ -216,7 +213,7 @@ export class AVCanvas {
 
   async createCombinator(opts: { bitrate?: number } = {}) {
     const com = new Combinator({ ...this.#opts, ...opts });
-    for (const vs of this.#spriteManager.getSprites()) {
+    for (const vs of this.#spriteManager.getSprites({ time: false })) {
       const os = new OffscreenSprite(vs.getClip());
       os.time = { ...vs.time };
       vs.copyStateTo(os);

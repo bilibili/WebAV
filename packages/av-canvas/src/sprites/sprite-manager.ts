@@ -52,8 +52,28 @@ export class SpriteManager {
     spr.destroy();
   }
 
-  getSprites(): VisibleSprite[] {
-    return [...this.#sprites];
+  getSprites(filter: { time: boolean } = { time: true }): VisibleSprite[] {
+    return this.#sprites.filter(
+      (s) =>
+        s.visible &&
+        (filter.time
+          ? this.#renderTime >= s.time.offset &&
+            this.#renderTime <= s.time.offset + s.time.duration
+          : true),
+    );
+  }
+
+  #renderTime = 0;
+  updateRenderTime(time: number) {
+    this.#renderTime = time;
+
+    const as = this.activeSprite;
+    if (
+      as != null &&
+      (time < as.time.offset || time > as.time.offset + as.time.duration)
+    ) {
+      this.activeSprite = null;
+    }
   }
 
   destroy(): void {
