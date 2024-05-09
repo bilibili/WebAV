@@ -12,8 +12,8 @@ export class VisibleSprite extends BaseSprite {
     super();
     this.#clip = clip;
     this.ready = clip.ready.then(({ width, height, duration }) => {
-      this.rect.w = width;
-      this.rect.h = height;
+      this.rect.w = this.rect.w === 0 ? width : this.rect.w;
+      this.rect.h = this.rect.h === 0 ? height : this.rect.h;
       this.time.duration =
         this.time.duration === 0 ? duration : this.time.duration;
     });

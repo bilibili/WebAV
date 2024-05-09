@@ -1,25 +1,29 @@
-import { beforeEach, expect, test } from 'vitest';
+import { afterEach, beforeEach, expect, test } from 'vitest';
 import { AVCanvas } from '../av-canvas';
 import { createEl } from '../utils';
-import { crtMSEvt4Offset } from './mock';
+import { crtMSEvt4Offset } from './test-utils';
 import { IClip, VisibleSprite } from '@webav/av-cliper';
 
-function createAVCanvas(): {
-  avCvs: AVCanvas;
-  container: HTMLElement;
-} {
-  const container = createEl('div');
-  return {
-    avCvs: new AVCanvas(container, {
-      width: 100,
-      height: 100,
-      bgColor: '#333',
-    }),
-    container,
-  };
-}
+let container: HTMLDivElement;
+let avCvs: AVCanvas;
+beforeEach(() => {
+  container = createEl('div') as HTMLDivElement;
+  container.style.cssText = `
+    width: 1280px;
+    height: 720px;
+  `;
+  document.body.appendChild(container);
+  avCvs = new AVCanvas(container, {
+    width: 1280,
+    height: 720,
+    bgColor: '#333',
+  });
+});
 
-let { avCvs, container } = createAVCanvas();
+afterEach(() => {
+  container.remove();
+  avCvs.destroy();
+});
 
 class MockClip implements IClip {
   tick = async () => {
@@ -32,24 +36,6 @@ class MockClip implements IClip {
   destroy = () => {};
 }
 
-beforeEach(() => {
-  container.remove();
-
-  const d = createAVCanvas();
-  avCvs = d.avCvs;
-  container = d.container;
-});
-
-test('init center the Sprite', async () => {
-  const vs = new VisibleSprite(new MockClip());
-  await vs.ready;
-  vs.rect.w = 80;
-  vs.rect.h = 80;
-  await avCvs.addSprite(vs);
-  expect(vs.rect.x).toBe((100 - 80) / 2);
-  expect(vs.rect.y).toBe((100 - 80) / 2);
-});
-
 test('captureStream', () => {
   const ms = avCvs.captureStream();
   expect(ms).toBeInstanceOf(MediaStream);
@@ -57,12 +43,14 @@ test('captureStream', () => {
 
 test('dynamicCusor', async () => {
   const vs = new VisibleSprite(new MockClip());
+  vs.rect.x = 100;
+  vs.rect.y = 100;
+  vs.rect.w = 100;
+  vs.rect.h = 100;
   await avCvs.addSprite(vs);
-  vs.rect.w = 80;
-  vs.rect.h = 80;
   const cvsEl = container.querySelector('canvas') as HTMLCanvasElement;
-  cvsEl.dispatchEvent(crtMSEvt4Offset('mousedown', 20, 20));
-  window.dispatchEvent(crtMSEvt4Offset('mouseup', 20, 20));
+  cvsEl.dispatchEvent(crtMSEvt4Offset('mousedown', 110, 110));
+  window.dispatchEvent(crtMSEvt4Offset('mouseup', 110, 110));
 
   expect(cvsEl.style.cursor).toBe('move');
 
@@ -83,6 +71,6 @@ test('dynamicCusor', async () => {
   cvsEl.dispatchEvent(crtMSEvt4Offset('mousemove', 0, 0));
   expect(cvsEl.style.cursor).toBe('');
 
-  cvsEl.dispatchEvent(crtMSEvt4Offset('mousemove', 20, 20));
+  cvsEl.dispatchEvent(crtMSEvt4Offset('mousemove', 110, 110));
   expect(cvsEl.style.cursor).toBe('move');
 });
