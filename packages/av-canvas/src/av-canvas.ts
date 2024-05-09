@@ -46,7 +46,7 @@ export class AVCanvas {
   #opts;
 
   constructor(
-    container: HTMLElement,
+    attchEl: HTMLElement,
     opts: {
       bgColor: string;
     } & IResolution,
@@ -56,7 +56,11 @@ export class AVCanvas {
     const ctx = this.#cvsEl.getContext('2d', { alpha: false });
     if (ctx == null) throw Error('canvas context is null');
     this.#cvsCtx = ctx;
+    const container = createEl('div');
+    container.style.cssText =
+      'width: 100%; height: 100%; position: relative; overflow: hidden;';
     container.appendChild(this.#cvsEl);
+    attchEl.appendChild(container);
 
     Rect.CTRL_SIZE = 14 / (this.#cvsEl.clientWidth / this.#cvsEl.width);
     this.#spriteManager = new SpriteManager();
@@ -185,7 +189,7 @@ export class AVCanvas {
 
     this.#audioCtx.close();
     this.#stopRender();
-    this.#cvsEl.remove();
+    this.#cvsEl.parentElement?.remove();
     this.#clears.forEach((fn) => fn());
     this.#spriteManager.destroy();
   }
