@@ -196,7 +196,7 @@ export class MP4Clip implements IClip {
         }),
       ]),
       new Promise<[]>((_, reject) => {
-        timeoutTimer = setTimeout(
+        timeoutTimer = self.setTimeout(
           () =>
             reject(
               Error(
@@ -936,7 +936,7 @@ function splitAudioSampleByTime(audioSamples: ExtMP4Sample[], time: number) {
   if (hitIdx === -1) throw Error('Not found audio sample by time');
   const preSlice = audioSamples.slice(0, hitIdx);
   const postSlice = audioSamples
-    .slice(0, hitIdx)
+    .slice(hitIdx)
     .map((s) => ({ ...s, cts: s.cts - time }));
   return [preSlice, postSlice];
 }

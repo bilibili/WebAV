@@ -80,8 +80,7 @@ const mp4_bunny_1 = `//${location.host}/video/bunny_1.mp4`;
 test('clone mp4clip', async () => {
   const clip = new MP4Clip((await fetch(mp4_bunny_1)).body!);
   await clip.ready;
-  clip.deleteRange(0, 10e6);
-  const tickInterceptor = (_, __) => __;
+  const tickInterceptor: MP4Clip['tickInterceptor'] = (_, __) => __;
   clip.tickInterceptor = tickInterceptor;
 
   const cloned = await clip.clone();
@@ -137,4 +136,8 @@ test('split MP4Clip by time', async () => {
   const [preClip11, postClip12] = await preClip1.split(5e6);
   expect(Math.round(preClip11.meta.duration / 1e6)).toEqual(5);
   expect(Math.round(postClip12.meta.duration / 1e6)).toEqual(5);
+
+  const [preClip21, postClip22] = await postClip2.split(5e6);
+  expect(Math.round(preClip21.meta.duration / 1e6)).toEqual(5);
+  expect(Math.round(postClip22.meta.duration / 1e6)).toEqual(6);
 });
