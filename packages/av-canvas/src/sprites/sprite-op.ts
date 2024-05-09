@@ -95,12 +95,12 @@ export function draggabelSprite(
     }
 
     startRect = hitSpr.rect.clone();
-    // 保留 10px，避免移出边界，无法拖回来
+    // 保留 5% 的安全距离，避免移出边界，无法拖回来
     mvLimit = {
-      xl: -startRect.w + 10,
-      xr: cvsEl.width - 10,
-      yt: -startRect.h + 10,
-      yb: cvsEl.height - 10,
+      xl: -startRect.w + cvsEl.width * 0.05,
+      xr: cvsEl.width - cvsEl.width * 0.05,
+      yt: -startRect.h + cvsEl.height * 0.05,
+      yb: cvsEl.height - cvsEl.height * 0.05,
     };
 
     startX = clientX;

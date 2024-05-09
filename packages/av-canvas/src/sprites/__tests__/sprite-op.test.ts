@@ -89,9 +89,9 @@ describe('draggabelSprite', () => {
         clientY: 10000,
       }),
     );
-    // sprite 至少保留10px在可视区域内
-    expect(vs.rect.x).toBe(cvsEl.width - 10);
-    expect(vs.rect.y).toBe(cvsEl.height - 10);
+    // 5% 安全边界
+    expect(vs.rect.x).toBe(cvsEl.width - cvsEl.width * 0.05);
+    expect(vs.rect.y).toBe(cvsEl.height - cvsEl.height * 0.05);
 
     clear();
   });
