@@ -14,5 +14,8 @@ export default defineConfig({
       entry: resolve(__dirname, 'src/av-recorder.ts'),
       name: 'av-recoder',
     },
+    rollupOptions: {
+      external: ['@webav/av-cliper'],
+    },
   },
 });

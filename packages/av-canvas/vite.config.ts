@@ -7,5 +7,8 @@ export default defineConfig({
       entry: resolve(__dirname, 'src/index.ts'),
       name: 'av-canvas',
     },
+    rollupOptions: {
+      external: ['@webav/av-cliper'],
+    },
   },
 });
