@@ -22,7 +22,8 @@
   },
   "scripts": {
     "build": "lerna run build",
-    "publish:all": "lerna publish from-package --no-verify-access --no-private --yes",
+    "publish:all": "lerna publish from-package --no-verify-access --no-private --yes --dist-tag latest",
+    "publish:all:next": "lerna publish from-package --no-verify-access --no-private --yes --dist-tag next",
     "build:api": "lerna run build:api",
     "changelog": "conventional-changelog -p angular -i CHANGELOG.md -s",
     "postinstall": "simple-git-hooks"
