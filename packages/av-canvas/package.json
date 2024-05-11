@@ -19,7 +19,7 @@
   "module": "dist/av-canvas.js",
   "main": "dist/av-canvas.umd.cjs",
   "scripts": {
-    "dev": "vite demo --config demo-vite.config.ts",
+    "dev": "vite demo --config demo/demo-vite.config.ts",
     "test": "vitest --config test-vite.config.ts",
     "test:coverage": "vitest run --coverage",
     "build": "vite build && tsc -p build.tsconfig.json --outDir dist",
@@ -35,8 +35,13 @@
     "@types/react-dom": "^18.3.0",
     "@types/wicg-file-system-access": "^2020.9.6",
     "@webav/av-recorder": "^0.9.0-beta.1",
+    "@xzdarcy/react-timeline-editor": "^0.1.9",
+    "autoprefixer": "^10.4.19",
+    "esbuild-plugin-react-virtualized": "^1.0.4",
+    "postcss": "^8.4.38",
     "react": "^18.3.1",
-    "react-dom": "^18.3.1"
+    "react-dom": "^18.3.1",
+    "tailwindcss": "^3.4.3"
   },
   "dependencies": {
     "@webav/av-cliper": "^0.9.0-beta.0"

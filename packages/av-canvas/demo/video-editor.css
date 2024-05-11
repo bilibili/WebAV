@@ -1,0 +1,10 @@
+@config "./tailwind.config.js";
+
+/* @tailwind base; */
+@tailwind components;
+@tailwind utilities;
+
+.timeline-editor {
+  width: 1000px;
+  height: 300px;
+}
