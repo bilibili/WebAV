@@ -1,7 +1,8 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { Timeline, TimelineRow } from '@xzdarcy/react-timeline-editor';
 import './video-editor.css';
+import { AVCanvas } from '../src';
 
 const TimelineEditor = ({ clips }: { clips: TimelineRow[] }) => {
   return (
@@ -12,33 +13,30 @@ const TimelineEditor = ({ clips }: { clips: TimelineRow[] }) => {
 };
 
 function App() {
+  const [avCvs, setAVCvs] = useState<AVCanvas | null>(null);
+  const [cvsWrapEl, setCvsWrapEl] = useState<HTMLDivElement | null>(null);
   const [clips, setClips] = useState<TimelineRow[]>([
-    {
-      id: '0',
-      actions: [
-        {
-          id: 'action00',
-          start: 0,
-          end: 2,
-          effectId: '',
-        },
-      ],
-    },
-    {
-      id: '1',
-      actions: [
-        {
-          id: 'action10',
-          start: 1.5,
-          end: 5,
-          effectId: '',
-        },
-      ],
-    },
+    { id: '0', actions: [] },
+    { id: '1', actions: [] },
+    { id: '2', actions: [] },
+    { id: '3', actions: [] },
   ]);
 
+  useEffect(() => {
+    if (cvsWrapEl == null) return;
+    avCvs?.destroy();
+    setAVCvs(
+      new AVCanvas(cvsWrapEl, {
+        bgColor: '#000',
+        width: 1280,
+        height: 720,
+      })
+    );
+  }, [cvsWrapEl]);
+
   return (
-    <div className="">
+    <div className="canvas-wrap">
+      <div ref={(el) => setCvsWrapEl(el)}></div>
       <button
         className="mx-[10px]"
         onClick={() => {
