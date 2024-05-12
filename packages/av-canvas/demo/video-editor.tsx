@@ -1,21 +1,100 @@
 import { useEffect, useState } from 'react';
 import { createRoot } from 'react-dom/client';
-import { Timeline, TimelineRow } from '@xzdarcy/react-timeline-editor';
+import {
+  Timeline,
+  TimelineAction,
+  TimelineRow,
+} from '@xzdarcy/react-timeline-editor';
 import './video-editor.css';
 import { AVCanvas } from '../src';
+import { MP4Clip, VisibleSprite } from '@webav/av-cliper';
 
-const TimelineEditor = ({ clips }: { clips: TimelineRow[] }) => {
+const TimelineEditor = ({
+  timelineData: tlData,
+  onPreviewTime,
+  onOffsetChange,
+  onDuraionChange,
+  onDeleteAction,
+}: {
+  timelineData: TimelineRow[];
+  onPreviewTime: (time: number) => void;
+  onOffsetChange: (action: TimelineAction) => void;
+  onDuraionChange: (action: TimelineAction) => void;
+  onDeleteAction: (action: TimelineAction) => void;
+}) => {
+  const [scale, setScale] = useState(10);
+  const [activeAction, setActiveAction] = useState<TimelineAction | null>(null);
   return (
     <div className="">
-      <Timeline onChange={(d) => {}} editorData={clips} effects={{}} />
+      <div>
+        缩放：
+        <button
+          onClick={() => setScale(scale + 1)}
+          className="border rounded-full"
+        >
+          -
+        </button>
+        <button
+          onClick={() => setScale(scale - 1 > 1 ? scale - 1 : 1)}
+          className="border rounded-full"
+        >
+          +
+        </button>
+        <span className="mx-[10px]">|</span>
+        <button
+          onClick={() => {
+            if (activeAction == null) return;
+            onDeleteAction(activeAction);
+          }}
+        >
+          删除
+        </button>
+      </div>
+      <Timeline
+        onChange={(d) => {}}
+        scale={scale}
+        editorData={tlData}
+        effects={{}}
+        scaleSplitCount={5}
+        onClickTimeArea={(time) => {
+          onPreviewTime(time);
+          return true;
+        }}
+        onCursorDragEnd={(time) => {
+          onPreviewTime(time);
+        }}
+        onActionResizing={({ dir }) => {
+          return dir === 'right';
+        }}
+        onActionMoveEnd={({ action }) => {
+          onOffsetChange(action);
+        }}
+        onActionResizeEnd={({ action }) => {
+          onDuraionChange(action);
+        }}
+        onClickAction={(_, { action }) => {
+          setActiveAction(action);
+        }}
+        getActionRender={(action) => {
+          if (action.id === activeAction?.id) {
+            return (
+              <div className="w-full h-full border border-red-300 border-solid"></div>
+            );
+          }
+          return <div></div>;
+        }}
+        autoScroll
+      />
     </div>
   );
 };
 
+const actionSpriteMap = new WeakMap<TimelineAction, VisibleSprite>();
+
 function App() {
   const [avCvs, setAVCvs] = useState<AVCanvas | null>(null);
   const [cvsWrapEl, setCvsWrapEl] = useState<HTMLDivElement | null>(null);
-  const [clips, setClips] = useState<TimelineRow[]>([
+  const [tlData, setTLData] = useState<TimelineRow[]>([
     { id: '1-video', actions: [] },
     { id: '2-audio', actions: [] },
     { id: '3-img', actions: [] },
@@ -37,22 +116,30 @@ function App() {
     };
   }, [cvsWrapEl]);
 
-  function addItem2Track(trackId: string) {
-    const track = clips.find(({ id }) => id === trackId);
-    if (track == null) return;
+  function addItem2Track(trackId: string, spr: VisibleSprite) {
+    const track = tlData.find(({ id }) => id === trackId);
+    if (track == null) return null;
+
     const maxTime = Math.max(...track.actions.map((a) => a.end), 0);
-    track.actions.push({
+    spr.time.offset = maxTime * 1e6;
+
+    const action = {
       id: Math.random().toString(),
       start: maxTime,
-      end: maxTime + 2,
+      end: (spr.time.offset + spr.time.duration) / 1e6,
       effectId: '',
-    });
-    setClips(
-      clips
+    };
+
+    actionSpriteMap.set(action, spr);
+
+    track.actions.push(action);
+    setTLData(
+      tlData
         .filter((it) => it !== track)
         .concat({ ...track })
         .sort((a, b) => a.id.charCodeAt(0) - b.id.charCodeAt(0)),
     );
+    return action;
   }
 
   return (
@@ -60,40 +147,96 @@ function App() {
       <div ref={(el) => setCvsWrapEl(el)}></div>
       <button
         className="mx-[10px]"
-        onClick={() => {
-          addItem2Track('1-video');
+        onClick={async () => {
+          const spr = new VisibleSprite(
+            new MP4Clip((await fetch('./video/bunny_0.mp4')).body!),
+          );
+          await avCvs?.addSprite(spr);
+          addItem2Track('1-video', spr);
         }}
       >
         + 视频
       </button>
       <button
+        disabled
         className="mx-[10px]"
         onClick={() => {
-          addItem2Track('2-audio');
+          // addItem2Track('2-audio');
         }}
       >
         + 音频
       </button>
       <button
+        disabled
         className="mx-[10px]"
         onClick={() => {
-          addItem2Track('3-img');
+          // addItem2Track('3-img');
         }}
       >
         + 图片
       </button>
       <button
+        disabled
         className="mx-[10px]"
         onClick={() => {
-          addItem2Track('4-text');
+          // addItem2Track('4-text');
         }}
       >
         + 文字
       </button>
-      <TimelineEditor clips={clips}></TimelineEditor>
+      <span className="mx-[10px]">|</span>
+      <button
+        className="mx-[10px]"
+        onClick={async () => {
+          if (avCvs == null) return;
+          (await avCvs.createCombinator())
+            .output()
+            .pipeTo(await createFileWriter('mp4'));
+        }}
+      >
+        导出视频
+      </button>
+      <p></p>
+      <TimelineEditor
+        timelineData={tlData}
+        onPreviewTime={(time) => {
+          avCvs?.previewFrame(time * 1e6);
+        }}
+        onOffsetChange={(action) => {
+          const spr = actionSpriteMap.get(action);
+          if (spr == null) return;
+          spr.time.offset = action.start * 1e6;
+        }}
+        onDuraionChange={(action) => {
+          const spr = actionSpriteMap.get(action);
+          if (spr == null) return;
+          spr.time.duration = (action.end - action.start) * 1e6;
+        }}
+        onDeleteAction={(action) => {
+          const spr = actionSpriteMap.get(action);
+          if (spr == null) return;
+          avCvs?.removeSprite(spr);
+          actionSpriteMap.delete(action);
+          const track = tlData
+            .map((t) => t.actions)
+            .find((actions) => actions.includes(action));
+          if (track == null) return;
+          track.splice(track.indexOf(action), 1);
+          setTLData([...tlData]);
+        }}
+      ></TimelineEditor>
     </div>
   );
 }
 
 const root = createRoot(document.getElementById('app')!);
 root.render(<App />);
+
+async function createFileWriter(
+  extName: string,
+): Promise<FileSystemWritableFileStream> {
+  const fileHandle = await window.showSaveFilePicker({
+    suggestedName: `WebAV-export-${Date.now()}.${extName}`,
+  });
+  return fileHandle.createWritable();
+}

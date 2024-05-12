@@ -217,7 +217,10 @@ export class AVCanvas {
 
   async createCombinator(opts: { bitrate?: number } = {}) {
     const com = new Combinator({ ...this.#opts, ...opts });
-    for (const vs of this.#spriteManager.getSprites({ time: false })) {
+    const sprites = this.#spriteManager.getSprites({ time: false });
+    if (sprites.length === 0) throw Error('No sprite added');
+
+    for (const vs of sprites) {
       const os = new OffscreenSprite(vs.getClip());
       os.time = { ...vs.time };
       vs.copyStateTo(os);
