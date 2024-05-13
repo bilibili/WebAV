@@ -50,7 +50,7 @@ export class MP4Clip implements IClip {
   };
 
   get meta() {
-    return this.#meta;
+    return { ...this.#meta };
   }
 
   #volume = 1;

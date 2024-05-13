@@ -7,7 +7,7 @@ import {
 } from '@xzdarcy/react-timeline-editor';
 import './video-editor.css';
 import { AVCanvas } from '../src';
-import { MP4Clip, VisibleSprite } from '@webav/av-cliper';
+import { AudioClip, ImgClip, MP4Clip, VisibleSprite } from '@webav/av-cliper';
 
 const TimelineEditor = ({
   timelineData: tlData,
@@ -63,14 +63,12 @@ const TimelineEditor = ({
         onCursorDragEnd={(time) => {
           onPreviewTime(time);
         }}
-        onActionResizing={({ dir }) => {
-          return dir === 'right';
+        onActionResizing={({ dir, action }) => {
+          if (dir === 'left') return false;
+          return onDuraionChange(action);
         }}
         onActionMoveEnd={({ action }) => {
           onOffsetChange(action);
-        }}
-        onActionResizeEnd={({ action }) => {
-          onDuraionChange(action);
         }}
         onClickAction={(_, { action }) => {
           setActiveAction(action);
@@ -137,7 +135,7 @@ function App() {
       tlData
         .filter((it) => it !== track)
         .concat({ ...track })
-        .sort((a, b) => a.id.charCodeAt(0) - b.id.charCodeAt(0)),
+        .sort((a, b) => a.id.charCodeAt(0) - b.id.charCodeAt(0))
     );
     return action;
   }
@@ -149,7 +147,7 @@ function App() {
         className="mx-[10px]"
         onClick={async () => {
           const spr = new VisibleSprite(
-            new MP4Clip((await fetch('./video/bunny_0.mp4')).body!),
+            new MP4Clip((await fetch('./video/bunny_0.mp4')).body!)
           );
           await avCvs?.addSprite(spr);
           addItem2Track('1-video', spr);
@@ -158,19 +156,26 @@ function App() {
         + 视频
       </button>
       <button
-        disabled
         className="mx-[10px]"
-        onClick={() => {
-          // addItem2Track('2-audio');
+        onClick={async () => {
+          const spr = new VisibleSprite(
+            new AudioClip((await fetch('./audio/16kHz-1chan.mp3')).body!)
+          );
+          await avCvs?.addSprite(spr);
+          addItem2Track('2-audio', spr);
         }}
       >
         + 音频
       </button>
       <button
-        disabled
         className="mx-[10px]"
-        onClick={() => {
-          // addItem2Track('3-img');
+        onClick={async () => {
+          const spr = new VisibleSprite(
+            new ImgClip((await fetch('./img/bunny.png')).body!)
+          );
+          await avCvs?.addSprite(spr);
+          spr.time.duration = 10e6;
+          addItem2Track('3-img', spr);
         }}
       >
         + 图片
@@ -209,8 +214,11 @@ function App() {
         }}
         onDuraionChange={(action) => {
           const spr = actionSpriteMap.get(action);
-          if (spr == null) return;
-          spr.time.duration = (action.end - action.start) * 1e6;
+          if (spr == null) return false;
+          const duration = (action.end - action.start) * 1e6;
+          if (duration > spr.getClip().meta.duration) return false;
+          spr.time.duration = duration;
+          return true;
         }}
         onDeleteAction={(action) => {
           const spr = actionSpriteMap.get(action);
@@ -233,7 +241,7 @@ const root = createRoot(document.getElementById('app')!);
 root.render(<App />);
 
 async function createFileWriter(
-  extName: string,
+  extName: string
 ): Promise<FileSystemWritableFileStream> {
   const fileHandle = await window.showSaveFilePicker({
     suggestedName: `WebAV-export-${Date.now()}.${extName}`,

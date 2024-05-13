@@ -25,7 +25,7 @@ export class AudioClip implements IClip {
 
   get meta() {
     return {
-      duration: this.#meta.duration,
+      ...this.#meta,
       sampleRate: DEFAULT_AUDIO_CONF.sampleRate,
       chanCount: 2,
     };
@@ -41,7 +41,7 @@ export class AudioClip implements IClip {
 
   constructor(
     dataSource: ReadableStream<Uint8Array> | Float32Array[],
-    opts: IAudioClipOpts = {},
+    opts: IAudioClipOpts = {}
   ) {
     this.#opts = {
       loop: false,
@@ -58,7 +58,7 @@ export class AudioClip implements IClip {
   }
 
   async #init(
-    dataSource: ReadableStream<Uint8Array> | Float32Array[],
+    dataSource: ReadableStream<Uint8Array> | Float32Array[]
   ): Promise<void> {
     if (AudioClip.ctx == null) {
       AudioClip.ctx = new AudioContext({
@@ -88,7 +88,7 @@ export class AudioClip implements IClip {
 
     Log.info(
       'Audio clip convert to AudioData, time:',
-      performance.now() - tStart,
+      performance.now() - tStart
     );
   }
 
@@ -114,7 +114,7 @@ export class AudioClip implements IClip {
     if (time < this.#ts || deltaTime > 3e6) {
       this.#ts = time;
       this.#frameOffset = Math.ceil(
-        (this.#ts / 1e6) * DEFAULT_AUDIO_CONF.sampleRate,
+        (this.#ts / 1e6) * DEFAULT_AUDIO_CONF.sampleRate
       );
       return {
         audio: [new Float32Array(0), new Float32Array(0)],
@@ -124,7 +124,7 @@ export class AudioClip implements IClip {
 
     this.#ts = time;
     const frameCnt = Math.ceil(
-      (deltaTime / 1e6) * DEFAULT_AUDIO_CONF.sampleRate,
+      (deltaTime / 1e6) * DEFAULT_AUDIO_CONF.sampleRate
     );
     const endIdx = this.#frameOffset + frameCnt;
     const audio = this.#opts.loop
@@ -146,11 +146,11 @@ export class AudioClip implements IClip {
     const frameCnt = Math.ceil((time / 1e6) * DEFAULT_AUDIO_CONF.sampleRate);
     const preSlice = new AudioClip(
       this.getPCMData().map((chan) => chan.slice(0, frameCnt)),
-      this.#opts,
+      this.#opts
     );
     const postSlice = new AudioClip(
       this.getPCMData().map((chan) => chan.slice(frameCnt)),
-      this.#opts,
+      this.#opts
     );
     return [preSlice, postSlice];
   }
@@ -171,7 +171,7 @@ export class AudioClip implements IClip {
 
 export async function concatAudioClip(
   clips: AudioClip[],
-  opts?: IAudioClipOpts,
+  opts?: IAudioClipOpts
 ) {
   const bufs: Float32Array[][] = [];
   for (const clip of clips) {
@@ -183,7 +183,7 @@ export async function concatAudioClip(
 
 async function parseStream2PCM(
   stream: ReadableStream<Uint8Array>,
-  ctx: AudioContext | OfflineAudioContext,
+  ctx: AudioContext | OfflineAudioContext
 ): Promise<Float32Array[]> {
   const buf = await new Response(stream).arrayBuffer();
   return extractPCM4AudioBuffer(await ctx.decodeAudioData(buf));
