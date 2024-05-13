@@ -24,20 +24,30 @@ export class ImgClip implements IClip {
 
   constructor(
     dataSource:
+      | ReadableStream
       | ImageBitmap
       | VideoFrame[]
-      | { type: `image/${AnimateImgType}`; stream: ReadableStream },
+      | { type: `image/${AnimateImgType}`; stream: ReadableStream }
   ) {
-    if (dataSource instanceof ImageBitmap) {
-      this.#img = dataSource;
-      this.#meta.width = dataSource.width;
-      this.#meta.height = dataSource.height;
-      this.ready = Promise.resolve({
-        width: dataSource.width,
-        height: dataSource.height,
-        duration: Infinity,
-      });
-    } else if (Array.isArray(dataSource)) {
+    const initWithImgBitmap = (imgBitmap: ImageBitmap) => {
+      this.#img = imgBitmap;
+      this.#meta.width = imgBitmap.width;
+      this.#meta.height = imgBitmap.height;
+      this.#meta.duration = Infinity;
+      return { ...this.#meta };
+    };
+
+    if (dataSource instanceof ReadableStream) {
+      this.ready = new Response(dataSource)
+        .blob()
+        .then((data) => createImageBitmap(data))
+        .then(initWithImgBitmap);
+    } else if (dataSource instanceof ImageBitmap) {
+      this.ready = Promise.resolve(initWithImgBitmap(dataSource));
+    } else if (
+      Array.isArray(dataSource) &&
+      dataSource.every((it) => it instanceof VideoFrame)
+    ) {
       this.#frames = dataSource;
       const frame = this.#frames[0];
       if (frame == null) throw Error('The frame count must be greater than 0');
@@ -46,25 +56,27 @@ export class ImgClip implements IClip {
         height: frame.displayHeight,
         duration: this.#frames.reduce(
           (acc, cur) => acc + (cur.duration ?? 0),
-          0,
+          0
         ),
       };
       this.ready = Promise.resolve({ ...this.#meta, duration: Infinity });
-    } else {
+    } else if ('type' in dataSource) {
       this.ready = this.#initAnimateImg(
         dataSource.stream,
-        dataSource.type,
+        dataSource.type
       ).then(() => ({
         width: this.#meta.width,
         height: this.#meta.height,
         duration: Infinity,
       }));
+    } else {
+      throw Error('Illegal arguments');
     }
   }
 
   async #initAnimateImg(
     stream: ReadableStream,
-    type: `image/${AnimateImgType}`,
+    type: `image/${AnimateImgType}`
   ) {
     this.#frames = await decodeImg(stream, type);
     const firstVf = this.#frames[0];
@@ -93,7 +105,7 @@ export class ImgClip implements IClip {
     return {
       video: (
         this.#frames.find(
-          (f) => tt >= f.timestamp && tt <= f.timestamp + (f.duration ?? 0),
+          (f) => tt >= f.timestamp && tt <= f.timestamp + (f.duration ?? 0)
         ) ?? this.#frames[0]
       ).clone(),
       state: 'success',
@@ -120,7 +132,7 @@ export class ImgClip implements IClip {
       (vf) =>
         new VideoFrame(vf, {
           timestamp: vf.timestamp - time,
-        }),
+        })
     );
     return [new ImgClip(preSlice), new ImgClip(postSlice)] as this[];
   }
@@ -128,7 +140,7 @@ export class ImgClip implements IClip {
   async clone() {
     await this.ready;
     return new ImgClip(
-      this.#img ?? this.#frames.map((vf) => vf.clone()),
+      this.#img ?? this.#frames.map((vf) => vf.clone())
     ) as this;
   }
 
