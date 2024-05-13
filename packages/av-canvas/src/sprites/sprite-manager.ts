@@ -15,10 +15,6 @@ export class SpriteManager {
     [ESpriteManagerEvt.ActiveSpriteChange]: (s: VisibleSprite | null) => void;
   }>();
 
-  audioCtx = new AudioContext();
-
-  audioMSDest = this.audioCtx.createMediaStreamDestination();
-
   on = this.#evtTool.on;
 
   get activeSprite(): VisibleSprite | null {
@@ -30,16 +26,10 @@ export class SpriteManager {
     this.#evtTool.emit(ESpriteManagerEvt.ActiveSpriteChange, s);
   }
 
-  constructor() {
-    this.#bgAudio();
-  }
-
   async addSprite(vs: VisibleSprite): Promise<void> {
     await vs.ready;
     this.#sprites.push(vs);
     this.#sprites = this.#sprites.sort((a, b) => a.zIndex - b.zIndex);
-    // todo: remove audioNode
-    vs.audioNode?.connect(this.audioMSDest);
     vs.on('zIndexChange', () => {
       this.#sprites = this.#sprites.sort((a, b) => a.zIndex - b.zIndex);
     });
@@ -59,7 +49,7 @@ export class SpriteManager {
         (filter.time
           ? this.#renderTime >= s.time.offset &&
             this.#renderTime <= s.time.offset + s.time.duration
-          : true),
+          : true)
     );
   }
 
@@ -80,20 +70,5 @@ export class SpriteManager {
     this.#evtTool.destroy();
     this.#sprites.forEach((s) => s.destroy());
     this.#sprites = [];
-    this.audioMSDest.disconnect();
-    this.audioCtx.close().catch(console.error);
-  }
-
-  // 添加背景音，如果没有音频，录制的webm不正常
-  #bgAudio(): void {
-    const oscillator = this.audioCtx.createOscillator();
-    const wave = this.audioCtx.createPeriodicWave(
-      new Float32Array([0, 0]),
-      new Float32Array([0, 0]),
-      { disableNormalization: true },
-    );
-    oscillator.setPeriodicWave(wave);
-    oscillator.connect(this.audioMSDest);
-    oscillator.start();
   }
 }
