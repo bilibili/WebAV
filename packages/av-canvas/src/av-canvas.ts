@@ -116,10 +116,9 @@ export class AVCanvas {
     ) {
       ts += this.#playState.step;
     } else {
-      if (this.#playState.step !== 0) {
-        this.#evtTool.emit('paused');
-      }
+      const emitPaused = this.#playState.step !== 0;
       this.#playState.step = 0;
+      if (emitPaused) this.#evtTool.emit('paused');
     }
     this.#updateRenderTime(ts);
 
@@ -179,6 +178,7 @@ export class AVCanvas {
   }
   pause() {
     this.#playState.step = 0;
+    this.#evtTool.emit('paused');
   }
   previewFrame(time: number) {
     this.#updateRenderTime(time);
