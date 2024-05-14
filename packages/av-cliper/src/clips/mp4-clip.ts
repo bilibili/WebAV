@@ -110,7 +110,7 @@ export class MP4Clip implements IClip {
 
       this.#meta = genMeta(decoderConf, videoSamples, audioSamples);
       this.#log.info('MP4Clip meta:', this.#meta);
-      return this.#meta;
+      return { ...this.#meta };
     });
   }
 

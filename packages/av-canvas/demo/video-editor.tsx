@@ -19,7 +19,11 @@ const TimelineEditor = ({
   timelineData: TimelineRow[];
   onPreviewTime: (time: number) => void;
   onOffsetChange: (action: TimelineAction) => void;
-  onDuraionChange: (action: TimelineAction) => void;
+  onDuraionChange: (args: {
+    action: TimelineAction;
+    start: number;
+    end: number;
+  }) => void;
   onDeleteAction: (action: TimelineAction) => void;
 }) => {
   const [scale, setScale] = useState(10);
@@ -63,9 +67,9 @@ const TimelineEditor = ({
         onCursorDragEnd={(time) => {
           onPreviewTime(time);
         }}
-        onActionResizing={({ dir, action }) => {
+        onActionResizing={({ dir, action, start, end }) => {
           if (dir === 'left') return false;
-          return onDuraionChange(action);
+          return onDuraionChange({ action, start, end });
         }}
         onActionMoveEnd={({ action }) => {
           onOffsetChange(action);
@@ -212,10 +216,10 @@ function App() {
           if (spr == null) return;
           spr.time.offset = action.start * 1e6;
         }}
-        onDuraionChange={(action) => {
+        onDuraionChange={({ action, start, end }) => {
           const spr = actionSpriteMap.get(action);
           if (spr == null) return false;
-          const duration = (action.end - action.start) * 1e6;
+          const duration = (end - start) * 1e6;
           if (duration > spr.getClip().meta.duration) return false;
           spr.time.duration = duration;
           return true;
