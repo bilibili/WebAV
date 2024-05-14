@@ -175,41 +175,6 @@ export class MP4Clip implements IClip {
   }
 
   /**
-   * @deprecated
-   */
-  deleteRange(startTime: number, endTime: number) {
-    if (endTime <= startTime)
-      throw Error('endTime must be greater than startTime');
-
-    _del(this.#videoSamples, startTime, endTime);
-    _del(this.#audioSamples, startTime, endTime);
-    this.#meta.duration -= endTime - startTime;
-    for (let i = this.#videoSamples.length - 1; i >= 0; i--) {
-      const s = this.#videoSamples[i];
-      if (s.deleted) continue;
-      this.#meta.duration = s.cts + s.duration;
-      break;
-    }
-
-    function _del(
-      samples: Array<MP4Sample & { deleted?: boolean }>,
-      startTime: number,
-      endTime: number,
-    ) {
-      for (const s of samples) {
-        if (s.deleted) continue;
-
-        if (s.cts >= startTime && s.cts <= endTime) {
-          s.deleted = true;
-          s.cts = -1;
-        } else if (s.cts > endTime) {
-          s.cts -= endTime - startTime;
-        }
-      }
-    }
-  }
-
-  /**
    * Generate thumbnails, default generate 100px width thumbnails by every key frame.
    *
    * @param imgWidth thumbnail width, default 100

@@ -86,7 +86,6 @@ document.querySelector('#mp4-mp3')?.addEventListener('click', () => {
     const resp1 = await fetch(resList[0]);
     const mp4Clip = new MP4Clip(resp1.body!);
     await mp4Clip.ready;
-    // mp4Clip.deleteRange(10e6, 15e6);
     const spr1 = new OffscreenSprite(mp4Clip);
     await spr1.ready;
     spr1.rect.w = 1280;
