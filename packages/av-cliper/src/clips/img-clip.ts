@@ -115,7 +115,10 @@ export class ImgClip implements IClip {
   async split(time: number) {
     await this.ready;
     if (this.#img != null) {
-      return [new ImgClip(this.#img), new ImgClip(this.#img)] as [this, this];
+      return [
+        new ImgClip(await createImageBitmap(this.#img)),
+        new ImgClip(await createImageBitmap(this.#img)),
+      ] as [this, this];
     }
     let hitIdx = -1;
     for (let i = 0; i < this.#frames.length; i++) {

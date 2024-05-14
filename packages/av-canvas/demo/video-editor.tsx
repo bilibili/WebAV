@@ -16,6 +16,8 @@ import {
   renderTxt2ImgBitmap,
 } from '@webav/av-cliper';
 
+type TLActionWithName = TimelineAction & { name: string };
+
 const TimelineEditor = ({
   timelineData: tlData,
   onPreviewTime,
@@ -23,6 +25,7 @@ const TimelineEditor = ({
   onDuraionChange,
   onDeleteAction,
   timelineState,
+  onSplitAction,
 }: {
   timelineData: TimelineRow[];
   timelineState: React.MutableRefObject<TimelineState | undefined>;
@@ -34,9 +37,12 @@ const TimelineEditor = ({
     end: number;
   }) => void;
   onDeleteAction: (action: TimelineAction) => void;
+  onSplitAction: (action: TLActionWithName) => void;
 }) => {
   const [scale, setScale] = useState(10);
-  const [activeAction, setActiveAction] = useState<TimelineAction | null>(null);
+  const [activeAction, setActiveAction] = useState<TLActionWithName | null>(
+    null,
+  );
   return (
     <div className="">
       <div>
@@ -55,12 +61,24 @@ const TimelineEditor = ({
         </button>
         <span className="mx-[10px]">|</span>
         <button
+          disabled={activeAction == null}
+          className="mx-[10px]"
           onClick={() => {
             if (activeAction == null) return;
             onDeleteAction(activeAction);
           }}
         >
-          删除素材
+          删除
+        </button>
+        <button
+          disabled={activeAction == null}
+          className="mx-[10px]"
+          onClick={() => {
+            if (activeAction == null) return;
+            onSplitAction(activeAction);
+          }}
+        >
+          分割
         </button>
       </div>
       <Timeline
@@ -88,10 +106,11 @@ const TimelineEditor = ({
           onOffsetChange(action);
         }}
         onClickAction={(_, { action }) => {
+          // @ts-expect-error
           setActiveAction(action);
         }}
         // @ts-expect-error
-        getActionRender={(action: TimelineAction & { name: string }) => {
+        getActionRender={(action: TLActionWithName) => {
           const baseStyle =
             'h-full justify-center items-center flex text-white';
           if (action.id === activeAction?.id) {
@@ -115,7 +134,7 @@ const actionSpriteMap = new WeakMap<TimelineAction, VisibleSprite>();
 
 function App() {
   const [avCvs, setAVCvs] = useState<AVCanvas | null>(null);
-  const timelineState = useRef<TimelineState>();
+  const tlState = useRef<TimelineState>();
 
   const [playing, setPlaying] = useState(false);
 
@@ -137,8 +156,8 @@ function App() {
     });
     setAVCvs(cvs);
     cvs.on('timeupdate', (time) => {
-      if (timelineState.current == null) return;
-      timelineState.current.setTime(time / 1e6);
+      if (tlState.current == null) return;
+      tlState.current.setTime(time / 1e6);
     });
     cvs.on('playing', () => {
       setPlaying(true);
@@ -152,16 +171,24 @@ function App() {
     };
   }, [cvsWrapEl]);
 
-  function addItem2Track(trackId: string, spr: VisibleSprite, name = '') {
+  function addSprite2Track(trackId: string, spr: VisibleSprite, name = '') {
     const track = tlData.find(({ id }) => id === trackId);
     if (track == null) return null;
 
-    const maxTime = Math.max(...track.actions.map((a) => a.end), 0);
-    spr.time.offset = maxTime * 1e6;
+    const start =
+      spr.time.offset === 0
+        ? Math.max(...track.actions.map((a) => a.end), 0) * 1e6
+        : spr.time.offset;
+
+    spr.time.offset = start;
+    // image
+    if (spr.time.duration === Infinity) {
+      spr.time.duration = 10e6;
+    }
 
     const action = {
       id: Math.random().toString(),
-      start: maxTime,
+      start: start / 1e6,
       end: (spr.time.offset + spr.time.duration) / 1e6,
       effectId: '',
       name,
@@ -189,7 +216,7 @@ function App() {
             new MP4Clip((await fetch('./video/bunny_0.mp4')).body!),
           );
           await avCvs?.addSprite(spr);
-          addItem2Track('1-video', spr, '视频');
+          addSprite2Track('1-video', spr, '视频');
         }}
       >
         + 视频
@@ -201,7 +228,7 @@ function App() {
             new AudioClip((await fetch('./audio/16kHz-1chan.mp3')).body!),
           );
           await avCvs?.addSprite(spr);
-          addItem2Track('2-audio', spr, '音频');
+          addSprite2Track('2-audio', spr, '音频');
         }}
       >
         + 音频
@@ -213,8 +240,7 @@ function App() {
             new ImgClip((await fetch('./img/bunny.png')).body!),
           );
           await avCvs?.addSprite(spr);
-          spr.time.duration = 10e6;
-          addItem2Track('3-img', spr, '图片');
+          addSprite2Track('3-img', spr, '图片');
         }}
       >
         + 图片
@@ -231,8 +257,7 @@ function App() {
             ),
           );
           await avCvs?.addSprite(spr);
-          spr.time.duration = 10e6;
-          addItem2Track('4-text', spr, '文字');
+          addSprite2Track('4-text', spr, '文字');
         }}
       >
         + 文字
@@ -241,11 +266,11 @@ function App() {
       <button
         className="mx-[10px]"
         onClick={async () => {
-          if (avCvs == null || timelineState.current == null) return;
+          if (avCvs == null || tlState.current == null) return;
           if (playing) {
             avCvs.pause();
           } else {
-            avCvs.play({ start: timelineState.current.getTime() * 1e6 });
+            avCvs.play({ start: tlState.current.getTime() * 1e6 });
           }
         }}
       >
@@ -265,7 +290,7 @@ function App() {
       <p></p>
       <TimelineEditor
         timelineData={tlData}
-        timelineState={timelineState}
+        timelineState={tlState}
         onPreviewTime={(time) => {
           avCvs?.previewFrame(time * 1e6);
         }}
@@ -293,6 +318,40 @@ function App() {
           if (track == null) return;
           track.splice(track.indexOf(action), 1);
           setTLData([...tlData]);
+        }}
+        onSplitAction={async (action: TLActionWithName) => {
+          const spr = actionSpriteMap.get(action);
+          if (avCvs == null || spr == null || tlState.current == null) return;
+          const newClips = await spr
+            .getClip()
+            .split(tlState.current.getTime() * 1e6 - spr.time.offset);
+          // 移除原有对象
+          avCvs.removeSprite(spr);
+          actionSpriteMap.delete(action);
+          const track = tlData.find((t) => t.actions.includes(action));
+          if (track == null) return;
+          track.actions.splice(track.actions.indexOf(action), 1);
+          setTLData([...tlData]);
+          // 添加分割后生成的两个新对象
+          const sprsDuration = [
+            tlState.current.getTime() * 1e6 - spr.time.offset,
+            spr.time.duration -
+              (tlState.current.getTime() * 1e6 - spr.time.offset),
+          ];
+          const sprsOffset = [
+            spr.time.offset,
+            spr.time.offset + sprsDuration[0],
+          ];
+          for (let i = 0; i < newClips.length; i++) {
+            const clip = newClips[i];
+            const newSpr = new VisibleSprite(clip);
+            if (clip instanceof ImgClip) {
+              newSpr.time.duration = sprsDuration[i];
+            }
+            newSpr.time.offset = sprsOffset[i];
+            await avCvs.addSprite(newSpr);
+            addSprite2Track(track.id, newSpr, action.name);
+          }
         }}
       ></TimelineEditor>
     </div>
