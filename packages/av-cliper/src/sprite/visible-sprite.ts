@@ -40,10 +40,10 @@ export class VisibleSprite extends BaseSprite {
       });
   }
 
-  #lastTime = 0;
+  #lastTime = -1;
   render(
     ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D,
-    time: number,
+    time: number
   ): { audio: Float32Array[] } {
     this.animate(time);
     super._render(ctx);
