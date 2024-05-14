@@ -7,7 +7,13 @@ import {
 } from '@xzdarcy/react-timeline-editor';
 import './video-editor.css';
 import { AVCanvas } from '../src';
-import { AudioClip, ImgClip, MP4Clip, VisibleSprite } from '@webav/av-cliper';
+import {
+  AudioClip,
+  ImgClip,
+  MP4Clip,
+  VisibleSprite,
+  renderTxt2ImgBitmap,
+} from '@webav/av-cliper';
 
 const TimelineEditor = ({
   timelineData: tlData,
@@ -185,10 +191,19 @@ function App() {
         + 图片
       </button>
       <button
-        disabled
         className="mx-[10px]"
-        onClick={() => {
-          // addItem2Track('4-text');
+        onClick={async () => {
+          const spr = new VisibleSprite(
+            new ImgClip(
+              await renderTxt2ImgBitmap(
+                '示例文字',
+                'font-size: 80px; color: red;'
+              )
+            )
+          );
+          await avCvs?.addSprite(spr);
+          spr.time.duration = 10e6;
+          addItem2Track('4-text', spr);
         }}
       >
         + 文字
