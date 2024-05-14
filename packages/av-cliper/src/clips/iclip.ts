@@ -20,6 +20,8 @@ export interface IClip {
 
   clone: () => Promise<this>;
 
+  split: (time: number) => Promise<[this, this]>;
+
   destroy: () => void;
 }
 

@@ -115,7 +115,7 @@ export class ImgClip implements IClip {
   async split(time: number) {
     await this.ready;
     if (this.#img != null) {
-      return [new ImgClip(this.#img), new ImgClip(this.#img)];
+      return [new ImgClip(this.#img), new ImgClip(this.#img)] as [this, this];
     }
     let hitIdx = -1;
     for (let i = 0; i < this.#frames.length; i++) {
@@ -134,7 +134,7 @@ export class ImgClip implements IClip {
           timestamp: vf.timestamp - time,
         }),
     );
-    return [new ImgClip(preSlice), new ImgClip(postSlice)] as this[];
+    return [new ImgClip(preSlice), new ImgClip(postSlice)] as [this, this];
   }
 
   async clone() {

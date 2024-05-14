@@ -331,7 +331,7 @@ export class MP4Clip implements IClip {
       this.#opts,
     );
 
-    return [preClip, postClip];
+    return [preClip, postClip] as [this, this];
   }
 
   async clone() {

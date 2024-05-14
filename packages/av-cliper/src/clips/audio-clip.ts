@@ -152,7 +152,7 @@ export class AudioClip implements IClip {
       this.getPCMData().map((chan) => chan.slice(frameCnt)),
       this.#opts,
     );
-    return [preSlice, postSlice];
+    return [preSlice, postSlice] as [this, this];
   }
 
   async clone() {
