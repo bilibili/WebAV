@@ -16,9 +16,7 @@ async function start(
   imgType: keyof typeof imgs,
 ) {
   const frames = await decodeImg(
-    (
-      await fetch(imgs[imgType])
-    ).body!,
+    (await fetch(imgs[imgType])).body!,
     `image/${imgType}`,
   );
 
@@ -29,10 +27,13 @@ async function start(
     ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
     ctx.drawImage(vf, 0, 0);
 
-    const timer = setTimeout(() => {
-      render(frames[++i]);
-      vf.close();
-    }, (vf.duration ?? 0) / 1000);
+    const timer = setTimeout(
+      () => {
+        render(frames[++i]);
+        vf.close();
+      },
+      (vf.duration ?? 0) / 1000,
+    );
 
     stopRender = () => {
       clearTimeout(timer);

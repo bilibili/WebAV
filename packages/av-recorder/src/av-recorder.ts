@@ -88,7 +88,7 @@ export class AVRecorder {
         type: EWorkerMsg.Start,
         data: workerOpts,
       },
-      Object.values(streams)
+      Object.values(streams),
     );
 
     return await new Promise<void>((resolve) => {

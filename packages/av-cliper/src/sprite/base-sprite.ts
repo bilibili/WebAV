@@ -50,7 +50,7 @@ export abstract class BaseSprite {
   ready = Promise.resolve();
 
   protected _render(
-    ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D
+    ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D,
   ): void {
     const {
       rect: { center, angle },
@@ -64,7 +64,7 @@ export abstract class BaseSprite {
       this.flip === 'vertical' ? -1 : 1,
       // 坐标原点偏移 x y
       center.x,
-      center.y
+      center.y,
     );
     // 任意方向翻转，旋转角度转为负值，才能与控制点同步
     ctx.rotate((this.flip == null ? 1 : -1) * angle);
@@ -98,7 +98,7 @@ export abstract class BaseSprite {
     const updateProps = linearTimeFn(
       time,
       this.#animatKeyFrame,
-      this.#animatOpts
+      this.#animatOpts,
     );
     for (const k in updateProps) {
       switch (k) {
@@ -135,7 +135,7 @@ export abstract class BaseSprite {
 export function linearTimeFn(
   time: number,
   kf: TAnimationKeyFrame,
-  opts: Required<IAnimationOpts>
+  opts: Required<IAnimationOpts>,
 ): Partial<TAnimateProps> {
   if (time / opts.duration >= opts.iterCount) return {};
 

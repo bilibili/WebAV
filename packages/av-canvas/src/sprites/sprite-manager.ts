@@ -50,7 +50,7 @@ export class SpriteManager {
         (filter.time
           ? this.#renderTime >= s.time.offset &&
             this.#renderTime <= s.time.offset + s.time.duration
-          : true)
+          : true),
     );
   }
 

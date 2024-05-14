@@ -51,7 +51,7 @@ export class AVCanvas {
     attchEl: HTMLElement,
     opts: {
       bgColor: string;
-    } & IResolution
+    } & IResolution,
   ) {
     this.#opts = opts;
     this.#cvsEl = createInitCvsEl(opts);
@@ -81,7 +81,7 @@ export class AVCanvas {
           rect.x = (this.#cvsEl.width - rect.w) / 2;
           rect.y = (this.#cvsEl.height - rect.h) / 2;
         }
-      })
+      }),
     );
 
     let lastTime = this.#renderTime;
@@ -135,12 +135,12 @@ export class AVCanvas {
     if (this.#playState.step !== 0 && audios.length > 0) {
       this.#playState.audioPlayAt = Math.max(
         this.#audioCtx.currentTime,
-        this.#playState.audioPlayAt
+        this.#playState.audioPlayAt,
       );
       const duration = renderPCM(
         mixinPCM(audios),
         this.#playState.audioPlayAt,
-        this.#audioCtx
+        this.#audioCtx,
       );
       this.#playState.audioPlayAt += duration;
     }
@@ -160,11 +160,11 @@ export class AVCanvas {
       Math.max(
         ...this.#spriteManager
           .getSprites({ time: false })
-          .map((s) => s.time.offset + s.time.duration)
+          .map((s) => s.time.offset + s.time.duration),
       );
     if (!Number.isFinite(end) || opts.start >= end || opts.start < 0) {
       throw Error(
-        `Invalid time parameter, ${JSON.stringify({ start: opts.start, end })}`
+        `Invalid time parameter, ${JSON.stringify({ start: opts.start, end })}`,
       );
     }
     this.#updateRenderTime(opts.start);
@@ -213,7 +213,7 @@ export class AVCanvas {
       });
     Log.info(
       'AVCanvas.captureStream, tracks:',
-      ms.getTracks().map((t) => t.kind)
+      ms.getTracks().map((t) => t.kind),
     );
     return ms;
   }
@@ -252,7 +252,7 @@ function renderPCM(pcm: Float32Array, at: number, ctx: AudioContext) {
  */
 function dynamicCusor(
   cvsEl: HTMLCanvasElement,
-  sprMng: SpriteManager
+  sprMng: SpriteManager,
 ): () => void {
   const cvsRatio = {
     w: cvsEl.clientWidth / cvsEl.width,
@@ -309,7 +309,7 @@ function dynamicCusor(
     const ofy = offsetY / cvsRatio.h;
     const [ctrlKey] =
       (Object.entries(actSpr.rect.ctrls).find(([, rect]) =>
-        rect.checkHit(ofx, ofy)
+        rect.checkHit(ofx, ofy),
       ) as [TCtrlKey, Rect]) ?? [];
 
     if (ctrlKey != null) {

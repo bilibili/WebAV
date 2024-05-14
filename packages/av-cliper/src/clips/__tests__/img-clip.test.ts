@@ -21,6 +21,6 @@ test('split by time', async () => {
   await clip.ready;
   const [preClip, postClip] = await clip.split(1e6);
   expect(clip.meta.duration).toBe(
-    preClip.meta.duration + postClip.meta.duration
+    preClip.meta.duration + postClip.meta.duration,
   );
 });

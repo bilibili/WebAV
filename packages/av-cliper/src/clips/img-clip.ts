@@ -27,7 +27,7 @@ export class ImgClip implements IClip {
       | ReadableStream
       | ImageBitmap
       | VideoFrame[]
-      | { type: `image/${AnimateImgType}`; stream: ReadableStream }
+      | { type: `image/${AnimateImgType}`; stream: ReadableStream },
   ) {
     const initWithImgBitmap = (imgBitmap: ImageBitmap) => {
       this.#img = imgBitmap;
@@ -56,14 +56,14 @@ export class ImgClip implements IClip {
         height: frame.displayHeight,
         duration: this.#frames.reduce(
           (acc, cur) => acc + (cur.duration ?? 0),
-          0
+          0,
         ),
       };
       this.ready = Promise.resolve({ ...this.#meta, duration: Infinity });
     } else if ('type' in dataSource) {
       this.ready = this.#initAnimateImg(
         dataSource.stream,
-        dataSource.type
+        dataSource.type,
       ).then(() => ({
         width: this.#meta.width,
         height: this.#meta.height,
@@ -76,7 +76,7 @@ export class ImgClip implements IClip {
 
   async #initAnimateImg(
     stream: ReadableStream,
-    type: `image/${AnimateImgType}`
+    type: `image/${AnimateImgType}`,
   ) {
     this.#frames = await decodeImg(stream, type);
     const firstVf = this.#frames[0];
@@ -105,7 +105,7 @@ export class ImgClip implements IClip {
     return {
       video: (
         this.#frames.find(
-          (f) => tt >= f.timestamp && tt <= f.timestamp + (f.duration ?? 0)
+          (f) => tt >= f.timestamp && tt <= f.timestamp + (f.duration ?? 0),
         ) ?? this.#frames[0]
       ).clone(),
       state: 'success',
@@ -132,7 +132,7 @@ export class ImgClip implements IClip {
       (vf) =>
         new VideoFrame(vf, {
           timestamp: vf.timestamp - time,
-        })
+        }),
     );
     return [new ImgClip(preSlice), new ImgClip(postSlice)] as this[];
   }
@@ -140,7 +140,7 @@ export class ImgClip implements IClip {
   async clone() {
     await this.ready;
     return new ImgClip(
-      this.#img ?? this.#frames.map((vf) => vf.clone())
+      this.#img ?? this.#frames.map((vf) => vf.clone()),
     ) as this;
   }
 

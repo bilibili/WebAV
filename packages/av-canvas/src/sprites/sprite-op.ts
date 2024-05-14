@@ -7,7 +7,7 @@ import { VisibleSprite, Rect, TCtrlKey } from '@webav/av-cliper';
  */
 export function activeSprite(
   cvsEl: HTMLCanvasElement,
-  sprMng: SpriteManager
+  sprMng: SpriteManager,
 ): () => void {
   const cvsRatio = {
     w: cvsEl.clientWidth / cvsEl.width,
@@ -28,7 +28,7 @@ export function activeSprite(
     if (sprMng.activeSprite != null) {
       const [ctrlKey] =
         (Object.entries(sprMng.activeSprite.rect.ctrls).find(([, rect]) =>
-          rect.checkHit(ofx, ofy)
+          rect.checkHit(ofx, ofy),
         ) as [TCtrlKey, Rect]) ?? [];
       if (ctrlKey != null) return;
     }
@@ -53,7 +53,7 @@ export function activeSprite(
  */
 export function draggabelSprite(
   cvsEl: HTMLCanvasElement,
-  sprMng: SpriteManager
+  sprMng: SpriteManager,
 ): () => void {
   const cvsRatio = {
     w: cvsEl.clientWidth / cvsEl.width,
@@ -289,7 +289,7 @@ function hitRectCtrls({
   const [k] =
     (Object.entries(rect.ctrls).find(([, rect]) => rect.checkHit(ofx, ofy)) as [
       TCtrlKey,
-      Rect
+      Rect,
     ]) ?? [];
 
   if (k == null) return false;
@@ -336,7 +336,7 @@ function rotateRect(rect: Rect, outCnt: IPoint): void {
 function cntMap2Outer(
   cnt: IPoint,
   cvsRatio: ICvsRatio,
-  cvsEl: HTMLElement
+  cvsEl: HTMLElement,
 ): IPoint {
   const x = cnt.x * cvsRatio.w;
   const y = cnt.y * cvsRatio.h;
@@ -354,7 +354,7 @@ function cntMap2Outer(
 function updateRectWithSafeMargin(
   rect: Rect,
   cvsEl: HTMLCanvasElement,
-  value: Partial<Pick<Rect, 'x' | 'y' | 'w' | 'h'>>
+  value: Partial<Pick<Rect, 'x' | 'y' | 'w' | 'h'>>,
 ) {
   const newState = { x: rect.x, y: rect.y, w: rect.w, h: rect.h, ...value };
   const safeWidth = cvsEl.width * 0.05;

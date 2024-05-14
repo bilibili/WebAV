@@ -166,7 +166,7 @@ function App() {
       tlData
         .filter((it) => it !== track)
         .concat({ ...track })
-        .sort((a, b) => a.id.charCodeAt(0) - b.id.charCodeAt(0))
+        .sort((a, b) => a.id.charCodeAt(0) - b.id.charCodeAt(0)),
     );
     return action;
   }
@@ -178,7 +178,7 @@ function App() {
         className="mx-[10px]"
         onClick={async () => {
           const spr = new VisibleSprite(
-            new MP4Clip((await fetch('./video/bunny_0.mp4')).body!)
+            new MP4Clip((await fetch('./video/bunny_0.mp4')).body!),
           );
           await avCvs?.addSprite(spr);
           addItem2Track('1-video', spr);
@@ -190,7 +190,7 @@ function App() {
         className="mx-[10px]"
         onClick={async () => {
           const spr = new VisibleSprite(
-            new AudioClip((await fetch('./audio/16kHz-1chan.mp3')).body!)
+            new AudioClip((await fetch('./audio/16kHz-1chan.mp3')).body!),
           );
           await avCvs?.addSprite(spr);
           addItem2Track('2-audio', spr);
@@ -202,7 +202,7 @@ function App() {
         className="mx-[10px]"
         onClick={async () => {
           const spr = new VisibleSprite(
-            new ImgClip((await fetch('./img/bunny.png')).body!)
+            new ImgClip((await fetch('./img/bunny.png')).body!),
           );
           await avCvs?.addSprite(spr);
           spr.time.duration = 10e6;
@@ -218,9 +218,9 @@ function App() {
             new ImgClip(
               await renderTxt2ImgBitmap(
                 '示例文字',
-                'font-size: 80px; color: red;'
-              )
-            )
+                'font-size: 80px; color: red;',
+              ),
+            ),
           );
           await avCvs?.addSprite(spr);
           spr.time.duration = 10e6;
@@ -295,7 +295,7 @@ const root = createRoot(document.getElementById('app')!);
 root.render(<App />);
 
 async function createFileWriter(
-  extName: string
+  extName: string,
 ): Promise<FileSystemWritableFileStream> {
   const fileHandle = await window.showSaveFilePicker({
     suggestedName: `WebAV-export-${Date.now()}.${extName}`,
