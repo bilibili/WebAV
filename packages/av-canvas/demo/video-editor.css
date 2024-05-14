@@ -3,8 +3,3 @@
 /* @tailwind base; */
 @tailwind components;
 @tailwind utilities;
-
-.timeline-editor {
-  width: 900px;
-  height: 200px;
-}

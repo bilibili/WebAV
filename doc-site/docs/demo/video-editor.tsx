@@ -1,13 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
-import { createRoot } from 'react-dom/client';
-import {
-  Timeline,
-  TimelineAction,
-  TimelineRow,
-  TimelineState,
-} from '@xzdarcy/react-timeline-editor';
-import './video-editor.css';
-import { AVCanvas } from '../src';
+import { AVCanvas } from '@webav/av-canvas';
 import {
   AudioClip,
   ImgClip,
@@ -15,6 +6,14 @@ import {
   VisibleSprite,
   renderTxt2ImgBitmap,
 } from '@webav/av-cliper';
+import {
+  Timeline,
+  TimelineAction,
+  TimelineRow,
+  TimelineState,
+} from '@xzdarcy/react-timeline-editor';
+import React, { useEffect, useRef, useState } from 'react';
+import { assetsPrefix } from './utils';
 
 type TLActionWithName = TimelineAction & { name: string };
 
@@ -86,7 +85,7 @@ const TimelineEditor = ({
           if (v == null) return;
           timelineState.current = v;
         }}
-        onChange={() => {}}
+        onChange={(d) => {}}
         style={{ width: '100%', height: '200px' }}
         scale={scale}
         editorData={tlData}
@@ -133,7 +132,13 @@ const TimelineEditor = ({
 
 const actionSpriteMap = new WeakMap<TimelineAction, VisibleSprite>();
 
-function App() {
+const clipsSrc = assetsPrefix([
+  'video/bunny_0.mp4',
+  'audio/16kHz-1chan.mp3',
+  'img/bunny.png',
+]);
+
+export default function App() {
   const [avCvs, setAVCvs] = useState<AVCanvas | null>(null);
   const tlState = useRef<TimelineState>();
 
@@ -214,7 +219,7 @@ function App() {
         className="mx-[10px]"
         onClick={async () => {
           const spr = new VisibleSprite(
-            new MP4Clip((await fetch('./video/bunny_0.mp4')).body!),
+            new MP4Clip((await fetch(clipsSrc[0])).body!),
           );
           await avCvs?.addSprite(spr);
           addSprite2Track('1-video', spr, '视频');
@@ -226,7 +231,7 @@ function App() {
         className="mx-[10px]"
         onClick={async () => {
           const spr = new VisibleSprite(
-            new AudioClip((await fetch('./audio/16kHz-1chan.mp3')).body!),
+            new AudioClip((await fetch(clipsSrc[1])).body!),
           );
           await avCvs?.addSprite(spr);
           addSprite2Track('2-audio', spr, '音频');
@@ -238,7 +243,7 @@ function App() {
         className="mx-[10px]"
         onClick={async () => {
           const spr = new VisibleSprite(
-            new ImgClip((await fetch('./img/bunny.png')).body!),
+            new ImgClip((await fetch(clipsSrc[2])).body!),
           );
           await avCvs?.addSprite(spr);
           addSprite2Track('3-img', spr, '图片');
@@ -358,9 +363,6 @@ function App() {
     </div>
   );
 }
-
-const root = createRoot(document.getElementById('app')!);
-root.render(<App />);
 
 async function createFileWriter(
   extName: string,

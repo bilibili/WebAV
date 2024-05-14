@@ -18,14 +18,15 @@
     "dumi": "^2.2.13",
     "gh-pages": "^6.1.0",
     "husky": "^8.0.1",
+    "lint-staged": "^13.0.3",
     "prettier": "^2.7.1",
-    "tailwindcss": "^3.4.1",
-    "lint-staged": "^13.0.3"
+    "tailwindcss": "^3.4.1"
   },
   "dependencies": {
     "@webav/av-canvas": "file:../packages/av-canvas",
     "@webav/av-cliper": "file:../packages/av-cliper",
     "@webav/av-recorder": "file:../packages/av-recorder",
+    "@xzdarcy/react-timeline-editor": "^0.1.9",
     "antd": "^5.11.5"
   }
 }
