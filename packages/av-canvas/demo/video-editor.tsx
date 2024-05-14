@@ -40,7 +40,7 @@ const TimelineEditor = ({
   return (
     <div className="">
       <div>
-        缩放：
+        <span className="ml-[10px]">缩放：</span>
         <button
           onClick={() => setScale(scale + 1)}
           className="border rounded-full"
@@ -90,13 +90,20 @@ const TimelineEditor = ({
         onClickAction={(_, { action }) => {
           setActiveAction(action);
         }}
-        getActionRender={(action) => {
+        // @ts-expect-error
+        getActionRender={(action: TimelineAction & { name: string }) => {
+          const baseStyle =
+            'h-full justify-center items-center flex text-white';
           if (action.id === activeAction?.id) {
             return (
-              <div className="w-full h-full border border-red-300 border-solid"></div>
+              <div
+                className={`${baseStyle} border border-red-300 border-solid box-border`}
+              >
+                {action.name}
+              </div>
             );
           }
-          return <div></div>;
+          return <div className={baseStyle}>{action.name}</div>;
         }}
         autoScroll
       />
@@ -145,7 +152,7 @@ function App() {
     };
   }, [cvsWrapEl]);
 
-  function addItem2Track(trackId: string, spr: VisibleSprite) {
+  function addItem2Track(trackId: string, spr: VisibleSprite, name = '') {
     const track = tlData.find(({ id }) => id === trackId);
     if (track == null) return null;
 
@@ -157,6 +164,7 @@ function App() {
       start: maxTime,
       end: (spr.time.offset + spr.time.duration) / 1e6,
       effectId: '',
+      name,
     };
 
     actionSpriteMap.set(action, spr);
@@ -181,7 +189,7 @@ function App() {
             new MP4Clip((await fetch('./video/bunny_0.mp4')).body!),
           );
           await avCvs?.addSprite(spr);
-          addItem2Track('1-video', spr);
+          addItem2Track('1-video', spr, '视频');
         }}
       >
         + 视频
@@ -193,7 +201,7 @@ function App() {
             new AudioClip((await fetch('./audio/16kHz-1chan.mp3')).body!),
           );
           await avCvs?.addSprite(spr);
-          addItem2Track('2-audio', spr);
+          addItem2Track('2-audio', spr, '音频');
         }}
       >
         + 音频
@@ -206,7 +214,7 @@ function App() {
           );
           await avCvs?.addSprite(spr);
           spr.time.duration = 10e6;
-          addItem2Track('3-img', spr);
+          addItem2Track('3-img', spr, '图片');
         }}
       >
         + 图片
@@ -224,7 +232,7 @@ function App() {
           );
           await avCvs?.addSprite(spr);
           spr.time.duration = 10e6;
-          addItem2Track('4-text', spr);
+          addItem2Track('4-text', spr, '文字');
         }}
       >
         + 文字

@@ -5,6 +5,6 @@
 @tailwind utilities;
 
 .timeline-editor {
-  width: 1000px;
-  height: 300px;
+  width: 900px;
+  height: 200px;
 }
