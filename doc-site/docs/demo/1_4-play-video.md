@@ -1,18 +1,28 @@
 ---
 nav: DEMO
 group:
-  title: 剪辑
+  title: 解码
   order: 2
 
-order: 2
+order: 4
 ---
 
-# 预览帧
+# 解码播放
 
-预览画面、裁剪片段是最基础的视频剪辑操作；  
-点击时间轴预览任意时刻的视频帧；选择时间区间，移除不想要的视频片段。
+使用 `WebCodecs + canvas + Web Audio` 来解码播放视频，能获取到视频原始图像、音频数据。
 
-### 预览裁剪 MP4
+该方案拥有最完整的播放控制能力，是原生 `video` 标签无法实现的，比如：
+
+- 低延迟场景的 buffer 控制
+- 根据设备压力状况丢帧
+- 解码异常时自动恢复
+- 逐帧播放、超快倍速播放
+- 倍速播放音频不变调
+- 自定义播放 FPS
+
+该方案的**代价**是增加了复杂度，应优先考虑使用 `video` 播放，除非无法满足诉求。
+
+### 播放 MP4
 
 ```tsx
 import React, { useState, useEffect } from 'react';
@@ -85,7 +95,6 @@ export default function UI() {
   const [duration, setDuration] = useState(0);
   const [ctx, setCtx] = useState<null | undefined | CanvasRenderingContext2D>();
   const [playing, setPlaying] = useState(false);
-  const [cutRange, setCutRange] = useState([5, 10]);
 
   useEffect(() => {
     (async () => {
@@ -151,42 +160,12 @@ export default function UI() {
           setCtx(c?.getContext('2d'));
         }}
       />
-      <div className="flex items-center">
-        <span>裁剪(deleteRange 已弃用)</span>
-        <div className="flex-1 ml-4">
-          <Slider
-            range
-            min={0}
-            max={duration}
-            defaultValue={cutRange}
-            step={0.1}
-            onChange={async (val) => {
-              setCutRange(val);
-            }}
-          />
-        </div>
-        <span className="mr-4">{duration}s</span>
-        <Button
-          onClick={() => {
-            console.log(cutRange.map((v) => v * 1e6));
-            clip.deleteRange(...cutRange.map((v) => v * 1e6));
-            setDuration(Math.round(clip.meta.duration / 1e6));
-          }}
-        >
-          删除
-        </Button>
-      </div>
     </div>
   );
 }
 ```
 
-:::warning
-示例中裁剪使用 `deleteRange` 方法已弃用，建议使用 `split` 按时间将素材切割成两份，实现裁剪功能。  
-`split` 用法详情查看单测用例，未来得及更新 DEMO。
-:::
-
-### 预览 HLS（fmp4） 流
+### 播放 HLS（fmp4） 流
 
 ```tsx
 import React, { useState, useEffect } from 'react';
