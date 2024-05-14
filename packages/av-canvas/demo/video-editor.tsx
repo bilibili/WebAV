@@ -1,9 +1,10 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import {
   Timeline,
   TimelineAction,
   TimelineRow,
+  TimelineState,
 } from '@xzdarcy/react-timeline-editor';
 import './video-editor.css';
 import { AVCanvas } from '../src';
@@ -21,8 +22,10 @@ const TimelineEditor = ({
   onOffsetChange,
   onDuraionChange,
   onDeleteAction,
+  timelineState,
 }: {
   timelineData: TimelineRow[];
+  timelineState: React.MutableRefObject<TimelineState | undefined>;
   onPreviewTime: (time: number) => void;
   onOffsetChange: (action: TimelineAction) => void;
   onDuraionChange: (args: {
@@ -57,10 +60,14 @@ const TimelineEditor = ({
             onDeleteAction(activeAction);
           }}
         >
-          删除
+          删除素材
         </button>
       </div>
       <Timeline
+        ref={(v) => {
+          if (v == null) return;
+          timelineState.current = v;
+        }}
         onChange={(d) => {}}
         scale={scale}
         editorData={tlData}
@@ -101,6 +108,10 @@ const actionSpriteMap = new WeakMap<TimelineAction, VisibleSprite>();
 
 function App() {
   const [avCvs, setAVCvs] = useState<AVCanvas | null>(null);
+  const timelineState = useRef<TimelineState>();
+
+  const [playing, setPlaying] = useState(false);
+
   const [cvsWrapEl, setCvsWrapEl] = useState<HTMLDivElement | null>(null);
   const [tlData, setTLData] = useState<TimelineRow[]>([
     { id: '1-video', actions: [] },
@@ -118,9 +129,19 @@ function App() {
       height: 720,
     });
     setAVCvs(cvs);
+    cvs.on('timeupdate', (time) => {
+      if (timelineState.current == null) return;
+      timelineState.current.setTime(time / 1e6);
+    });
+    cvs.on('playing', () => {
+      setPlaying(true);
+    });
+    cvs.on('paused', () => {
+      setPlaying(false);
+    });
 
     return () => {
-      cvs?.destroy();
+      cvs.destroy();
     };
   }, [cvsWrapEl]);
 
@@ -212,6 +233,19 @@ function App() {
       <button
         className="mx-[10px]"
         onClick={async () => {
+          if (avCvs == null || timelineState.current == null) return;
+          if (playing) {
+            avCvs.pause();
+          } else {
+            avCvs.play({ start: timelineState.current.getTime() * 1e6 });
+          }
+        }}
+      >
+        {playing ? '暂停' : '播放'}
+      </button>
+      <button
+        className="mx-[10px]"
+        onClick={async () => {
           if (avCvs == null) return;
           (await avCvs.createCombinator())
             .output()
@@ -223,6 +257,7 @@ function App() {
       <p></p>
       <TimelineEditor
         timelineData={tlData}
+        timelineState={timelineState}
         onPreviewTime={(time) => {
           avCvs?.previewFrame(time * 1e6);
         }}

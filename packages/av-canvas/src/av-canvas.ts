@@ -40,6 +40,8 @@ export class AVCanvas {
 
   #evtTool = new EventTool<{
     timeupdate: (time: number) => void;
+    paused: () => void;
+    playing: () => void;
   }>();
   on = this.#evtTool.on;
 
@@ -114,6 +116,9 @@ export class AVCanvas {
     ) {
       ts += this.#playState.step;
     } else {
+      if (this.#playState.step !== 0) {
+        this.#evtTool.emit('paused');
+      }
       this.#playState.step = 0;
     }
     this.#updateRenderTime(ts);
@@ -168,6 +173,9 @@ export class AVCanvas {
     // AVCanvas 30FPS，将播放速率转换成步长
     this.#playState.step = (opts.playbackRate ?? 1) * (1000 / 30) * 1000;
     this.#playState.audioPlayAt = 0;
+
+    this.#evtTool.emit('playing');
+    Log.info('AVCanvs play by:', this.#playState);
   }
   pause() {
     this.#playState.step = 0;
