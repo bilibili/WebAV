@@ -38,6 +38,7 @@ export class SpriteManager {
   }
 
   removeSprite(spr: VisibleSprite): void {
+    if (this.#activeSprite === spr) this.activeSprite = null;
     this.#sprites = this.#sprites.filter((s) => s !== spr);
     spr.destroy();
   }
