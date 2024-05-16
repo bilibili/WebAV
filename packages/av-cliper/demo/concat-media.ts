@@ -19,7 +19,7 @@ const playerContiner = document.querySelector('#player-continer')!;
 
 document.querySelector('#mp4-img')?.addEventListener('click', () => {
   (async () => {
-    const resList = ['./video/webav1.mp4', './img/bunny.png'];
+    const resList = ['./video/pri-test1.mp4', './img/bunny.png'];
     const { loadStream } = playOutputStream(resList, playerContiner);
 
     const spr1 = new OffscreenSprite(
@@ -71,8 +71,8 @@ document.querySelector('#mp4-img')?.addEventListener('click', () => {
     });
 
     await com.addSprite(spr1, { main: true });
-    await com.addSprite(spr2);
-    await com.addSprite(spr3);
+    // await com.addSprite(spr2);
+    // await com.addSprite(spr3);
 
     await loadStream(com.output(), com);
   })().catch(Log.error);

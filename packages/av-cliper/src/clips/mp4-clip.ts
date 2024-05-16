@@ -494,11 +494,9 @@ async function parseMP4Stream(
               Error('MP4Clip must contain at least one video or audio track'),
             );
           }
-          Log.info('mp4BoxFile moov ready', data, decoderConf);
+          Log.info('mp4BoxFile moov ready', data.info, decoderConf);
           mp4boxFile = data.file;
         } else if (chunkType === 'samples') {
-          if (mp4boxFile != null) releaseMP4BoxFile(mp4boxFile);
-
           if (data.type === 'video') {
             if (videoDeltaTS === -1) videoDeltaTS = data.samples[0].dts;
             videoSamples = videoSamples.concat(
@@ -510,6 +508,7 @@ async function parseMP4Stream(
               data.samples.map((s) => normalizeTimescale(s, audioDeltaTS)),
             );
           }
+          mp4boxFile?.releaseUsedSamples(data.id, data.samples.length);
         }
       },
       onDone: () => {
