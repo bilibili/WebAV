@@ -17,7 +17,6 @@ export {
   fastConcatMP4,
   mp4StreamToOPFSFile,
   mixinMP4AndAudio,
-  MP4Previewer,
 } from './mp4-utils';
 export { createChromakey } from './chromakey';
 export { workerTimer } from './worker-timer';
