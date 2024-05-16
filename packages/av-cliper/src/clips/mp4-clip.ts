@@ -11,7 +11,6 @@ import { extractFileConfig, sample2ChunkOpts } from '../mp4-utils/mp4box-utils';
 import { SampleTransform } from '../mp4-utils/sample-transform';
 import { DEFAULT_AUDIO_CONF, IClip } from './iclip';
 import { tmpfile, write } from 'opfs-tools';
-import { releaseMP4BoxFile } from '../mp4-utils';
 
 let CLIP_ID = 0;
 
@@ -479,6 +478,7 @@ async function parseMP4Stream(
     let videoDeltaTS = -1;
     let audioDeltaTS = -1;
     let mp4boxFile: MP4File | null = null;
+    const releasedCnt = { video: 0, audio: 0 };
     const stopRead = autoReadStream(source.pipeThrough(new SampleTransform()), {
       onChunk: async ({ chunkType, data }) => {
         if (chunkType === 'ready') {
@@ -508,7 +508,8 @@ async function parseMP4Stream(
               data.samples.map((s) => normalizeTimescale(s, audioDeltaTS)),
             );
           }
-          mp4boxFile?.releaseUsedSamples(data.id, data.samples.length);
+          releasedCnt[data.type] += data.samples.length;
+          mp4boxFile?.releaseUsedSamples(data.id, releasedCnt[data.type]);
         }
       },
       onDone: () => {
