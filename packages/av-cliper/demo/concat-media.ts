@@ -19,7 +19,7 @@ const playerContiner = document.querySelector('#player-continer')!;
 
 document.querySelector('#mp4-img')?.addEventListener('click', () => {
   (async () => {
-    const resList = ['./video/pri-test1.mp4', './img/bunny.png'];
+    const resList = ['./video/webav1.mp4', './img/bunny.png'];
     const { loadStream } = playOutputStream(resList, playerContiner);
 
     const spr1 = new OffscreenSprite(
@@ -71,8 +71,8 @@ document.querySelector('#mp4-img')?.addEventListener('click', () => {
     });
 
     await com.addSprite(spr1, { main: true });
-    // await com.addSprite(spr2);
-    // await com.addSprite(spr3);
+    await com.addSprite(spr2);
+    await com.addSprite(spr3);
 
     await loadStream(com.output(), com);
   })().catch(Log.error);
@@ -315,4 +315,36 @@ document.querySelector('#complex')?.addEventListener('click', () => {
     // then concat multiple videos
     await loadStream(await fastConcatMP4(await Promise.all(coms)));
   })().catch(Log.error);
+});
+
+document.querySelector('#test-mem-cost')?.addEventListener('click', () => {
+  (async () => {
+    {
+      const resURL = './video/pri-test1.mp4';
+      const { loadStream } = playOutputStream([resURL], playerContiner);
+
+      const spr1 = new OffscreenSprite(
+        new MP4Clip((await fetch(resURL)).body!),
+      );
+      spr1.rect.w = 1280;
+      spr1.rect.h = 720;
+      const spr2 = new OffscreenSprite(
+        new MP4Clip((await fetch(resURL)).body!),
+      );
+      spr2.rect.w = 1280;
+      spr2.rect.h = 720;
+
+      const com = new Combinator({
+        width: 1280,
+        height: 720,
+        videoCodec: 'avc1.42E032',
+        bgColor: 'white',
+      });
+
+      await com.addSprite(spr1);
+      await com.addSprite(spr2);
+
+      await loadStream(com.output(), com);
+    }
+  })();
 });
