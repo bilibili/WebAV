@@ -396,20 +396,11 @@ export function file2stream(
 
   let sendedBoxIdx = 0;
   const boxes = file.boxes;
-  const tracks: Array<{ track: TrakBoxParser; id: number }> = [];
 
   const deltaBuf = (): Uint8Array | null => {
     // boxes.length >= 4 表示完成了 ftyp moov，且有了第一个 moof mdat
     // 避免moov未完成时写入文件，导致文件无法被识别
     if (boxes.length < 4 || sendedBoxIdx >= boxes.length) return null;
-
-    if (tracks.length === 0) {
-      for (let i = 1; true; i += 1) {
-        const track = file.getTrackById(i);
-        if (track == null) break;
-        tracks.push({ track, id: i });
-      }
-    }
 
     const ds = new mp4box.DataStream();
     ds.endianness = mp4box.DataStream.BIG_ENDIAN;
@@ -418,13 +409,8 @@ export function file2stream(
       boxes[i].write(ds);
       delete boxes[i];
     }
-    // 释放引用，避免内存泄露
-    tracks.forEach(({ track, id }) => {
-      file.releaseUsedSamples(id, track.samples.length);
-      track.samples = [];
-    });
-    file.mdats = [];
-    file.moofs = [];
+
+    releaseMP4BoxFile(file);
 
     sendedBoxIdx = boxes.length;
     return new Uint8Array(ds.buffer);
@@ -1006,4 +992,18 @@ function createESDSBox(config: ArrayBuffer | ArrayBufferView) {
   esdsBox.hdr_size = 0;
   esdsBox.parse(new mp4box.DataStream(buf, 0, mp4box.DataStream.BIG_ENDIAN));
   return esdsBox;
+}
+
+/**
+ * 释放引用，避免内存泄露
+ */
+export function releaseMP4BoxFile(file: MP4File) {
+  if (file.moov == null) return;
+  for (var j = 0; j < file.moov.traks.length; j++) {
+    const track = file.moov.traks[j];
+    file.releaseUsedSamples(track.tkhd.track_id, track.samples.length);
+    track.samples = [];
+  }
+  file.mdats = [];
+  file.moofs = [];
 }

@@ -107,6 +107,7 @@ declare module '@webav/mp4box.js' {
     dts: number;
     cts: number;
     duration: number;
+    offset: number;
     size: number;
     data: ArrayBuffer;
   }
@@ -128,6 +129,7 @@ declare module '@webav/mp4box.js' {
     sample_size: number;
     samples_duration: number;
     mdia: MDIABoxParser;
+    tkhd: TKHDBoxParser;
   }
 
   interface MDATBoxParser extends BoxParser {
@@ -176,6 +178,11 @@ declare module '@webav/mp4box.js' {
     type: 'mvhd';
     duration: number;
     timescale: number;
+  }
+
+  interface TKHDBoxParser extends BoxParser {
+    type: 'tkhd';
+    track_id: number;
   }
 
   type STSDBoxParser = Omit<

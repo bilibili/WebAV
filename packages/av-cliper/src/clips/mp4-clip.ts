@@ -1,4 +1,4 @@
-import { MP4Info, MP4Sample } from '@webav/mp4box.js';
+import { MP4File, MP4Info, MP4Sample } from '@webav/mp4box.js';
 import {
   audioResample,
   autoReadStream,
@@ -10,11 +10,15 @@ import { Log } from '../log';
 import { extractFileConfig, sample2ChunkOpts } from '../mp4-utils/mp4box-utils';
 import { SampleTransform } from '../mp4-utils/sample-transform';
 import { DEFAULT_AUDIO_CONF, IClip } from './iclip';
+import { tmpfile, write } from 'opfs-tools';
+import { releaseMP4BoxFile } from '../mp4-utils';
 
 let CLIP_ID = 0;
 
 // 用于内部创建 MP4Clip 实例
-type MPClipCloneArgs = Awaited<ReturnType<typeof parseMP4Stream>>;
+type MPClipCloneArgs = Awaited<ReturnType<typeof parseMP4Stream>> & {
+  localFile: ReturnType<typeof tmpfile>;
+};
 
 interface MP4DecoderConf {
   video: VideoDecoderConfig | null;
@@ -25,7 +29,11 @@ interface MP4ClipOpts {
   audio?: boolean | { volume: number };
 }
 
-type ExtMP4Sample = MP4Sample & { deleted?: boolean };
+type ExtMP4Sample = Omit<MP4Sample, 'data'> & { deleted?: boolean; data: null };
+
+type LocalFileReader = Awaited<
+  ReturnType<ReturnType<typeof tmpfile>['createReader']>
+>;
 
 type ThumbnailOpts = {
   start: number;
@@ -52,6 +60,8 @@ export class MP4Clip implements IClip {
   get meta() {
     return { ...this.#meta };
   }
+
+  #localFile: ReturnType<typeof tmpfile>;
 
   #volume = 1;
 
@@ -91,16 +101,24 @@ export class MP4Clip implements IClip {
         ? opts.audio.volume
         : 1;
 
+    const initByStream = async (s: ReadableStream) => {
+      await write(this.#localFile, s);
+      return await this.#localFile.stream();
+    };
+
+    this.#localFile = 'localFile' in source ? source.localFile : tmpfile();
+
     this.ready = (
       source instanceof ReadableStream
-        ? parseMP4Stream(source, this.#opts)
+        ? initByStream(source).then((s) => parseMP4Stream(s, this.#opts))
         : Promise.resolve(source)
-    ).then(({ videoSamples, audioSamples, decoderConf }) => {
+    ).then(async ({ videoSamples, audioSamples, decoderConf }) => {
       this.#videoSamples = videoSamples;
       this.#audioSamples = audioSamples;
       this.#decoderConf = decoderConf;
       const { videoFrameFinder, audioFrameFinder } = genDeocder(
         decoderConf,
+        await this.#localFile.createReader(),
         videoSamples,
         audioSamples,
         this.#opts.audio !== false ? this.#volume : null,
@@ -181,12 +199,13 @@ export class MP4Clip implements IClip {
    * @param opts Partial<ThumbnailOpts>
    * @returns Promise<Array<{ ts: number; img: Blob }>>
    */
-  thumbnails(
+  async thumbnails(
     imgWidth = 100,
     opts?: Partial<ThumbnailOpts>,
   ): Promise<Array<{ ts: number; img: Blob }>> {
     const vc = this.#decoderConf.video;
-    if (vc == null) return Promise.resolve([]);
+    const localFileReader = await this.#localFile.createReader();
+    if (vc == null || localFileReader == null) return Promise.resolve([]);
 
     const { width, height } = this.#meta;
     const convtr = createVF2BlobConvtr(
@@ -227,6 +246,7 @@ export class MP4Clip implements IClip {
         let cur = start;
         // 创建一个新的 VideoFrameFinder 实例，避免与 tick 方法共用而导致冲突
         const videoFrameFinder = new VideoFrameFinder(
+          await this.#localFile.createReader(),
           this.#videoSamples,
           this.#decoderConf.video,
         );
@@ -237,11 +257,14 @@ export class MP4Clip implements IClip {
         }
         resolver();
       } else {
-        const samples = this.#videoSamples
-          .filter(
-            (s) => !s.deleted && s.is_sync && s.cts >= start && s.cts <= end,
-          )
-          .map(sample2VideoChunk);
+        // only decode key frame
+        const samples = await Promise.all(
+          this.#videoSamples
+            .filter(
+              (s) => !s.deleted && s.is_sync && s.cts >= start && s.cts <= end,
+            )
+            .map((s) => sample2Chunk(s, EncodedVideoChunk, localFileReader)),
+        );
         if (samples.length === 0) {
           resolver();
           return;
@@ -281,6 +304,7 @@ export class MP4Clip implements IClip {
     );
     const preClip = new MP4Clip(
       {
+        localFile: this.#localFile,
         videoSamples: preVideoSlice,
         audioSamples: preAudioSlice,
         decoderConf: this.#decoderConf,
@@ -289,6 +313,7 @@ export class MP4Clip implements IClip {
     );
     const postClip = new MP4Clip(
       {
+        localFile: this.#localFile,
         videoSamples: postVideoSlice,
         audioSamples: postAudioSlice,
         decoderConf: this.#decoderConf,
@@ -303,6 +328,7 @@ export class MP4Clip implements IClip {
     await this.ready;
     const clip = new MP4Clip(
       {
+        localFile: this.#localFile,
         videoSamples: [...this.#videoSamples],
         audioSamples: [...this.#audioSamples],
         decoderConf: this.#decoderConf,
@@ -324,6 +350,7 @@ export class MP4Clip implements IClip {
     if (this.#videoSamples.length > 0) {
       const videoClip = new MP4Clip(
         {
+          localFile: this.#localFile,
           videoSamples: [...this.#videoSamples],
           audioSamples: [],
           decoderConf: {
@@ -340,6 +367,7 @@ export class MP4Clip implements IClip {
     if (this.#audioSamples.length > 0) {
       const audioClip = new MP4Clip(
         {
+          localFile: this.#localFile,
           videoSamples: [],
           audioSamples: [...this.#audioSamples],
           decoderConf: {
@@ -405,6 +433,7 @@ function genMeta(
 
 function genDeocder(
   decoderConf: MP4DecoderConf,
+  localFileReader: LocalFileReader,
   videoSamples: ExtMP4Sample[],
   audioSamples: ExtMP4Sample[],
   volume: number | null,
@@ -413,14 +442,23 @@ function genDeocder(
     audioFrameFinder:
       volume == null || decoderConf.audio == null || audioSamples.length === 0
         ? null
-        : new AudioFrameFinder(audioSamples, decoderConf.audio, {
-            volume,
-            targetSampleRate: DEFAULT_AUDIO_CONF.sampleRate,
-          }),
+        : new AudioFrameFinder(
+            localFileReader,
+            audioSamples,
+            decoderConf.audio,
+            {
+              volume,
+              targetSampleRate: DEFAULT_AUDIO_CONF.sampleRate,
+            },
+          ),
     videoFrameFinder:
       decoderConf.video == null || videoSamples.length === 0
         ? null
-        : new VideoFrameFinder(videoSamples, decoderConf.video),
+        : new VideoFrameFinder(
+            localFileReader,
+            videoSamples,
+            decoderConf.video,
+          ),
   };
 }
 
@@ -430,8 +468,8 @@ async function parseMP4Stream(
 ) {
   let mp4Info: MP4Info;
   const decoderConf: MP4DecoderConf = { video: null, audio: null };
-  let videoSamples: Array<MP4Sample & { deleted?: boolean }> = [];
-  let audioSamples: Array<MP4Sample & { deleted?: boolean }> = [];
+  let videoSamples: ExtMP4Sample[] = [];
+  let audioSamples: ExtMP4Sample[] = [];
 
   return new Promise<{
     videoSamples: typeof videoSamples;
@@ -440,6 +478,7 @@ async function parseMP4Stream(
   }>(async (resolve, reject) => {
     let videoDeltaTS = -1;
     let audioDeltaTS = -1;
+    let mp4boxFile: MP4File | null = null;
     const stopRead = autoReadStream(source.pipeThrough(new SampleTransform()), {
       onChunk: async ({ chunkType, data }) => {
         if (chunkType === 'ready') {
@@ -455,8 +494,11 @@ async function parseMP4Stream(
               Error('MP4Clip must contain at least one video or audio track'),
             );
           }
-          Log.info('mp4BoxFile moov ready', decoderConf);
+          Log.info('mp4BoxFile moov ready', data, decoderConf);
+          mp4boxFile = data.file;
         } else if (chunkType === 'samples') {
+          if (mp4boxFile != null) releaseMP4BoxFile(mp4boxFile);
+
           if (data.type === 'video') {
             if (videoDeltaTS === -1) videoDeltaTS = data.samples[0].dts;
             videoSamples = videoSamples.concat(
@@ -496,6 +538,7 @@ async function parseMP4Stream(
       dts: ((s.dts - delta) / s.timescale) * 1e6,
       duration: (s.duration / s.timescale) * 1e6,
       timescale: 1e6,
+      data: null,
     };
   }
 }
@@ -503,7 +546,8 @@ async function parseMP4Stream(
 class VideoFrameFinder {
   #dec: VideoDecoder | null = null;
   constructor(
-    public samples: Array<MP4Sample & { deleted?: boolean }>,
+    public localFileReader: LocalFileReader,
+    public samples: ExtMP4Sample[],
     public conf: VideoDecoderConfig,
   ) {}
 
@@ -570,9 +614,13 @@ class VideoFrameFinder {
       }
 
       if (hasValidFrame) {
-        const chunks = this.samples
-          .slice(this.#videoDecCusorIdx, endIdx)
-          .map(sample2VideoChunk);
+        const chunks = await Promise.all(
+          this.samples
+            .slice(this.#videoDecCusorIdx, endIdx)
+            .map((s) =>
+              sample2Chunk(s, EncodedVideoChunk, this.localFileReader),
+            ),
+        );
         this.#inputChunkCnt += chunks.length;
         chunks.forEach((c) => {
           dec.decode(c);
@@ -614,7 +662,8 @@ class AudioFrameFinder {
   #volume = 1;
   #sampleRate;
   constructor(
-    public samples: Array<MP4Sample & { deleted?: boolean }>,
+    public localFileReader: LocalFileReader,
+    public samples: ExtMP4Sample[],
     public conf: AudioDecoderConfig,
     opts: { volume: number; targetSampleRate: number },
   ) {
@@ -694,7 +743,11 @@ class AudioFrameFinder {
 
       this.#decoding = true;
       dec.decode(
-        samples.map((s) => new EncodedAudioChunk(sample2ChunkOpts(s))),
+        await Promise.all(
+          samples.map((s) =>
+            sample2Chunk(s, EncodedAudioChunk, this.localFileReader),
+          ),
+        ),
         (pcmArr, done) => {
           if (pcmArr.length === 0) return;
           // 音量调节
@@ -833,8 +886,22 @@ function createPromiseQueue<T extends any>(onResult: (data: T) => void) {
   };
 }
 
-function sample2VideoChunk(s: MP4Sample) {
-  return new EncodedVideoChunk(sample2ChunkOpts(s));
+type Constructor<T> = {
+  new (...args: any[]): T;
+};
+
+async function sample2Chunk<T extends EncodedAudioChunk | EncodedVideoChunk>(
+  s: ExtMP4Sample,
+  clazz: Constructor<T>,
+  reader: Awaited<ReturnType<ReturnType<typeof tmpfile>['createReader']>>,
+): Promise<T> {
+  const data = await reader.read(s.size, { at: s.offset });
+  return new clazz(
+    sample2ChunkOpts({
+      ...s,
+      data,
+    }),
+  );
 }
 
 function createVF2BlobConvtr(
