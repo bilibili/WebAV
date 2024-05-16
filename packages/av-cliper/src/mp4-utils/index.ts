@@ -410,7 +410,7 @@ export function file2stream(
       delete boxes[i];
     }
 
-    releaseMP4BoxFile(file);
+    unsafeReleaseMP4BoxFile(file);
 
     sendedBoxIdx = boxes.length;
     return new Uint8Array(ds.buffer);
@@ -647,6 +647,7 @@ async function concatStreamsToMP4BoxFile(
                 is_sync: s.is_sync,
               });
             });
+            // fixme: mem not release
             curFile?.releaseUsedSamples(curId, samples.length);
 
             const lastSamp = samples.at(-1);
@@ -995,14 +996,13 @@ function createESDSBox(config: ArrayBuffer | ArrayBufferView) {
 }
 
 /**
- * 释放引用，避免内存泄露
+ * 强行回收 mp4boxfile 尽量降低内存占用，会破坏 file 导致无法正常使用
+ * 仅用于获取二进制后，不再需要任何 file 功能的场景
  */
-export function releaseMP4BoxFile(file: MP4File) {
+export function unsafeReleaseMP4BoxFile(file: MP4File) {
   if (file.moov == null) return;
   for (var j = 0; j < file.moov.traks.length; j++) {
-    const track = file.moov.traks[j];
-    file.releaseUsedSamples(track.tkhd.track_id, track.samples.length);
-    track.samples = [];
+    file.moov.traks[j].samples = [];
   }
   file.mdats = [];
   file.moofs = [];
