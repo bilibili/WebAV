@@ -1,7 +1,6 @@
 import mp4box, {
   MP4ArrayBuffer,
   MP4File,
-  MP4Info,
   MP4Sample,
   SampleOpts,
   TrakBoxParser,
@@ -18,7 +17,7 @@ import {
 import { DEFAULT_AUDIO_CONF } from '../clips';
 import { EventTool } from '../event-tool';
 import { SampleTransform } from './sample-transform';
-import { extractFileConfig, sample2ChunkOpts } from './mp4box-utils';
+import { extractFileConfig } from './mp4box-utils';
 
 type TCleanFn = () => void;
 
@@ -35,132 +34,6 @@ interface IWorkerOpts {
     sampleRate: number;
     channelCount: number;
   } | null;
-}
-
-export function _deprecated_demuxcode(
-  stream: ReadableStream<Uint8Array>,
-  opts: { audio: boolean; start: number; end: number },
-  cbs: {
-    onReady: (info: MP4Info) => void;
-    onVideoOutput: (vf: VideoFrame) => void;
-    onAudioOutput: (ad: AudioData) => void;
-    onComplete: () => void;
-  },
-): {
-  stop: () => void;
-} {
-  const vdecoder = new VideoDecoder({
-    output: (vf) => {
-      cbs.onVideoOutput(vf);
-    },
-    error: Log.error,
-  });
-  const adecoder = new AudioDecoder({
-    output: (audioData) => {
-      cbs.onAudioOutput(audioData);
-    },
-    error: Log.error,
-  });
-
-  let mp4Info: MP4Info | null = null;
-
-  // 第一个解码的 sample（EncodedVideoChunk） 必须是关键帧（is_sync）
-  let firstDecodeVideo = true;
-  let lastVideoKeyChunkIdx = 0;
-  let mp4File: MP4File | null = null;
-
-  let firstVideoSamp = true;
-  const stopReadStream = autoReadStream(
-    stream.pipeThrough(new SampleTransform()),
-    {
-      onDone: async () => {
-        Log.info('demuxcode stream done');
-        if (mp4Info == null) throw Error('MP4 demux unready');
-        try {
-          await Promise.all([
-            vdecoder.state === 'configured' ? vdecoder.flush() : null,
-            adecoder.state === 'configured' ? adecoder.flush() : null,
-          ]);
-          Log.info('demuxcode decode done');
-          cbs.onComplete();
-        } catch (err) {
-          Log.info(err);
-        }
-      },
-      onChunk: async ({ chunkType, data }) => {
-        if (chunkType === 'ready') {
-          Log.info('demuxcode chunk ready, info:', data);
-          mp4File = data.file;
-          mp4Info = data.info;
-          const { videoDecoderConf, audioDecoderConf } = extractFileConfig(
-            data.file,
-            data.info,
-          );
-
-          if (videoDecoderConf != null) {
-            vdecoder.configure(videoDecoderConf);
-          } else {
-            throw new Error(
-              'MP4 file does not include a video track or uses an unsupported codec',
-            );
-          }
-          if (opts.audio && audioDecoderConf != null) {
-            adecoder.configure(audioDecoderConf);
-          }
-
-          cbs.onReady(data.info);
-          return;
-        } else if (chunkType === 'samples') {
-          const { id: curId, type, samples } = data;
-          for (let i = 0; i < samples.length; i += 1) {
-            const s = samples[i];
-            if (firstDecodeVideo && s.is_sync) lastVideoKeyChunkIdx = i;
-
-            const cts = (1e6 * s.cts) / s.timescale;
-            // 跳过裁剪时间区间外的sample，无需解码
-            if (cts < opts.start || cts > opts.end) continue;
-
-            if (type === 'video') {
-              if (firstVideoSamp && i === 0 && s.cts !== 0) {
-                // 兼容某些视频首帧 有偏移
-                s.cts = 0;
-                firstVideoSamp = false;
-              } else {
-                firstVideoSamp = true;
-              }
-              if (firstDecodeVideo && !s.is_sync) {
-                // 首次解码需要从 key chunk 开始
-                firstDecodeVideo = false;
-                for (let j = lastVideoKeyChunkIdx; j < i; j++) {
-                  vdecoder.decode(
-                    new EncodedVideoChunk(sample2ChunkOpts(samples[j])),
-                  );
-                }
-              }
-              vdecoder.decode(new EncodedVideoChunk(sample2ChunkOpts(s)));
-            } else if (type === 'audio' && opts.audio) {
-              adecoder.decode(new EncodedAudioChunk(sample2ChunkOpts(s)));
-            }
-          }
-          // 释放内存空间
-          mp4File?.releaseUsedSamples(curId, samples.length);
-        }
-      },
-    },
-  );
-
-  let stoped = false;
-  return {
-    stop: () => {
-      if (stoped) return;
-      stoped = true;
-
-      mp4File?.stop();
-      stopReadStream();
-      vdecoder.close();
-      adecoder.close();
-    },
-  };
 }
 
 export function recodemux(opts: IWorkerOpts): {
