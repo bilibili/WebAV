@@ -18,6 +18,7 @@ import { DEFAULT_AUDIO_CONF } from '../clips';
 import { EventTool } from '../event-tool';
 import { SampleTransform } from './sample-transform';
 import { extractFileConfig } from './mp4box-utils';
+import { tmpfile } from 'opfs-tools';
 
 type TCleanFn = () => void;
 
@@ -371,15 +372,13 @@ function mp4File2OPFSFile(inMP4File: MP4File): () => Promise<File | null> {
   }
 
   let timerId = 0;
-  let tmpFileHandle: FileSystemFileHandle | null = null;
-  let tmpFileWriter: FileSystemWritableFileStream | null = null;
+  const postFile = tmpfile();
+  let tmpFileWriter: Awaited<
+    ReturnType<ReturnType<typeof tmpfile>['createWriter']>
+  > | null = null;
 
   const initPromise = (async () => {
-    const opfsRoot = await navigator.storage.getDirectory();
-    tmpFileHandle = await opfsRoot.getFileHandle(Math.random().toString(), {
-      create: true,
-    });
-    tmpFileWriter = await tmpFileHandle.createWritable();
+    tmpFileWriter = await postFile.createWriter();
 
     timerId = self.setInterval(() => {
       if (!moovBoxReady()) return;
@@ -395,7 +394,7 @@ function mp4File2OPFSFile(inMP4File: MP4File): () => Promise<File | null> {
     await initPromise;
     clearInterval(timerId);
 
-    if (!moovBoxReady() || tmpFileHandle == null) return null;
+    if (!moovBoxReady() || tmpFileWriter == null) return null;
     inMP4File.flush();
     await write2TmpFile();
     await tmpFileWriter?.close();
@@ -412,10 +411,11 @@ function mp4File2OPFSFile(inMP4File: MP4File): () => Promise<File | null> {
       Math.random().toString(),
       { create: true },
     );
-    const writer = await rsFileHandle.createWritable();
+    const rsFile = tmpfile();
+    const writer = await rsFile.createWriter();
     const buf = box2Buf(moovPrevBoxes, 0)!;
     await writer.write(buf);
-    await writer.write(await tmpFileHandle.getFile());
+    await writer.write(await postFile.stream());
     await writer.close();
 
     return await rsFileHandle.getFile();
