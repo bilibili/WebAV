@@ -15,7 +15,7 @@ export {
   recodemux,
   file2stream,
   fastConcatMP4,
-  mp4StreamToOPFSFile,
+  fixFMP4Duration,
   mixinMP4AndAudio,
 } from './mp4-utils';
 export { createChromakey } from './chromakey';

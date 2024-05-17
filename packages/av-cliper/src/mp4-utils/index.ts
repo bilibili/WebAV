@@ -18,7 +18,7 @@ import { DEFAULT_AUDIO_CONF } from '../clips';
 import { EventTool } from '../event-tool';
 import { SampleTransform } from './sample-transform';
 import { extractFileConfig } from './mp4box-utils';
-import { tmpfile } from 'opfs-tools';
+import { tmpfile, write } from 'opfs-tools';
 
 type TCleanFn = () => void;
 
@@ -94,7 +94,7 @@ export function recodemux(opts: IWorkerOpts): {
 function encodeVideoTrack(
   opts: NonNullable<IWorkerOpts['video']>,
   mp4File: MP4File,
-  avSyncEvtTool: EventTool<Record<'VideoReady' | 'AudioReady', () => void>>,
+  avSyncEvtTool: EventTool<Record<'VideoReady' | 'AudioReady', () => void>>
 ): VideoEncoder {
   const videoTrackOpts = {
     // 微秒
@@ -138,7 +138,7 @@ function encodeVideoTrack(
 
 function createVideoEncoder(
   videoOpts: NonNullable<IWorkerOpts['video']>,
-  outHandler: EncodedVideoChunkOutputCallback,
+  outHandler: EncodedVideoChunkOutputCallback
 ): VideoEncoder {
   const encoder = new VideoEncoder({
     error: Log.error,
@@ -166,7 +166,7 @@ function createVideoEncoder(
 function encodeAudioTrack(
   audioOpts: NonNullable<IWorkerOpts['audio']>,
   mp4File: MP4File,
-  avSyncEvtTool: EventTool<Record<'VideoReady' | 'AudioReady', () => void>>,
+  avSyncEvtTool: EventTool<Record<'VideoReady' | 'AudioReady', () => void>>
 ): AudioEncoder {
   const audioTrackOpts = {
     timescale: 1e6,
@@ -259,7 +259,7 @@ export function _deprecated_stream2file(stream: ReadableStream<Uint8Array>): {
 export function file2stream(
   file: MP4File,
   timeSlice: number,
-  onCancel?: TCleanFn,
+  onCancel?: TCleanFn
 ): {
   stream: ReadableStream<Uint8Array>;
   stop: TCleanFn;
@@ -327,7 +327,9 @@ export function file2stream(
   };
 }
 
-function mp4File2OPFSFile(inMP4File: MP4File): () => Promise<File | null> {
+function fixMP4BoxFileDuration(
+  inMP4File: MP4File
+): () => Promise<ReadableStream<Uint8Array> | null> {
   let sendedBoxIdx = 0;
   const boxes = inMP4File.boxes;
   const tracks: Array<{ track: TrakBoxParser; id: number }> = [];
@@ -372,6 +374,7 @@ function mp4File2OPFSFile(inMP4File: MP4File): () => Promise<File | null> {
   }
 
   let timerId = 0;
+  // 把 moov 之外的 box 先写入临时文件，待更新 duration 之后再拼接临时文件
   const postFile = tmpfile();
   let tmpFileWriter: Awaited<
     ReturnType<ReturnType<typeof tmpfile>['createWriter']>
@@ -406,19 +409,12 @@ function mp4File2OPFSFile(inMP4File: MP4File): () => Promise<File | null> {
 
     moov.mvhd.duration = totalDuration;
 
-    const opfsRoot = await navigator.storage.getDirectory();
-    const rsFileHandle = await opfsRoot.getFileHandle(
-      Math.random().toString(),
-      { create: true },
-    );
     const rsFile = tmpfile();
-    const writer = await rsFile.createWriter();
     const buf = box2Buf(moovPrevBoxes, 0)!;
-    await writer.write(buf);
-    await writer.write(await postFile.stream());
-    await writer.close();
+    await write(rsFile, buf);
+    await write(rsFile, postFile, { overwrite: false });
 
-    return await rsFileHandle.getFile();
+    return await rsFile.stream();
   };
 
   function box2Buf(source: typeof boxes, startIdx: number): Uint8Array | null {
@@ -440,7 +436,7 @@ function mp4File2OPFSFile(inMP4File: MP4File): () => Promise<File | null> {
  * EncodedAudioChunk | EncodedVideoChunk 转换为 MP4 addSample 需要的参数
  */
 function chunk2MP4SampleOpts(
-  chunk: EncodedAudioChunk | EncodedVideoChunk,
+  chunk: EncodedAudioChunk | EncodedVideoChunk
 ): SampleOpts & {
   data: ArrayBuffer;
 } {
@@ -461,21 +457,20 @@ function chunk2MP4SampleOpts(
  * 属性包括（不限于）：音视频编码格式、分辨率、采样率
  */
 export async function fastConcatMP4(
-  streams: ReadableStream<Uint8Array>[],
+  streams: ReadableStream<Uint8Array>[]
 ): Promise<ReadableStream<Uint8Array>> {
-  Log.info('fastConcatMP4, streams len:', streams.length);
   const outfile = mp4box.createFile();
 
-  const dumpFile = mp4File2OPFSFile(outfile);
+  const dumpFile = fixMP4BoxFileDuration(outfile);
   await concatStreamsToMP4BoxFile(streams, outfile);
-  const opfsFile = await dumpFile();
-  if (opfsFile == null) throw Error('Can not generate file from streams');
-  return opfsFile.stream();
+  const outStream = await dumpFile();
+  if (outStream == null) throw Error('Can not generate file from streams');
+  return outStream;
 }
 
 async function concatStreamsToMP4BoxFile(
   streams: ReadableStream<Uint8Array>[],
-  outfile: MP4File,
+  outfile: MP4File
 ) {
   let vTrackId = 0;
   let vDTS = 0;
@@ -495,7 +490,7 @@ async function concatStreamsToMP4BoxFile(
           if (chunkType === 'ready') {
             const { videoTrackConf, audioTrackConf } = extractFileConfig(
               data.file,
-              data.info,
+              data.info
             );
             curFile = data.file;
             if (vTrackId === 0 && videoTrackConf != null) {
@@ -544,24 +539,16 @@ async function concatStreamsToMP4BoxFile(
 }
 
 /**
- * Convert live stream to OPFS File, fix duration being 0
- * @param stream mp4 file stream
- * @returns File
+ * Set the correct duration value for the fmp4 files generated by WebAV
  */
-export async function mp4StreamToOPFSFile(
-  stream: ReadableStream<Uint8Array>,
-): Promise<File> {
-  const outfile = mp4box.createFile();
-
-  const dumpFile = mp4File2OPFSFile(outfile);
-  await concatStreamsToMP4BoxFile([stream], outfile);
-  const opfsFile = await dumpFile();
-  if (opfsFile == null) throw Error('Can not generate file from stream');
-  return opfsFile;
+export async function fixFMP4Duration(
+  stream: ReadableStream<Uint8Array>
+): Promise<ReadableStream<Uint8Array>> {
+  return await fastConcatMP4([stream]);
 }
 
 function createMP4AudioSampleDecoder(
-  adConf: Parameters<AudioDecoder['configure']>[0],
+  adConf: Parameters<AudioDecoder['configure']>[0]
 ) {
   let cacheAD: AudioData[] = [];
   const adDecoder = new AudioDecoder({
@@ -581,7 +568,7 @@ function createMP4AudioSampleDecoder(
             timestamp: (1e6 * s.cts) / s.timescale,
             duration: (1e6 * s.duration) / s.timescale,
             data: s.data,
-          }),
+          })
         );
       });
 
@@ -602,7 +589,7 @@ function createMP4AudioSampleDecoder(
 // 是因为编码中途调用 AudioEncoder.flush ，会导致声音听起来卡顿
 function createMP4AudioSampleEncoder(
   aeConf: Parameters<AudioEncoder['configure']>[0],
-  onOutput: (s: ReturnType<typeof chunk2MP4SampleOpts>) => void,
+  onOutput: (s: ReturnType<typeof chunk2MP4SampleOpts>) => void
 ) {
   const adEncoder = new AudioEncoder({
     output: (chunk) => {
@@ -676,7 +663,7 @@ export function mixinMP4AndAudio(
     stream: ReadableStream<Uint8Array>;
     volume: number;
     loop: boolean;
-  },
+  }
 ) {
   Log.info('mixinMP4AndAudio, opts:', {
     volume: audio.volume,
@@ -731,8 +718,8 @@ export function mixinMP4AndAudio(
         const audioCtx = new AudioContext({ sampleRate });
         inputAudioPCM = extractPCM4AudioBuffer(
           await audioCtx.decodeAudioData(
-            await new Response(audio.stream).arrayBuffer(),
-          ),
+            await new Response(audio.stream).arrayBuffer()
+          )
         );
 
         if (audioDecoderConf != null) {
@@ -747,7 +734,7 @@ export function mixinMP4AndAudio(
             numberOfChannels: safeAudioTrackConf.channel_count,
             sampleRate: safeAudioTrackConf.samplerate,
           },
-          (s) => outfile.addSample(aTrackId, s.data, s),
+          (s) => outfile.addSample(aTrackId, s.data, s)
         );
       } else if (chunkType === 'samples') {
         const { id, type, samples } = data;
@@ -767,7 +754,7 @@ export function mixinMP4AndAudio(
     const rs = inputAudioPCM.map((chanBuf) =>
       audio.loop
         ? ringSliceFloat32Array(chanBuf, audioOffset, audioOffset + len)
-        : chanBuf.slice(audioOffset, audioOffset + len),
+        : chanBuf.slice(audioOffset, audioOffset + len)
     );
     audioOffset += len;
 
@@ -785,13 +772,13 @@ export function mixinMP4AndAudio(
     const pcmLength = Math.floor(
       ((lastSamp.cts + lastSamp.duration - firstSamp.cts) /
         lastSamp.timescale) *
-        sampleRate,
+        sampleRate
     );
     const audioDataBuf = mixinPCM([getInputAudioSlice(pcmLength)]);
     if (audioDataBuf.length === 0) return;
     audioSampleEncoder?.encode(
       audioDataBuf,
-      (firstSamp.cts / firstSamp.timescale) * 1e6,
+      (firstSamp.cts / firstSamp.timescale) * 1e6
     );
   }
 
@@ -801,7 +788,7 @@ export function mixinMP4AndAudio(
     // 1. 先解码mp4音频
     // [[chan0, chan1], [chan0, chan1]...]
     const pcmFragments = (await audioSampleDecoder.decode(samples)).map(
-      extractPCM4AudioData,
+      extractPCM4AudioData
     );
     // [chan0, chan1]
     const mp4AudioPCM = concatPCMFragments(pcmFragments);
@@ -812,7 +799,7 @@ export function mixinMP4AndAudio(
     audioSampleEncoder?.encode(
       // 2. 混合输入的音频
       mixinPCM([mp4AudioPCM, inputAudioPCM]),
-      (firstSamp.cts / firstSamp.timescale) * 1e6,
+      (firstSamp.cts / firstSamp.timescale) * 1e6
     );
   }
 

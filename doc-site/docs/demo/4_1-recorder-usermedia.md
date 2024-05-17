@@ -18,6 +18,7 @@ order: 1
 import React, { useState, useRef, useEffect } from 'react';
 import { Button, Divider } from 'antd';
 import { AVRecorder } from '@webav/av-recorder';
+import { createFileWriter } from './utils';
 
 let recorder: AVRecorder | null = null;
 async function start(videoEl: HTMLVideoElement) {
@@ -35,11 +36,7 @@ async function start(videoEl: HTMLVideoElement) {
   });
   await recorder.start();
 
-  const fileHandle = await window.showSaveFilePicker({
-    suggestedName: `WebAV-${Date.now()}.mp4`,
-  });
-  const writer = await fileHandle.createWritable();
-  recorder.outputStream?.pipeTo(writer).catch(console.error);
+  recorder.outputStream?.pipeTo(await createFileWriter()).catch(console.error);
 }
 
 export default function UI() {
@@ -101,21 +98,22 @@ export default function UI() {
 实时视频流不能确定结束时间，所以会缺失**总时长**字段，大部分播放器能分析 Sample 显示正确的总时长；  
 但某些兼容性较差的播放器（Windows Media Player）无法显示时长信息。
 
-`mp4StreamToOPFSFile` 可以将内容保存到一个 [OPFS][1] File 对象中，在视频流结束时添加总时长字段；  
+`fixFMP4Duration` 临时将内容保存到一个 [OPFS][1] 中，在视频流结束时添加总时长字段；  
 因为需要在流结束的时候去修正时长信息，所以无法在录制过程中实时上传数据。
 
 ```ts
-const opfsFile = await mp4StreamToOPFSFile(recorder.outputStream);
+const outStream = await fixFMP4Duration(recorder.outputStream);
 ```
 
 以下是完整的示例代码，与上一个示例的差异在于：  
-视频数据临时保存在 File 对象中，在录制结束时修正了时长（duration）字段，所以在点击 **Stop** 时才需要创建本地文件。
+视频数据临时保存在 OPFS 中，在录制结束时修正了时长（duration）字段，所以在点击 **Stop** 时才需要创建本地文件。
 
 ```tsx
 import React, { useState, useRef, useEffect } from 'react';
 import { Button, Divider } from 'antd';
 import { AVRecorder } from '@webav/av-recorder';
-import { mp4StreamToOPFSFile } from '@webav/av-cliper';
+import { fixFMP4Duration } from '@webav/av-cliper';
+import { createFileWriter } from './utils';
 
 let recorder: AVRecorder | null = null;
 async function start(videoEl: HTMLVideoElement) {
@@ -133,14 +131,9 @@ async function start(videoEl: HTMLVideoElement) {
   });
   await recorder.start();
 
-  const opfsFile = await mp4StreamToOPFSFile(recorder.outputStream);
-
-  const fileHandle = await window.showSaveFilePicker({
-    suggestedName: `WebAV-${Date.now()}.mp4`,
-  });
-  const writer = await fileHandle.createWritable();
-  writer.write(opfsFile);
-  writer.close();
+  (await fixFMP4Duration(recorder.outputStream))
+    .pipeTo(await createFileWriter())
+    .catch(console.error);
 }
 
 export default function UI() {
