@@ -495,7 +495,16 @@ async function parseMP4Stream(
               Error('MP4Clip must contain at least one video or audio track')
             );
           }
-          Log.info('mp4BoxFile moov ready', data.info, decoderConf);
+          Log.info(
+            'mp4BoxFile moov ready',
+            {
+              ...data.info,
+              tracks: null,
+              videoTracks: null,
+              audioTracks: null,
+            },
+            decoderConf
+          );
           mp4boxFile = data.file;
         } else if (chunkType === 'samples') {
           if (data.type === 'video') {

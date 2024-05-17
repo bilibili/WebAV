@@ -1,24 +1,52 @@
-let threshold = 1;
+import { tmpfile } from 'opfs-tools';
 
-const lvHandler = {
-  debug: (...args: any[]) => {
-    if (threshold <= 0) console.debug(...args);
-  },
-  info: (...args: any[]) => {
-    if (threshold <= 1) console.info(...args);
-  },
-  warn: (...args: any[]) => {
-    if (threshold <= 2) console.warn(...args);
-  },
-  error: (...args: any[]) => {
-    if (threshold <= 3) console.error(...args);
-  },
-};
+/**
+ * 将任意对象转换成String，如果包含Error，则将Error转换为err.toString()
+ * @param val any
+ */
+function any2Str(val: any): string {
+  if (val instanceof Error) return String(val);
+  return typeof val === 'object'
+    ? JSON.stringify(val, (k, v) => (v instanceof Error ? String(v) : v))
+    : String(val);
+}
+
+function getTimeStr() {
+  const d = new Date();
+  return `${d.getHours()}:${d.getMinutes()}:${d.getSeconds()}.${d.getMilliseconds()}`;
+}
+
+let THRESHOLD = 1;
+
+const localFile = tmpfile();
+
+const writer = await localFile.createWriter();
+
+type LvName = 'debug' | 'info' | 'warn' | 'error';
+const lvHandler = ['debug', 'info', 'warn', 'error'].reduce(
+  (acc, lvName, lvThres) =>
+    Object.assign(acc, {
+      [lvName]: (...args: any[]) => {
+        if (THRESHOLD <= lvThres) {
+          console[lvName as LvName](...args);
+          console[lvName as LvName](
+            `[${lvName}][${getTimeStr()}]  ` +
+              args.map((a) => any2Str(a)).join(' ')
+          );
+          writer.write(
+            `[${lvName}][${getTimeStr()}]  ` +
+              args.map((a) => any2Str(a)).join(' ')
+          );
+        }
+      },
+    }),
+  {} as Record<LvName, typeof console.log>
+);
 
 const map = new Map<Function, number>();
 export const Log = {
   setLogLevel: <T extends Function>(logfn: T) => {
-    threshold = map.get(logfn) ?? 1;
+    THRESHOLD = map.get(logfn) ?? 1;
   },
   ...lvHandler,
   // 生成一个 log 实例，所有输出前都会附加 tag
@@ -27,8 +55,13 @@ export const Log = {
       Object.entries(lvHandler).map(([k, h]) => [
         k,
         (...args: any[]) => h(tag, ...args),
-      ]),
+      ])
     );
+  },
+
+  async dump2Text() {
+    await writer.flush();
+    return localFile.text();
   },
 };
 
