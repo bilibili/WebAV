@@ -18,5 +18,5 @@
     "declarationDir": "dist",
     "skipLibCheck": true
   },
-  "include": ["../../types/mp4box.d.ts", "src", "demo"]
+  "include": ["../../types/mp4box.d.ts", "."]
 }

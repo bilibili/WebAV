@@ -17,5 +17,5 @@
     "emitDeclarationOnly": true,
     "skipLibCheck": true
   },
-  "include": ["src", "demo"]
+  "include": ["."]
 }
