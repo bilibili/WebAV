@@ -13,7 +13,7 @@ import {
   TimelineState,
 } from '@xzdarcy/react-timeline-editor';
 import React, { useEffect, useRef, useState } from 'react';
-import { assetsPrefix } from './utils';
+import { assetsPrefix, createFileWriter } from './utils';
 
 type TLActionWithName = TimelineAction & { name: string };
 
@@ -40,7 +40,7 @@ const TimelineEditor = ({
 }) => {
   const [scale, setScale] = useState(10);
   const [activeAction, setActiveAction] = useState<TLActionWithName | null>(
-    null,
+    null
   );
   return (
     <div className="">
@@ -207,7 +207,7 @@ export default function App() {
       tlData
         .filter((it) => it !== track)
         .concat({ ...track })
-        .sort((a, b) => a.id.charCodeAt(0) - b.id.charCodeAt(0)),
+        .sort((a, b) => a.id.charCodeAt(0) - b.id.charCodeAt(0))
     );
     return action;
   }
@@ -219,7 +219,7 @@ export default function App() {
         className="mx-[10px]"
         onClick={async () => {
           const spr = new VisibleSprite(
-            new MP4Clip((await fetch(clipsSrc[0])).body!),
+            new MP4Clip((await fetch(clipsSrc[0])).body!)
           );
           await avCvs?.addSprite(spr);
           addSprite2Track('1-video', spr, '视频');
@@ -231,7 +231,7 @@ export default function App() {
         className="mx-[10px]"
         onClick={async () => {
           const spr = new VisibleSprite(
-            new AudioClip((await fetch(clipsSrc[1])).body!),
+            new AudioClip((await fetch(clipsSrc[1])).body!)
           );
           await avCvs?.addSprite(spr);
           addSprite2Track('2-audio', spr, '音频');
@@ -243,7 +243,7 @@ export default function App() {
         className="mx-[10px]"
         onClick={async () => {
           const spr = new VisibleSprite(
-            new ImgClip((await fetch(clipsSrc[2])).body!),
+            new ImgClip((await fetch(clipsSrc[2])).body!)
           );
           await avCvs?.addSprite(spr);
           addSprite2Track('3-img', spr, '图片');
@@ -258,9 +258,9 @@ export default function App() {
             new ImgClip(
               await renderTxt2ImgBitmap(
                 '示例文字',
-                'font-size: 80px; color: red;',
-              ),
-            ),
+                'font-size: 80px; color: red;'
+              )
+            )
           );
           await avCvs?.addSprite(spr);
           addSprite2Track('4-text', spr, '文字');
@@ -288,7 +288,7 @@ export default function App() {
           if (avCvs == null) return;
           (await avCvs.createCombinator())
             .output()
-            .pipeTo(await createFileWriter('mp4'));
+            .pipeTo(await createFileWriter());
         }}
       >
         导出视频
@@ -362,13 +362,4 @@ export default function App() {
       ></TimelineEditor>
     </div>
   );
-}
-
-async function createFileWriter(
-  extName: string,
-): Promise<FileSystemWritableFileStream> {
-  const fileHandle = await window.showSaveFilePicker({
-    suggestedName: `WebAV-export-${Date.now()}.${extName}`,
-  });
-  return fileHandle.createWritable();
 }
