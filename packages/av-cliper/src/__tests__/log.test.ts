@@ -8,6 +8,30 @@ const debugSpy = vi.spyOn(console, 'debug');
 
 beforeEach(() => {
   Log.setLogLevel(Log.info);
+  errorSpy.mockReset();
+  warnSpy.mockReset();
+  infoSpy.mockReset();
+  debugSpy.mockReset();
+});
+
+test('dump log', async () => {
+  const spys = (
+    ['getHours', 'getMinutes', 'getSeconds', 'getMilliseconds'] as const
+  ).map((methodName) => {
+    const spy = vi.spyOn(Date.prototype, methodName);
+    spy.mockReturnValue(0);
+    return spy;
+  });
+
+  const historyStr = await Log.dump();
+  Log.setLogLevel(Log.info);
+  Log.info('log info');
+  Log.warn('log warn');
+  Log.error('log error');
+
+  for (const s of spys) s.mockRestore();
+
+  expect((await Log.dump()).replace(historyStr, '')).toMatchSnapshot();
 });
 
 test('log threshold', () => {
@@ -25,8 +49,4 @@ test('log threshold', () => {
   expect(warnSpy).not.toHaveBeenCalled();
   expect(infoSpy).not.toHaveBeenCalled();
   expect(debugSpy).not.toHaveBeenCalled();
-});
-
-test('dump log', async () => {
-  console.log(111, await Log.dump2Text());
 });

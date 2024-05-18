@@ -7,7 +7,7 @@ import { tmpfile } from 'opfs-tools';
 function any2Str(val: any): string {
   if (val instanceof Error) return String(val);
   return typeof val === 'object'
-    ? JSON.stringify(val, (k, v) => (v instanceof Error ? String(v) : v))
+    ? JSON.stringify(val, (_, v) => (v instanceof Error ? String(v) : v))
     : String(val);
 }
 
@@ -29,18 +29,13 @@ const lvHandler = ['debug', 'info', 'warn', 'error'].reduce(
       [lvName]: (...args: any[]) => {
         if (THRESHOLD <= lvThres) {
           console[lvName as LvName](...args);
-          console[lvName as LvName](
-            `[${lvName}][${getTimeStr()}]  ` +
-              args.map((a) => any2Str(a)).join(' ')
-          );
           writer.write(
-            `[${lvName}][${getTimeStr()}]  ` +
-              args.map((a) => any2Str(a)).join(' ')
+            `[${lvName}][${getTimeStr()}]  ${args.map((a) => any2Str(a)).join(' ')}\n`,
           );
         }
       },
     }),
-  {} as Record<LvName, typeof console.log>
+  {} as Record<LvName, typeof console.log>,
 );
 
 const map = new Map<Function, number>();
@@ -55,13 +50,13 @@ export const Log = {
       Object.entries(lvHandler).map(([k, h]) => [
         k,
         (...args: any[]) => h(tag, ...args),
-      ])
+      ]),
     );
   },
 
-  async dump2Text() {
+  async dump() {
     await writer.flush();
-    return localFile.text();
+    return await localFile.text();
   },
 };
 
