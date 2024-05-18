@@ -416,17 +416,21 @@ function genMeta(
     meta.audioChanCount = DEFAULT_AUDIO_CONF.channelCount;
   }
 
+  let vDuration = 0;
+  let aDuration = 0;
   if (videoSamples.length > 0) {
     for (let i = videoSamples.length - 1; i >= 0; i--) {
       const s = videoSamples[i];
       if (s.deleted) continue;
-      meta.duration = s.cts + s.duration;
+      vDuration = s.cts + s.duration;
       break;
     }
-  } else if (audioSamples.length > 0) {
-    const lastSampele = audioSamples.at(-1)!;
-    meta.duration = lastSampele.cts + lastSampele.duration;
   }
+  if (audioSamples.length > 0) {
+    const lastSampele = audioSamples.at(-1)!;
+    aDuration = lastSampele.cts + lastSampele.duration;
+  }
+  meta.duration = Math.max(vDuration, aDuration);
 
   return meta;
 }

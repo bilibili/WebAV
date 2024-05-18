@@ -24,7 +24,7 @@ test('fastest decode', async () => {
   await fastestDecode(clip);
   clip.destroy();
 
-  expect(frameCnt).toBe(23);
+  expect(frameCnt).toBe(24);
 });
 
 const m4aUrl = `//${location.host}/audio/44.1kHz-2chan.m4a`;
