@@ -170,7 +170,7 @@ export default function UI() {
 ```tsx
 import React, { useState, useEffect } from 'react';
 import { Slider, Button } from 'antd';
-import { MP4Clip, parseHLSStream } from '@webav/av-cliper';
+import { MP4Clip, createHLSLoader } from '@webav/av-cliper';
 import { assetsPrefix } from './utils';
 
 const videoSrc = assetsPrefix(['video/m3u8/bunny.m3u8']);
@@ -178,7 +178,10 @@ const videoSrc = assetsPrefix(['video/m3u8/bunny.m3u8']);
 let clip;
 let mp4Dur;
 async function start() {
-  clip = new MP4Clip((await parseHLSStream(videoSrc[0]))[0]);
+  const hlsLoader = await createHLSLoader(videoSrc[0]);
+
+  const [{ stream }] = hlsLoader.load();
+  clip = new MP4Clip(stream);
   const { duration, width, height } = await clip.ready;
   mp4Dur = Math.round(duration / 1e6);
 }
