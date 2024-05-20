@@ -20,7 +20,10 @@ let THRESHOLD = 1;
 
 const localFile = tmpfile();
 
-const writer = await localFile.createWriter();
+let writer: Awaited<ReturnType<typeof localFile.createWriter>> | null = null;
+(async function init() {
+  writer = await localFile.createWriter();
+});
 
 type LvName = 'debug' | 'info' | 'warn' | 'error';
 const lvHandler = ['debug', 'info', 'warn', 'error'].reduce(
@@ -29,13 +32,15 @@ const lvHandler = ['debug', 'info', 'warn', 'error'].reduce(
       [lvName]: (...args: any[]) => {
         if (THRESHOLD <= lvThres) {
           console[lvName as LvName](...args);
-          writer.write(
-            `[${lvName}][${getTimeStr()}]  ${args.map((a) => any2Str(a)).join(' ')}\n`,
+          writer?.write(
+            `[${lvName}][${getTimeStr()}]  ${args
+              .map((a) => any2Str(a))
+              .join(' ')}\n`
           );
         }
       },
     }),
-  {} as Record<LvName, typeof console.log>,
+  {} as Record<LvName, typeof console.log>
 );
 
 const map = new Map<Function, number>();
@@ -50,12 +55,12 @@ export const Log = {
       Object.entries(lvHandler).map(([k, h]) => [
         k,
         (...args: any[]) => h(tag, ...args),
-      ]),
+      ])
     );
   },
 
   async dump() {
-    await writer.flush();
+    await writer?.flush();
     return await localFile.text();
   },
 };
