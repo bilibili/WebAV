@@ -17,7 +17,7 @@ test('hls loader specify time', async () => {
   const clip = new MP4Clip(stream);
   await clip.ready;
   expect(Math.round(clip.meta.duration / 1e6)).toBe(
-    Math.round((actualEndTime - actualStartTime) / 1e6)
+    Math.round((actualEndTime - actualStartTime) / 1e6),
   );
 
   const { video } = await clip.tick(10e6);
@@ -34,7 +34,7 @@ test('hls loader default time', async () => {
   const clip = new MP4Clip(stream);
   await clip.ready;
   expect(Math.round(clip.meta.duration / 1e6)).toBe(
-    Math.round((actualEndTime - actualStartTime) / 1e6)
+    Math.round((actualEndTime - actualStartTime) / 1e6),
   );
 
   const { video } = await clip.tick(10e6);

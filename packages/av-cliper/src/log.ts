@@ -35,12 +35,12 @@ const lvHandler = ['debug', 'info', 'warn', 'error'].reduce(
           writer?.write(
             `[${lvName}][${getTimeStr()}]  ${args
               .map((a) => any2Str(a))
-              .join(' ')}\n`
+              .join(' ')}\n`,
           );
         }
       },
     }),
-  {} as Record<LvName, typeof console.log>
+  {} as Record<LvName, typeof console.log>,
 );
 
 const map = new Map<Function, number>();
@@ -55,7 +55,7 @@ export const Log = {
       Object.entries(lvHandler).map(([k, h]) => [
         k,
         (...args: any[]) => h(tag, ...args),
-      ])
+      ]),
     );
   },
 

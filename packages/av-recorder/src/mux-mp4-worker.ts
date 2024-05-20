@@ -175,7 +175,7 @@ function init(opts: IWorkerOpts, onEnded: TClearFn): TClearFn {
     () => {
       exit();
       onEnded();
-    }
+    },
   );
   self.postMessage(
     {
@@ -183,7 +183,7 @@ function init(opts: IWorkerOpts, onEnded: TClearFn): TClearFn {
       data: stream,
     },
     // @ts-expect-error
-    [stream]
+    [stream],
   );
 
   function exit() {

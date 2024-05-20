@@ -7,11 +7,14 @@ export async function createHLSLoader(m3u8URL: string) {
   const parser = new Parser();
   parser.push(await (await fetch(m3u8URL)).text());
   parser.end();
-  const segGroup = parser.manifest.segments.reduce((acc, cur) => {
-    acc[cur.map.uri] = acc[cur.map.uri] ?? [];
-    acc[cur.map.uri].push(cur);
-    return acc;
-  }, {} as Record<string, Parser['manifest']['segments']>);
+  const segGroup = parser.manifest.segments.reduce(
+    (acc, cur) => {
+      acc[cur.map.uri] = acc[cur.map.uri] ?? [];
+      acc[cur.map.uri].push(cur);
+      return acc;
+    },
+    {} as Record<string, Parser['manifest']['segments']>,
+  );
   const base = new URL(m3u8URL, location.href);
 
   return {
@@ -79,8 +82,8 @@ export async function createHLSLoader(m3u8URL: string) {
                   new Uint8Array(
                     await (
                       await fetch(new URL(initUri, base).href)
-                    ).arrayBuffer()
-                  )
+                    ).arrayBuffer(),
+                  ),
                 );
               },
               pull: async (ctrl) => {
@@ -88,15 +91,15 @@ export async function createHLSLoader(m3u8URL: string) {
                   new Uint8Array(
                     await (
                       await fetch(new URL(segments[segIdx].uri, base).href)
-                    ).arrayBuffer()
-                  )
+                    ).arrayBuffer(),
+                  ),
                 );
                 segIdx += 1;
                 if (segIdx >= segments.length) ctrl.close();
               },
             }),
           };
-        }
+        },
       );
     },
   };
