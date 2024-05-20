@@ -23,7 +23,7 @@ const localFile = tmpfile();
 let writer: Awaited<ReturnType<typeof localFile.createWriter>> | null = null;
 (async function init() {
   writer = await localFile.createWriter();
-});
+})();
 
 type LvName = 'debug' | 'info' | 'warn' | 'error';
 const lvHandler = ['debug', 'info', 'warn', 'error'].reduce(
