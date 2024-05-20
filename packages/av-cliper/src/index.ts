@@ -18,6 +18,7 @@ export {
   fixFMP4Duration,
   mixinMP4AndAudio,
 } from './mp4-utils';
+export { createHLSLoader } from './data-loader/hls-loader';
 export { createChromakey } from './chromakey';
 export { workerTimer } from './worker-timer';
 

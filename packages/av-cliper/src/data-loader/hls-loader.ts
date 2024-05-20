@@ -7,14 +7,11 @@ export async function createHLSLoader(m3u8URL: string) {
   const parser = new Parser();
   parser.push(await (await fetch(m3u8URL)).text());
   parser.end();
-  const segGroup = parser.manifest.segments.reduce(
-    (acc, cur) => {
-      acc[cur.map.uri] = acc[cur.map.uri] ?? [];
-      acc[cur.map.uri].push(cur);
-      return acc;
-    },
-    {} as Record<string, Parser['manifest']['segments']>,
-  );
+  const segGroup = parser.manifest.segments.reduce((acc, cur) => {
+    acc[cur.map.uri] = acc[cur.map.uri] ?? [];
+    acc[cur.map.uri].push(cur);
+    return acc;
+  }, {} as Record<string, Parser['manifest']['segments']>);
   const base = new URL(m3u8URL, location.href);
 
   return {
@@ -52,6 +49,11 @@ export async function createHLSLoader(m3u8URL: string) {
             break;
           }
         }
+        if (expectEndTime >= time * 1e6) {
+          endIdx = gData.length;
+          actualEndTime = time * 1e6;
+        }
+
         if (endIdx > startIdx) {
           segs = segs.concat(gData.slice(startIdx, endIdx));
         }
@@ -62,13 +64,9 @@ export async function createHLSLoader(m3u8URL: string) {
             segments: segs,
           };
       }
+
       if (Object.keys(filterSegGroup).length === 0) return null;
 
-      console.log(
-        11111,
-        actualStartTime,
-        JSON.stringify(filterSegGroup, null, 2),
-      );
       return Object.entries(filterSegGroup).map(
         ([initUri, { actualStartTime, actualEndTime, segments }]) => {
           let segIdx = 0;
@@ -81,8 +79,8 @@ export async function createHLSLoader(m3u8URL: string) {
                   new Uint8Array(
                     await (
                       await fetch(new URL(initUri, base).href)
-                    ).arrayBuffer(),
-                  ),
+                    ).arrayBuffer()
+                  )
                 );
               },
               pull: async (ctrl) => {
@@ -90,15 +88,15 @@ export async function createHLSLoader(m3u8URL: string) {
                   new Uint8Array(
                     await (
                       await fetch(new URL(segments[segIdx].uri, base).href)
-                    ).arrayBuffer(),
-                  ),
+                    ).arrayBuffer()
+                  )
                 );
                 segIdx += 1;
                 if (segIdx >= segments.length) ctrl.close();
               },
             }),
           };
-        },
+        }
       );
     },
   };
