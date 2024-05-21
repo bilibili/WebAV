@@ -29,11 +29,13 @@ class MockClip implements IClip {
   tick = async () => {
     return { audio: [], state: 'success' as const };
   };
-  ready = Promise.resolve({ width: 0, height: 0, duration: 0 });
+  meta = { width: 0, height: 0, duration: 0 };
+  ready = Promise.resolve(this.meta);
   clone = async () => {
     return new MockClip() as this;
   };
   destroy = () => {};
+  split = async (_: number) => [new MockClip(), new MockClip()] as [this, this];
 }
 
 test('captureStream', () => {
