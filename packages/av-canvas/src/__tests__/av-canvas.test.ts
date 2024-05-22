@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, expect, test } from 'vitest';
+import { afterEach, beforeEach, expect, test, vi } from 'vitest';
 import { AVCanvas } from '../av-canvas';
 import { createEl } from '../utils';
 import { crtMSEvt4Offset } from './test-utils';
@@ -75,4 +75,20 @@ test('dynamicCusor', async () => {
 
   cvsEl.dispatchEvent(crtMSEvt4Offset('mousemove', 110, 110));
   expect(cvsEl.style.cursor).toBe('move');
+});
+
+test('AVCanvas events', async () => {
+  const onPaused = vi.fn();
+  const onPlaying = vi.fn();
+  avCvs.on('paused', onPaused);
+  avCvs.on('playing', onPlaying);
+
+  avCvs.play({ start: 0, end: 10e6 });
+  expect(onPlaying).toBeCalledTimes(1);
+  avCvs.pause();
+  expect(onPaused).toBeCalledTimes(1);
+  avCvs.play({ start: 0, end: 10e6 });
+  expect(onPlaying).toBeCalledTimes(2);
+  avCvs.previewFrame(5e6);
+  expect(onPaused).toBeCalledTimes(2);
 });

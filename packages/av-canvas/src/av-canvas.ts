@@ -200,6 +200,7 @@ export class AVCanvas {
     this.#destroyed = true;
 
     this.#audioCtx.close();
+    this.#evtTool.destroy();
     this.#stopRender();
     this.#cvsEl.parentElement?.remove();
     this.#clears.forEach((fn) => fn());
