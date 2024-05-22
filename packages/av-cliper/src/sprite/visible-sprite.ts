@@ -40,6 +40,13 @@ export class VisibleSprite extends BaseSprite {
       });
   }
 
+  /**
+   * 提前准备首帧，避免初次绘制时缺少帧导致闪烁
+   */
+  preFirstFrame() {
+    this.#update(0);
+  }
+
   #lastTime = -1;
   render(
     ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D,

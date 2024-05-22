@@ -166,7 +166,12 @@ export class AVCanvas {
         `Invalid time parameter, ${JSON.stringify({ start: opts.start, end })}`,
       );
     }
+
     this.#updateRenderTime(opts.start);
+    this.#spriteManager
+      .getSprites({ time: false })
+      .forEach((vs) => vs.preFirstFrame());
+
     this.#playState.start = opts.start;
     this.#playState.end = end;
     // AVCanvas 30FPS，将播放速率转换成步长

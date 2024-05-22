@@ -58,6 +58,7 @@ export class SpriteManager {
   updateRenderTime(time: number) {
     this.#renderTime = time;
 
+    // 避免素材不可见，但渲染了素材边框控制点
     const as = this.activeSprite;
     if (
       as != null &&
