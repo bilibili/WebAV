@@ -182,7 +182,11 @@ export class AVCanvas {
   }
   previewFrame(time: number) {
     this.#updateRenderTime(time);
+    const emitPaused = this.#playState.step !== 0;
     this.#playState.step = 0;
+    if (emitPaused) {
+      this.#evtTool.emit('paused');
+    }
   }
 
   // proxy to SpriteManager
