@@ -59,6 +59,7 @@ export class VisibleSprite extends BaseSprite {
     this.#lastTime = time;
 
     const audio = this.#lastAudio;
+    this.#lastAudio = [];
     const video = this.#lastVf;
     if (video != null) ctx.drawImage(video, -w / 2, -h / 2, w, h);
 

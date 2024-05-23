@@ -112,9 +112,15 @@ export class AVCanvas {
       this.#evtTool.emit('paused');
       this.#audioCtx.suspend();
     }
+    for (const asn of this.#playingAudioCache) {
+      asn.stop();
+      asn.disconnect();
+    }
+    this.#playingAudioCache.clear();
   }
 
   #audioCtx = new AudioContext();
+  #playingAudioCache: Set<AudioBufferSourceNode> = new Set();
   #render() {
     const cvsCtx = this.#cvsCtx;
     let ts = this.#renderTime;
@@ -143,12 +149,19 @@ export class AVCanvas {
         this.#audioCtx.currentTime,
         this.#playState.audioPlayAt,
       );
-      const duration = renderPCM(
+      const audioSource = renderPCM(
         mixinPCM(audios),
         this.#playState.audioPlayAt,
         this.#audioCtx,
       );
-      this.#playState.audioPlayAt += duration;
+      if (audioSource != null) {
+        this.#playingAudioCache.add(audioSource);
+        audioSource.onended = () => {
+          audioSource.disconnect();
+          this.#playingAudioCache.delete(audioSource);
+        };
+        this.#playState.audioPlayAt += audioSource.buffer?.duration ?? 0;
+      }
     }
   }
 
@@ -212,6 +225,7 @@ export class AVCanvas {
     this.#stopRender();
     this.#cvsEl.parentElement?.remove();
     this.#clears.forEach((fn) => fn());
+    this.#playingAudioCache.clear();
     this.#spriteManager.destroy();
   }
 
@@ -248,7 +262,7 @@ export class AVCanvas {
 
 function renderPCM(pcm: Float32Array, at: number, ctx: AudioContext) {
   const len = pcm.length;
-  if (len === 0) return 0;
+  if (len === 0) return null;
   // streo is default
   const buf = ctx.createBuffer(2, pcm.length / 2, 48000);
   buf.copyToChannel(new Float32Array(pcm, 0, pcm.byteLength / 2), 0);
@@ -257,7 +271,7 @@ function renderPCM(pcm: Float32Array, at: number, ctx: AudioContext) {
   audioSource.buffer = buf;
   audioSource.connect(ctx.destination);
   audioSource.start(at);
-  return buf.duration;
+  return audioSource;
 }
 
 /**
