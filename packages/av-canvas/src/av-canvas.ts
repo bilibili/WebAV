@@ -105,6 +105,15 @@ export class AVCanvas {
     this.#spriteManager.updateRenderTime(time);
   }
 
+  #pause() {
+    const emitPaused = this.#playState.step !== 0;
+    this.#playState.step = 0;
+    if (emitPaused) {
+      this.#evtTool.emit('paused');
+      this.#audioCtx.suspend();
+    }
+  }
+
   #audioCtx = new AudioContext();
   #render() {
     const cvsCtx = this.#cvsCtx;
@@ -116,9 +125,7 @@ export class AVCanvas {
     ) {
       ts += this.#playState.step;
     } else {
-      const emitPaused = this.#playState.step !== 0;
-      this.#playState.step = 0;
-      if (emitPaused) this.#evtTool.emit('paused');
+      this.#pause();
     }
     this.#updateRenderTime(ts);
 
@@ -176,22 +183,18 @@ export class AVCanvas {
     this.#playState.end = end;
     // AVCanvas 30FPS，将播放速率转换成步长
     this.#playState.step = (opts.playbackRate ?? 1) * (1000 / 30) * 1000;
+    this.#audioCtx.resume();
     this.#playState.audioPlayAt = 0;
 
     this.#evtTool.emit('playing');
     Log.info('AVCanvs play by:', this.#playState);
   }
   pause() {
-    this.#playState.step = 0;
-    this.#evtTool.emit('paused');
+    this.#pause();
   }
   previewFrame(time: number) {
     this.#updateRenderTime(time);
-    const emitPaused = this.#playState.step !== 0;
-    this.#playState.step = 0;
-    if (emitPaused) {
-      this.#evtTool.emit('paused');
-    }
+    this.#pause();
   }
 
   // proxy to SpriteManager
