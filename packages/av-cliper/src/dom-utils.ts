@@ -5,8 +5,8 @@ export function createEl(tagName: string): HTMLElement {
 }
 
 export function renderTxt2Img(txt: string, cssText: string): HTMLImageElement {
-  const div = createEl('div');
-  div.style.cssText = `${cssText} visibility: hidden; position: fixed;`;
+  const div = createEl('pre');
+  div.style.cssText = `margin: 0; ${cssText}; visibility: hidden; position: fixed;`;
   div.textContent = txt;
   document.body.appendChild(div);
 
@@ -25,7 +25,6 @@ export function renderTxt2Img(txt: string, cssText: string): HTMLImageElement {
     </foreignObject>
     </svg>
   `
-    .replace(/\n/g, '')
     .replace(/\t/g, '')
     .replace(/#/g, '%23');
 
