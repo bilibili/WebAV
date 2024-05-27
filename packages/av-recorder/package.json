@@ -23,7 +23,7 @@
     "test": "vitest",
     "test:coverage": "vitest run --coverage",
     "build": "vite build && tsc -p build.tsconfig.json --outDir dist",
-    "build:api": "typedoc src/av-recorder.ts --out ../../doc-site/public/_api/av-recorder",
+    "build:api": "typedoc src/av-recorder.ts --tsconfig build.tsconfig.json --out ../../doc-site/public/_api/av-recorder",
     "prepublishOnly": "yarn build"
   },
   "files": [

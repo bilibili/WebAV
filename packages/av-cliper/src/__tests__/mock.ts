@@ -13,14 +13,6 @@ Object.assign(global, {
   }),
 });
 
-Object.assign(global, {
-  AudioData: class {
-    constructor(init) {
-      Object.assign(this, init);
-    }
-  },
-});
-
 export const AudioBufferMock = {
   duration: 0,
   sampleRate: 48000,
@@ -193,30 +185,16 @@ Object.assign(global, {
   }),
 });
 
-Object.assign(global, {
-  VideoFrame: vi.fn().mockImplementation((a, b) => {
-    const that = Object.assign(
-      Object.create(VideoFrame.prototype),
-      {
-        clone: () => ({ ...that }),
-        close: vi.fn(),
-      },
-      b,
-    );
-    return that;
-  }),
-});
-
 class Worker {
   url: string;
   onmessage: (msg: string) => void;
 
-  constructor(stringUrl) {
+  constructor(stringUrl: string) {
     this.url = stringUrl;
     this.onmessage = () => {};
   }
 
-  postMessage(msg) {
+  postMessage(msg: string) {
     this.onmessage(msg);
   }
 }

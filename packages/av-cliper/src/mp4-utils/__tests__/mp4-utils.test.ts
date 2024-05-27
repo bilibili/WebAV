@@ -11,10 +11,11 @@ describe('file2stream', () => {
   test('enqueue data to stream', () => {
     const file = mp4box.createFile();
     file.boxes.push(
+      // @ts-expect-error
       ...Array(5)
         .fill(0)
         .map(() => ({
-          write: (ds) => {
+          write: (ds: any) => {
             ds.writeUint8Array(new Uint8Array([1]));
           },
         })),
@@ -38,6 +39,7 @@ describe('file2stream', () => {
 
   test('stop stream', () => {
     const file = mp4box.createFile();
+    // @ts-expect-error
     file.boxes = Array(5)
       .fill(0)
       .map(() => ({ write: vi.fn(), data: new ArrayBuffer(0) }));
@@ -54,6 +56,7 @@ describe('file2stream', () => {
 
   test('cancel stream', () => {
     const file = mp4box.createFile();
+    // @ts-expect-error
     file.boxes = Array(5)
       .fill(0)
       .map(() => ({ write: vi.fn(), data: new ArrayBuffer(0) }));
