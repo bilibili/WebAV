@@ -142,9 +142,11 @@ export class ImgClip implements IClip {
 
   async clone() {
     await this.ready;
-    return new ImgClip(
-      this.#img ?? this.#frames.map((vf) => vf.clone()),
-    ) as this;
+    const data =
+      this.#img == null
+        ? this.#frames.map((vf) => vf.clone())
+        : await createImageBitmap(this.#img);
+    return new ImgClip(data) as this;
   }
 
   destroy(): void {

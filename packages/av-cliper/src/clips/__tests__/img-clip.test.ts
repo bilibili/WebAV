@@ -24,3 +24,11 @@ test('split by time', async () => {
     preClip.meta.duration + postClip.meta.duration,
   );
 });
+
+test('clone ImgClip', async () => {
+  const clip = new ImgClip((await fetch(static_jpg)).body!);
+  const cloneClip = await clip.clone();
+  clip.destroy();
+  const { state } = await cloneClip.tick(10e6);
+  expect(state).toBe('success');
+});
