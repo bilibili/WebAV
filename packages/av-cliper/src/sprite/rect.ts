@@ -88,7 +88,9 @@ export class Rect implements IRectBaseProps {
 
   clone(): Rect {
     const { x, y, w, h, master } = this;
-    return new Rect(x, y, w, h, master);
+    const rect = new Rect(x, y, w, h, master);
+    rect.angle = this.angle;
+    return rect;
   }
 
   /**

@@ -1,25 +1,23 @@
-import { beforeEach, describe, expect, test, vi } from 'vitest';
-import { crtMSEvt4Offset } from '../../__tests__/mock';
+import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 import { SpriteManager } from '../sprite-manager';
 import { createEl } from '../../utils';
 import { draggabelSprite } from '../sprite-op';
-import { VideoSprite } from '../video-sprite';
+import { MockVisibleSprite, crtMSEvt4Offset } from '../../__tests__/test-utils';
 
-let cvsEl = createEl('canvas') as HTMLCanvasElement;
-const cvsRatio = {
-  w: 1,
-  h: 1,
-};
+const cvsRatio = { w: 1, h: 1 };
 let sprMng = new SpriteManager();
+
+let cvsEl: HTMLCanvasElement;
 beforeEach(() => {
   sprMng = new SpriteManager();
   cvsEl = createEl('canvas') as HTMLCanvasElement;
-  vi.spyOn(cvsEl, 'clientWidth', 'get').mockImplementation(() => 900);
-  vi.spyOn(cvsEl, 'clientHeight', 'get').mockImplementation(() => 500);
-  cvsEl.width = 1920;
-  cvsEl.height = 1080;
-  cvsRatio.w = 900 / 1920;
-  cvsRatio.h = 500 / 1080;
+  cvsEl.style.cssText = 'width: 1280px; height: 720px';
+  cvsEl.width = 1280;
+  cvsEl.height = 720;
+  document.body.appendChild(cvsEl);
+});
+afterEach(() => {
+  cvsEl.remove();
 });
 
 describe('draggabelSprite', () => {
@@ -38,7 +36,7 @@ describe('draggabelSprite', () => {
   test('window on mouse event', async () => {
     const spyAEL = vi.spyOn(window, 'addEventListener');
     const spyREL = vi.spyOn(window, 'removeEventListener');
-    const vs = new VideoSprite('vs', new MediaStream());
+    const vs = new MockVisibleSprite();
     vi.spyOn(vs.rect, 'checkHit').mockReturnValue(true);
     await sprMng.addSprite(vs);
     sprMng.activeSprite = vs;
@@ -63,7 +61,9 @@ describe('draggabelSprite', () => {
   });
 
   test('move sprite', async () => {
-    const vs = new VideoSprite('vs', new MediaStream());
+    const vs = new MockVisibleSprite();
+    vs.rect.x = 100;
+    vs.rect.y = 100;
     vs.rect.w = 100;
     vs.rect.h = 100;
 
@@ -71,7 +71,7 @@ describe('draggabelSprite', () => {
     sprMng.activeSprite = vs;
 
     const clear = draggabelSprite(cvsEl, sprMng);
-    cvsEl.dispatchEvent(crtMSEvt4Offset('mousedown', 50, 50));
+    cvsEl.dispatchEvent(crtMSEvt4Offset('mousedown', 110, 110));
 
     window.dispatchEvent(
       new MouseEvent('mousemove', {
@@ -79,8 +79,8 @@ describe('draggabelSprite', () => {
         clientY: 100,
       }),
     );
-    expect(vs.rect.x).toBe(100 / cvsRatio.w);
-    expect(vs.rect.y).toBe(100 / cvsRatio.h);
+    expect(vs.rect.x).toBe(200);
+    expect(vs.rect.y).toBe(200);
 
     // 鼠标移动超出边界
     window.dispatchEvent(
@@ -89,9 +89,9 @@ describe('draggabelSprite', () => {
         clientY: 10000,
       }),
     );
-    // sprite 至少保留10px在可视区域内
-    expect(vs.rect.x).toBe(cvsEl.width - 10);
-    expect(vs.rect.y).toBe(cvsEl.height - 10);
+    // 5% 安全边界
+    expect(vs.rect.x).toBe(cvsEl.width - cvsEl.width * 0.05);
+    expect(vs.rect.y).toBe(cvsEl.height - cvsEl.height * 0.05);
 
     clear();
   });
@@ -99,7 +99,7 @@ describe('draggabelSprite', () => {
 
 describe('scale sprite', () => {
   test('drag right ctrl', async () => {
-    const vs = new VideoSprite('vs', new MediaStream());
+    const vs = new MockVisibleSprite();
     await sprMng.addSprite(vs);
     sprMng.activeSprite = vs;
     vs.rect.w = 100;
@@ -128,7 +128,7 @@ describe('scale sprite', () => {
   });
 
   test('drag rb(bottom right) ctrl', async () => {
-    const vs = new VideoSprite('vs', new MediaStream());
+    const vs = new MockVisibleSprite();
     await sprMng.addSprite(vs);
     sprMng.activeSprite = vs;
     vs.rect.w = 100;
@@ -158,7 +158,7 @@ describe('scale sprite', () => {
 
 describe('rotate sprite', () => {
   test('rotate sprite', async () => {
-    const vs = new VideoSprite('vs', new MediaStream());
+    const vs = new MockVisibleSprite();
     await sprMng.addSprite(vs);
     sprMng.activeSprite = vs;
     vs.rect.w = 100;

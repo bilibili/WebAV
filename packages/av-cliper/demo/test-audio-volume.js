@@ -7,10 +7,10 @@ var myArrayBuffer = audioCtx.createBuffer(
   audioCtx.sampleRate,
 );
 
-var db = 20 * Math.log10(2) * -1
+var db = 20 * Math.log10(2) * -1;
 
-var sliderRate = 1
-var pcmRate = (10 ** ((db * (1 - sliderRate)) / 20))
+var sliderRate = 1;
+var pcmRate = 10 ** ((db * (1 - sliderRate)) / 20);
 
 // Fill the buffer with white noise;
 // just random values between -1.0 and 1.0
@@ -20,7 +20,7 @@ for (var channel = 0; channel < myArrayBuffer.numberOfChannels; channel++) {
   for (var i = 0; i < myArrayBuffer.length; i++) {
     // Math.random() is in [0; 1.0]
     // audio needs to be in [-1.0; 1.0]
-    nowBuffering[i] = (Math.random() * 2 - 1)
+    nowBuffering[i] = Math.random() * 2 - 1;
     nowBuffering[i] *= pcmRate;
   }
 }
@@ -38,4 +38,3 @@ source.connect(audioCtx.destination);
 
 // start the source playing
 source.start();
-

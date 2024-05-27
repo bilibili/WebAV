@@ -1,94 +1,59 @@
-import './mock';
-import { beforeEach, expect, test, vi } from 'vitest';
+import { afterEach, beforeEach, expect, test, vi } from 'vitest';
 import { AVCanvas } from '../av-canvas';
 import { createEl } from '../utils';
-import { VideoSprite } from '../sprites/video-sprite';
-import { crtMSEvt4Offset, cvsCaptureStreamMock, CvsElementMock } from './mock';
+import { crtMSEvt4Offset } from './test-utils';
+import { IClip, VisibleSprite } from '@webav/av-cliper';
 
-function createAVCanvas(): {
-  avCvs: AVCanvas;
-  container: HTMLElement;
-} {
-  const container = createEl('div');
-  return {
-    avCvs: new AVCanvas(container, {
-      resolution: { width: 100, height: 100 },
-      bgColor: '#333',
-    }),
-    container,
+let container: HTMLDivElement;
+let avCvs: AVCanvas;
+beforeEach(() => {
+  container = createEl('div') as HTMLDivElement;
+  container.style.cssText = `
+    width: 1280px;
+    height: 720px;
+  `;
+  document.body.appendChild(container);
+  avCvs = new AVCanvas(container, {
+    width: 1280,
+    height: 720,
+    bgColor: '#333',
+  });
+});
+
+afterEach(() => {
+  container.remove();
+  avCvs.destroy();
+});
+
+class MockClip implements IClip {
+  tick = async () => {
+    return { audio: [], state: 'success' as const };
   };
+  meta = { width: 0, height: 0, duration: 0 };
+  ready = Promise.resolve(this.meta);
+  clone = async () => {
+    return new MockClip() as this;
+  };
+  destroy = () => {};
+  split = async (_: number) => [new MockClip(), new MockClip()] as [this, this];
 }
 
-let { avCvs, container } = createAVCanvas();
-
-beforeEach(() => {
-  container.remove();
-
-  // cvsRatio = { w: 1, h: 1 }
-  CvsElementMock.clientHeight.mockImplementation(() => 100);
-  CvsElementMock.clientWidth.mockImplementation(() => 100);
-
-  const d = createAVCanvas();
-  avCvs = d.avCvs;
-  container = d.container;
-});
-
-test('av-canvas create & destroy', () => {
-  const spyMngDestroy = vi.spyOn(avCvs.spriteManager, 'destroy');
-  avCvs.destroy();
-  expect(spyMngDestroy).toBeCalled();
-});
-
-test('init center the Sprite', async () => {
-  const vs = new VideoSprite('vs', new MediaStream());
-  await vs.initReady;
-  vs.rect.w = 80;
-  vs.rect.h = 80;
-  await avCvs.spriteManager.addSprite(vs);
-  expect(vs.rect.x).toBe((100 - 80) / 2);
-  expect(vs.rect.y).toBe((100 - 80) / 2);
-});
-
 test('captureStream', () => {
-  const mockMS = new MediaStream();
-  cvsCaptureStreamMock.mockReturnValueOnce(mockMS);
-  vi.spyOn(mockMS, 'getTracks').mockReturnValue(['mock-track'] as any);
-
   const ms = avCvs.captureStream();
   expect(ms).toBeInstanceOf(MediaStream);
-  expect(ms.addTrack).toBeCalledWith('mock-track');
-});
-
-test('activeSprite', async () => {
-  const vs = new VideoSprite('vs', new MediaStream());
-  await vs.initReady;
-  vs.rect.w = 80;
-  vs.rect.h = 80;
-  await avCvs.spriteManager.addSprite(vs);
-
-  const cvsEl = container.querySelector('canvas') as HTMLCanvasElement;
-  cvsEl.dispatchEvent(crtMSEvt4Offset('mousedown', 20, 20));
-  expect(avCvs.spriteManager.activeSprite).toBe(vs);
-
-  cvsEl.dispatchEvent(crtMSEvt4Offset('mousedown', 10, 10));
-  // 命中 ctrls.lt
-  expect(avCvs.spriteManager.activeSprite).toBe(vs);
-
-  cvsEl.dispatchEvent(crtMSEvt4Offset('mousedown', 0, 0));
-  expect(avCvs.spriteManager.activeSprite).toBeNull();
 });
 
 test('dynamicCusor', async () => {
-  const vs = new VideoSprite('vs', new MediaStream());
-  await vs.initReady;
-  vs.rect.w = 80;
-  vs.rect.h = 80;
-  await avCvs.spriteManager.addSprite(vs);
+  const vs = new VisibleSprite(new MockClip());
+  vs.rect.x = 100;
+  vs.rect.y = 100;
+  vs.rect.w = 100;
+  vs.rect.h = 100;
+  await avCvs.addSprite(vs);
   const cvsEl = container.querySelector('canvas') as HTMLCanvasElement;
-  cvsEl.dispatchEvent(crtMSEvt4Offset('mousedown', 20, 20));
-  window.dispatchEvent(crtMSEvt4Offset('mouseup', 20, 20));
+  cvsEl.dispatchEvent(crtMSEvt4Offset('mousedown', 110, 110));
+  window.dispatchEvent(crtMSEvt4Offset('mouseup', 110, 110));
 
-  expect(avCvs.spriteManager.activeSprite).toBe(vs);
   expect(cvsEl.style.cursor).toBe('move');
 
   const {
@@ -108,6 +73,22 @@ test('dynamicCusor', async () => {
   cvsEl.dispatchEvent(crtMSEvt4Offset('mousemove', 0, 0));
   expect(cvsEl.style.cursor).toBe('');
 
-  cvsEl.dispatchEvent(crtMSEvt4Offset('mousemove', 20, 20));
+  cvsEl.dispatchEvent(crtMSEvt4Offset('mousemove', 110, 110));
   expect(cvsEl.style.cursor).toBe('move');
+});
+
+test('AVCanvas events', async () => {
+  const onPaused = vi.fn();
+  const onPlaying = vi.fn();
+  avCvs.on('paused', onPaused);
+  avCvs.on('playing', onPlaying);
+
+  avCvs.play({ start: 0, end: 10e6 });
+  expect(onPlaying).toBeCalledTimes(1);
+  avCvs.pause();
+  expect(onPaused).toBeCalledTimes(1);
+  avCvs.play({ start: 0, end: 10e6 });
+  expect(onPlaying).toBeCalledTimes(2);
+  avCvs.previewFrame(5e6);
+  expect(onPaused).toBeCalledTimes(2);
 });

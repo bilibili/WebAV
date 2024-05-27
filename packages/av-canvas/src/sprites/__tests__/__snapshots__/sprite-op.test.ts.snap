@@ -1,15 +1,15 @@
 // Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
-exports[`rotate sprite > rotate sprite 1`] = `2.3580805686801525`;
+exports[`rotate sprite > rotate sprite 1`] = `2.356194490192345`;
 
-exports[`rotate sprite > rotate sprite 2`] = `2.7330338359124564`;
+exports[`rotate sprite > rotate sprite 2`] = `2.819842099193151`;
 
 exports[`scale sprite > drag rb(bottom right) ctrl 1`] = `
-G {
+M {
   "angle": 0,
-  "h": 314.66666666666663,
+  "h": 200,
   "master": null,
-  "w": 314.6666666666667,
+  "w": 200,
   "x": 0,
   "y": 0,
 }

@@ -1,3 +1,4 @@
+import { EventTool } from '../event-tool';
 import { IRectBaseProps, Rect } from './rect';
 
 interface IAnimationOpts {
@@ -17,9 +18,26 @@ type TKeyFrameOpts = Partial<
 export abstract class BaseSprite {
   rect = new Rect();
 
+  time = {
+    offset: 0,
+    duration: 0,
+  };
+
   visible = true;
 
-  zIndex = 0;
+  #evtTool = new EventTool<{
+    zIndexChange: () => void;
+  }>();
+  on = this.#evtTool.on;
+
+  #zIndex = 0;
+  get zIndex(): number {
+    return this.#zIndex;
+  }
+  set zIndex(v: number) {
+    this.#zIndex = v;
+    this.#evtTool.emit('zIndexChange');
+  }
 
   opacity = 1;
 
@@ -29,13 +47,9 @@ export abstract class BaseSprite {
 
   #animatOpts: Required<IAnimationOpts> | null = null;
 
-  audioNode: GainNode | null = null;
+  ready = Promise.resolve();
 
-  initReady = Promise.resolve();
-
-  constructor(public name: string) {}
-
-  render(
+  protected _render(
     ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D,
   ): void {
     const {
@@ -102,7 +116,7 @@ export abstract class BaseSprite {
     }
   }
 
-  protected copyStateTo<T extends BaseSprite>(target: T) {
+  copyStateTo<T extends BaseSprite>(target: T) {
     target.#animatKeyFrame = this.#animatKeyFrame;
     target.#animatOpts = this.#animatOpts;
     target.visible = this.visible;
@@ -110,9 +124,12 @@ export abstract class BaseSprite {
     target.opacity = this.opacity;
     target.flip = this.flip;
     target.rect = this.rect.clone();
+    target.time = { ...this.time };
   }
 
-  abstract destroy(): void;
+  protected destroy() {
+    this.#evtTool.destroy();
+  }
 }
 
 export function linearTimeFn(

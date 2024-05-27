@@ -18,7 +18,7 @@ export class ImgSprite extends BaseSprite {
     )
       throw Error('Unsupport image format');
 
-    this.initReady = this.#init(source).catch(console.error);
+    this.ready = this.#init(source).catch(console.error);
   }
 
   async #init(source: File | string): Promise<void> {
@@ -37,7 +37,7 @@ export class ImgSprite extends BaseSprite {
   }
 
   render(ctx: CanvasRenderingContext2D): void {
-    super.render(ctx);
+    super._render(ctx);
     const { w, h } = this.rect;
     ctx.drawImage(this.#img, -w / 2, -h / 2, w, h);
   }

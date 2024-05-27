@@ -1,31 +1,23 @@
 import { BaseSprite } from './base-sprite';
-import { IClip } from './clips';
-import { Log } from './log';
+import { IClip } from '../clips';
+import { Log } from '../log';
 
 export class OffscreenSprite extends BaseSprite {
   #clip: IClip;
-  ready: Promise<void>;
 
   // 保持最近一帧，若 clip 在当前帧无数据，则绘制最近一帧
   #lastVf: VideoFrame | ImageBitmap | null = null;
 
-  /**
-   * Clip duration
-   */
-  #duration = Infinity;
-  get duration() {
-    return this.#duration;
-  }
-
   #destroyed = false;
 
-  constructor(name: string, clip: IClip) {
-    super(name);
+  constructor(clip: IClip) {
+    super();
     this.#clip = clip;
     this.ready = clip.ready.then(({ width, height, duration }) => {
-      this.rect.w = width;
-      this.rect.h = height;
-      this.#duration = duration;
+      this.rect.w = this.rect.w === 0 ? width : this.rect.w;
+      this.rect.h = this.rect.h === 0 ? height : this.rect.h;
+      this.time.duration =
+        this.time.duration === 0 ? duration : this.time.duration;
     });
   }
 
@@ -37,7 +29,7 @@ export class OffscreenSprite extends BaseSprite {
     done: boolean;
   }> {
     this.animate(time);
-    super.render(ctx);
+    super._render(ctx);
     const { w, h } = this.rect;
     const { video, audio, state } = await this.#clip.tick(time);
     if (state === 'done') {
@@ -64,7 +56,7 @@ export class OffscreenSprite extends BaseSprite {
   }
 
   async clone() {
-    const spr = new OffscreenSprite(this.name, await this.#clip.clone());
+    const spr = new OffscreenSprite(await this.#clip.clone());
     await spr.ready;
     this.copyStateTo(spr);
     return spr;
@@ -74,7 +66,8 @@ export class OffscreenSprite extends BaseSprite {
     if (this.#destroyed) return;
     this.#destroyed = true;
 
-    Log.info(`OffscreenSprite ${this.name} destroy`);
+    Log.info('OffscreenSprite destroy');
+    super.destroy();
     this.#lastVf?.close();
     this.#lastVf = null;
     this.#clip.destroy();

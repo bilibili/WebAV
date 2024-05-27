@@ -1,22 +1,9 @@
-import { OffscreenSprite } from './offscreen-sprite';
+import { OffscreenSprite } from './sprite/offscreen-sprite';
 import { file2stream, recodemux } from './mp4-utils';
 import { Log } from './log';
 import { mixinPCM, sleep, throttle } from './av-utils';
 import { EventTool } from './event-tool';
 import { DEFAULT_AUDIO_CONF } from './clips';
-
-interface IComItem {
-  offset: number;
-  duration: number;
-  sprite: OffscreenSprite;
-  expired: boolean;
-  /**
-   * main 资源时间结束时会终结合并流程；
-   * 比如合并 mp4（main） + mp3 + img， 所有资源可以缺省持续时间（duration）；
-   * mp4（main）时间终点会终结合并流程
-   */
-  main: boolean;
-}
 
 interface ICombinatorOpts {
   width?: number;
@@ -93,7 +80,7 @@ export class Combinator {
 
   #destroyed = false;
 
-  #comItems: IComItem[] = [];
+  #sprites: Array<OffscreenSprite & { main: boolean; expired: boolean }> = [];
 
   #cvs;
 
@@ -113,7 +100,7 @@ export class Combinator {
   }>();
   on = this.#evtTool.on;
 
-  constructor(opts: ICombinatorOpts) {
+  constructor(opts: ICombinatorOpts = {}) {
     const { width = 0, height = 0 } = opts;
     this.#cvs = new OffscreenCanvas(width, height);
     // this.#cvs = document.querySelector('#canvas') as HTMLCanvasElement
@@ -131,7 +118,7 @@ export class Combinator {
             height,
             expectFPS: 30,
             codec: opts.videoCodec ?? 'avc1.42E032',
-            bitrate: opts.bitrate ?? 2_000_000,
+            bitrate: opts.bitrate ?? 5_000_000,
           }
         : null,
       audio: {
@@ -144,34 +131,38 @@ export class Combinator {
     TOTAL_COM_ENCODE_QSIZE.set(this, this.#remux.getEecodeQueueSize);
   }
 
-  async add(
-    sprite: OffscreenSprite,
-    opts: { offset?: number; duration?: number; main?: boolean } = {},
+  /**
+   * 当 opts.main 为 true 的素材时间结束时会终结合并流程；
+   * 比如合并 mp4（main） + mp3 + img， 所有资源可以缺省持续时间（duration）；
+   * mp4（main）时间终点会终结合并流程
+   */
+  async addSprite(
+    os: OffscreenSprite,
+    opts: { main?: boolean } = {},
   ): Promise<void> {
-    this.#log.info('Combinator add sprite:', sprite.name);
-    await sprite.ready;
-    this.#log.info('Combinator add sprite ready:', sprite.name);
-    this.#comItems.push({
-      sprite: await sprite.clone(),
-      // sprite,
-      offset: (opts.offset ?? 0) * 1e6,
-      duration: opts.duration == null ? sprite.duration : opts.duration * 1e6,
-      main: opts.main ?? false,
-      expired: false,
-    });
-    this.#comItems.sort((a, b) => a.sprite.zIndex - b.sprite.zIndex);
+    this.#log.info('Combinator add sprite', os);
+    const newOS = await os.clone();
+    this.#log.info('Combinator add sprite ready', os);
+    this.#sprites.push(
+      Object.assign(newOS, {
+        main: opts.main ?? false,
+        expired: false,
+      }),
+    );
+    this.#sprites.sort((a, b) => a.zIndex - b.zIndex);
   }
 
   output(): ReadableStream<Uint8Array> {
-    if (this.#comItems.length === 0) throw Error('No clip added');
+    if (this.#sprites.length === 0) throw Error('No clip added');
 
-    const mainItem = this.#comItems.find((it) => it.main);
+    const mainSpr = this.#sprites.find((it) => it.main);
     // 最大时间，优先取 main sprite，不存在则取最大值
     const maxTime =
-      mainItem != null
-        ? mainItem.offset + mainItem.duration
-        : Math.max(...this.#comItems.map((it) => it.offset + it.duration));
-
+      mainSpr != null
+        ? mainSpr.time.offset + mainSpr.time.duration
+        : Math.max(
+            ...this.#sprites.map((it) => it.time.offset + it.time.duration),
+          );
     if (maxTime === Infinity) {
       throw Error(
         'Unable to determine the end time, please specify a main sprite, or limit the duration of ImgClip, AudioCli',
@@ -184,6 +175,7 @@ export class Combinator {
       );
     }
 
+    this.#log.info(`start combinate video, maxTime:${maxTime}`);
     let starTime = performance.now();
     const stopReCodeMux = this.#run(
       maxTime,
@@ -245,7 +237,7 @@ export class Combinator {
         if (
           stoped ||
           (maxTime === -1 ? false : ts > maxTime) ||
-          this.#comItems.length === 0
+          this.#sprites.length === 0
         ) {
           exit();
           await onEnded();
@@ -257,28 +249,31 @@ export class Combinator {
         ctx.fillRect(0, 0, width, height);
 
         const audios: Float32Array[][] = [];
-        for (const it of this.#comItems) {
+        for (const s of this.#sprites) {
           if (stoped) break;
-          if (ts < it.offset || it.expired) continue;
+          if (ts < s.time.offset || s.expired) continue;
 
           ctx.save();
-          const { audio, done } = await it.sprite.offscreenRender(
+          const { audio, done } = await s.offscreenRender(
             ctx,
-            ts - it.offset,
+            ts - s.time.offset,
           );
           audios.push(audio);
           ctx.restore();
 
           // 超过设定时间主动掐断，或资源结束
-          if ((it.duration > 0 && ts > it.offset + it.duration) || done) {
-            if (it.main) {
+          if (
+            (s.time.duration > 0 && ts > s.time.offset + s.time.duration) ||
+            done
+          ) {
+            if (s.main) {
               exit();
               await onEnded();
               return;
             }
 
-            it.sprite.destroy();
-            it.expired = true;
+            s.destroy();
+            s.expired = true;
           }
         }
 
@@ -350,7 +345,7 @@ export class Combinator {
       if (stoped) return;
       stoped = true;
       clearInterval(outProgTimer);
-      this.#comItems.forEach((it) => it.sprite.destroy());
+      this.#sprites.forEach((it) => it.destroy());
     };
 
     return exit;

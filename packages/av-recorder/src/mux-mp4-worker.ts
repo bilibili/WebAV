@@ -130,7 +130,7 @@ function init(opts: IWorkerOpts, onEnded: TClearFn): TClearFn {
       recoder.encodeVideo(vfWrap.vf, vfWrap.opts);
 
       // 录制静态画面，MediaStream 不出帧时，每秒插入一帧
-      autoInsertVFTimer = setTimeout(() => {
+      autoInsertVFTimer = self.setTimeout(() => {
         if (lastVf == null) return;
         const newVf = new VideoFrame(lastVf, {
           timestamp: lastVf.timestamp + 1e6,

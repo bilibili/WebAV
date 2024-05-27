@@ -1,3 +1,8 @@
+interface IClipMeta {
+  width: number;
+  height: number;
+  duration: number;
+}
 export interface IClip {
   /**
    * 当前瞬间，需要的数据
@@ -9,9 +14,13 @@ export interface IClip {
     state: 'done' | 'success';
   }>;
 
-  ready: Promise<{ width: number; height: number; duration: number }>;
+  ready: Promise<IClipMeta>;
+
+  readonly meta: IClipMeta;
 
   clone: () => Promise<this>;
+
+  split: (time: number) => Promise<[this, this]>;
 
   destroy: () => void;
 }

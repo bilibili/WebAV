@@ -1,6 +1,6 @@
 import { SpriteManager } from './sprite-manager';
 import { ICvsRatio, IPoint } from '../types';
-import { BaseSprite, Rect, TCtrlKey } from '@webav/av-cliper';
+import { VisibleSprite, Rect, TCtrlKey } from '@webav/av-cliper';
 
 /**
  * 鼠标点击，激活 sprite
@@ -37,7 +37,7 @@ export function activeSprite(
         .getSprites()
         // 排在后面的层级更高
         .reverse()
-        .find((s) => s.rect.checkHit(ofx, ofy)) ?? null;
+        .find((s) => s.visible && s.rect.checkHit(ofx, ofy)) ?? null;
   };
 
   cvsEl.addEventListener('mousedown', onCvsMouseDown);
@@ -69,9 +69,8 @@ export function draggabelSprite(
   let startX = 0;
   let startY = 0;
   let startRect: Rect | null = null;
-  let mvLimit: Record<'xl' | 'xr' | 'yt' | 'yb', number> | null = null;
 
-  let hitSpr: BaseSprite | null = null;
+  let hitSpr: VisibleSprite | null = null;
   // sprMng.activeSprite 在 av-canvas.ts -> activeSprite 中被赋值
   const onCvsMouseDown = (evt: MouseEvent): void => {
     // 鼠标左键才能拖拽移动
@@ -95,13 +94,6 @@ export function draggabelSprite(
     }
 
     startRect = hitSpr.rect.clone();
-    // 保留 10px，避免移出边界，无法拖回来
-    mvLimit = {
-      xl: -startRect.w + 10,
-      xr: cvsEl.width - 10,
-      yt: -startRect.h + 10,
-      yb: cvsEl.height - 10,
-    };
 
     startX = clientX;
     startY = clientY;
@@ -110,19 +102,13 @@ export function draggabelSprite(
   };
 
   const onMouseMove = (evt: MouseEvent): void => {
-    if (hitSpr == null || startRect == null || mvLimit == null) return;
+    if (hitSpr == null || startRect == null) return;
 
     const { clientX, clientY } = evt;
     let newX = startRect.x + (clientX - startX) / cvsRatio.w;
     let newY = startRect.y + (clientY - startY) / cvsRatio.h;
 
-    // 限制不能完全拖拽出容器边界
-    newX =
-      newX <= mvLimit.xl ? mvLimit.xl : newX >= mvLimit.xr ? mvLimit.xr : newX;
-    newY =
-      newY <= mvLimit.yt ? mvLimit.yt : newY >= mvLimit.yb ? mvLimit.yb : newY;
-    hitSpr.rect.x = newX;
-    hitSpr.rect.y = newY;
+    updateRectWithSafeMargin(hitSpr.rect, cvsEl, { x: newX, y: newY });
   };
 
   cvsEl.addEventListener('mousedown', onCvsMouseDown);
@@ -148,12 +134,14 @@ function scaleRect({
   startY,
   ctrlKey,
   cvsRatio,
+  cvsEl,
 }: {
   sprRect: Rect;
   startX: number;
   startY: number;
   ctrlKey: TCtrlKey;
   cvsRatio: ICvsRatio;
+  cvsEl: HTMLCanvasElement;
 }): void {
   const startRect = sprRect.clone();
 
@@ -188,10 +176,12 @@ function scaleRect({
     const newX = newCntX - newW / 2;
     const newY = newCntY - newH / 2;
 
-    sprRect.x = newX;
-    sprRect.y = newY;
-    sprRect.w = newW;
-    sprRect.h = newH;
+    updateRectWithSafeMargin(sprRect, cvsEl, {
+      x: newX,
+      y: newY,
+      w: newW,
+      h: newH,
+    });
   };
 
   const clearWindowEvt = (): void => {
@@ -312,6 +302,7 @@ function hitRectCtrls({
       startX: clientX,
       startY: clientY,
       cvsRatio,
+      cvsEl,
     });
   }
   // 命中 ctrl 后续是缩放 sprite，略过移动 sprite 逻辑
@@ -355,4 +346,31 @@ function cntMap2Outer(
     x: x + left,
     y: y + top,
   };
+}
+
+/**
+ * 限制安全范围，避免 sprite 完全超出边界
+ */
+function updateRectWithSafeMargin(
+  rect: Rect,
+  cvsEl: HTMLCanvasElement,
+  value: Partial<Pick<Rect, 'x' | 'y' | 'w' | 'h'>>,
+) {
+  const newState = { x: rect.x, y: rect.y, w: rect.w, h: rect.h, ...value };
+  const safeWidth = cvsEl.width * 0.05;
+  const safeHeight = cvsEl.height * 0.05;
+  if (newState.x < -newState.w + safeWidth) {
+    newState.x = -newState.w + safeWidth;
+  } else if (newState.x > cvsEl.width - safeWidth) {
+    newState.x = cvsEl.width - safeWidth;
+  }
+  if (newState.y < -newState.h + safeHeight) {
+    newState.y = -newState.h + safeHeight;
+  } else if (newState.y > cvsEl.height - safeHeight) {
+    newState.y = cvsEl.height - safeHeight;
+  }
+  rect.x = newState.x;
+  rect.y = newState.y;
+  rect.w = newState.w;
+  rect.h = newState.h;
 }

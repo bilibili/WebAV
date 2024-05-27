@@ -15,16 +15,18 @@ export {
   recodemux,
   file2stream,
   fastConcatMP4,
-  mp4StreamToOPFSFile,
+  fixFMP4Duration,
   mixinMP4AndAudio,
-  MP4Previewer,
 } from './mp4-utils';
+export { createHLSLoader } from './data-loader/hls-loader';
 export { createChromakey } from './chromakey';
+export { workerTimer } from './worker-timer';
 
-export * from './rect';
 export * from './clips';
-export { OffscreenSprite } from './offscreen-sprite';
-export { BaseSprite } from './base-sprite';
+export { OffscreenSprite } from './sprite/offscreen-sprite';
+export { VisibleSprite } from './sprite/visible-sprite';
+export { Rect, CTRL_KEYS } from './sprite/rect';
+export type { TCtrlKey } from './sprite/rect';
 export { Combinator } from './combinator';
 
 export * from './log';

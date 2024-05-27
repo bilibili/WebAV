@@ -24,7 +24,7 @@ test('fastest decode', async () => {
   await fastestDecode(clip);
   clip.destroy();
 
-  expect(frameCnt).toBe(23);
+  expect(frameCnt).toBe(24);
 });
 
 const m4aUrl = `//${location.host}/audio/44.1kHz-2chan.m4a`;
@@ -37,27 +37,6 @@ test('decode m4a', async () => {
 });
 
 const mp4_bunny = `//${location.host}/video/bunny.mp4`;
-test('delete range', async () => {
-  const clip = new MP4Clip((await fetch(mp4_bunny)).body!, { audio: true });
-  let frameCnt = 0;
-  clip.tickInterceptor = async (_, tickRet) => {
-    if (tickRet.video != null) frameCnt += 1;
-    return tickRet;
-  };
-  const { duration } = await clip.ready;
-  // 时长 60s
-  expect(Math.round(duration / 1e6)).toBe(60);
-  // 删除前 25s, 剩余 35s
-  clip.deleteRange(0, 25e6);
-  // 删除 10s 后的 50s(超出视频长度)，实际删除 10～35s
-  clip.deleteRange(10e6, 50e6);
-  // 剩余 10s
-  expect(Math.round(clip.meta.duration / 1e6)).toBe(10);
-  await fastestDecode(clip);
-  clip.destroy();
-
-  expect(frameCnt).toBe(240);
-});
 
 test('thumbnails', async () => {
   const clip = new MP4Clip((await fetch(mp4_bunny)).body!);
@@ -80,8 +59,7 @@ const mp4_bunny_1 = `//${location.host}/video/bunny_1.mp4`;
 test('clone mp4clip', async () => {
   const clip = new MP4Clip((await fetch(mp4_bunny_1)).body!);
   await clip.ready;
-  clip.deleteRange(0, 10e6);
-  const tickInterceptor = (_, __) => __;
+  const tickInterceptor: MP4Clip['tickInterceptor'] = (_, __) => __;
   clip.tickInterceptor = tickInterceptor;
 
   const cloned = await clip.clone();
@@ -137,4 +115,8 @@ test('split MP4Clip by time', async () => {
   const [preClip11, postClip12] = await preClip1.split(5e6);
   expect(Math.round(preClip11.meta.duration / 1e6)).toEqual(5);
   expect(Math.round(postClip12.meta.duration / 1e6)).toEqual(5);
+
+  const [preClip21, postClip22] = await postClip2.split(5e6);
+  expect(Math.round(preClip21.meta.duration / 1e6)).toEqual(5);
+  expect(Math.round(postClip22.meta.duration / 1e6)).toEqual(6);
 });

@@ -267,7 +267,7 @@ export class EmbedSubtitlesClip implements IClip {
     return [
       new EmbedSubtitlesClip(preSlice, this.#opts),
       new EmbedSubtitlesClip(postSlice, this.#opts),
-    ] as this[];
+    ] as [this, this];
   }
 
   async clone() {

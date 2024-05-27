@@ -1,24 +1,11 @@
-import { Combinator } from '@webav/av-cliper';
-import {
-  AVCanvas,
-  AudioSprite,
-  TextSprite,
-  ImgSprite,
-  VideoSprite,
-} from '../src/index';
+import { VisibleSprite, MP4Clip, ImgClip } from '@webav/av-cliper';
+import { AVCanvas } from '../src/index';
 import { AVRecorder } from '@webav/av-recorder';
-(async () => {
-  if (!(await Combinator.isSupported())) {
-    alert('Your browser does not support WebCodecs');
-  }
-})();
 
 const avCvs = new AVCanvas(document.querySelector('#app') as HTMLElement, {
   bgColor: '#333',
-  resolution: {
-    width: 1920,
-    height: 1080,
-  },
+  width: 1920,
+  height: 1080,
 });
 
 console.log({ avCvs });
@@ -28,90 +15,128 @@ console.log({ avCvs });
 })().catch(console.error);
 document.querySelector('#userMedia')?.addEventListener('click', () => {
   (async () => {
-    const mediaStream = await navigator.mediaDevices.getUserMedia({
-      video: true,
-      audio: true,
+    // const mediaStream = await navigator.mediaDevices.getUserMedia({
+    //   video: true,
+    //   audio: true,
+    // });
+    // const vs = new VideoSprite('userMedia', mediaStream, {
+    //   audioCtx: avCvs.spriteManager.audioCtx,
+    // });
+    // await avCvs.spriteManager.addSprite(vs);
+    const mp4clip1 = new MP4Clip((await fetch('./video/bunny.mp4')).body!);
+    const spr1 = new VisibleSprite(mp4clip1);
+    spr1.time = { offset: 0, duration: 10e6 };
+    await avCvs.addSprite(spr1);
+    const mp4clip2 = new MP4Clip((await fetch('./video/bunny.mp4')).body!);
+    const spr2 = new VisibleSprite(mp4clip2);
+    spr2.time = { offset: 10e6, duration: 10e6 };
+    await avCvs.addSprite(spr2);
+
+    const spr3 = new VisibleSprite(
+      new ImgClip({
+        type: 'image/gif',
+        stream: (await fetch('./img/animated.gif')).body!,
+      }),
+    );
+    await avCvs.addSprite(spr3);
+    await spr3.ready;
+    // 修改空间坐标
+    spr3.rect.x = 300;
+    spr3.rect.y = 300;
+    // 修改时间偏移
+    spr3.time.offset = 4e6;
+    spr3.time.duration = 10e6;
+    setTimeout(() => {
+      // 修改素材层级
+      spr3.zIndex = -1;
+    }, 6000);
+
+    avCvs.play({ start: 0 });
+    avCvs.on('timeupdate', (t) => {
+      // console.log(1111, t);
     });
-    const vs = new VideoSprite('userMedia', mediaStream, {
-      audioCtx: avCvs.spriteManager.audioCtx,
-    });
-    await avCvs.spriteManager.addSprite(vs);
+
+    // 预览某时刻图像帧
+    // avCvs.previewFrame(6e6);
+    // 合成导出视频
+    // const com = await avCvs.createCombinator();
+    // com.output().pipeTo(await createFileWriter('mp4'));
   })().catch(console.error);
 });
 
 document.querySelector('#display')?.addEventListener('click', () => {
-  (async () => {
-    const mediaStream = await navigator.mediaDevices.getDisplayMedia({
-      video: true,
-      audio: true,
-    });
-    const vs = new VideoSprite('display', mediaStream, {
-      audioCtx: avCvs.spriteManager.audioCtx,
-    });
-    await avCvs.spriteManager.addSprite(vs);
-  })().catch(console.error);
+  // (async () => {
+  //   const mediaStream = await navigator.mediaDevices.getDisplayMedia({
+  //     video: true,
+  //     audio: true,
+  //   });
+  //   const vs = new VideoSprite('display', mediaStream, {
+  //     audioCtx: avCvs.spriteManager.audioCtx,
+  //   });
+  //   await avCvs.spriteManager.addSprite(vs);
+  // })().catch(console.error);
 });
 
 document.querySelector('#localImg')?.addEventListener('click', () => {
-  (async () => {
-    const [imgFH] = await (window as any).showOpenFilePicker({
-      types: [
-        {
-          description: 'Images',
-          accept: {
-            'image/*': ['.png', '.gif', '.jpeg', '.jpg'],
-          },
-        },
-      ],
-    });
-    const is = new ImgSprite('img', await imgFH.getFile());
-    await avCvs.spriteManager.addSprite(is);
-  })().catch(console.error);
+  // (async () => {
+  //   const [imgFH] = await (window as any).showOpenFilePicker({
+  //     types: [
+  //       {
+  //         description: 'Images',
+  //         accept: {
+  //           'image/*': ['.png', '.gif', '.jpeg', '.jpg'],
+  //         },
+  //       },
+  //     ],
+  //   });
+  //   const is = new ImgSprite('img', await imgFH.getFile());
+  //   await avCvs.spriteManager.addSprite(is);
+  // })().catch(console.error);
 });
 
 document.querySelector('#localVideo')?.addEventListener('click', () => {
-  (async () => {
-    const [imgFH] = await (window as any).showOpenFilePicker({
-      types: [
-        {
-          description: 'Video',
-          accept: {
-            'video/*': ['.webm', '.mp4'],
-          },
-        },
-      ],
-    });
-    const vs = new VideoSprite('vs', await imgFH.getFile(), {
-      audioCtx: avCvs.spriteManager.audioCtx,
-    });
-    await avCvs.spriteManager.addSprite(vs);
-  })().catch(console.error);
+  // (async () => {
+  //   const [imgFH] = await (window as any).showOpenFilePicker({
+  //     types: [
+  //       {
+  //         description: 'Video',
+  //         accept: {
+  //           'video/*': ['.webm', '.mp4'],
+  //         },
+  //       },
+  //     ],
+  //   });
+  //   const vs = new VideoSprite('vs', await imgFH.getFile(), {
+  //     audioCtx: avCvs.spriteManager.audioCtx,
+  //   });
+  //   await avCvs.spriteManager.addSprite(vs);
+  // })().catch(console.error);
 });
 
 document.querySelector('#localAudio')?.addEventListener('click', () => {
-  (async () => {
-    const [imgFH] = await (window as any).showOpenFilePicker({
-      types: [
-        {
-          description: 'Audio',
-          accept: {
-            'audio/*': ['.mp3', '.wav', '.ogg'],
-          },
-        },
-      ],
-    });
-    const as = new AudioSprite('vs', await imgFH.getFile(), {
-      audioCtx: avCvs.spriteManager.audioCtx,
-    });
-    await avCvs.spriteManager.addSprite(as);
-  })().catch(console.error);
+  // (async () => {
+  //   const [imgFH] = await (window as any).showOpenFilePicker({
+  //     types: [
+  //       {
+  //         description: 'Audio',
+  //         accept: {
+  //           'audio/*': ['.mp3', '.wav', '.ogg'],
+  //         },
+  //       },
+  //     ],
+  //   });
+  //   const as = new AudioSprite('vs', await imgFH.getFile(), {
+  //     audioCtx: avCvs.spriteManager.audioCtx,
+  //   });
+  //   await avCvs.spriteManager.addSprite(as);
+  // })().catch(console.error);
 });
 
 document.querySelector('#fontExamp')?.addEventListener('click', () => {
-  (async () => {
-    const textSpr = new TextSprite('text', '示例文字');
-    await avCvs.spriteManager.addSprite(textSpr);
-  })().catch(console.error);
+  // (async () => {
+  //   const textSpr = new TextSprite('text', '示例文字');
+  //   await avCvs.spriteManager.addSprite(textSpr);
+  // })().catch(console.error);
 });
 
 let recorder: AVRecorder | null = null;

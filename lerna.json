@@ -2,14 +2,13 @@
   "packages": [".", "packages/*"],
   "npmClient": "yarn",
   "useWorkspaces": true,
-  "version": "0.8.0",
+  "version": "0.9.0-beta.10",
   "command": {
     "publish": {
       "registry": "https://registry.npmjs.org"
     },
     "version": {
-      "message": "version: %s",
-      "allowBranch": ["main"]
+      "message": "version: %s"
     }
   }
 }

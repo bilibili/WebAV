@@ -1,7 +1,6 @@
 import mp4box, {
   MP4ArrayBuffer,
   MP4File,
-  MP4Info,
   MP4Sample,
   SampleOpts,
   TrakBoxParser,
@@ -18,9 +17,8 @@ import {
 import { DEFAULT_AUDIO_CONF } from '../clips';
 import { EventTool } from '../event-tool';
 import { SampleTransform } from './sample-transform';
-import { extractFileConfig, sample2ChunkOpts } from './mp4box-utils';
-
-export { MP4Previewer } from './mp4-previewer';
+import { extractFileConfig } from './mp4box-utils';
+import { tmpfile, write } from 'opfs-tools';
 
 type TCleanFn = () => void;
 
@@ -37,132 +35,6 @@ interface IWorkerOpts {
     sampleRate: number;
     channelCount: number;
   } | null;
-}
-
-export function _deprecated_demuxcode(
-  stream: ReadableStream<Uint8Array>,
-  opts: { audio: boolean; start: number; end: number },
-  cbs: {
-    onReady: (info: MP4Info) => void;
-    onVideoOutput: (vf: VideoFrame) => void;
-    onAudioOutput: (ad: AudioData) => void;
-    onComplete: () => void;
-  },
-): {
-  stop: () => void;
-} {
-  const vdecoder = new VideoDecoder({
-    output: (vf) => {
-      cbs.onVideoOutput(vf);
-    },
-    error: Log.error,
-  });
-  const adecoder = new AudioDecoder({
-    output: (audioData) => {
-      cbs.onAudioOutput(audioData);
-    },
-    error: Log.error,
-  });
-
-  let mp4Info: MP4Info | null = null;
-
-  // 第一个解码的 sample（EncodedVideoChunk） 必须是关键帧（is_sync）
-  let firstDecodeVideo = true;
-  let lastVideoKeyChunkIdx = 0;
-  let mp4File: MP4File | null = null;
-
-  let firstVideoSamp = true;
-  const stopReadStream = autoReadStream(
-    stream.pipeThrough(new SampleTransform()),
-    {
-      onDone: async () => {
-        Log.info('demuxcode stream done');
-        if (mp4Info == null) throw Error('MP4 demux unready');
-        try {
-          await Promise.all([
-            vdecoder.state === 'configured' ? vdecoder.flush() : null,
-            adecoder.state === 'configured' ? adecoder.flush() : null,
-          ]);
-          Log.info('demuxcode decode done');
-          cbs.onComplete();
-        } catch (err) {
-          Log.info(err);
-        }
-      },
-      onChunk: async ({ chunkType, data }) => {
-        if (chunkType === 'ready') {
-          Log.info('demuxcode chunk ready, info:', data);
-          mp4File = data.file;
-          mp4Info = data.info;
-          const { videoDecoderConf, audioDecoderConf } = extractFileConfig(
-            data.file,
-            data.info,
-          );
-
-          if (videoDecoderConf != null) {
-            vdecoder.configure(videoDecoderConf);
-          } else {
-            throw new Error(
-              'MP4 file does not include a video track or uses an unsupported codec',
-            );
-          }
-          if (opts.audio && audioDecoderConf != null) {
-            adecoder.configure(audioDecoderConf);
-          }
-
-          cbs.onReady(data.info);
-          return;
-        } else if (chunkType === 'samples') {
-          const { id: curId, type, samples } = data;
-          for (let i = 0; i < samples.length; i += 1) {
-            const s = samples[i];
-            if (firstDecodeVideo && s.is_sync) lastVideoKeyChunkIdx = i;
-
-            const cts = (1e6 * s.cts) / s.timescale;
-            // 跳过裁剪时间区间外的sample，无需解码
-            if (cts < opts.start || cts > opts.end) continue;
-
-            if (type === 'video') {
-              if (firstVideoSamp && i === 0 && s.cts !== 0) {
-                // 兼容某些视频首帧 有偏移
-                s.cts = 0;
-                firstVideoSamp = false;
-              } else {
-                firstVideoSamp = true;
-              }
-              if (firstDecodeVideo && !s.is_sync) {
-                // 首次解码需要从 key chunk 开始
-                firstDecodeVideo = false;
-                for (let j = lastVideoKeyChunkIdx; j < i; j++) {
-                  vdecoder.decode(
-                    new EncodedVideoChunk(sample2ChunkOpts(samples[j])),
-                  );
-                }
-              }
-              vdecoder.decode(new EncodedVideoChunk(sample2ChunkOpts(s)));
-            } else if (type === 'audio' && opts.audio) {
-              adecoder.decode(new EncodedAudioChunk(sample2ChunkOpts(s)));
-            }
-          }
-          // 释放内存空间
-          mp4File?.releaseUsedSamples(curId, samples.length);
-        }
-      },
-    },
-  );
-
-  let stoped = false;
-  return {
-    stop: () => {
-      if (stoped) return;
-      stoped = true;
-
-      mp4File?.stop();
-      stopReadStream();
-      vdecoder.close();
-      adecoder.close();
-    },
-  };
 }
 
 export function recodemux(opts: IWorkerOpts): {
@@ -396,20 +268,11 @@ export function file2stream(
 
   let sendedBoxIdx = 0;
   const boxes = file.boxes;
-  const tracks: Array<{ track: TrakBoxParser; id: number }> = [];
 
   const deltaBuf = (): Uint8Array | null => {
     // boxes.length >= 4 表示完成了 ftyp moov，且有了第一个 moof mdat
     // 避免moov未完成时写入文件，导致文件无法被识别
     if (boxes.length < 4 || sendedBoxIdx >= boxes.length) return null;
-
-    if (tracks.length === 0) {
-      for (let i = 1; true; i += 1) {
-        const track = file.getTrackById(i);
-        if (track == null) break;
-        tracks.push({ track, id: i });
-      }
-    }
 
     const ds = new mp4box.DataStream();
     ds.endianness = mp4box.DataStream.BIG_ENDIAN;
@@ -418,13 +281,8 @@ export function file2stream(
       boxes[i].write(ds);
       delete boxes[i];
     }
-    // 释放引用，避免内存泄露
-    tracks.forEach(({ track, id }) => {
-      file.releaseUsedSamples(id, track.samples.length);
-      track.samples = [];
-    });
-    file.mdats = [];
-    file.moofs = [];
+
+    unsafeReleaseMP4BoxFile(file);
 
     sendedBoxIdx = boxes.length;
     return new Uint8Array(ds.buffer);
@@ -469,7 +327,9 @@ export function file2stream(
   };
 }
 
-function mp4File2OPFSFile(inMP4File: MP4File): () => Promise<File | null> {
+function fixMP4BoxFileDuration(
+  inMP4File: MP4File,
+): () => Promise<ReadableStream<Uint8Array> | null> {
   let sendedBoxIdx = 0;
   const boxes = inMP4File.boxes;
   const tracks: Array<{ track: TrakBoxParser; id: number }> = [];
@@ -479,6 +339,7 @@ function mp4File2OPFSFile(inMP4File: MP4File): () => Promise<File | null> {
     const buf = box2Buf(boxes, sendedBoxIdx);
     sendedBoxIdx = boxes.length;
     // 释放引用，避免内存泄露
+    // todo: use unsafeReleaseMP4BoxFile
     tracks.forEach(({ track, id }) => {
       const s = track.samples.at(-1);
       if (s != null)
@@ -514,15 +375,14 @@ function mp4File2OPFSFile(inMP4File: MP4File): () => Promise<File | null> {
   }
 
   let timerId = 0;
-  let tmpFileHandle: FileSystemFileHandle | null = null;
-  let tmpFileWriter: FileSystemWritableFileStream | null = null;
+  // 把 moov 之外的 box 先写入临时文件，待更新 duration 之后再拼接临时文件
+  const postFile = tmpfile();
+  let tmpFileWriter: Awaited<
+    ReturnType<ReturnType<typeof tmpfile>['createWriter']>
+  > | null = null;
 
   const initPromise = (async () => {
-    const opfsRoot = await navigator.storage.getDirectory();
-    tmpFileHandle = await opfsRoot.getFileHandle(Math.random().toString(), {
-      create: true,
-    });
-    tmpFileWriter = await tmpFileHandle.createWritable();
+    tmpFileWriter = await postFile.createWriter();
 
     timerId = self.setInterval(() => {
       if (!moovBoxReady()) return;
@@ -538,7 +398,7 @@ function mp4File2OPFSFile(inMP4File: MP4File): () => Promise<File | null> {
     await initPromise;
     clearInterval(timerId);
 
-    if (!moovBoxReady() || tmpFileHandle == null) return null;
+    if (!moovBoxReady() || tmpFileWriter == null) return null;
     inMP4File.flush();
     await write2TmpFile();
     await tmpFileWriter?.close();
@@ -550,18 +410,12 @@ function mp4File2OPFSFile(inMP4File: MP4File): () => Promise<File | null> {
 
     moov.mvhd.duration = totalDuration;
 
-    const opfsRoot = await navigator.storage.getDirectory();
-    const rsFileHandle = await opfsRoot.getFileHandle(
-      Math.random().toString(),
-      { create: true },
-    );
-    const writer = await rsFileHandle.createWritable();
+    const rsFile = tmpfile();
     const buf = box2Buf(moovPrevBoxes, 0)!;
-    await writer.write(buf);
-    await writer.write(await tmpFileHandle.getFile());
-    await writer.close();
+    await write(rsFile, buf);
+    await write(rsFile, postFile, { overwrite: false });
 
-    return await rsFileHandle.getFile();
+    return await rsFile.stream();
   };
 
   function box2Buf(source: typeof boxes, startIdx: number): Uint8Array | null {
@@ -606,14 +460,13 @@ function chunk2MP4SampleOpts(
 export async function fastConcatMP4(
   streams: ReadableStream<Uint8Array>[],
 ): Promise<ReadableStream<Uint8Array>> {
-  Log.info('fastConcatMP4, streams len:', streams.length);
   const outfile = mp4box.createFile();
 
-  const dumpFile = mp4File2OPFSFile(outfile);
+  const dumpFile = fixMP4BoxFileDuration(outfile);
   await concatStreamsToMP4BoxFile(streams, outfile);
-  const opfsFile = await dumpFile();
-  if (opfsFile == null) throw Error('Can not generate file from streams');
-  return opfsFile.stream();
+  const outStream = await dumpFile();
+  if (outStream == null) throw Error('Can not generate file from streams');
+  return outStream;
 }
 
 async function concatStreamsToMP4BoxFile(
@@ -661,6 +514,7 @@ async function concatStreamsToMP4BoxFile(
                 is_sync: s.is_sync,
               });
             });
+            // todo: release in SampleTransform
             curFile?.releaseUsedSamples(curId, samples.length);
 
             const lastSamp = samples.at(-1);
@@ -686,20 +540,12 @@ async function concatStreamsToMP4BoxFile(
 }
 
 /**
- * Convert live stream to OPFS File, fix duration being 0
- * @param stream mp4 file stream
- * @returns File
+ * Set the correct duration value for the fmp4 files generated by WebAV
  */
-export async function mp4StreamToOPFSFile(
+export async function fixFMP4Duration(
   stream: ReadableStream<Uint8Array>,
-): Promise<File> {
-  const outfile = mp4box.createFile();
-
-  const dumpFile = mp4File2OPFSFile(outfile);
-  await concatStreamsToMP4BoxFile([stream], outfile);
-  const opfsFile = await dumpFile();
-  if (opfsFile == null) throw Error('Can not generate file from stream');
-  return opfsFile;
+): Promise<ReadableStream<Uint8Array>> {
+  return await fastConcatMP4([stream]);
 }
 
 function createMP4AudioSampleDecoder(
@@ -1006,4 +852,17 @@ function createESDSBox(config: ArrayBuffer | ArrayBufferView) {
   esdsBox.hdr_size = 0;
   esdsBox.parse(new mp4box.DataStream(buf, 0, mp4box.DataStream.BIG_ENDIAN));
   return esdsBox;
+}
+
+/**
+ * 强行回收 mp4boxfile 尽量降低内存占用，会破坏 file 导致无法正常使用
+ * 仅用于获取二进制后，不再需要任何 file 功能的场景
+ */
+export function unsafeReleaseMP4BoxFile(file: MP4File) {
+  if (file.moov == null) return;
+  for (var j = 0; j < file.moov.traks.length; j++) {
+    file.moov.traks[j].samples = [];
+  }
+  file.mdats = [];
+  file.moofs = [];
 }

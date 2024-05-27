@@ -25,7 +25,7 @@ export class AudioClip implements IClip {
 
   get meta() {
     return {
-      duration: this.#meta.duration,
+      ...this.#meta,
       sampleRate: DEFAULT_AUDIO_CONF.sampleRate,
       chanCount: 2,
     };
@@ -152,11 +152,14 @@ export class AudioClip implements IClip {
       this.getPCMData().map((chan) => chan.slice(frameCnt)),
       this.#opts,
     );
-    return [preSlice, postSlice];
+    return [preSlice, postSlice] as [this, this];
   }
 
   async clone() {
-    return new AudioClip(this.getPCMData(), this.#opts) as this;
+    await this.ready;
+    const clip = new AudioClip(this.getPCMData(), this.#opts) as this;
+    await clip.ready;
+    return clip;
   }
 
   destroy(): void {

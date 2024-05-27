@@ -1,4 +1,13 @@
-import { Log, Rect, TCtrlKey } from '@webav/av-cliper';
+import {
+  workerTimer,
+  mixinPCM,
+  Log,
+  Rect,
+  TCtrlKey,
+  EventTool,
+  Combinator,
+  OffscreenSprite,
+} from '@webav/av-cliper';
 import { renderCtrls } from './sprites/render-ctrl';
 import { ESpriteManagerEvt, SpriteManager } from './sprites/sprite-manager';
 import { activeSprite, draggabelSprite } from './sprites/sprite-op';
@@ -20,38 +29,52 @@ function createInitCvsEl(resolution: IResolution): HTMLCanvasElement {
 export class AVCanvas {
   #cvsEl: HTMLCanvasElement;
 
-  spriteManager: SpriteManager;
+  #spriteManager: SpriteManager;
 
   #cvsCtx: CanvasRenderingContext2D;
 
   #destroyed = false;
 
   #clears: Array<() => void> = [];
+  #stopRender: () => void;
+
+  #evtTool = new EventTool<{
+    timeupdate: (time: number) => void;
+    paused: () => void;
+    playing: () => void;
+  }>();
+  on = this.#evtTool.on;
+
+  #opts;
 
   constructor(
-    container: HTMLElement,
+    attchEl: HTMLElement,
     opts: {
-      resolution: IResolution;
       bgColor: string;
-    },
+    } & IResolution,
   ) {
-    this.#cvsEl = createInitCvsEl(opts.resolution);
+    this.#opts = opts;
+    this.#cvsEl = createInitCvsEl(opts);
     const ctx = this.#cvsEl.getContext('2d', { alpha: false });
     if (ctx == null) throw Error('canvas context is null');
     this.#cvsCtx = ctx;
+    const container = createEl('div');
+    container.style.cssText =
+      'width: 100%; height: 100%; position: relative; overflow: hidden;';
     container.appendChild(this.#cvsEl);
+    attchEl.appendChild(container);
 
     Rect.CTRL_SIZE = 14 / (this.#cvsEl.clientWidth / this.#cvsEl.width);
-    this.spriteManager = new SpriteManager();
+    this.#spriteManager = new SpriteManager();
 
     this.#clears.push(
       // 鼠标样式、控制 sprite 依赖 activeSprite，
       // activeSprite 需要在他们之前监听到 mousedown 事件 (代码顺序需要靠前)
-      activeSprite(this.#cvsEl, this.spriteManager),
-      dynamicCusor(this.#cvsEl, this.spriteManager),
-      draggabelSprite(this.#cvsEl, this.spriteManager),
-      renderCtrls(container, this.#cvsEl, this.spriteManager),
-      this.spriteManager.on(ESpriteManagerEvt.AddSprite, (s) => {
+      activeSprite(this.#cvsEl, this.#spriteManager),
+      dynamicCusor(this.#cvsEl, this.#spriteManager),
+      draggabelSprite(this.#cvsEl, this.#spriteManager),
+      renderCtrls(container, this.#cvsEl, this.#spriteManager),
+      this.#spriteManager.on(ESpriteManagerEvt.AddSprite, (s) => {
         const { rect } = s;
         // 默认居中
         if (rect.x === 0 && rect.y === 0) {
@@ -61,42 +84,163 @@ export class AVCanvas {
       }),
     );
 
-    const loop = (): void => {
-      if (this.#destroyed) return;
-
+    let lastRenderTime = this.#renderTime;
+    let start = performance.now();
+    let runCnt = 0;
+    const expectFrameTime = 1000 / 30;
+    this.#stopRender = workerTimer(() => {
+      // workerTimer 会略快于真实时钟，使用真实时间（performance.now）作为基准
+      // 跳过部分运行帧修正时间，避免导致音画不同步
+      if ((performance.now() - start) / (expectFrameTime * runCnt) < 1) {
+        return;
+      }
+      runCnt += 1;
       this.#cvsCtx.fillStyle = opts.bgColor;
-      this.#cvsCtx.fillRect(
-        0,
-        0,
-        opts.resolution.width,
-        opts.resolution.height,
-      );
+      this.#cvsCtx.fillRect(0, 0, this.#cvsEl.width, this.#cvsEl.height);
       this.#render();
-      requestAnimationFrame(loop);
-    };
-    loop();
+
+      if (lastRenderTime !== this.#renderTime) {
+        lastRenderTime = this.#renderTime;
+        this.#evtTool.emit('timeupdate', Math.round(lastRenderTime));
+      }
+    }, expectFrameTime);
 
     // ;(window as any).cvsEl = this.#cvsEl
   }
 
+  #renderTime = 0e6;
+  #updateRenderTime(time: number) {
+    this.#renderTime = time;
+    this.#spriteManager.updateRenderTime(time);
+  }
+
+  #pause() {
+    const emitPaused = this.#playState.step !== 0;
+    this.#playState.step = 0;
+    if (emitPaused) {
+      this.#evtTool.emit('paused');
+      this.#audioCtx.suspend();
+    }
+    for (const asn of this.#playingAudioCache) {
+      asn.stop();
+      asn.disconnect();
+    }
+    this.#playingAudioCache.clear();
+  }
+
+  #audioCtx = new AudioContext();
+  #playingAudioCache: Set<AudioBufferSourceNode> = new Set();
+  #audioTime = 0;
+  #render() {
+    const cvsCtx = this.#cvsCtx;
+    let ts = this.#renderTime;
+    const { start, end, step, audioPlayAt } = this.#playState;
+    if (step !== 0 && ts >= start && ts < end) {
+      ts += step;
+    } else {
+      this.#pause();
+    }
+    this.#updateRenderTime(ts);
+
+    const audios: Float32Array[][] = [];
+    for (const s of this.#spriteManager.getSprites()) {
+      cvsCtx.save();
+      const { audio } = s.render(cvsCtx, ts - s.time.offset);
+      cvsCtx.restore();
+      audios.push(audio);
+    }
+    cvsCtx.resetTransform();
+
+    if (step !== 0 && audios.length > 0) {
+      const curAudioTime = Math.max(this.#audioCtx.currentTime, audioPlayAt);
+      const audioSource = renderPCM(
+        mixinPCM(audios),
+        curAudioTime,
+        this.#audioCtx,
+      );
+      if (audioSource != null) {
+        this.#playingAudioCache.add(audioSource);
+        audioSource.onended = () => {
+          audioSource.disconnect();
+          this.#playingAudioCache.delete(audioSource);
+        };
+        this.#audioTime += audioSource.buffer?.duration ?? 0;
+        this.#playState.audioPlayAt =
+          curAudioTime + (audioSource.buffer?.duration ?? 0);
+      }
+    }
+  }
+
+  #playState = {
+    start: 0,
+    end: 0,
+    // paused state when step equal 0
+    step: 0,
+    // step: (1000 / 30) * 1000,
+    audioPlayAt: 0,
+  };
+  play(opts: { start: number; end?: number; playbackRate?: number }) {
+    const end =
+      opts.end ??
+      Math.max(
+        ...this.#spriteManager
+          .getSprites({ time: false })
+          .map((s) => s.time.offset + s.time.duration),
+      );
+    if (!Number.isFinite(end) || opts.start >= end || opts.start < 0) {
+      throw Error(
+        `Invalid time parameter, ${JSON.stringify({ start: opts.start, end })}`,
+      );
+    }
+
+    this.#updateRenderTime(opts.start);
+    this.#spriteManager
+      .getSprites({ time: false })
+      .forEach((vs) => vs.preFirstFrame());
+
+    this.#playState.start = opts.start;
+    this.#playState.end = end;
+    // AVCanvas 30FPS，将播放速率转换成步长
+    this.#playState.step = (opts.playbackRate ?? 1) * (1000 / 30) * 1000;
+    this.#audioCtx.resume();
+    this.#playState.audioPlayAt = 0;
+
+    this.#evtTool.emit('playing');
+    Log.info('AVCanvs play by:', this.#playState);
+  }
+  pause() {
+    this.#pause();
+  }
+  previewFrame(time: number) {
+    this.#updateRenderTime(time);
+    this.#pause();
+  }
+
+  // proxy to SpriteManager
+  addSprite: SpriteManager['addSprite'] = (...args) =>
+    this.#spriteManager.addSprite(...args);
+  removeSprite: SpriteManager['removeSprite'] = (...args) =>
+    this.#spriteManager.removeSprite(...args);
+
   destroy(): void {
+    if (this.#destroyed) return;
     this.#destroyed = true;
-    this.#cvsEl.remove();
+
+    this.#audioCtx.close();
+    this.#evtTool.destroy();
+    this.#stopRender();
+    this.#cvsEl.parentElement?.remove();
     this.#clears.forEach((fn) => fn());
-    this.spriteManager.destroy();
+    this.#playingAudioCache.clear();
+    this.#spriteManager.destroy();
   }
 
   captureStream(): MediaStream {
-    if (this.spriteManager.audioCtx.state === 'suspended') {
-      Log.info('AVCanvas.captureStream resume AudioContext');
-      this.spriteManager.audioCtx.resume().catch(Log.error);
-    }
-
     const ms = new MediaStream();
     this.#cvsEl
       .captureStream()
       .getTracks()
-      .concat(this.spriteManager.audioMSDest.stream.getTracks())
+      // .concat(this.#spriteManager.audioMSDest.stream.getTracks())
       .forEach((t) => {
         ms.addTrack(t);
       });
@@ -107,13 +251,33 @@ export class AVCanvas {
     return ms;
   }
 
-  #render(): void {
-    const cvsCtx = this.#cvsCtx;
-    const list = this.spriteManager.getSprites();
-    list.forEach((r) => r.render(cvsCtx));
+  async createCombinator(opts: { bitrate?: number } = {}) {
+    const com = new Combinator({ ...this.#opts, ...opts });
+    const sprites = this.#spriteManager.getSprites({ time: false });
+    if (sprites.length === 0) throw Error('No sprite added');
 
-    cvsCtx.resetTransform();
+    for (const vs of sprites) {
+      const os = new OffscreenSprite(vs.getClip());
+      os.time = { ...vs.time };
+      vs.copyStateTo(os);
+      await com.addSprite(os);
+    }
+    return com;
   }
+}
+
+function renderPCM(pcm: Float32Array, at: number, ctx: AudioContext) {
+  const len = pcm.length;
+  if (len === 0) return null;
+  // streo is default
+  const buf = ctx.createBuffer(2, pcm.length / 2, 48000);
+  buf.copyToChannel(new Float32Array(pcm, 0, pcm.byteLength / 2), 0);
+  buf.copyToChannel(new Float32Array(pcm, pcm.byteLength / 2), 1);
+  const audioSource = ctx.createBufferSource();
+  audioSource.buffer = buf;
+  audioSource.connect(ctx.destination);
+  audioSource.start(at);
+  return audioSource;
 }
 
 /**

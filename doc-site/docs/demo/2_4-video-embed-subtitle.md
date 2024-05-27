@@ -24,11 +24,10 @@ import { assetsPrefix } from './utils';
 const resList = assetsPrefix(['video/webav1.mp4', 'subtitles/test-sample.srt']);
 async function start() {
   const videoSpr = new OffscreenSprite(
-    'videoSpr',
     new MP4Clip((await fetch(resList[0])).body!),
   );
+  videoSpr.time = { duration: 10e6, offset: 0 };
   const srtSpr = new OffscreenSprite(
-    'srtSpr',
     new EmbedSubtitlesClip(await (await fetch(resList[1])).text(), {
       videoWidth: 1280,
       videoHeight: 720,
@@ -46,9 +45,10 @@ async function start() {
       },
     }),
   );
+  srtSpr.time = { duration: 10e6, offset: 0 };
   const com = new Combinator({ width: 1280, height: 720 });
-  await com.add(videoSpr, { duration: 10, offset: 0 });
-  await com.add(srtSpr, { duration: 10, offset: 0 });
+  await com.addSprite(videoSpr);
+  await com.addSprite(srtSpr);
   return com;
 }
 

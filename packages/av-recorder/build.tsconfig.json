@@ -1,27 +1,4 @@
 {
-  "compilerOptions": {
-    "target": "ESNext",
-    "useDefineForClassFields": true,
-    "module": "ESNext",
-    "lib": ["ESNext", "DOM"],
-    "types": ["@types/dom-mediacapture-transform", "@types/dom-webcodecs"],
-    "moduleResolution": "Node",
-    "strict": true,
-    "resolveJsonModule": true,
-    "isolatedModules": true,
-    "esModuleInterop": true,
-    "noUnusedLocals": true,
-    "noUnusedParameters": true,
-    "noImplicitReturns": true,
-    "declaration": true,
-    "emitDeclarationOnly": true,
-    "declarationDir": "dist",
-    "skipLibCheck": true
-  },
-  "include": [
-    "../../types/mp4box.d.ts",
-    "@types/dom-mediacapture-transform",
-    "src/**/*"
-  ],
-  "exclude": ["src/**/__tests__/*"]
+  "extends": "./tsconfig.json",
+  "exclude": ["src/**/__tests__/*", "demo"]
 }

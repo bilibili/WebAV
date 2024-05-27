@@ -31,7 +31,7 @@ export class TextSprite extends BaseSprite {
   }
 
   render(ctx: CanvasRenderingContext2D): void {
-    super.render(ctx);
+    super._render(ctx);
     const { w, h } = this.rect;
     ctx.drawImage(this.#img, -w / 2, -h / 2, w, h);
   }
