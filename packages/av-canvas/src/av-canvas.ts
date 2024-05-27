@@ -84,17 +84,26 @@ export class AVCanvas {
       }),
     );
 
-    let lastTime = this.#renderTime;
+    let lastRenderTime = this.#renderTime;
+    let start = performance.now();
+    let runCnt = 0;
+    const expectFrameTime = 1000 / 30;
     this.#stopRender = workerTimer(() => {
+      // workerTimer 会略快于真实时钟，使用真实时间（performance.now）作为基准
+      // 跳过部分运行帧修正时间，避免导致音画不同步
+      if ((performance.now() - start) / (expectFrameTime * runCnt) < 1) {
+        return;
+      }
+      runCnt += 1;
       this.#cvsCtx.fillStyle = opts.bgColor;
       this.#cvsCtx.fillRect(0, 0, this.#cvsEl.width, this.#cvsEl.height);
       this.#render();
 
-      if (lastTime !== this.#renderTime) {
-        lastTime = this.#renderTime;
-        this.#evtTool.emit('timeupdate', Math.round(lastTime));
+      if (lastRenderTime !== this.#renderTime) {
+        lastRenderTime = this.#renderTime;
+        this.#evtTool.emit('timeupdate', Math.round(lastRenderTime));
       }
-    }, 1000 / 30);
+    }, expectFrameTime);
 
     // ;(window as any).cvsEl = this.#cvsEl
   }
@@ -121,15 +130,13 @@ export class AVCanvas {
 
   #audioCtx = new AudioContext();
   #playingAudioCache: Set<AudioBufferSourceNode> = new Set();
+  #audioTime = 0;
   #render() {
     const cvsCtx = this.#cvsCtx;
     let ts = this.#renderTime;
-    if (
-      this.#playState.step !== 0 &&
-      ts >= this.#playState.start &&
-      ts < this.#playState.end
-    ) {
-      ts += this.#playState.step;
+    const { start, end, step, audioPlayAt } = this.#playState;
+    if (step !== 0 && ts >= start && ts < end) {
+      ts += step;
     } else {
       this.#pause();
     }
@@ -144,14 +151,11 @@ export class AVCanvas {
     }
     cvsCtx.resetTransform();
 
-    if (this.#playState.step !== 0 && audios.length > 0) {
-      this.#playState.audioPlayAt = Math.max(
-        this.#audioCtx.currentTime,
-        this.#playState.audioPlayAt,
-      );
+    if (step !== 0 && audios.length > 0) {
+      const curAudioTime = Math.max(this.#audioCtx.currentTime, audioPlayAt);
       const audioSource = renderPCM(
         mixinPCM(audios),
-        this.#playState.audioPlayAt,
+        curAudioTime,
         this.#audioCtx,
       );
       if (audioSource != null) {
@@ -160,7 +164,9 @@ export class AVCanvas {
           audioSource.disconnect();
           this.#playingAudioCache.delete(audioSource);
         };
-        this.#playState.audioPlayAt += audioSource.buffer?.duration ?? 0;
+        this.#audioTime += audioSource.buffer?.duration ?? 0;
+        this.#playState.audioPlayAt =
+          curAudioTime + (audioSource.buffer?.duration ?? 0);
       }
     }
   }
