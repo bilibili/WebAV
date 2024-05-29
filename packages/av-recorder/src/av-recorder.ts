@@ -28,8 +28,8 @@ export class AVRecorder {
   constructor(inputMediaStream: MediaStream, conf: IRecorderConf = {}) {
     this.#ms = inputMediaStream;
     this.#conf = {
-      width: 1280,
-      height: 720,
+      width: 0,
+      height: 0,
       bitrate: 3_000_000,
       expectFPS: 30,
       audioCodec: 'aac',
@@ -45,7 +45,15 @@ export class AVRecorder {
 
     const streams: IStream = {};
     const videoTrack = this.#ms.getVideoTracks()[0];
+    let videoConf: IWorkerOpts['video'] | null = null;
     if (videoTrack != null) {
+      const settings = videoTrack.getSettings();
+      videoConf = {
+        width: this.#conf.width || settings.width || 1280,
+        height: this.#conf.height || settings.height || 720,
+        expectFPS: this.#conf.expectFPS,
+        codec: this.#conf.videoCodec,
+      };
       streams.video = new MediaStreamTrackProcessor({
         track: videoTrack,
       }).readable;
@@ -54,11 +62,11 @@ export class AVRecorder {
     const audioTrack = this.#ms.getAudioTracks()[0];
     let audioConf: IWorkerOpts['audio'] | null = null;
     if (audioTrack != null) {
-      const setting = audioTrack.getSettings();
+      const settings = audioTrack.getSettings();
       audioConf = {
         codec: this.#conf.audioCodec,
-        sampleRate: setting.sampleRate ?? 0,
-        channelCount: setting.channelCount ?? 0,
+        sampleRate: settings.sampleRate ?? 0,
+        channelCount: settings.channelCount ?? 0,
       };
       Log.info('AVRecorder recording audioConf:', audioConf);
       streams.audio = new MediaStreamTrackProcessor({
@@ -71,12 +79,7 @@ export class AVRecorder {
     }
 
     const workerOpts: IWorkerOpts = {
-      video: {
-        width: this.#conf.width,
-        height: this.#conf.height,
-        expectFPS: this.#conf.expectFPS,
-        codec: this.#conf.videoCodec,
-      },
+      video: videoConf,
       audio: audioConf,
       bitrate: this.#conf.bitrate,
       timeSlice,

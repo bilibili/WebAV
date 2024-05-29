@@ -27,10 +27,7 @@ startEl?.addEventListener('click', () => {
     vEl.srcObject = mediaStream;
     vEl.play().catch(console.error);
 
-    recorder = new AVRecorder(recodeMS, {
-      width: 1280,
-      height: 720,
-    });
+    recorder = new AVRecorder(recodeMS);
     recorder.on('stateChange', (state) => {
       console.log('stateChange:', state);
     });

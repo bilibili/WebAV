@@ -14,7 +14,7 @@ export interface IWorkerOpts {
     height: number;
     expectFPS: number;
     codec: string;
-  };
+  } | null;
   audio: {
     codec: 'opus' | 'aac';
     sampleRate: number;
