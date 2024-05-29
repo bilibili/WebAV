@@ -177,13 +177,12 @@ export class Combinator {
 
     this.#log.info(`start combinate video, maxTime:${maxTime}`);
     let starTime = performance.now();
-    const stopReCodeMux = this.#run(
-      maxTime,
-      (prog) => {
+    const stopReCodeMux = this.#run(maxTime, {
+      onProgress: (prog) => {
         this.#log.debug('OutputProgress:', prog);
         this.#evtTool.emit('OutputProgress', prog);
       },
-      async () => {
+      onEnded: async () => {
         await this.#remux.flush();
         this.#log.info(
           '===== output ended =====, cost:',
@@ -192,7 +191,10 @@ export class Combinator {
         this.#evtTool.emit('OutputProgress', 1);
         this.destroy();
       },
-    );
+      onError: (err) => {
+        closeOutStream(err);
+      },
+    });
 
     this.#stopOutput = () => {
       stopReCodeMux();
@@ -219,8 +221,15 @@ export class Combinator {
 
   #run(
     maxTime: number,
-    onprogress: (prog: number) => void,
-    onEnded: () => Promise<void>,
+    {
+      onProgress,
+      onEnded,
+      onError,
+    }: {
+      onProgress: (prog: number) => void;
+      onEnded: () => Promise<void>;
+      onError: (err: Error) => void;
+    },
   ): () => void {
     let inputProgress = 0;
     let stoped = false;
@@ -326,6 +335,7 @@ export class Combinator {
     _run().catch((err) => {
       this.#log.error(err);
       exit();
+      onError(err);
     });
 
     // 初始 1 避免 NaN
@@ -338,7 +348,7 @@ export class Combinator {
       maxEncodeQSize = Math.max(maxEncodeQSize, s);
       outProgress = s / maxEncodeQSize;
       lastProg = Math.max(outProgress * 0.5 + inputProgress * 0.5, lastProg);
-      onprogress(lastProg);
+      onProgress(lastProg);
     }, 500);
 
     const exit = () => {

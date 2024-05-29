@@ -1,6 +1,6 @@
 import { test, expect } from 'vitest';
 import { OffscreenSprite } from '../sprite/offscreen-sprite';
-import { AudioClip, MP4Clip } from '../clips';
+import { AudioClip, IClip, MP4Clip } from '../clips';
 import { Combinator } from '../combinator';
 
 const m4a_44kHz_2chan = `//${location.host}/audio/44.1kHz-2chan.m4a`;
@@ -27,4 +27,27 @@ test('Combinator ouput m4a', async () => {
     audioSampleRate: 48000,
     audioChanCount: 2,
   });
+});
+
+test('Combinator.output throw an error', async () => {
+  const spr = new OffscreenSprite(
+    new (class MockClip implements IClip {
+      tick = async () => {
+        throw Error('xxx');
+      };
+      meta = { width: 0, height: 0, duration: 0 };
+      ready = Promise.resolve(this.meta);
+      clone = async () => new MockClip() as this;
+      destroy = () => {};
+      split = async (_: number) =>
+        [new MockClip(), new MockClip()] as [this, this];
+    })(),
+  );
+  const com = new Combinator();
+  await com.addSprite(spr);
+
+  const reader = com.output().getReader();
+  expect(async () => {
+    await reader.read();
+  }).rejects.toThrowError('xxx');
 });

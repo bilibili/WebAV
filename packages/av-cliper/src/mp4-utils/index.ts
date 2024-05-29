@@ -262,7 +262,7 @@ export function file2stream(
   onCancel?: TCleanFn,
 ): {
   stream: ReadableStream<Uint8Array>;
-  stop: TCleanFn;
+  stop: (err?: Error) => void;
 } {
   let timerId = 0;
 
@@ -290,7 +290,7 @@ export function file2stream(
 
   let stoped = false;
   let canceled = false;
-  let exit: TCleanFn | null = null;
+  let exit: ((err?: Error) => void) | null = null;
   const stream = new ReadableStream({
     start(ctrl) {
       timerId = self.setInterval(() => {
@@ -298,9 +298,14 @@ export function file2stream(
         if (d != null && !canceled) ctrl.enqueue(d);
       }, timeSlice);
 
-      exit = () => {
+      exit = (err) => {
         clearInterval(timerId);
         file.flush();
+        if (err != null) {
+          ctrl.error(err);
+          return;
+        }
+
         const d = deltaBuf();
         if (d != null && !canceled) ctrl.enqueue(d);
 
@@ -319,10 +324,10 @@ export function file2stream(
 
   return {
     stream,
-    stop: () => {
+    stop: (err) => {
       if (stoped) return;
       stoped = true;
-      exit?.();
+      exit?.(err);
     },
   };
 }
