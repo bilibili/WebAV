@@ -1,6 +1,7 @@
 import { SpriteManager } from './sprite-manager';
 import { ICvsRatio, IPoint } from '../types';
 import { VisibleSprite, Rect, TCtrlKey } from '@webav/av-cliper';
+import { createEl } from '../utils';
 
 /**
  * 鼠标点击，激活 sprite
@@ -54,6 +55,7 @@ export function activeSprite(
 export function draggabelSprite(
   cvsEl: HTMLCanvasElement,
   sprMng: SpriteManager,
+  container: HTMLElement,
 ): () => void {
   const cvsRatio = {
     w: cvsEl.clientWidth / cvsEl.width,
@@ -101,25 +103,33 @@ export function draggabelSprite(
     window.addEventListener('mouseup', clearWindowEvt);
   };
 
+  const refline = createRefline(cvsEl, container);
+
   const onMouseMove = (evt: MouseEvent): void => {
     if (hitSpr == null || startRect == null) return;
 
     const { clientX, clientY } = evt;
-    let newX = startRect.x + (clientX - startX) / cvsRatio.w;
-    let newY = startRect.y + (clientY - startY) / cvsRatio.h;
+    let expectX = startRect.x + (clientX - startX) / cvsRatio.w;
+    let expectY = startRect.y + (clientY - startY) / cvsRatio.h;
 
-    updateRectWithSafeMargin(hitSpr.rect, cvsEl, { x: newX, y: newY });
+    updateRectWithSafeMargin(
+      hitSpr.rect,
+      cvsEl,
+      refline.magneticEffect(expectX, expectY, hitSpr.rect),
+    );
   };
 
   cvsEl.addEventListener('mousedown', onCvsMouseDown);
 
   const clearWindowEvt = (): void => {
+    refline.hide();
     window.removeEventListener('mousemove', onMouseMove);
     window.removeEventListener('mouseup', clearWindowEvt);
   };
 
   return () => {
     observer.disconnect();
+    refline.destroy();
     clearWindowEvt();
     cvsEl.removeEventListener('mousedown', onCvsMouseDown);
   };
@@ -373,4 +383,69 @@ function updateRectWithSafeMargin(
   rect.y = newState.y;
   rect.w = newState.w;
   rect.h = newState.h;
+}
+
+/**
+ * 靠近中间时显示水平、垂直方向的中线参考线
+ * 具有磁吸效果
+ */
+function createRefline(cvsEl: HTMLCanvasElement, container: HTMLElement) {
+  const baseCss = `
+    display: none;
+    position: absolute;
+  `;
+  const xRefLine = createEl('div');
+  xRefLine.style.cssText = `
+    ${baseCss}
+    border-left: 1px solid #3ee;
+    top: 0; left: 50%;
+    width: 0; height: 100%;
+  `;
+  const yRefLine = createEl('div');
+  yRefLine.style.cssText = `
+    ${baseCss}
+    border-top: 1px solid #3ee;
+    top: 50%; left: 0;
+    width: 100%; height: 0;
+  `;
+  container.appendChild(xRefLine);
+  container.appendChild(yRefLine);
+
+  return {
+    magneticEffect(expectX: number, expectY: number, rect: Rect) {
+      const { center, x, y, w, h } = rect;
+
+      let newX = expectX;
+      let newY = expectY;
+      if (
+        Math.abs(center.x - cvsEl.width / 2) <= 5 &&
+        Math.abs(expectX - x) <= 5
+      ) {
+        xRefLine.style.display = 'block';
+        newX = (cvsEl.width - w) / 2;
+      } else {
+        xRefLine.style.display = 'none';
+      }
+
+      if (
+        Math.abs(center.y - cvsEl.height / 2) <= 5 &&
+        Math.abs(expectY - y) <= 5
+      ) {
+        yRefLine.style.display = 'block';
+        newY = (cvsEl.height - h) / 2;
+      } else {
+        yRefLine.style.display = 'none';
+      }
+
+      return { x: newX, y: newY };
+    },
+    hide() {
+      xRefLine.style.display = 'none';
+      yRefLine.style.display = 'none';
+    },
+    destroy() {
+      xRefLine.remove();
+      yRefLine.remove();
+    },
+  };
 }

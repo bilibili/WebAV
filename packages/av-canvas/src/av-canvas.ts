@@ -19,6 +19,7 @@ function createInitCvsEl(resolution: IResolution): HTMLCanvasElement {
   cvsEl.style.cssText = `
     width: 100%;
     height: 100%;
+    display: block;
   `;
   cvsEl.width = resolution.width;
   cvsEl.height = resolution.height;
@@ -72,7 +73,7 @@ export class AVCanvas {
       // activeSprite 需要在他们之前监听到 mousedown 事件 (代码顺序需要靠前)
       activeSprite(this.#cvsEl, this.#spriteManager),
       dynamicCusor(this.#cvsEl, this.#spriteManager),
-      draggabelSprite(this.#cvsEl, this.#spriteManager),
+      draggabelSprite(this.#cvsEl, this.#spriteManager, container),
       renderCtrls(container, this.#cvsEl, this.#spriteManager),
       this.#spriteManager.on(ESpriteManagerEvt.AddSprite, (s) => {
         const { rect } = s;

@@ -167,6 +167,17 @@ function App() {
       setPlaying(false);
     });
 
+    // (async () => {
+    //   console.log(44444444);
+    //   const spr = new VisibleSprite(
+    //     new ImgClip(
+    //       await renderTxt2ImgBitmap('示例文字', 'font-size: 80px; color: red;'),
+    //     ),
+    //   );
+    //   await cvs.addSprite(spr);
+    //   addSprite2Track('4-text', spr, '文字');
+    // })();
+
     return () => {
       cvs.destroy();
     };
@@ -209,7 +220,7 @@ function App() {
 
   return (
     <div className="canvas-wrap">
-      <div ref={(el) => setCvsWrapEl(el)}></div>
+      <div ref={(el) => setCvsWrapEl(el)} className="mb-[10px]"></div>
       <button
         className="mx-[10px]"
         onClick={async () => {
