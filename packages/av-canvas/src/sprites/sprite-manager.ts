@@ -30,7 +30,8 @@ export class SpriteManager {
     await vs.ready;
     this.#sprites.push(vs);
     this.#sprites = this.#sprites.sort((a, b) => a.zIndex - b.zIndex);
-    vs.on('zIndexChange', () => {
+    vs.on('propsChange', (props) => {
+      if (props.zIndex == null) return;
       this.#sprites = this.#sprites.sort((a, b) => a.zIndex - b.zIndex);
     });
 

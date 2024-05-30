@@ -26,7 +26,9 @@ export abstract class BaseSprite {
   visible = true;
 
   #evtTool = new EventTool<{
-    zIndexChange: () => void;
+    propsChange: (
+      value: Partial<{ rect: Partial<Rect>; zIndex: number }>,
+    ) => void;
   }>();
   on = this.#evtTool.on;
 
@@ -35,8 +37,9 @@ export abstract class BaseSprite {
     return this.#zIndex;
   }
   set zIndex(v: number) {
+    const changed = this.#zIndex !== v;
     this.#zIndex = v;
-    this.#evtTool.emit('zIndexChange');
+    if (changed) this.#evtTool.emit('propsChange', { zIndex: v });
   }
 
   opacity = 1;
@@ -48,6 +51,12 @@ export abstract class BaseSprite {
   #animatOpts: Required<IAnimationOpts> | null = null;
 
   ready = Promise.resolve();
+
+  constructor() {
+    this.rect.on('propsChange', (props) => {
+      this.#evtTool.emit('propsChange', { rect: props });
+    });
+  }
 
   protected _render(
     ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D,

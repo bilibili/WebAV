@@ -1,3 +1,5 @@
+import { EventTool } from '../event-tool';
+
 interface IPoint {
   x: number;
   y: number;
@@ -30,11 +32,78 @@ export class Rect implements IRectBaseProps {
    */
   static CTRL_SIZE = 16;
 
-  x = 0;
-  y = 0;
-  w = 0;
-  h = 0;
-  angle = 0;
+  #evtTool = new EventTool<{
+    propsChange: (props: Partial<IRectBaseProps>) => void;
+  }>();
+  on = this.#evtTool.on;
+
+  #x = 0;
+  get x() {
+    return this.#x;
+  }
+  set x(v) {
+    this.#setBaseProps('x', v);
+  }
+  #y = 0;
+  get y() {
+    return this.#y;
+  }
+  set y(v) {
+    this.#setBaseProps('y', v);
+  }
+  #w = 0;
+  get w() {
+    return this.#w;
+  }
+  set w(v) {
+    this.#setBaseProps('w', v);
+  }
+  #h = 0;
+  get h() {
+    return this.#h;
+  }
+  set h(v) {
+    this.#setBaseProps('h', v);
+  }
+  #angle = 0;
+  get angle() {
+    return this.#angle;
+  }
+  set angle(v) {
+    this.#setBaseProps('angle', v);
+  }
+
+  #setBaseProps(prop: keyof IRectBaseProps, v: number) {
+    const changed = this[prop] !== v;
+    switch (prop) {
+      case 'x':
+        this.#x = v;
+        break;
+      case 'y':
+        this.#y = v;
+        break;
+      case 'w':
+        this.#w = v;
+        break;
+      case 'h':
+        this.#h = v;
+        break;
+      case 'angle':
+        this.#angle = v;
+        break;
+    }
+    if (changed) this.#evtTool.emit('propsChange', { [prop]: v });
+
+    // concat emit
+    // if (changed) this.#nextTickEmitData[prop] = v;
+    // Promise.resolve().then(() => {
+    //   if (Object.keys(this.#nextTickEmitData).length > 0) {
+    //     const data = this.#nextTickEmitData;
+    //     this.#nextTickEmitData = {};
+    //     this.#evtTool.emit('propsChange', { ...data });
+    //   }
+    // });
+  }
 
   /**
    * ctrl.master is sprite rect
