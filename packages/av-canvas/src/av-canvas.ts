@@ -64,7 +64,7 @@ export class AVCanvas {
     container.appendChild(this.#cvsEl);
     attchEl.appendChild(container);
 
-    Rect.CTRL_SIZE = 14 / (this.#cvsEl.clientWidth / this.#cvsEl.width);
+    Rect.CTRL_SIZE = 12 / (900 / this.#cvsEl.width);
     this.#spriteManager = new SpriteManager();
 
     this.#clears.push(
