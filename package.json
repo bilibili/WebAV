@@ -2,7 +2,7 @@
   "name": "root",
   "private": true,
   "type": "module",
-  "version": "0.9.0-beta.15",
+  "version": "0.9.0-beta.16",
   "devDependencies": {
     "@vitest/browser": "^1.6.0",
     "@vitest/coverage-istanbul": "^1.6.0",
