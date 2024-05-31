@@ -77,12 +77,11 @@ function createRectAndCtrlEl(container: HTMLElement): {
     CTRL_KEYS.map((k) => {
       const d = createEl('div');
       d.style.cssText = `
-      position: absolute;
-      border: 1px solid #3ee;
-      box-sizing: border-box;
-      border-radius: 50%;
-      background-color: #fff;
-    `;
+        position: absolute;
+        border: 1px solid #3ee; border-radius: 50%;
+        box-sizing: border-box;
+        background-color: #fff;
+      `;
       return [k, d];
     }),
   ) as Record<TCtrlKey, HTMLElement>;
