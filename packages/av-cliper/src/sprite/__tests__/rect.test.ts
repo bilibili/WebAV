@@ -14,6 +14,7 @@ test('ctrls', () => {
 test('clone', () => {
   const { x, y, w, h } = new Rect(0, 0, 100, 100).clone();
   expect([x, y, w, h]).toEqual([0, 0, 100, 100]);
+  expect(new Rect(0, 0, 100, 100).clone()).toMatchSnapshot();
 });
 
 test('checkHit', () => {

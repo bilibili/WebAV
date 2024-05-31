@@ -68,6 +68,14 @@ exports[`Rect > ctrls 1`] = `
 }
 `;
 
+exports[`clone 1`] = `
+Rect {
+  "fixedAspectRatio": false,
+  "master": null,
+  "on": [Function],
+}
+`;
+
 exports[`ctrls 1`] = `
 {
   "b": Rect {
