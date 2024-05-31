@@ -176,6 +176,7 @@ export class Rect implements IRectBaseProps {
     const { x, y, w, h, master } = this;
     const rect = new Rect(x, y, w, h, master);
     rect.angle = this.angle;
+    rect.fixedAspectRatio = this.fixedAspectRatio;
     return rect;
   }
 
