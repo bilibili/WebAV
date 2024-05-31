@@ -16,7 +16,17 @@ export type TCtrlKey =
   | 'rb'
   | 'rotate';
 
-export const CTRL_KEYS = ['t', 'b', 'l', 'r', 'lt', 'lb', 'rt', 'rb', 'rotate'];
+export const CTRL_KEYS = [
+  't',
+  'b',
+  'l',
+  'r',
+  'lt',
+  'lb',
+  'rt',
+  'rb',
+  'rotate',
+] as const;
 
 export interface IRectBaseProps {
   x: number;
@@ -129,8 +139,10 @@ export class Rect implements IRectBaseProps {
     return { x: x + w / 2, y: y + h / 2 };
   }
 
+  fixedAspectRatio = false;
+
   // 上下左右+四个角+旋转控制点
-  get ctrls(): Record<TCtrlKey, Rect> {
+  get ctrls() {
     const { w, h } = this;
     // 控制点元素大小, 以 分辨率 为基准
     const sz = Rect.CTRL_SIZE;
@@ -142,11 +154,16 @@ export class Rect implements IRectBaseProps {
     const rtSz = sz * 1.5;
     const hfRtSz = rtSz / 2;
     // ctrl 坐标是相对于 sprite 中心点
+    const tblr = this.fixedAspectRatio
+      ? {}
+      : {
+          t: new Rect(-hfSz, -hfH - hfSz, sz, sz, this),
+          b: new Rect(-hfSz, hfH - hfSz, sz, sz, this),
+          l: new Rect(-hfW - hfSz, -hfSz, sz, sz, this),
+          r: new Rect(hfW - hfSz, -hfSz, sz, sz, this),
+        };
     return {
-      t: new Rect(-hfSz, -hfH - hfSz, sz, sz, this),
-      b: new Rect(-hfSz, hfH - hfSz, sz, sz, this),
-      l: new Rect(-hfW - hfSz, -hfSz, sz, sz, this),
-      r: new Rect(hfW - hfSz, -hfSz, sz, sz, this),
+      ...tblr,
       lt: new Rect(-hfW - hfSz, -hfH - hfSz, sz, sz, this),
       lb: new Rect(-hfW - hfSz, hfH - hfSz, sz, sz, this),
       rt: new Rect(hfW - hfSz, -hfH - hfSz, sz, sz, this),

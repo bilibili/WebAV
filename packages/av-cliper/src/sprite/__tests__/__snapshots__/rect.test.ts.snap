@@ -67,3 +67,89 @@ exports[`Rect > ctrls 1`] = `
   },
 }
 `;
+
+exports[`ctrls 1`] = `
+{
+  "b": Rect {
+    "fixedAspectRatio": false,
+    "master": Rect {
+      "fixedAspectRatio": false,
+      "master": null,
+      "on": [Function],
+    },
+    "on": [Function],
+  },
+  "l": Rect {
+    "fixedAspectRatio": false,
+    "master": Rect {
+      "fixedAspectRatio": false,
+      "master": null,
+      "on": [Function],
+    },
+    "on": [Function],
+  },
+  "lb": Rect {
+    "fixedAspectRatio": false,
+    "master": Rect {
+      "fixedAspectRatio": false,
+      "master": null,
+      "on": [Function],
+    },
+    "on": [Function],
+  },
+  "lt": Rect {
+    "fixedAspectRatio": false,
+    "master": Rect {
+      "fixedAspectRatio": false,
+      "master": null,
+      "on": [Function],
+    },
+    "on": [Function],
+  },
+  "r": Rect {
+    "fixedAspectRatio": false,
+    "master": Rect {
+      "fixedAspectRatio": false,
+      "master": null,
+      "on": [Function],
+    },
+    "on": [Function],
+  },
+  "rb": Rect {
+    "fixedAspectRatio": false,
+    "master": Rect {
+      "fixedAspectRatio": false,
+      "master": null,
+      "on": [Function],
+    },
+    "on": [Function],
+  },
+  "rotate": Rect {
+    "fixedAspectRatio": false,
+    "master": Rect {
+      "fixedAspectRatio": false,
+      "master": null,
+      "on": [Function],
+    },
+    "on": [Function],
+  },
+  "rt": Rect {
+    "fixedAspectRatio": false,
+    "master": Rect {
+      "fixedAspectRatio": false,
+      "master": null,
+      "on": [Function],
+    },
+    "on": [Function],
+  },
+  "t": Rect {
+    "fixedAspectRatio": false,
+    "master": Rect {
+      "fixedAspectRatio": false,
+      "master": null,
+      "on": [Function],
+    },
+    "on": [Function],
+  },
+}
+`;
