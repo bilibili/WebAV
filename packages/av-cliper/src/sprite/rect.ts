@@ -5,28 +5,7 @@ interface IPoint {
   y: number;
 }
 
-export type TCtrlKey =
-  | 't'
-  | 'b'
-  | 'l'
-  | 'r'
-  | 'lt'
-  | 'lb'
-  | 'rt'
-  | 'rb'
-  | 'rotate';
-
-export const CTRL_KEYS = [
-  't',
-  'b',
-  'l',
-  'r',
-  'lt',
-  'lb',
-  'rt',
-  'rb',
-  'rotate',
-] as const;
+export type TCtrlKey = (typeof Rect.CTRL_KEYS)[number];
 
 export interface IRectBaseProps {
   x: number;
@@ -41,6 +20,18 @@ export class Rect implements IRectBaseProps {
    * ctrl 节点的边长
    */
   static CTRL_SIZE = 16;
+
+  static readonly CTRL_KEYS = [
+    't',
+    'b',
+    'l',
+    'r',
+    'lt',
+    'lb',
+    'rt',
+    'rb',
+    'rotate',
+  ] as const;
 
   #evtTool = new EventTool<{
     propsChange: (props: Partial<IRectBaseProps>) => void;

@@ -1,6 +1,6 @@
 import { ICvsRatio } from '../types';
 import { createEl } from '../utils';
-import { VisibleSprite, CTRL_KEYS, TCtrlKey } from '@webav/av-cliper';
+import { VisibleSprite, Rect, TCtrlKey } from '@webav/av-cliper';
 import { ESpriteManagerEvt, SpriteManager } from './sprite-manager';
 
 export function renderCtrls(
@@ -74,9 +74,10 @@ function createRectAndCtrlEl(container: HTMLElement): {
     display: none;
   `;
   const ctrlsEl = Object.fromEntries(
-    CTRL_KEYS.map((k) => {
+    Rect.CTRL_KEYS.map((k) => {
       const d = createEl('div');
       d.style.cssText = `
+        display: none;
         position: absolute;
         border: 1px solid #3ee; border-radius: 50%;
         box-sizing: border-box;
@@ -111,6 +112,7 @@ function syncCtrlElPos(
   Object.entries(ctrls).forEach(([k, { x, y, w, h }]) => {
     // ctrl 是相对中心点定位的
     Object.assign(ctrlsEl[k as TCtrlKey].style, {
+      display: 'block',
       left: '50%',
       top: '50%',
       width: `${w * cvsRatio.w}px`,
