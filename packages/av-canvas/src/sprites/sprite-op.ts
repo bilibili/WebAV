@@ -72,6 +72,8 @@ export function draggabelSprite(
   let startY = 0;
   let startRect: Rect | null = null;
 
+  const refline = createRefline(cvsEl, container);
+
   let hitSpr: VisibleSprite | null = null;
   // sprMng.activeSprite 在 av-canvas.ts -> activeSprite 中被赋值
   const onCvsMouseDown = (evt: MouseEvent): void => {
@@ -97,13 +99,13 @@ export function draggabelSprite(
 
     startRect = hitSpr.rect.clone();
 
+    refline.magneticEffect(hitSpr.rect.x, hitSpr.rect.y, hitSpr.rect);
+
     startX = clientX;
     startY = clientY;
     window.addEventListener('mousemove', onMouseMove);
     window.addEventListener('mouseup', clearWindowEvt);
   };
-
-  const refline = createRefline(cvsEl, container);
 
   const onMouseMove = (evt: MouseEvent): void => {
     if (hitSpr == null || startRect == null) return;
@@ -386,66 +388,113 @@ function updateRectWithSafeMargin(
 }
 
 /**
- * 靠近中间时显示水平、垂直方向的中线参考线
- * 具有磁吸效果
+ * 创建四周+中线参考线, 靠近具有磁吸效果
  */
 function createRefline(cvsEl: HTMLCanvasElement, container: HTMLElement) {
-  const baseCss = `
-    display: none;
-    position: absolute;
-  `;
-  const xRefLine = createEl('div');
-  xRefLine.style.cssText = `
-    ${baseCss}
-    border-left: 1px solid #3ee;
-    top: 0; left: 50%;
-    width: 0; height: 100%;
-  `;
-  const yRefLine = createEl('div');
-  yRefLine.style.cssText = `
-    ${baseCss}
-    border-top: 1px solid #3ee;
-    top: 50%; left: 0;
-    width: 100%; height: 0;
-  `;
-  container.appendChild(xRefLine);
-  container.appendChild(yRefLine);
+  const reflineBaseCSS = `display: none; position: absolute;`;
+  const baseSettings = { w: 0, h: 0, x: 0, y: 0 } as const;
+  const reflineSettings: Record<
+    'top' | 'bottom' | 'left' | 'right' | 'vertMiddle' | 'horMiddle',
+    {
+      // 四周加中线参考线，它们的坐标、宽高只能是 0 ｜ 50 ｜ 100
+      w: 0 | 50 | 100;
+      h: 0 | 50 | 100;
+      x: 0 | 50 | 100;
+      y: 0 | 50 | 100;
+      ref: { prop: 'x' | 'y'; val: (rect: Rect) => number };
+    }
+  > = {
+    vertMiddle: {
+      ...baseSettings,
+      h: 100,
+      x: 50,
+      ref: { prop: 'x', val: ({ w }) => (cvsEl.width - w) / 2 },
+    },
+    horMiddle: {
+      ...baseSettings,
+      w: 100,
+      y: 50,
+      ref: { prop: 'y', val: ({ h }) => (cvsEl.height - h) / 2 },
+    },
+    top: {
+      ...baseSettings,
+      w: 100,
+      ref: { prop: 'y', val: () => 0 },
+    },
+    bottom: {
+      ...baseSettings,
+      w: 100,
+      y: 100,
+      ref: { prop: 'y', val: ({ h }) => cvsEl.height - h },
+    },
+    left: {
+      ...baseSettings,
+      h: 100,
+      ref: { prop: 'x', val: () => 0 },
+    },
+    right: {
+      ...baseSettings,
+      h: 100,
+      x: 100,
+      ref: { prop: 'x', val: ({ w }) => cvsEl.width - w },
+    },
+  } as const;
 
+  const lineWrap = createEl('div');
+  lineWrap.style.cssText = `
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    pointer-events: none;
+    box-sizing: border-box;
+  `;
+  const reflineEls = Object.fromEntries(
+    Object.entries(reflineSettings).map(([key, { w, h, x, y }]) => {
+      const lineEl = createEl('div');
+      lineEl.style.cssText = `
+        ${reflineBaseCSS}
+        border-${w > 0 ? 'top' : 'left'}: 1px solid #3ee;
+        top: ${y}%; left: ${x}%;
+        ${x === 100 ? 'margin-left: -1px' : ''};
+        ${y === 100 ? 'margin-top: -1px' : ''};
+        width: ${w}%; height: ${h}%;
+      `;
+      lineWrap.appendChild(lineEl);
+      return [key, lineEl];
+    }),
+  ) as Record<keyof typeof reflineSettings, HTMLDivElement>;
+  container.appendChild(lineWrap);
+
+  const magneticDistance = 6 / (900 / cvsEl.width);
   return {
     magneticEffect(expectX: number, expectY: number, rect: Rect) {
-      const { center, x, y, w, h } = rect;
+      const retVal = { x: expectX, y: expectY };
+      let reflineKey: keyof typeof reflineSettings;
+      let correctionState = { x: false, y: false };
+      for (reflineKey in reflineSettings) {
+        const { prop, val } = reflineSettings[reflineKey].ref;
+        if (correctionState[prop]) continue;
 
-      let newX = expectX;
-      let newY = expectY;
-      if (
-        Math.abs(center.x - cvsEl.width / 2) <= 5 &&
-        Math.abs(expectX - x) <= 5
-      ) {
-        xRefLine.style.display = 'block';
-        newX = (cvsEl.width - w) / 2;
-      } else {
-        xRefLine.style.display = 'none';
+        const refVal = val(rect);
+        if (
+          Math.abs(rect[prop] - refVal) <= magneticDistance &&
+          Math.abs(rect[prop] - (prop === 'x' ? expectX : expectY)) <=
+            magneticDistance
+        ) {
+          retVal[prop] = refVal;
+          reflineEls[reflineKey].style.display = 'block';
+          correctionState[prop] = true;
+        } else {
+          reflineEls[reflineKey].style.display = 'none';
+        }
       }
-
-      if (
-        Math.abs(center.y - cvsEl.height / 2) <= 5 &&
-        Math.abs(expectY - y) <= 5
-      ) {
-        yRefLine.style.display = 'block';
-        newY = (cvsEl.height - h) / 2;
-      } else {
-        yRefLine.style.display = 'none';
-      }
-
-      return { x: newX, y: newY };
+      return retVal;
     },
     hide() {
-      xRefLine.style.display = 'none';
-      yRefLine.style.display = 'none';
+      Object.values(reflineEls).forEach((el) => (el.style.display = 'none'));
     },
     destroy() {
-      xRefLine.remove();
-      yRefLine.remove();
+      lineWrap.remove();
     },
   };
 }
