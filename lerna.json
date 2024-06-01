@@ -2,6 +2,7 @@
   "packages": [".", "packages/*"],
   "npmClient": "yarn",
   "version": "0.9.0-beta.16",
+  "useWorkspaces": true,
   "command": {
     "publish": {
       "registry": "https://registry.npmjs.org"
