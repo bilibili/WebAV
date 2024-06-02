@@ -1,6 +1,6 @@
 import { Log, EventTool } from '@webav/av-cliper';
 import { IRecorderConf, IStream, IRecordeOpts } from './types';
-import { MP4Muxer } from './mux-mp4';
+import { RecoderPauseCtrl, startRecorde } from './recorde';
 
 type TState = 'inactive' | 'recording' | 'paused' | 'stopped';
 export class AVRecorder {
@@ -21,12 +21,7 @@ export class AVRecorder {
 
   #conf: Required<IRecorderConf>;
 
-  #muxer = new MP4Muxer();
-
-  #outputStream: ReadableStream<Uint8Array> | null = null;
-  get outputStream() {
-    return this.#outputStream;
-  }
+  #recoderPauseCtrl: RecoderPauseCtrl;
 
   constructor(inputMediaStream: MediaStream, conf: IRecorderConf = {}) {
     this.#ms = inputMediaStream;
@@ -39,9 +34,12 @@ export class AVRecorder {
       videoCodec: 'avc1.42E032',
       ...conf,
     };
+
+    this.#recoderPauseCtrl = new RecoderPauseCtrl(this.#conf.expectFPS);
   }
 
-  start(timeSlice: number = 500): void {
+  #stopStream = () => {};
+  start(timeSlice: number = 500): ReadableStream<Uint8Array> {
     if (this.#state === 'stopped') throw Error('AVRecorder is stopped');
     Log.info('AVRecorder.start recoding');
 
@@ -72,7 +70,7 @@ export class AVRecorder {
       throw new Error('No available tracks in MediaStream');
     }
 
-    const workerOpts: IRecordeOpts = {
+    const opts: IRecordeOpts = {
       video: {
         width: this.#conf.width,
         height: this.#conf.height,
@@ -85,18 +83,23 @@ export class AVRecorder {
       streams,
     };
 
-    this.#outputStream = this.#muxer.start(workerOpts, this.stop);
+    const { stream, exit } = startRecorde(opts, this.#recoderPauseCtrl, () => {
+      this.stop();
+    });
+    this.#stopStream();
+    this.#stopStream = exit;
+    return stream;
   }
 
   pause(): void {
     this.#state = 'paused';
-    this.#muxer.pause();
+    this.#recoderPauseCtrl.pause();
     this.#evtTool.emit('stateChange', this.#state);
   }
   resume(): void {
     if (this.#state === 'stopped') throw Error('AVRecorder is stopped');
     this.#state = 'recording';
-    this.#muxer.resume();
+    this.#recoderPauseCtrl.play();
     this.#evtTool.emit('stateChange', this.#state);
   }
 
@@ -104,6 +107,6 @@ export class AVRecorder {
     if (this.#state === 'stopped') return;
     this.#state = 'stopped';
 
-    this.#muxer.stop();
+    this.#stopStream();
   }
 }

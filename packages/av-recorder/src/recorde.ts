@@ -6,7 +6,7 @@ if (import.meta.env.DEV) {
   mp4box.Log.setLogLevel(mp4box.Log.debug);
 }
 
-class RecoderPauseCtrl {
+export class RecoderPauseCtrl {
   // 当前帧的偏移时间，用于计算帧的 timestamp
   #offsetTime = performance.now();
 
@@ -75,29 +75,7 @@ class RecoderPauseCtrl {
   }
 }
 
-export class MP4Muxer {
-  #recoderPauseCtrl = new RecoderPauseCtrl(30);
-
-  #clear = () => {};
-  start(opts: IRecordeOpts, onCancel: () => void) {
-    const { stream, exit } = recorde(opts, this.#recoderPauseCtrl, onCancel);
-    this.#clear();
-    this.#clear = exit;
-    return stream;
-  }
-  stop() {
-    this.#clear();
-  }
-
-  pause() {
-    this.#recoderPauseCtrl.pause();
-  }
-  resume() {
-    this.#recoderPauseCtrl.play();
-  }
-}
-
-function recorde(
+export function startRecorde(
   opts: IRecordeOpts,
   ctrl: RecoderPauseCtrl,
   onEnded: TClearFn,

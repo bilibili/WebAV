@@ -34,10 +34,9 @@ startEl?.addEventListener('click', () => {
     recorder.on('stateChange', (state) => {
       console.log('stateChange:', state);
     });
-    await recorder.start();
 
     const writer = await createFileWriter('mp4');
-    recorder.outputStream?.pipeTo(writer).catch(console.error);
+    recorder.start().pipeTo(writer).catch(console.error);
 
     startEl.style.visibility = 'hidden';
     pauseEl.style.visibility = 'visible';
