@@ -6583,10 +6583,10 @@ onetime@^6.0.0:
   dependencies:
     mimic-fn "^4.0.0"
 
-opfs-tools@^0.4.1:
-  version "0.4.1"
-  resolved "https://registry.npmjs.org/opfs-tools/-/opfs-tools-0.4.1.tgz#e0d5046759ca5051d132e98509117873646efab4"
-  integrity sha512-yXmcZ7LVDzOxfTV1eXdWQL20rm+8f1uQqTLYD/kuh6d/7qBWoAXKcYqOQITfReyNR9k/6pOIdgmIT1FEACMeJw==
+opfs-tools@^0.4.2:
+  version "0.4.2"
+  resolved "https://registry.npmjs.org/opfs-tools/-/opfs-tools-0.4.2.tgz#9dffef1f99eaafa152ec0e2bbb7c8b48d84eaddb"
+  integrity sha512-eAHRFWqyhltUTFK6Pap7sJcIpYSqhvRkPXPmJ0ySgW5Nk+B9GNldHmiw3B+mFYMJlX5wV4gm2ByHIHxPLmUE8g==
 
 os-homedir@^1.0.0:
   version "1.0.2"
@@ -7055,7 +7055,12 @@ postcss@^8.4.23, postcss@^8.4.38:
     picocolors "^1.0.0"
     source-map-js "^1.2.0"
 
-prettier@2.8.1, prettier@^3.2.5:
+prettier@2.8.1:
+  version "2.8.1"
+  resolved "https://registry.npmjs.org/prettier/-/prettier-2.8.1.tgz#4e1fd11c34e2421bc1da9aea9bd8127cd0a35efc"
+  integrity sha512-lqGoSJBQNJidqCHE80vqZJHWHRFoNYsSpP9AjFhlhi9ODCJA541svILes/+/1GM3VaL/abZi7cpFzOpdR9UPKg==
+
+prettier@^3.2.5:
   version "3.2.5"
   resolved "https://registry.npmjs.org/prettier/-/prettier-3.2.5.tgz#e52bc3090586e824964a8813b09aba6233b28368"
   integrity sha512-3/GWa9aOC0YeD7LUfvOG2NiDyhOWRvt1k+rcKhOuYnMY24iiCphgneUfJDyFXd6rZCAnuLBv6UeAULtrhT/F4A==
