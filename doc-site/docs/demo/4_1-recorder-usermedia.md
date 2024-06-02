@@ -30,10 +30,7 @@ async function start(videoEl: HTMLVideoElement) {
   videoEl.srcObject = mediaStream;
   videoEl.play().catch(console.error);
 
-  recorder = new AVRecorder(recodeMS, {
-    width: 1280,
-    height: 720,
-  });
+  recorder = new AVRecorder(recodeMS);
 
   recorder
     .start()

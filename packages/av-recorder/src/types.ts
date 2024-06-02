@@ -1,8 +1,5 @@
-export interface IRecorderConf {
-  width?: number;
-  height?: number;
+export interface AVRecorderConf {
   expectFPS?: number;
-  audioCodec?: 'aac';
   videoCodec?: string;
   /* 码率 */
   bitrate?: number;

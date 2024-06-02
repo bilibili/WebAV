@@ -1,5 +1,5 @@
 import { Log, EventTool } from '@webav/av-cliper';
-import { IRecorderConf, IStream, IRecordeOpts } from './types';
+import { AVRecorderConf, IStream, IRecordeOpts } from './types';
 import { RecoderPauseCtrl, startRecorde } from './recorde';
 
 type TState = 'inactive' | 'recording' | 'paused' | 'stopped';
@@ -17,25 +17,13 @@ export class AVRecorder {
   }>();
   on = this.#evtTool.on;
 
-  #ms;
-
-  #conf: Required<IRecorderConf>;
+  #conf: Omit<IRecordeOpts, 'timeSlice'>;
 
   #recoderPauseCtrl: RecoderPauseCtrl;
 
-  constructor(inputMediaStream: MediaStream, conf: IRecorderConf = {}) {
-    this.#ms = inputMediaStream;
-    this.#conf = {
-      width: 1280,
-      height: 720,
-      bitrate: 3_000_000,
-      expectFPS: 30,
-      audioCodec: 'aac',
-      videoCodec: 'avc1.42E032',
-      ...conf,
-    };
-
-    this.#recoderPauseCtrl = new RecoderPauseCtrl(this.#conf.expectFPS);
+  constructor(inputMediaStream: MediaStream, conf: AVRecorderConf = {}) {
+    this.#conf = createRecoderConf(inputMediaStream, conf);
+    this.#recoderPauseCtrl = new RecoderPauseCtrl(this.#conf.video.expectFPS);
   }
 
   #stopStream = () => {};
@@ -43,49 +31,19 @@ export class AVRecorder {
     if (this.#state === 'stopped') throw Error('AVRecorder is stopped');
     Log.info('AVRecorder.start recoding');
 
-    const streams: IStream = {};
-    const videoTrack = this.#ms.getVideoTracks()[0];
-    if (videoTrack != null) {
-      streams.video = new MediaStreamTrackProcessor({
-        track: videoTrack,
-      }).readable;
-    }
-
-    const audioTrack = this.#ms.getAudioTracks()[0];
-    let audioConf: IRecordeOpts['audio'] | null = null;
-    if (audioTrack != null) {
-      const setting = audioTrack.getSettings();
-      audioConf = {
-        codec: this.#conf.audioCodec,
-        sampleRate: setting.sampleRate ?? 0,
-        channelCount: setting.channelCount ?? 0,
-      };
-      Log.info('AVRecorder recording audioConf:', audioConf);
-      streams.audio = new MediaStreamTrackProcessor({
-        track: audioTrack,
-      }).readable;
-    }
+    const { streams } = this.#conf;
 
     if (streams.audio == null && streams.video == null) {
       throw new Error('No available tracks in MediaStream');
     }
 
-    const opts: IRecordeOpts = {
-      video: {
-        width: this.#conf.width,
-        height: this.#conf.height,
-        expectFPS: this.#conf.expectFPS,
-        codec: this.#conf.videoCodec,
+    const { stream, exit } = startRecorde(
+      { timeSlice, ...this.#conf },
+      this.#recoderPauseCtrl,
+      () => {
+        this.stop();
       },
-      audio: audioConf,
-      bitrate: this.#conf.bitrate,
-      timeSlice,
-      streams,
-    };
-
-    const { stream, exit } = startRecorde(opts, this.#recoderPauseCtrl, () => {
-      this.stop();
-    });
+    );
     this.#stopStream();
     this.#stopStream = exit;
     return stream;
@@ -109,4 +67,55 @@ export class AVRecorder {
 
     this.#stopStream();
   }
+}
+
+function createRecoderConf(inputMS: MediaStream, userConf: AVRecorderConf) {
+  const conf = {
+    bitrate: 3e6,
+    expectFPS: 30,
+    videoCodec: 'avc1.42E032',
+    ...userConf,
+  };
+  const { streams, width, height, sampleRate, channelCount } =
+    extractMSSettings(inputMS);
+
+  const opts: Omit<IRecordeOpts, 'timeSlice'> = {
+    video: {
+      width: width ?? 1280,
+      height: height ?? 720,
+      expectFPS: conf.expectFPS,
+      codec: conf.videoCodec,
+    },
+    audio: {
+      codec: 'aac',
+      sampleRate: sampleRate ?? 44100,
+      channelCount: channelCount ?? 2,
+    },
+    bitrate: conf.bitrate,
+    streams,
+  };
+  return opts;
+}
+
+function extractMSSettings(inputMS: MediaStream) {
+  const videoTrack = inputMS.getVideoTracks()[0];
+  const settings: MediaTrackSettings & { streams: IStream } = { streams: {} };
+  if (videoTrack != null) {
+    Object.assign(settings, videoTrack.getSettings());
+    settings.streams.video = new MediaStreamTrackProcessor({
+      track: videoTrack,
+    }).readable;
+  }
+
+  const audioTrack = inputMS.getAudioTracks()[0];
+  let audioConf: IRecordeOpts['audio'] | null = null;
+  if (audioTrack != null) {
+    Object.assign(settings, audioTrack.getSettings());
+    Log.info('AVRecorder recording audioConf:', audioConf);
+    settings.streams.audio = new MediaStreamTrackProcessor({
+      track: audioTrack,
+    }).readable;
+  }
+
+  return settings;
 }
