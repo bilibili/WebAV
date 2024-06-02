@@ -25,6 +25,11 @@ export class RecoderPauseCtrl {
 
   constructor(readonly expectFPS: number) {}
 
+  start() {
+    this.#offsetTime = performance.now();
+    this.#lastTime = this.#offsetTime;
+  }
+
   play() {
     if (!this.#paused) return;
     this.#paused = false;
@@ -111,6 +116,8 @@ export function startRecorde(
         emitVf(newVf);
       }, 1000);
     };
+
+    ctrl.start();
     const stopReadStream = autoReadStream(opts.streams.video, {
       onChunk: async (chunk: VideoFrame) => {
         if (stoped) {
@@ -121,6 +128,7 @@ export function startRecorde(
       },
       onDone: () => {},
     });
+
     stopEncodeVideo = () => {
       stopReadStream();
       clearTimeout(autoInsertVFTimer);
