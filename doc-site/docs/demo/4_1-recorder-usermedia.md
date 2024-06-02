@@ -34,9 +34,11 @@ async function start(videoEl: HTMLVideoElement) {
     width: 1280,
     height: 720,
   });
-  await recorder.start();
 
-  recorder.outputStream?.pipeTo(await createFileWriter()).catch(console.error);
+  recorder
+    .start()
+    .pipeTo(await createFileWriter())
+    .catch(console.error);
 }
 
 export default function UI() {
