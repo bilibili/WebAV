@@ -27,17 +27,13 @@ startEl?.addEventListener('click', () => {
     vEl.srcObject = mediaStream;
     vEl.play().catch(console.error);
 
-    recorder = new AVRecorder(recodeMS, {
-      width: 1280,
-      height: 720,
-    });
+    recorder = new AVRecorder(recodeMS);
     recorder.on('stateChange', (state) => {
       console.log('stateChange:', state);
     });
-    await recorder.start();
 
     const writer = await createFileWriter('mp4');
-    recorder.outputStream?.pipeTo(writer).catch(console.error);
+    recorder.start().pipeTo(writer).catch(console.error);
 
     startEl.style.visibility = 'hidden';
     pauseEl.style.visibility = 'visible';

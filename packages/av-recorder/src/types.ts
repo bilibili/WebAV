@@ -1,14 +1,11 @@
-export interface IRecorderConf {
-  width?: number;
-  height?: number;
+export interface AVRecorderConf {
   expectFPS?: number;
-  audioCodec?: 'aac';
   videoCodec?: string;
   /* 码率 */
   bitrate?: number;
 }
 
-export interface IWorkerOpts {
+export interface IRecordeOpts {
   video: {
     width: number;
     height: number;
@@ -28,14 +25,6 @@ export interface IWorkerOpts {
 export interface IStream {
   video?: ReadableStream<VideoFrame>;
   audio?: ReadableStream<AudioData>;
-}
-
-export enum EWorkerMsg {
-  SafeExit = 'SafeExit',
-  Stop = 'Stop',
-  Paused = 'Paused',
-  Start = 'Start',
-  OutputStream = 'OutputStream',
 }
 
 export type TClearFn = () => void;

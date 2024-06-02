@@ -30,13 +30,12 @@ async function start(videoEl: HTMLVideoElement) {
   videoEl.srcObject = mediaStream;
   videoEl.play().catch(console.error);
 
-  recorder = new AVRecorder(recodeMS, {
-    width: 1280,
-    height: 720,
-  });
-  await recorder.start();
+  recorder = new AVRecorder(recodeMS);
 
-  recorder.outputStream?.pipeTo(await createFileWriter()).catch(console.error);
+  recorder
+    .start()
+    .pipeTo(await createFileWriter())
+    .catch(console.error);
 }
 
 export default function UI() {
