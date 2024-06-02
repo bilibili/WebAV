@@ -1,15 +1,9 @@
 import mp4box from '@webav/mp4box.js';
 import { autoReadStream, file2stream, recodemux } from '@webav/av-cliper';
-import { TClearFn, EWorkerMsg, IWorkerOpts } from './types';
+import { TClearFn, IRecordeOpts } from './types';
 
 if (import.meta.env.DEV) {
   mp4box.Log.setLogLevel(mp4box.Log.debug);
-}
-
-enum State {
-  Preparing = 'preparing',
-  Running = 'running',
-  Stopped = 'stopped',
 }
 
 class RecoderPauseCtrl {
@@ -45,7 +39,7 @@ class RecoderPauseCtrl {
     this.#pauseTime = performance.now();
   }
 
-  transfrom(frame: VideoFrame) {
+  transfromVideo(frame: VideoFrame) {
     const now = performance.now();
     const offsetTime = now - this.#offsetTime;
     if (
@@ -71,43 +65,43 @@ class RecoderPauseCtrl {
       opts: { keyFrame: this.#frameCnt % 30 === 0 },
     };
   }
+
+  transformAudio(ad: AudioData) {
+    if (this.#paused) {
+      ad.close();
+      return;
+    }
+    return ad;
+  }
 }
 
-const VIDEO_PAUSE_CTRL = new RecoderPauseCtrl(30);
+export class MP4Muxer {
+  #recoderPauseCtrl = new RecoderPauseCtrl(30);
 
-let STATE = State.Preparing;
-// 当前是否处于暂停状态
-let PAUSED = false;
-
-let clear: TClearFn | null = null;
-self.onmessage = async (evt: MessageEvent) => {
-  const { type, data } = evt.data;
-
-  switch (type) {
-    case EWorkerMsg.Start:
-      if (STATE === State.Preparing) {
-        STATE = State.Running;
-        clear = init(data, () => {
-          STATE = State.Stopped;
-        });
-      }
-      break;
-    case EWorkerMsg.Stop:
-      STATE = State.Stopped;
-      clear?.();
-      self.postMessage({ type: EWorkerMsg.SafeExit });
-      break;
-    case EWorkerMsg.Paused:
-      PAUSED = data;
-      if (data) {
-        VIDEO_PAUSE_CTRL.pause();
-      } else {
-        VIDEO_PAUSE_CTRL.play();
-      }
+  #clear = () => {};
+  start(opts: IRecordeOpts, onCancel: () => void) {
+    const { stream, exit } = recorde(opts, this.#recoderPauseCtrl, onCancel);
+    this.#clear();
+    this.#clear = exit;
+    return stream;
   }
-};
+  stop() {
+    this.#clear();
+  }
 
-function init(opts: IWorkerOpts, onEnded: TClearFn): TClearFn {
+  pause() {
+    this.#recoderPauseCtrl.pause();
+  }
+  resume() {
+    this.#recoderPauseCtrl.play();
+  }
+}
+
+function recorde(
+  opts: IRecordeOpts,
+  ctrl: RecoderPauseCtrl,
+  onEnded: TClearFn,
+) {
   let stopEncodeVideo: TClearFn | null = null;
   let stopEncodeAudio: TClearFn | null = null;
 
@@ -125,7 +119,7 @@ function init(opts: IWorkerOpts, onEnded: TClearFn): TClearFn {
 
       lastVf?.close();
       lastVf = vf;
-      const vfWrap = VIDEO_PAUSE_CTRL.transfrom(vf.clone());
+      const vfWrap = ctrl.transfromVideo(vf.clone());
       if (vfWrap == null) return;
       recoder.encodeVideo(vfWrap.vf, vfWrap.opts);
 
@@ -159,11 +153,12 @@ function init(opts: IWorkerOpts, onEnded: TClearFn): TClearFn {
   if (opts.audio != null && opts.streams.audio != null) {
     stopEncodeAudio = autoReadStream(opts.streams.audio, {
       onChunk: async (ad: AudioData) => {
-        if (stoped || PAUSED) {
+        if (stoped) {
           ad.close();
           return;
         }
-        recoder.encodeAudio(ad);
+        const newAD = ctrl.transformAudio(ad);
+        if (newAD != null) recoder.encodeAudio(ad);
       },
       onDone: () => {},
     });
@@ -177,14 +172,6 @@ function init(opts: IWorkerOpts, onEnded: TClearFn): TClearFn {
       onEnded();
     },
   );
-  self.postMessage(
-    {
-      type: EWorkerMsg.OutputStream,
-      data: stream,
-    },
-    // @ts-expect-error
-    [stream],
-  );
 
   function exit() {
     stoped = true;
@@ -195,5 +182,5 @@ function init(opts: IWorkerOpts, onEnded: TClearFn): TClearFn {
     stopStream();
   }
 
-  return exit;
+  return { exit, stream };
 }

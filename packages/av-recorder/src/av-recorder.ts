@@ -1,6 +1,6 @@
 import { Log, EventTool } from '@webav/av-cliper';
-import MuxMP4Worker from './mux-mp4-worker?worker&inline';
-import { EWorkerMsg, IRecorderConf, IStream, IWorkerOpts } from './types';
+import { IRecorderConf, IStream, IRecordeOpts } from './types';
+import { MP4Muxer } from './mux-mp4';
 
 type TState = 'inactive' | 'recording' | 'paused' | 'stopped';
 export class AVRecorder {
@@ -21,9 +21,12 @@ export class AVRecorder {
 
   #conf: Required<IRecorderConf>;
 
-  #worker: Worker | null = null;
+  #muxer = new MP4Muxer();
 
-  outputStream: ReadableStream<Uint8Array> | null = null;
+  #outputStream: ReadableStream<Uint8Array> | null = null;
+  get outputStream() {
+    return this.#outputStream;
+  }
 
   constructor(inputMediaStream: MediaStream, conf: IRecorderConf = {}) {
     this.#ms = inputMediaStream;
@@ -38,10 +41,9 @@ export class AVRecorder {
     };
   }
 
-  async start(timeSlice: number = 500): Promise<void> {
+  start(timeSlice: number = 500): void {
+    if (this.#state === 'stopped') throw Error('AVRecorder is stopped');
     Log.info('AVRecorder.start recoding');
-    const worker = new MuxMP4Worker();
-    this.#worker = worker;
 
     const streams: IStream = {};
     const videoTrack = this.#ms.getVideoTracks()[0];
@@ -52,7 +54,7 @@ export class AVRecorder {
     }
 
     const audioTrack = this.#ms.getAudioTracks()[0];
-    let audioConf: IWorkerOpts['audio'] | null = null;
+    let audioConf: IRecordeOpts['audio'] | null = null;
     if (audioTrack != null) {
       const setting = audioTrack.getSettings();
       audioConf = {
@@ -70,7 +72,7 @@ export class AVRecorder {
       throw new Error('No available tracks in MediaStream');
     }
 
-    const workerOpts: IWorkerOpts = {
+    const workerOpts: IRecordeOpts = {
       video: {
         width: this.#conf.width,
         height: this.#conf.height,
@@ -83,61 +85,25 @@ export class AVRecorder {
       streams,
     };
 
-    worker.postMessage(
-      {
-        type: EWorkerMsg.Start,
-        data: workerOpts,
-      },
-      Object.values(streams),
-    );
-
-    return await new Promise<void>((resolve) => {
-      worker.addEventListener('message', (evt: MessageEvent) => {
-        const { type, data } = evt.data;
-        switch (type) {
-          case EWorkerMsg.OutputStream:
-            this.#state = 'recording';
-            this.#evtTool.emit('stateChange', this.#state);
-            this.outputStream = data;
-            resolve();
-            break;
-        }
-      });
-    });
+    this.#outputStream = this.#muxer.start(workerOpts, this.stop);
   }
 
   pause(): void {
     this.#state = 'paused';
+    this.#muxer.pause();
     this.#evtTool.emit('stateChange', this.#state);
-    this.#worker?.postMessage({ type: EWorkerMsg.Paused, data: true });
   }
   resume(): void {
+    if (this.#state === 'stopped') throw Error('AVRecorder is stopped');
     this.#state = 'recording';
+    this.#muxer.resume();
     this.#evtTool.emit('stateChange', this.#state);
-    this.#worker?.postMessage({ type: EWorkerMsg.Paused, data: false });
   }
 
   async stop(): Promise<void> {
+    if (this.#state === 'stopped') return;
     this.#state = 'stopped';
-    const worker = this.#worker;
-    if (worker == null) return;
 
-    worker.postMessage({ type: EWorkerMsg.Stop });
-    return await new Promise<void>((resolve) => {
-      worker.addEventListener('message', (evt: MessageEvent) => {
-        const { type } = evt.data;
-        switch (type) {
-          case EWorkerMsg.SafeExit:
-            worker.terminate();
-            this.#ms.getTracks().forEach((track) => {
-              track.stop();
-            });
-            this.outputStream = null;
-            resolve();
-            this.#evtTool.emit('stateChange', this.#state);
-            break;
-        }
-      });
-    });
+    this.#muxer.stop();
   }
 }
