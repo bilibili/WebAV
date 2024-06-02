@@ -41,7 +41,7 @@ const TimelineEditor = ({
 }) => {
   const [scale, setScale] = useState(10);
   const [activeAction, setActiveAction] = useState<TLActionWithName | null>(
-    null,
+    null
   );
   return (
     <div className="">
@@ -166,6 +166,9 @@ function App() {
     cvs.on('paused', () => {
       setPlaying(false);
     });
+    cvs.on('activeSpriteChange', (s: VisibleSprite | null) => {
+      console.log('activeSpriteChange:', s);
+    });
 
     // (async () => {
     //   console.log(44444444);
@@ -213,7 +216,7 @@ function App() {
       tlData
         .filter((it) => it !== track)
         .concat({ ...track })
-        .sort((a, b) => a.id.charCodeAt(0) - b.id.charCodeAt(0)),
+        .sort((a, b) => a.id.charCodeAt(0) - b.id.charCodeAt(0))
     );
     return action;
   }
@@ -225,7 +228,7 @@ function App() {
         className="mx-[10px]"
         onClick={async () => {
           const spr = new VisibleSprite(
-            new MP4Clip((await fetch('./video/bunny_0.mp4')).body!),
+            new MP4Clip((await fetch('./video/bunny_0.mp4')).body!)
           );
           await avCvs?.addSprite(spr);
           addSprite2Track('1-video', spr, '视频');
@@ -237,7 +240,7 @@ function App() {
         className="mx-[10px]"
         onClick={async () => {
           const spr = new VisibleSprite(
-            new AudioClip((await fetch('./audio/16kHz-1chan.mp3')).body!),
+            new AudioClip((await fetch('./audio/16kHz-1chan.mp3')).body!)
           );
           await avCvs?.addSprite(spr);
           addSprite2Track('2-audio', spr, '音频');
@@ -249,7 +252,7 @@ function App() {
         className="mx-[10px]"
         onClick={async () => {
           const spr = new VisibleSprite(
-            new ImgClip((await fetch('./img/bunny.png')).body!),
+            new ImgClip((await fetch('./img/bunny.png')).body!)
           );
           await avCvs?.addSprite(spr);
           addSprite2Track('3-img', spr, '图片');
@@ -264,9 +267,9 @@ function App() {
             new ImgClip(
               await renderTxt2ImgBitmap(
                 '示例文字',
-                'font-size: 80px; color: red;',
-              ),
-            ),
+                'font-size: 80px; color: red;'
+              )
+            )
           );
           await avCvs?.addSprite(spr);
           addSprite2Track('4-text', spr, '文字');
@@ -374,7 +377,7 @@ const root = createRoot(document.getElementById('app')!);
 root.render(<App />);
 
 async function createFileWriter(
-  extName: string,
+  extName: string
 ): Promise<FileSystemWritableFileStream> {
   const fileHandle = await window.showSaveFilePicker({
     suggestedName: `WebAV-export-${Date.now()}.${extName}`,

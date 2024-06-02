@@ -1,7 +1,41 @@
-export class EventTool<
-  T extends Record<P, (...args: any[]) => any> = any,
-  P extends string | number | symbol = keyof T,
-> {
+type EventKey = string | symbol;
+
+type EventToolType = Record<EventKey, (...args: any[]) => any>;
+
+export class EventTool<T extends EventToolType> {
+  /**
+   * 在两个 EventTool 实例间转发消息
+   * @param from
+   * @param to
+   * @param evtTypes 需转发的消息类型
+   * @returns
+   */
+  static forwardEvent<
+    T1 extends EventToolType,
+    T2 extends EventToolType,
+    EvtType extends (keyof T1 | [keyof T1, keyof T2])[]
+  >(
+    from: { on: EventTool<T1>['on'] },
+    to: { emit: EventTool<T2>['emit'] },
+    // 转发的事件名，如果 evtTypes 为序对（元组）表示事件名称需要映射
+    evtTypes: EvtType
+  ): () => void {
+    const removeHandlers = evtTypes.map((evtType) => {
+      const [fromEvtType, toEvtType] = (
+        Array.isArray(evtType) ? evtType : [evtType, evtType]
+      ) as [keyof T1, keyof T2];
+
+      // @ts-expect-error
+      return from.on(fromEvtType, (...args) => {
+        // @ts-expect-error
+        to.emit(toEvtType, ...args);
+      });
+    });
+    return () => {
+      removeHandlers.forEach((fn) => fn());
+    };
+  }
+
   #listeners = new Map<keyof T, Set<T[keyof T]>>();
 
   /**
@@ -29,7 +63,7 @@ export class EventTool<
    */
   once = <Type extends keyof T>(
     type: Type,
-    listener: T[Type],
+    listener: T[Type]
   ): (() => void) => {
     // @ts-ignore
     const off = this.on(type, (...args) => {
@@ -51,8 +85,8 @@ export class EventTool<
     ...args: Type extends string
       ? T[Type] extends (...args: any[]) => any
         ? Parameters<T[Type]>
-        : any[]
-      : any[]
+        : never
+      : never
   ): void => {
     const handlers = this.#listeners.get(type);
     if (handlers == null) return;
