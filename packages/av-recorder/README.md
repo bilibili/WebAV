@@ -8,4 +8,4 @@ Record MediaStream to MP4, Use Webcodecs API encode VideoFrame and AudioData, [m
 Record camera & microphone, save data to MP4 file.  
 录制摄像头和麦克风，保存为 MP4 文件。
 
-<https://hughfenghen.github.io/WebAV/demo/4_1-recorder-usermedia>
+<https://bilibili.github.io/WebAV/demo/4_1-recorder-usermedia>
