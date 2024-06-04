@@ -22,7 +22,7 @@ import { tmpfile, write } from 'opfs-tools';
 
 type TCleanFn = () => void;
 
-interface IWorkerOpts {
+interface IRecodeMuxOpts {
   video: {
     width: number;
     height: number;
@@ -37,7 +37,7 @@ interface IWorkerOpts {
   } | null;
 }
 
-export function recodemux(opts: IWorkerOpts): {
+export function recodemux(opts: IRecodeMuxOpts): {
   encodeVideo: (frame: VideoFrame, options?: VideoEncoderEncodeOptions) => void;
   encodeAudio: (data: AudioData) => void;
   close: TCleanFn;
@@ -92,7 +92,7 @@ export function recodemux(opts: IWorkerOpts): {
 }
 
 function encodeVideoTrack(
-  opts: NonNullable<IWorkerOpts['video']>,
+  opts: NonNullable<IRecodeMuxOpts['video']>,
   mp4File: MP4File,
   avSyncEvtTool: EventTool<Record<'VideoReady' | 'AudioReady', () => void>>,
 ): VideoEncoder {
@@ -137,7 +137,7 @@ function encodeVideoTrack(
 }
 
 function createVideoEncoder(
-  videoOpts: NonNullable<IWorkerOpts['video']>,
+  videoOpts: NonNullable<IRecodeMuxOpts['video']>,
   outHandler: EncodedVideoChunkOutputCallback,
 ): VideoEncoder {
   const encoder = new VideoEncoder({
@@ -164,7 +164,7 @@ function createVideoEncoder(
 }
 
 function encodeAudioTrack(
-  audioOpts: NonNullable<IWorkerOpts['audio']>,
+  audioOpts: NonNullable<IRecodeMuxOpts['audio']>,
   mp4File: MP4File,
   avSyncEvtTool: EventTool<Record<'VideoReady' | 'AudioReady', () => void>>,
 ): AudioEncoder {
