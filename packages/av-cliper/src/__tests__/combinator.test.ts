@@ -1,10 +1,11 @@
 import { test, expect } from 'vitest';
 import { OffscreenSprite } from '../sprite/offscreen-sprite';
-import { AudioClip, IClip, MP4Clip } from '../clips';
+import { AudioClip, IClip, ImgClip, MP4Clip } from '../clips';
 import { Combinator } from '../combinator';
 
 const m4a_44kHz_2chan = `//${location.host}/audio/44.1kHz-2chan.m4a`;
 const mp3_16kHz_1chan = `//${location.host}/audio/16kHz-1chan.mp3`;
+const png_bunny = `//${location.host}/img/bunny.png`;
 
 test('Combinator ouput m4a', async () => {
   const resp1 = await fetch(m4a_44kHz_2chan);
@@ -13,15 +14,15 @@ test('Combinator ouput m4a', async () => {
   const spr2 = new OffscreenSprite(new AudioClip(resp2.body!));
 
   const com = new Combinator();
-  spr1.time = { offset: 0, duration: 5e6 };
-  spr2.time = { offset: 0, duration: 4e6 };
+  spr1.time = { offset: 0, duration: 1e6 };
+  spr2.time = { offset: 0, duration: 1e6 };
   await com.addSprite(spr1);
   await com.addSprite(spr2);
 
   const mp4Clip = new MP4Clip(com.output());
   await mp4Clip.ready;
   expect(mp4Clip.meta).toEqual({
-    duration: 5098666,
+    duration: 1088000,
     width: 0,
     height: 0,
     audioSampleRate: 48000,
@@ -50,4 +51,23 @@ test('Combinator.output throw an error', async () => {
   expect(async () => {
     await reader.read();
   }).rejects.toThrowError('xxx');
+});
+
+test('Combinator ouput exclude audio track', async () => {
+  const resp1 = await fetch(png_bunny);
+  const spr1 = new OffscreenSprite(new ImgClip(resp1.body!));
+
+  const com = new Combinator({ width: 900, height: 500, audio: false });
+  spr1.time = { offset: 0, duration: 1e6 };
+  await com.addSprite(spr1);
+
+  const mp4Clip = new MP4Clip(com.output());
+  await mp4Clip.ready;
+  expect(mp4Clip.meta).toEqual({
+    duration: 1023000,
+    width: 900,
+    height: 500,
+    audioSampleRate: 0,
+    audioChanCount: 0,
+  });
 });

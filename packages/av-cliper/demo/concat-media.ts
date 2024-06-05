@@ -68,6 +68,7 @@ document.querySelector('#mp4-img')?.addEventListener('click', () => {
       height: 720,
       videoCodec: 'avc1.42E032',
       bgColor: 'white',
+      // audio: false,
     });
 
     await com.addSprite(spr1, { main: true });

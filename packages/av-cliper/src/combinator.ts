@@ -11,6 +11,10 @@ interface ICombinatorOpts {
   bitrate?: number;
   bgColor?: string;
   videoCodec?: string;
+  /**
+   * false 合成的视频文件中排除音轨
+   */
+  audio?: false;
 }
 
 let COM_ID = 0;
@@ -121,11 +125,14 @@ export class Combinator {
             bitrate: opts.bitrate ?? 5_000_000,
           }
         : null,
-      audio: {
-        codec: 'aac',
-        sampleRate: DEFAULT_AUDIO_CONF.sampleRate,
-        channelCount: DEFAULT_AUDIO_CONF.channelCount,
-      },
+      audio:
+        opts.audio === false
+          ? null
+          : {
+              codec: 'aac',
+              sampleRate: DEFAULT_AUDIO_CONF.sampleRate,
+              channelCount: DEFAULT_AUDIO_CONF.channelCount,
+            },
     });
 
     TOTAL_COM_ENCODE_QSIZE.set(this, this.#remux.getEecodeQueueSize);
@@ -288,27 +295,29 @@ export class Combinator {
 
         if (stoped) return;
 
-        if (audios.flat().every((a) => a.length === 0)) {
-          // 当前时刻无音频时，使用无声音频占位，否则会导致后续音频播放时间偏差
-          this.#remux.encodeAudio(
-            createAudioPlaceholder(
-              ts,
-              timeSlice,
-              DEFAULT_AUDIO_CONF.sampleRate,
-            ),
-          );
-        } else {
-          const data = mixinPCM(audios);
-          this.#remux.encodeAudio(
-            new AudioData({
-              timestamp: ts,
-              numberOfChannels: DEFAULT_AUDIO_CONF.channelCount,
-              numberOfFrames: data.length / DEFAULT_AUDIO_CONF.channelCount,
-              sampleRate: DEFAULT_AUDIO_CONF.sampleRate,
-              format: 'f32-planar',
-              data,
-            }),
-          );
+        if (this.#opts.audio !== false) {
+          if (audios.flat().every((a) => a.length === 0)) {
+            // 当前时刻无音频时，使用无声音频占位，否则会导致后续音频播放时间偏差
+            this.#remux.encodeAudio(
+              createAudioPlaceholder(
+                ts,
+                timeSlice,
+                DEFAULT_AUDIO_CONF.sampleRate,
+              ),
+            );
+          } else {
+            const data = mixinPCM(audios);
+            this.#remux.encodeAudio(
+              new AudioData({
+                timestamp: ts,
+                numberOfChannels: DEFAULT_AUDIO_CONF.channelCount,
+                numberOfFrames: data.length / DEFAULT_AUDIO_CONF.channelCount,
+                sampleRate: DEFAULT_AUDIO_CONF.sampleRate,
+                format: 'f32-planar',
+                data,
+              }),
+            );
+          }
         }
 
         if (this.#hasVideoTrack) {
