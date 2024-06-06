@@ -513,14 +513,14 @@ async function parseMP4Stream(
         } else if (chunkType === 'samples') {
           if (data.type === 'video') {
             if (videoDeltaTS === -1) videoDeltaTS = data.samples[0].dts;
-            videoSamples = videoSamples.concat(
-              data.samples.map((s) => normalizeTimescale(s, videoDeltaTS)),
-            );
+            for (const s of data.samples) {
+              videoSamples.push(normalizeTimescale(s, videoDeltaTS));
+            }
           } else if (data.type === 'audio' && opts.audio) {
             if (audioDeltaTS === -1) audioDeltaTS = data.samples[0].dts;
-            audioSamples = audioSamples.concat(
-              data.samples.map((s) => normalizeTimescale(s, audioDeltaTS)),
-            );
+            for (const s of data.samples) {
+              audioSamples.push(normalizeTimescale(s, audioDeltaTS));
+            }
           }
           // todo: release in SampleTransform
           releasedCnt[data.type] += data.samples.length;
@@ -535,6 +535,11 @@ async function parseMP4Stream(
         } else if (lastSampele == null) {
           reject(Error('MP4Clip stream not contain any sample'));
           return;
+        }
+        // 修复首帧黑帧
+        const firstSample = videoSamples[0];
+        if (firstSample != null && firstSample.cts < 100e3) {
+          firstSample.cts = 0;
         }
         Log.info('mp4 stream parsed');
         resolve({
