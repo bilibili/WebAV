@@ -122,6 +122,6 @@ function parseAudioInfo4ESDSBox(esds: ESDSBoxParser) {
   ] as const;
   return {
     sampleRate: sampleRateEnum[sampleRateIdx],
-    numberOfChannels: numberOfChannels,
+    numberOfChannels,
   };
 }
