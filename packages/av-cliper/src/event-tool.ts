@@ -13,12 +13,12 @@ export class EventTool<T extends EventToolType> {
   static forwardEvent<
     T1 extends EventToolType,
     T2 extends EventToolType,
-    EvtType extends (keyof T1 | [keyof T1, keyof T2])[]
+    EvtType extends (keyof T1 | [keyof T1, keyof T2])[],
   >(
     from: { on: EventTool<T1>['on'] },
     to: { emit: EventTool<T2>['emit'] },
     // 转发的事件名，如果 evtTypes 为序对（元组）表示事件名称需要映射
-    evtTypes: EvtType
+    evtTypes: EvtType,
   ): () => void {
     const removeHandlers = evtTypes.map((evtType) => {
       const [fromEvtType, toEvtType] = (
@@ -63,7 +63,7 @@ export class EventTool<T extends EventToolType> {
    */
   once = <Type extends keyof T>(
     type: Type,
-    listener: T[Type]
+    listener: T[Type],
   ): (() => void) => {
     // @ts-ignore
     const off = this.on(type, (...args) => {

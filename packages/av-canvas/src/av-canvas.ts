@@ -54,7 +54,7 @@ export class AVCanvas {
     attchEl: HTMLElement,
     opts: {
       bgColor: string;
-    } & IResolution
+    } & IResolution,
   ) {
     this.#opts = opts;
     this.#cvsEl = createInitCvsEl(opts);
@@ -87,7 +87,7 @@ export class AVCanvas {
       }),
       EventTool.forwardEvent(this.#spriteManager, this.#evtTool, [
         ESpriteManagerEvt.ActiveSpriteChange,
-      ])
+      ]),
     );
 
     let lastRenderTime = this.#renderTime;
@@ -162,7 +162,7 @@ export class AVCanvas {
       const audioSource = renderPCM(
         mixinPCM(audios),
         curAudioTime,
-        this.#audioCtx
+        this.#audioCtx,
       );
       if (audioSource != null) {
         this.#playingAudioCache.add(audioSource);
@@ -191,11 +191,11 @@ export class AVCanvas {
       Math.max(
         ...this.#spriteManager
           .getSprites({ time: false })
-          .map((s) => s.time.offset + s.time.duration)
+          .map((s) => s.time.offset + s.time.duration),
       );
     if (!Number.isFinite(end) || opts.start >= end || opts.start < 0) {
       throw Error(
-        `Invalid time parameter, ${JSON.stringify({ start: opts.start, end })}`
+        `Invalid time parameter, ${JSON.stringify({ start: opts.start, end })}`,
       );
     }
 
@@ -252,7 +252,7 @@ export class AVCanvas {
       });
     Log.info(
       'AVCanvas.captureStream, tracks:',
-      ms.getTracks().map((t) => t.kind)
+      ms.getTracks().map((t) => t.kind),
     );
     return ms;
   }
@@ -291,7 +291,7 @@ function renderPCM(pcm: Float32Array, at: number, ctx: AudioContext) {
  */
 function dynamicCusor(
   cvsEl: HTMLCanvasElement,
-  sprMng: SpriteManager
+  sprMng: SpriteManager,
 ): () => void {
   const cvsRatio = {
     w: cvsEl.clientWidth / cvsEl.width,
@@ -348,7 +348,7 @@ function dynamicCusor(
     const ofy = offsetY / cvsRatio.h;
     const [ctrlKey] =
       (Object.entries(actSpr.rect.ctrls).find(([, rect]) =>
-        rect.checkHit(ofx, ofy)
+        rect.checkHit(ofx, ofy),
       ) as [TCtrlKey, Rect]) ?? [];
 
     if (ctrlKey != null) {

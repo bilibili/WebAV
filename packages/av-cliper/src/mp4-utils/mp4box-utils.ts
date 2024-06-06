@@ -22,8 +22,8 @@ export function extractFileConfig(file: MP4File, info: MP4Info) {
     const { descKey, type } = vTrack.codec.startsWith('avc1')
       ? { descKey: 'avcDecoderConfigRecord', type: 'avc1' }
       : vTrack.codec.startsWith('hvc1')
-      ? { descKey: 'hevcDecoderConfigRecord', type: 'hvc1' }
-      : { descKey: '', type: '' };
+        ? { descKey: 'hevcDecoderConfigRecord', type: 'hvc1' }
+        : { descKey: '', type: '' };
     if (descKey !== '') {
       rs.videoTrackConf = {
         timescale: vTrack.timescale,
@@ -76,7 +76,7 @@ function parseVideoCodecDesc(track: TrakBoxParser): Uint8Array {
       const stream = new mp4box.DataStream(
         undefined,
         0,
-        mp4box.DataStream.BIG_ENDIAN
+        mp4box.DataStream.BIG_ENDIAN,
       );
       box.write(stream);
       return new Uint8Array(stream.buffer.slice(8)); // Remove the box header.
