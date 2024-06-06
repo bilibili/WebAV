@@ -103,6 +103,7 @@ function encodeVideoTrack(
     height: opts.height,
     brands: ['isom', 'iso2', 'avc1', 'mp42', 'mp41'],
     avcDecoderConfigRecord: null as ArrayBuffer | undefined | null,
+    name: 'Track created with WebAV',
   };
 
   let trackId = -1;
@@ -174,6 +175,7 @@ function encodeAudioTrack(
     channel_count: audioOpts.channelCount,
     hdlr: 'soun',
     type: audioOpts.codec === 'aac' ? 'mp4a' : 'Opus',
+    name: 'Track created with WebAV',
   };
 
   let trackId = -1;
