@@ -4,7 +4,6 @@ import mp4box, {
   MP4Info,
   MP4Sample,
 } from '@webav/mp4box.js';
-import { sleep } from '../av-utils';
 
 /**
  * 将原始字节流转换成 MP4Sample 流
@@ -27,7 +26,6 @@ export class SampleTransform {
 
   constructor() {
     const file = mp4box.createFile();
-    let outCtrlDesiredSize = 0;
     let streamCancelled = false;
     this.readable = new ReadableStream(
       {
@@ -50,15 +48,11 @@ export class SampleTransform {
               chunkType: 'samples',
               data: { id, type, samples },
             });
-            outCtrlDesiredSize = ctrl.desiredSize ?? 0;
           };
 
           file.onFlush = () => {
             ctrl.close();
           };
-        },
-        pull: (ctrl) => {
-          outCtrlDesiredSize = ctrl.desiredSize ?? 0;
         },
         cancel: () => {
           file.stop();
@@ -82,9 +76,6 @@ export class SampleTransform {
         inputBuf.fileStart = this.#inputBufOffset;
         this.#inputBufOffset += inputBuf.byteLength;
         file.appendBuffer(inputBuf);
-
-        // 等待输出的数据被消费
-        while (outCtrlDesiredSize < 0) await sleep(50);
       },
       close: () => {
         file.flush();
