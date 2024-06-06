@@ -1,5 +1,6 @@
 import mp4box, {
   AudioTrackOpts,
+  ESDSBoxParser,
   MP4ABoxParser,
   MP4File,
   MP4Info,
@@ -21,8 +22,8 @@ export function extractFileConfig(file: MP4File, info: MP4Info) {
     const { descKey, type } = vTrack.codec.startsWith('avc1')
       ? { descKey: 'avcDecoderConfigRecord', type: 'avc1' }
       : vTrack.codec.startsWith('hvc1')
-        ? { descKey: 'hevcDecoderConfigRecord', type: 'hvc1' }
-        : { descKey: '', type: '' };
+      ? { descKey: 'hevcDecoderConfigRecord', type: 'hvc1' }
+      : { descKey: '', type: '' };
     if (descKey !== '') {
       rs.videoTrackConf = {
         timescale: vTrack.timescale,
@@ -45,6 +46,7 @@ export function extractFileConfig(file: MP4File, info: MP4Info) {
 
   const aTrack = info.audioTracks[0];
   if (aTrack != null) {
+    const esdsBox = getESDSBoxFromMP4File(file);
     rs.audioTrackConf = {
       timescale: aTrack.timescale,
       samplerate: aTrack.audio.sample_rate,
@@ -59,6 +61,7 @@ export function extractFileConfig(file: MP4File, info: MP4Info) {
         : aTrack.codec,
       numberOfChannels: aTrack.audio.channel_count,
       sampleRate: aTrack.audio.sample_rate,
+      ...(esdsBox == null ? {} : parseAudioInfo4ESDSBox(esdsBox)),
     };
   }
   return rs;
@@ -73,7 +76,7 @@ function parseVideoCodecDesc(track: TrakBoxParser): Uint8Array {
       const stream = new mp4box.DataStream(
         undefined,
         0,
-        mp4box.DataStream.BIG_ENDIAN,
+        mp4box.DataStream.BIG_ENDIAN
       );
       box.write(stream);
       return new Uint8Array(stream.buffer.slice(8)); // Remove the box header.
@@ -103,5 +106,22 @@ export function sample2ChunkOpts(s: {
     timestamp: (1e6 * s.cts) / s.timescale,
     duration: (1e6 * s.duration) / s.timescale,
     data: s.data,
+  };
+}
+
+// 解决封装层音频信息标识错误，导致解码异常
+function parseAudioInfo4ESDSBox(esds: ESDSBoxParser) {
+  const [byte1, byte2] = esds.esd.descs[0].descs[0].data;
+  // sampleRate 是第一字节后 3bit + 第二字节前 1bit
+  const sampleRateIdx = ((byte1 & 0x07) << 1) + (byte2 >> 7);
+  // numberOfChannels 是第二字节 [2, 5] 4bit
+  const numberOfChannels = (byte2 & 0x7f) >> 3;
+  const sampleRateEnum = [
+    96000, 88200, 64000, 48000, 44100, 32000, 24000, 22050, 16000, 12000, 11025,
+    8000, 7350,
+  ] as const;
+  return {
+    sampleRate: sampleRateEnum[sampleRateIdx],
+    numberOfChannels: numberOfChannels,
   };
 }

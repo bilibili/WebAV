@@ -57,7 +57,7 @@ declare module '@webav/mp4box.js' {
       size?: number | ArrayBufferView,
       byteOffset?: number,
       // @ts-expect-error
-      endianness?: DataStream.BIG_ENDIAN | DataStream.END_ENDIAN,
+      endianness?: DataStream.BIG_ENDIAN | DataStream.END_ENDIAN
     ): DataStream;
   };
 
@@ -158,9 +158,20 @@ declare module '@webav/mp4box.js' {
 
   interface ESDBoxParser extends BoxParser {
     tag: number;
+    descs: [DecoderConfigDescriptor, SLConfigDescriptor];
   }
 
-  interface ESDSBoxParser extends BoxParser {
+  interface DecoderConfigDescriptor {
+    descs: [DecoderSpecificInfo];
+  }
+  interface DecoderSpecificInfo {
+    data: Uint8ArrayBuffer;
+  }
+  interface SLConfigDescriptor {
+    data: Uint8ArrayBuffer;
+  }
+
+  export interface ESDSBoxParser extends BoxParser {
     type: 'esds';
     version: number;
     flags: number;
@@ -258,7 +269,7 @@ declare module '@webav/mp4box.js' {
       opts?: {
         nbSamples?: number;
         rapAlignement?: boolean;
-      },
+      }
     ) => void;
 
     onMoovStart?: () => void;
