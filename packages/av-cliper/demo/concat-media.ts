@@ -321,7 +321,7 @@ document.querySelector('#complex')?.addEventListener('click', () => {
 document.querySelector('#test-mem-cost')?.addEventListener('click', () => {
   (async () => {
     {
-      const resURL = './video/pri-test1.mp4';
+      const resURL = './video/pri-linglong.mp4';
       const { loadStream } = playOutputStream([resURL], playerContiner);
 
       const spr1 = new OffscreenSprite(
@@ -334,6 +334,13 @@ document.querySelector('#test-mem-cost')?.addEventListener('click', () => {
       );
       spr2.rect.w = 1280;
       spr2.rect.h = 720;
+      spr2.time.offset = 60e6;
+      const spr3 = new OffscreenSprite(
+        new MP4Clip((await fetch(resURL)).body!),
+      );
+      spr3.rect.w = 1280;
+      spr3.rect.h = 720;
+      spr3.time.offset = 120e6;
 
       const com = new Combinator({
         width: 1280,
@@ -344,6 +351,7 @@ document.querySelector('#test-mem-cost')?.addEventListener('click', () => {
 
       await com.addSprite(spr1);
       await com.addSprite(spr2);
+      await com.addSprite(spr3);
 
       await loadStream(com.output(), com);
     }

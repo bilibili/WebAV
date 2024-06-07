@@ -41,7 +41,6 @@ export async function createHLSLoader(m3u8URL: string) {
         for (let i = 0; i < gData.length; i++) {
           const seg = gData[i];
           time += seg.duration;
-          // todo: find last key frame
           if (startIdx === -1 && time > expectStartTime / 1e6) {
             startIdx = i;
             actualStartTime = (time - seg.duration) * 1e6;

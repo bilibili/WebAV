@@ -483,7 +483,6 @@ async function parseMP4Stream(
     let videoDeltaTS = -1;
     let audioDeltaTS = -1;
     let mp4boxFile: MP4File | null = null;
-    const releasedCnt = { video: 0, audio: 0 };
     const stopRead = autoReadStream(source.pipeThrough(new SampleTransform()), {
       onChunk: async ({ chunkType, data }) => {
         if (chunkType === 'ready') {
@@ -522,9 +521,6 @@ async function parseMP4Stream(
               audioSamples.push(normalizeTimescale(s, audioDeltaTS));
             }
           }
-          // todo: release in SampleTransform
-          releasedCnt[data.type] += data.samples.length;
-          mp4boxFile?.releaseUsedSamples(data.id, releasedCnt[data.type]);
         }
       },
       onDone: () => {

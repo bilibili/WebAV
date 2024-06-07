@@ -103,7 +103,6 @@ export abstract class BaseSprite {
       time < this.#animatOpts.delay
     )
       return;
-    // todo: delay, other timing-function
     const updateProps = linearTimeFn(
       time,
       this.#animatKeyFrame,

@@ -508,7 +508,7 @@ async function concatStreamsToMP4BoxFile(
               aTrackId = outfile.addTrack(audioTrackConf);
             }
           } else if (chunkType === 'samples') {
-            const { id: curId, type, samples } = data;
+            const { type, samples } = data;
             const trackId = type === 'video' ? vTrackId : aTrackId;
             const offsetDTS = type === 'video' ? vDTS : aDTS;
             const offsetCTS = type === 'video' ? vCTS : aCTS;
@@ -521,8 +521,6 @@ async function concatStreamsToMP4BoxFile(
                 is_sync: s.is_sync,
               });
             });
-            // todo: release in SampleTransform
-            curFile?.releaseUsedSamples(curId, samples.length);
 
             const lastSamp = samples.at(-1);
             if (lastSamp == null) return;

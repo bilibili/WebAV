@@ -43,11 +43,14 @@ export class SampleTransform {
             file.start();
           };
 
+          const releasedCnt: Record<number, number> = {};
           file.onSamples = (id, type, samples) => {
             ctrl.enqueue({
               chunkType: 'samples',
-              data: { id, type, samples },
+              data: { id, type, samples: samples.map((s) => ({ ...s })) },
             });
+            releasedCnt[id] = (releasedCnt[id] ?? 0) + samples.length;
+            file.releaseUsedSamples(id, releasedCnt[id]);
           };
 
           file.onFlush = () => {
