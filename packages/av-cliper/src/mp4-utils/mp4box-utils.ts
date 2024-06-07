@@ -125,3 +125,16 @@ function parseAudioInfo4ESDSBox(esds: ESDSBoxParser) {
     numberOfChannels,
   };
 }
+
+/**
+ * 强行回收 mp4boxfile 尽量降低内存占用，会破坏 file 导致无法正常使用
+ * 仅用于获取二进制后，不再需要任何 file 功能的场景
+ */
+export function unsafeReleaseMP4BoxFile(file: MP4File) {
+  if (file.moov == null) return;
+  for (var j = 0; j < file.moov.traks.length; j++) {
+    file.moov.traks[j].samples = [];
+  }
+  file.mdats = [];
+  file.moofs = [];
+}
