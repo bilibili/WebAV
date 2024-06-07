@@ -491,7 +491,6 @@ async function concatStreamsToMP4BoxFile(
   let lastASamp: any = null;
   for (const stream of streams) {
     await new Promise<void>(async (resolve) => {
-      let curFile: MP4File | null = null;
       autoReadStream(stream.pipeThrough(new SampleTransform()), {
         onDone: resolve,
         onChunk: async ({ chunkType, data }) => {
@@ -500,7 +499,6 @@ async function concatStreamsToMP4BoxFile(
               data.file,
               data.info,
             );
-            curFile = data.file;
             if (vTrackId === 0 && videoTrackConf != null) {
               vTrackId = outfile.addTrack(videoTrackConf);
             }
