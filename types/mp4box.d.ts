@@ -57,7 +57,7 @@ declare module '@webav/mp4box.js' {
       size?: number | ArrayBufferView,
       byteOffset?: number,
       // @ts-expect-error
-      endianness?: DataStream.BIG_ENDIAN | DataStream.END_ENDIAN
+      endianness?: DataStream.BIG_ENDIAN | DataStream.END_ENDIAN,
     ): DataStream;
   };
 
@@ -162,7 +162,7 @@ declare module '@webav/mp4box.js' {
   }
 
   interface DecoderConfigDescriptor {
-    descs: [DecoderSpecificInfo];
+    descs: [DecoderSpecificInfo] | [];
   }
   interface DecoderSpecificInfo {
     data: Uint8ArrayBuffer;
@@ -269,7 +269,7 @@ declare module '@webav/mp4box.js' {
       opts?: {
         nbSamples?: number;
         rapAlignement?: boolean;
-      }
+      },
     ) => void;
 
     onMoovStart?: () => void;

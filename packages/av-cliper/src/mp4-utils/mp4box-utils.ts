@@ -111,7 +111,10 @@ export function sample2ChunkOpts(s: {
 
 // 解决封装层音频信息标识错误，导致解码异常
 function parseAudioInfo4ESDSBox(esds: ESDSBoxParser) {
-  const [byte1, byte2] = esds.esd.descs[0].descs[0].data;
+  const decoderConf = esds.esd.descs[0]?.descs[0];
+  if (decoderConf == null) return {};
+
+  const [byte1, byte2] = decoderConf.data;
   // sampleRate 是第一字节后 3bit + 第二字节前 1bit
   const sampleRateIdx = ((byte1 & 0x07) << 1) + (byte2 >> 7);
   // numberOfChannels 是第二字节 [2, 5] 4bit
