@@ -1,4 +1,4 @@
-import { MP4File, MP4Info, MP4Sample } from '@webav/mp4box.js';
+import { MP4Info, MP4Sample } from '@webav/mp4box.js';
 import {
   audioResample,
   autoReadStream,
@@ -482,7 +482,6 @@ async function parseMP4Stream(
   }>(async (resolve, reject) => {
     let videoDeltaTS = -1;
     let audioDeltaTS = -1;
-    let mp4boxFile: MP4File | null = null;
     const stopRead = autoReadStream(source.pipeThrough(new SampleTransform()), {
       onChunk: async ({ chunkType, data }) => {
         if (chunkType === 'ready') {
@@ -508,7 +507,6 @@ async function parseMP4Stream(
             },
             decoderConf,
           );
-          mp4boxFile = data.file;
         } else if (chunkType === 'samples') {
           if (data.type === 'video') {
             if (videoDeltaTS === -1) videoDeltaTS = data.samples[0].dts;
