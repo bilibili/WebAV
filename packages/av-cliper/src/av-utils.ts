@@ -45,14 +45,44 @@ export function concatPCMFragments(
  * 从 AudioData 中提取 PCM 数据
  */
 export function extractPCM4AudioData(ad: AudioData): Float32Array[] {
-  return Array(ad.numberOfChannels)
-    .fill(0)
-    .map((_, idx) => {
+  if (ad.format === 'f32-planar') {
+    const rs = [];
+    for (let idx = 0; idx < ad.numberOfChannels; idx += 1) {
       const chanBufSize = ad.allocationSize({ planeIndex: idx });
       const chanBuf = new ArrayBuffer(chanBufSize);
       ad.copyTo(chanBuf, { planeIndex: idx });
-      return new Float32Array(chanBuf);
-    });
+      rs.push(new Float32Array(chanBuf));
+    }
+    return rs;
+  } else if (ad.format === 's16') {
+    const buf = new ArrayBuffer(ad.allocationSize({ planeIndex: 0 }));
+    ad.copyTo(buf, { planeIndex: 0 });
+    return convertS16ToF32Planar(new Int16Array(buf), ad.numberOfChannels);
+  }
+  throw Error('Unsupported audio data format');
+}
+
+/**
+ * Convert s16 PCM to f32-planar
+ * @param  pcmS16Data - The s16 PCM data.
+ * @param  numChannels - Number of audio channels.
+ * @returns An array of Float32Array, each containing the audio data for one channel.
+ */
+function convertS16ToF32Planar(pcmS16Data: Int16Array, numChannels: number) {
+  const numSamples = pcmS16Data.length / numChannels;
+  const planarData = Array.from(
+    { length: numChannels },
+    () => new Float32Array(numSamples),
+  );
+
+  for (let i = 0; i < numSamples; i++) {
+    for (let channel = 0; channel < numChannels; channel++) {
+      const sample = pcmS16Data[i * numChannels + channel];
+      planarData[channel][i] = sample / 32768; // Normalize to range [-1.0, 1.0]
+    }
+  }
+
+  return planarData;
 }
 
 /**
