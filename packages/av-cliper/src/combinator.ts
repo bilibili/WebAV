@@ -50,12 +50,12 @@ const encoderIdle = (() => {
 
 /**
  * 视频合成器，它能添加 {@link OffscreenSprite} 在后台快速生成视频，目前仅支持生成 MP4(AVC)格式的视频
+ * @see [DEMO](https://bilibili.github.io/WebAV/demo/2_1-concat-video)
  */
 export class Combinator {
   /**
    * 检测当前设备是否支持 Combinator 运行，通过检测一系列 Web API 的兼容性来判断结果，具体 API 请查看源码
    * @param conf.videoCodec 指定检测特定的视频编码格式，默认 `avc1.42E032`
-   * @returns
    */
   static async isSupported(
     conf = {
