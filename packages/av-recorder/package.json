@@ -24,6 +24,7 @@
     "test:coverage": "vitest run --coverage",
     "build": "vite build && tsc -p build.tsconfig.json --outDir dist",
     "build:api": "typedoc src/av-recorder.ts --tsconfig build.tsconfig.json --out ../../doc-site/public/_api/av-recorder",
+    "build:api:watch": "typedoc src/av-recorder.ts --tsconfig build.tsconfig.json --out ../../doc-site/public/_api/av-recorder --watch",
     "prepublishOnly": "yarn build"
   },
   "files": [
