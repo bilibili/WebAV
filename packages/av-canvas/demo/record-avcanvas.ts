@@ -1,4 +1,4 @@
-import { VisibleSprite, MP4Clip, ImgClip } from '@webav/av-cliper';
+import { VisibleSprite, MediaStreamClip } from '@webav/av-cliper';
 import { AVCanvas } from '../src/index';
 import { AVRecorder } from '@webav/av-recorder';
 
@@ -7,60 +7,26 @@ const avCvs = new AVCanvas(document.querySelector('#app') as HTMLElement, {
   width: 1920,
   height: 1080,
 });
+avCvs.play({ start: 0, end: Infinity });
+avCvs.on('timeupdate', (t) => {
+  // console.log(1111, t);
+});
 
-console.log({ avCvs });
 (async (): Promise<void> => {
   // const is = new ImgSprite('img', 'https://neo-pages.bilibili.com/bbfe/neo/assets/img/neo-pages-overview.48f7bb81.png')
   // await avCvs.spriteManager.addSprite(is)
 })().catch(console.error);
 document.querySelector('#userMedia')?.addEventListener('click', () => {
   (async () => {
-    // const mediaStream = await navigator.mediaDevices.getUserMedia({
-    //   video: true,
-    //   audio: true,
-    // });
-    // const vs = new VideoSprite('userMedia', mediaStream, {
-    //   audioCtx: avCvs.spriteManager.audioCtx,
-    // });
-    // await avCvs.spriteManager.addSprite(vs);
-    const mp4clip1 = new MP4Clip((await fetch('./video/bunny.mp4')).body!);
-    const spr1 = new VisibleSprite(mp4clip1);
-    spr1.time = { offset: 0, duration: 10e6 };
-    await avCvs.addSprite(spr1);
-    const mp4clip2 = new MP4Clip((await fetch('./video/bunny.mp4')).body!);
-    const spr2 = new VisibleSprite(mp4clip2);
-    spr2.time = { offset: 10e6, duration: 10e6 };
-    await avCvs.addSprite(spr2);
-
-    const spr3 = new VisibleSprite(
-      new ImgClip({
-        type: 'image/gif',
-        stream: (await fetch('./img/animated.gif')).body!,
-      }),
+    const spr = new VisibleSprite(
+      new MediaStreamClip(
+        await navigator.mediaDevices.getUserMedia({
+          video: true,
+          audio: true,
+        }),
+      ),
     );
-    await avCvs.addSprite(spr3);
-    await spr3.ready;
-    // 修改空间坐标
-    spr3.rect.x = 300;
-    spr3.rect.y = 300;
-    // 修改时间偏移
-    spr3.time.offset = 4e6;
-    spr3.time.duration = 10e6;
-    setTimeout(() => {
-      // 修改素材层级
-      spr3.zIndex = -1;
-    }, 6000);
-
-    avCvs.play({ start: 0 });
-    avCvs.on('timeupdate', (t) => {
-      // console.log(1111, t);
-    });
-
-    // 预览某时刻图像帧
-    // avCvs.previewFrame(6e6);
-    // 合成导出视频
-    // const com = await avCvs.createCombinator();
-    // com.output().pipeTo(await createFileWriter('mp4'));
+    await avCvs.addSprite(spr);
   })().catch(console.error);
 });
 
@@ -144,13 +110,9 @@ document.querySelector('#startRecod')?.addEventListener('click', () => {
   (async () => {
     const writer = await createFileWriter('mp4');
     recorder = new AVRecorder(avCvs.captureStream(), {
-      width: 1920,
-      height: 1080,
       bitrate: 5e6,
-      audioCodec: 'aac',
     });
-    await recorder.start();
-    recorder.outputStream?.pipeTo(writer).catch(console.error);
+    recorder.start().pipeTo(writer).catch(console.error);
   })().catch(console.error);
 });
 document.querySelector('#stopRecod')?.addEventListener('click', () => {

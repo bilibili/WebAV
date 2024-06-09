@@ -118,10 +118,9 @@ function extractMSSettings(inputMS: MediaStream) {
   }
 
   const audioTrack = inputMS.getAudioTracks()[0];
-  let audioConf: IRecordOpts['audio'] | null = null;
   if (audioTrack != null) {
     Object.assign(settings, audioTrack.getSettings());
-    Log.info('AVRecorder recording audioConf:', audioConf);
+    Log.info('AVRecorder recording audioConf:', settings);
     settings.streams.audio = new MediaStreamTrackProcessor({
       track: audioTrack,
     }).readable;
