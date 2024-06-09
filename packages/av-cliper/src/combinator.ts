@@ -48,9 +48,17 @@ const encoderIdle = (() => {
   };
 })();
 
+/**
+ * 视频合成器，它能添加 {@link OffscreenSprite} 在后台快速生成视频，目前仅支持生成 MP4(AVC)格式的视频
+ */
 export class Combinator {
+  /**
+   * 检测当前设备是否支持 Combinator 运行，通过检测一系列 Web API 的兼容性来判断结果，具体 API 请查看源码
+   * @param conf.videoCodec 指定检测特定的视频编码格式，默认 `avc1.42E032`
+   * @returns
+   */
   static async isSupported(
-    args = {
+    conf = {
       videoCodec: 'avc1.42E032',
     },
   ): Promise<boolean> {
@@ -64,7 +72,7 @@ export class Combinator {
       self.AudioData != null &&
       ((
         await self.VideoEncoder.isConfigSupported({
-          codec: args.videoCodec,
+          codec: conf.videoCodec,
           width: 1280,
           height: 720,
         })
@@ -140,8 +148,11 @@ export class Combinator {
 
   /**
    * 当 opts.main 为 true 的素材时间结束时会终结合并流程；
-   * 比如合并 mp4（main） + mp3 + img， 所有资源可以缺省持续时间（duration）；
-   * mp4（main）时间终点会终结合并流程
+   */
+  /**
+   * 添加 {@link OffscreenSprite}
+   * @param os OffscreenSprite
+   * @param opts 当 main 为 true 对应的 OffscreenSprite 时间结束时会终止合并流程，超过该时间的内容会被丢弃
    */
   async addSprite(
     os: OffscreenSprite,
@@ -159,6 +170,9 @@ export class Combinator {
     this.#sprites.sort((a, b) => a.zIndex - b.zIndex);
   }
 
+  /**
+   * 合成 {@link Combinator.addSprite} {@link OffscreenSprite} ，输出视频文件（MP4）二进制流
+   */
   output(): ReadableStream<Uint8Array> {
     if (this.#sprites.length === 0) throw Error('No clip added');
 
@@ -217,6 +231,9 @@ export class Combinator {
     return stream;
   }
 
+  /**
+   * 销毁当前实例
+   */
   destroy() {
     if (this.#destroyed) return;
     this.#destroyed = true;
