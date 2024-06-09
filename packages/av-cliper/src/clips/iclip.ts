@@ -9,7 +9,7 @@ export interface IClip {
    * @param time 时间，单位 微秒
    */
   tick: (time: number) => Promise<{
-    video?: VideoFrame | ImageBitmap;
+    video?: VideoFrame | ImageBitmap | null;
     audio?: Float32Array[];
     state: 'done' | 'success';
   }>;
