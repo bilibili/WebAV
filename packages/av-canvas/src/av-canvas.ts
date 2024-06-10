@@ -101,7 +101,7 @@ export class AVCanvas {
     container.appendChild(this.#cvsEl);
     attchEl.appendChild(container);
 
-    createEmptyOscillatorNode(this.#audioCtx).connect(this.#captureAudioDest);
+    // createEmptyOscillatorNode(this.#audioCtx).connect(this.#captureAudioDest);
 
     Rect.CTRL_SIZE = 12 / (900 / this.#cvsEl.width);
     this.#spriteManager = new SpriteManager();
@@ -171,8 +171,8 @@ export class AVCanvas {
   }
 
   #audioCtx = new AudioContext();
-  #captureAudioDest = this.#audioCtx.createMediaStreamDestination();
-  // #captureAudioDest = createAudioTrackGen();
+  // #captureAudioDest = this.#audioCtx.createMediaStreamDestination();
+  #captureAudioDest = createAudioTrackGen();
 
   #playingAudioCache: Set<AudioBufferSourceNode> = new Set();
   #render() {
@@ -221,14 +221,20 @@ export class AVCanvas {
         this.#playState.audioPlayAt =
           curAudioTime + (ctxDestADSource.buffer?.duration ?? 0);
       }
-      const renderedADSource = convertPCM2AudioSource(
-        renderedAudioData,
-        this.#audioCtx,
-      );
-      ctxDestADSource?.connect(this.#captureAudioDest);
-      renderedADSource?.start();
-      renderedADSource?.connect(this.#captureAudioDest);
-      // this.#captureAudioDest.write([...ctxDestAudioData, ...renderedAudioData]);
+      // const renderedADSource = convertPCM2AudioSource(
+      //   renderedAudioData,
+      //   this.#audioCtx,
+      // );
+      // if (renderedADSource != null) {
+      //   ctxDestADSource?.connect(this.#captureAudioDest);
+
+      //   renderedADSource.start(curAudioTime);
+      //   renderedADSource.connect(this.#captureAudioDest);
+      //   renderedADSource.onended = () => {
+      //     ctxDestADSource?.disconnect();
+      //   };
+      // }
+      this.#captureAudioDest.write([...ctxDestAudioData, ...renderedAudioData]);
     }
   }
 
@@ -307,8 +313,8 @@ export class AVCanvas {
     this.#destroyed = true;
 
     this.#audioCtx.close();
-    this.#captureAudioDest.disconnect();
-    // this.#captureAudioDest.destroy();
+    // this.#captureAudioDest.disconnect();
+    this.#captureAudioDest.destroy();
     this.#evtTool.destroy();
     this.#stopRender();
     this.#cvsEl.parentElement?.remove();
@@ -330,8 +336,8 @@ export class AVCanvas {
       this.#cvsEl
         .captureStream()
         .getTracks()
-        // .concat(this.#captureAudioDest.getTrack()),
-        .concat(this.#captureAudioDest.stream.getTracks()),
+        .concat(this.#captureAudioDest.getTrack()),
+      // .concat(this.#captureAudioDest.stream.getTracks()),
     );
     Log.info(
       'AVCanvas.captureStream, tracks:',
@@ -364,7 +370,12 @@ function convertPCM2AudioSource(pcmData: Float32Array[][], ctx: AudioContext) {
   if (pcmData.length === 0) return null;
   const [chan0, chan1] = concatPCMFragments(pcmData);
   if (chan0 == null || chan0.length === 0) return null;
-  const buf = ctx.createBuffer(2, chan0.length / 2, 48000);
+  const buf = ctx.createBuffer(
+    2,
+    chan0.length / 2,
+    DEFAULT_AUDIO_CONF.sampleRate,
+  );
+  console.log(5555555, chan0.length / 48000);
   buf.copyToChannel(chan0, 0);
   buf.copyToChannel(chan1, 1);
   const audioSource = ctx.createBufferSource();
@@ -514,32 +525,50 @@ function createAudioTrackGen() {
     ];
 
     // console.log(3333, numberOfFrames, adData.length);
-    adWriter.write(
-      new AudioData({
-        numberOfChannels: 2,
-        sampleRate,
-        numberOfFrames,
-        timestamp: lastTime * 1000,
-        format: 'f32-planar',
-        data: adData,
-      }),
-    );
+    // adWriter.write(
+    //   new AudioData({
+    //     numberOfChannels: 2,
+    //     sampleRate,
+    //     numberOfFrames,
+    //     timestamp: lastTime * 1000,
+    //     format: 'f32-planar',
+    //     data: adData,
+    //   }),
+    // );
     lastTime = now;
   }, 1000 / 30);
   return {
     write: (pcm: Float32Array[][]) => {
       if (pcm.length === 0) return;
-      const mergedByChan = concatPCMFragments(pcm);
-      if (mergedByChan.length === 0) return;
+      console.log(
+        1111,
+        pcm.map((p) => p[0]?.length),
+      );
+      const adData = mixinPCM(pcm);
+      if (adData.length === 0) return;
+      const numberOfFrames = adData.length / 2;
+      adWriter.write(
+        new AudioData({
+          numberOfChannels: 2,
+          sampleRate,
+          numberOfFrames,
+          timestamp: lastTime * 1000,
+          format: 'f32-planar',
+          data: adData,
+        }),
+      );
 
-      audioDataPool[0] = concatFloat32Array([
-        audioDataPool[0],
-        mergedByChan[0],
-      ]);
-      audioDataPool[1] = concatFloat32Array([
-        audioDataPool[1],
-        mergedByChan[1] ?? mergedByChan[0],
-      ]);
+      // const mergedByChan = concatPCMFragments(pcm);
+      // if (mergedByChan.length === 0) return;
+
+      // audioDataPool[0] = concatFloat32Array([
+      //   audioDataPool[0],
+      //   mergedByChan[0],
+      // ]);
+      // audioDataPool[1] = concatFloat32Array([
+      //   audioDataPool[1],
+      //   mergedByChan[1] ?? mergedByChan[0],
+      // ]);
     },
     getTrack: () => gen as MediaStreamAudioTrack,
     destroy: () => {
