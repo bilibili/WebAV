@@ -1,4 +1,4 @@
-import { VisibleSprite, MediaStreamClip } from '@webav/av-cliper';
+import { VisibleSprite, MediaStreamClip, createEl } from '@webav/av-cliper';
 import { AVCanvas } from '../src/index';
 import { AVRecorder } from '@webav/av-recorder';
 
@@ -61,22 +61,29 @@ document.querySelector('#localImg')?.addEventListener('click', () => {
 });
 
 document.querySelector('#localVideo')?.addEventListener('click', () => {
-  // (async () => {
-  //   const [imgFH] = await (window as any).showOpenFilePicker({
-  //     types: [
-  //       {
-  //         description: 'Video',
-  //         accept: {
-  //           'video/*': ['.webm', '.mp4'],
-  //         },
-  //       },
-  //     ],
-  //   });
-  //   const vs = new VideoSprite('vs', await imgFH.getFile(), {
-  //     audioCtx: avCvs.spriteManager.audioCtx,
-  //   });
-  //   await avCvs.spriteManager.addSprite(vs);
-  // })().catch(console.error);
+  (async () => {
+    const [videoFH] = await window.showOpenFilePicker({
+      types: [
+        {
+          description: 'Video',
+          accept: {
+            'video/*': ['.webm', '.mp4'],
+          },
+        },
+      ],
+    });
+    const videoEl = createEl('video') as HTMLVideoElement;
+    videoEl.src = URL.createObjectURL(await videoFH.getFile());
+    videoEl.loop = true;
+    videoEl.autoplay = true;
+    await videoEl.play();
+
+    const spr = new VisibleSprite(
+      // @ts-ignore
+      new MediaStreamClip(videoEl.captureStream()),
+    );
+    await avCvs.addSprite(spr);
+  })().catch(console.error);
 });
 
 document.querySelector('#localAudio')?.addEventListener('click', () => {
@@ -110,6 +117,9 @@ document.querySelector('#startRecod')?.addEventListener('click', () => {
   (async () => {
     const writer = await createFileWriter('mp4');
     recorder = new AVRecorder(avCvs.captureStream(), {
+      // recorder = new AVRecorder(
+      //   await navigator.mediaDevices.getUserMedia({ video: true, audio: true }),
+      // {
       bitrate: 5e6,
     });
     recorder.start().pipeTo(writer).catch(console.error);

@@ -1,5 +1,9 @@
-import { autoReadStream, extractPCM4AudioData } from '../av-utils';
-import { IClip } from './iclip';
+import {
+  autoReadStream,
+  concatFloat32Array,
+  extractPCM4AudioData,
+} from '../av-utils';
+import { DEFAULT_AUDIO_CONF, IClip } from './iclip';
 
 export class MediaStreamClip implements IClip {
   static ctx: AudioContext | null = null;
@@ -11,6 +15,7 @@ export class MediaStreamClip implements IClip {
     duration: 0,
     width: 0,
     height: 0,
+    isRenderedToSpeaker: true,
   };
 
   get meta() {
@@ -23,7 +28,10 @@ export class MediaStreamClip implements IClip {
 
   #ms: MediaStream;
   #cvs: OffscreenCanvas | null = null;
-  #ad: AudioData | null = null;
+  #audioDataPool: [Float32Array, Float32Array] = [
+    new Float32Array(),
+    new Float32Array(),
+  ];
   constructor(ms: MediaStream) {
     this.#ms = ms;
     for (const trak of ms.getTracks()) {
@@ -47,8 +55,21 @@ export class MediaStreamClip implements IClip {
                 ctx?.drawImage(frame, 0, 0);
                 frame.close();
               } else {
-                this.#ad?.close();
-                this.#ad = frame;
+                if (frame.sampleRate !== DEFAULT_AUDIO_CONF.sampleRate) {
+                  throw Error(
+                    `Unsupported audio sampleRate: ${frame.sampleRate}`,
+                  );
+                }
+                const [chan0Buf, chan1Buf] = extractPCM4AudioData(frame);
+                this.#audioDataPool[0] = concatFloat32Array([
+                  this.#audioDataPool[0],
+                  chan0Buf,
+                ]);
+                this.#audioDataPool[1] = concatFloat32Array([
+                  this.#audioDataPool[1],
+                  chan1Buf ?? chan0Buf,
+                ]);
+                frame.close();
               }
             },
             onDone: async () => {},
@@ -65,9 +86,11 @@ export class MediaStreamClip implements IClip {
     audio: Float32Array[];
     state: 'success';
   }> {
+    const audio = this.#audioDataPool;
+    this.#audioDataPool = [new Float32Array(), new Float32Array()];
     return {
       video: this.#cvs == null ? null : await createImageBitmap(this.#cvs),
-      audio: this.#ad == null ? [] : extractPCM4AudioData(this.#ad),
+      audio,
       state: 'success',
     };
   }
