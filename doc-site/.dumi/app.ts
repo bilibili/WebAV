@@ -110,7 +110,6 @@ export default defineConfig({
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
-    "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
     "preview": "vite preview"
   },
   "dependencies": {
@@ -121,12 +120,7 @@ export default defineConfig({
   "devDependencies": {
     "@types/react": "^18.2.66",
     "@types/react-dom": "^18.2.22",
-    "@typescript-eslint/eslint-plugin": "^7.2.0",
-    "@typescript-eslint/parser": "^7.2.0",
     "@vitejs/plugin-react": "^4.2.1",
-    "eslint": "^8.57.0",
-    "eslint-plugin-react-hooks": "^4.6.0",
-    "eslint-plugin-react-refresh": "^0.4.6",
     "typescript": "^5.2.2",
     "esbuild-plugin-react-virtualized": "^1.0.4",
     "postcss": "^8.4.38",
@@ -135,27 +129,7 @@ export default defineConfig({
   }
 }
 `,
-  '.eslintrc.cjs': `
-module.exports = {
-  root: true,
-  env: { browser: true, es2020: true },
-  extends: [
-    'eslint:recommended',
-    'plugin:@typescript-eslint/recommended',
-    'plugin:react-hooks/recommended',
-  ],
-  ignorePatterns: ['dist', '.eslintrc.cjs'],
-  parser: '@typescript-eslint/parser',
-  plugins: ['react-refresh'],
-  rules: {
-    'react-refresh/only-export-components': [
-      'warn',
-      { allowConstantExport: true },
-    ],
-  },
-}
-`,
-'tailwind.config.js': `
+  'tailwind.config.js': `
 module.exports = {
   theme: {},
   variants: {},
@@ -164,11 +138,11 @@ module.exports = {
     './src/**/*.tsx',
   ],
 }`,
-'src/index.css': `
+  'src/index.css': `
   @tailwind components;
   @tailwind utilities;
 `,
-'postcss.config.js': `
+  'postcss.config.js': `
 export default {
   plugins: {
     tailwindcss: {},
