@@ -1,6 +1,5 @@
 import {
   workerTimer,
-  mixinPCM,
   Log,
   Rect,
   TCtrlKey,
@@ -422,29 +421,4 @@ function createEmptyOscillatorNode(ctx: AudioContext) {
   osc.setPeriodicWave(wave);
   osc.start();
   return osc;
-}
-
-function createAudioTrackGen() {
-  const gen = new MediaStreamTrackGenerator({ kind: 'audio' });
-  const adWriter = gen.writable.getWriter();
-
-  return {
-    write: (pcm: Float32Array[][]) => {
-      if (pcm.length === 0) return;
-      const adData = mixinPCM(pcm);
-      if (adData.length === 0) return;
-      const numberOfFrames = adData.length / 2;
-      adWriter.write(
-        new AudioData({
-          numberOfChannels: 2,
-          sampleRate: DEFAULT_AUDIO_CONF.sampleRate,
-          numberOfFrames,
-          timestamp: performance.now() * 1000,
-          format: 'f32-planar',
-          data: adData,
-        }),
-      );
-    },
-    getTrack: () => gen as MediaStreamAudioTrack,
-  };
 }
