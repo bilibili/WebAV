@@ -26,6 +26,31 @@ export class SpriteManager {
     this.#evtTool.emit(ESpriteManagerEvt.ActiveSpriteChange, s);
   }
 
+  /**
+   * 添加 {@link VisibleSprite}
+   * @param args {@link VisibleSprite}
+   * @returns
+   * @example
+   const sprite = new VisibleSprite(
+      new ImgClip({
+        type: 'image/gif',
+        stream: (await fetch('https://xx.gif')).body!,
+      }),
+    );
+   */
+  /**
+   * Adds a {@link VisibleSprite}.
+   * @param vs The VisibleSprite to add.
+   * @returns A promise that resolves when the sprite is added.
+   * @example
+   const sprite = new VisibleSprite(
+      new ImgClip({
+        type: 'image/gif',
+        stream: (await fetch('https://xx.gif')).body!,
+      }),
+    );
+   await avCvs.addSprite(sprite);
+   */
   async addSprite(vs: VisibleSprite): Promise<void> {
     await vs.ready;
     this.#sprites.push(vs);
@@ -38,6 +63,21 @@ export class SpriteManager {
     this.#evtTool.emit(ESpriteManagerEvt.AddSprite, vs);
   }
 
+  /**
+   * 删除 {@link VisibleSprite}
+   * @param args
+   * @returns
+   * @example
+   const sprite = new VisibleSprite();
+   avCvs.removeSprite(sprite);
+   */
+  /**
+   * Removes a {@link VisibleSprite}.
+   * @param spr - The sprite to be removed.
+   * @example
+   const sprite = new VisibleSprite();
+   avCvs.removeSprite(sprite);
+   */
   removeSprite(spr: VisibleSprite): void {
     if (this.#activeSprite === spr) this.activeSprite = null;
     this.#sprites = this.#sprites.filter((s) => s !== spr);

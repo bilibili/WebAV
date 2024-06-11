@@ -28,6 +28,50 @@ function createInitCvsEl(resolution: IResolution): HTMLCanvasElement {
   return cvsEl;
 }
 
+/**
+ *
+ * 可在浏览器环境中快速实现视频剪辑功能，且非常容易集成的直播推流工作台中。
+ * @description
+ * 支持用户添加各种素材，并拖动改变它们的位置：
+  - 添加/删除素材（视频、音频、图片、文字）
+  - 分割（裁剪）素材
+  - 控制素材在视频中的空间属性（坐标、旋转、缩放）
+  - 控制素材在视频中的时间属性（偏移、时长）
+  - 实时预览播放
+  - 纯浏览器环境生成视频
+ * @see [直播录制](https://bilibili.github.io/WebAV/demo/4_2-recorder-avcanvas)
+ * @see [视频剪辑](https://bilibili.github.io/WebAV/demo/4_2-recorder-avcanvas)
+ * @example
+ *
+const avCvs = new AVCanvas(document.querySelector('#app'), {
+    bgColor: '#333',
+    width: 1920,
+    height: 1080,
+});
+ *
+ */
+/**
+ *
+ * A tool that quickly implements video editing features in a browser environment and is very easy to integrate into a live streaming workstation.
+ * @description
+ * Supports users to add various materials and drag to change their positions:
+  - Add/Delete materials (video, audio, image, text)
+  - Split (trim) materials
+  - Control the spatial attributes of the material in the video (coordinates, rotation, scaling)
+  - Control the temporal attributes of the material in the video (offset, duration)
+  - Real-time preview playback
+  - Generate video in a pure browser environment
+ * @see [Live Recording](https://bilibili.github.io/WebAV/demo/4_2-recorder-avcanvas)
+ * @see [Video Editing](https://bilibili.github.io/WebAV/demo/4_2-recorder-avcanvas)
+ * @example
+ *
+const avCvs = new AVCanvas(document.querySelector('#app'), {
+    bgColor: '#333',
+    width: 1920,
+    height: 1080,
+});
+ *
+ */
 export class AVCanvas {
   #cvsEl: HTMLCanvasElement;
 
@@ -50,6 +94,22 @@ export class AVCanvas {
 
   #opts;
 
+  /**
+   * 创建 `AVCanvas` 类的实例。
+   * @param {HTMLElement} attchEl - 要添加画布的元素。
+   * @param {Object} opts - 画布的选项，包括背景颜色和分辨率。
+   * @param {string} opts.bgColor - 画布的背景颜色。
+   * @param {number} opts.width - 画布的宽度。
+   * @param {number} opts.height - 画布的高度。
+   */
+  /**
+   * Creates an instance of the `AVCanvas` class.
+   * @param {HTMLElement} attchEl - The HTML element to attach the canvas to.
+   * @param {Object} opts - The options for the AVCanvas, including the background color and resolution.
+   * @param {string} opts.bgColor - The background color of the canvas.
+   * @param {number} opts.width - The width of the canvas.
+   * @param {number} opts.height - The height of the canvas.
+   */
   constructor(
     attchEl: HTMLElement,
     opts: {
@@ -185,6 +245,25 @@ export class AVCanvas {
     // step: (1000 / 30) * 1000,
     audioPlayAt: 0,
   };
+  /**
+   * 播放 `AVCanvas`
+   * @param {Object} opts - 播放选项
+   * @param {number} opts.start - 开始播放的时间（单位：秒）
+   * @param {number} [opts.end] - 结束播放的时间（单位：秒）。如果未指定，则播放到最后一个精灵的结束时间
+   * @param {number} [opts.playbackRate] - 播放速率。1 表示正常速度，2 表示两倍速度，0.5 表示半速等。如果未指定，则默认为 1
+   * @throws {Error} 如果开始时间不是有限数、大于等于结束时间或小于 0，则抛出错误
+   */
+  /**
+   * Plays the `AVCanvas` from the specified start time to the optional end time,
+   * with an optional playback rate.
+   *
+   * @param opts - The options for playback.
+   * @param opts.start - The start time in milliseconds.
+   * @param opts.end - The optional end time in milliseconds. If not provided,
+   *                   it will be calculated based on the duration of the sprites.
+   * @param opts.playbackRate - The optional playback rate. Defaults to 1.
+   * @throws {Error} If the time parameters are invalid.
+   */
   play(opts: { start: number; end?: number; playbackRate?: number }) {
     const end =
       opts.end ??
@@ -214,9 +293,24 @@ export class AVCanvas {
     this.#evtTool.emit('playing');
     Log.info('AVCanvs play by:', this.#playState);
   }
+
+  /**
+   * 暂停 `AVCanvas`
+   */
+  /**
+   * Pauses the `AVCanvas`.
+   */
   pause() {
     this.#pause();
   }
+
+  /**
+   * 预览 `AVCanvas` 指定时间帧
+   */
+  /**
+   * Updates the preview frame of the AV canvas.
+   * @param time - The time of the preview frame.
+   */
   previewFrame(time: number) {
     this.#updateRenderTime(time);
     this.#pause();
@@ -228,6 +322,12 @@ export class AVCanvas {
   removeSprite: SpriteManager['removeSprite'] = (...args) =>
     this.#spriteManager.removeSprite(...args);
 
+  /**
+   * 销毁 `AVCanvas`
+   */
+  /**
+   * Destroys the `AVCanvas`.
+   */
   destroy(): void {
     if (this.#destroyed) return;
     this.#destroyed = true;
@@ -241,6 +341,13 @@ export class AVCanvas {
     this.#spriteManager.destroy();
   }
 
+  /**
+   * 合成所有素材的图像与音频，返回 `MediaStream` 可用于 WebRTC 推流
+   */
+  /**
+   * Captures the media stream from the canvas element.
+   * @returns The captured MediaStream object.
+   */
   captureStream(): MediaStream {
     const ms = new MediaStream();
     this.#cvsEl
@@ -257,6 +364,19 @@ export class AVCanvas {
     return ms;
   }
 
+  /**
+   * 创建视频合成器 {@link Combinator}
+   * @param opts - 创建 Combinator 的可选参数
+   * @returns 返回一个 Promise，resolve 为创建的 Combinator
+   * @throws 如果没有添加素材，会抛出错误
+   */
+  /**
+   * Creates a {@link Combinator}.
+   * @param opts - Optional parameters for creating the Combinator.
+   * @param opts.bitrate - The bitrate of the Combinator.(default: 5_000_000)
+   * @returns A Promise that resolves to the created Combinator.
+   * @throws An error if no sprite is added.
+   */
   async createCombinator(opts: { bitrate?: number } = {}) {
     const com = new Combinator({ ...this.#opts, ...opts });
     const sprites = this.#spriteManager.getSprites({ time: false });
