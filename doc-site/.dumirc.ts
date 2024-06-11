@@ -39,6 +39,6 @@ export default defineConfig({
         base: '/WebAV/',
         publicPath: '/WebAV/',
       }),
-  targets: { chrome: 94 },
+  targets: { chrome: 102 },
   legacy: { nodeModulesTransform: false },
 });
