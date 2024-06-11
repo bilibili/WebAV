@@ -9,11 +9,10 @@ export default defineConfig({
       __dirname,
       '../packages/av-cliper/src/index.ts',
     ),
-    // av-recorder 使用 vite 的 import worker，umi 不兼容
-    // '@webav/av-recorder': path.resolve(
-    //   __dirname,
-    //   '../packages/av-recorder/src/av-recorder.ts',
-    // ),
+    '@webav/av-recorder': path.resolve(
+      __dirname,
+      '../packages/av-recorder/src/av-recorder.ts',
+    ),
     '@webav/av-canvas': path.resolve(
       __dirname,
       '../packages/av-canvas/src/index.ts',
