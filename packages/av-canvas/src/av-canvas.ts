@@ -230,18 +230,25 @@ export class AVCanvas {
     this.#pause();
   }
 
-  // proxy to SpriteManager
+  #sprMapAudioNode = new WeakMap<VisibleSprite, AudioNode>();
   addSprite: SpriteManager['addSprite'] = async (vs) => {
+    if (this.#audioCtx.state === 'suspended')
+      this.#audioCtx.resume().catch(Log.error);
+
     const clip = vs.getClip();
     if (clip instanceof MediaStreamClip && clip.audioTrack != null) {
-      this.#audioCtx
-        .createMediaStreamSource(new MediaStream([clip.audioTrack]))
-        .connect(this.#captureAudioDest);
+      const audioNode = this.#audioCtx.createMediaStreamSource(
+        new MediaStream([clip.audioTrack]),
+      );
+      audioNode.connect(this.#captureAudioDest);
+      this.#sprMapAudioNode.set(vs, audioNode);
     }
     this.#spriteManager.addSprite(vs);
   };
-  removeSprite: SpriteManager['removeSprite'] = (...args) =>
-    this.#spriteManager.removeSprite(...args);
+  removeSprite: SpriteManager['removeSprite'] = (vs) => {
+    this.#sprMapAudioNode.get(vs)?.disconnect();
+    this.#spriteManager.removeSprite(vs);
+  };
 
   destroy(): void {
     if (this.#destroyed) return;
@@ -299,7 +306,6 @@ function convertPCM2AudioSource(pcmData: Float32Array[][], ctx: AudioContext) {
     chan0.length / 2,
     DEFAULT_AUDIO_CONF.sampleRate,
   );
-  console.log(5555555, chan0.length / 48000);
   buf.copyToChannel(chan0, 0);
   buf.copyToChannel(chan1, 1);
   const audioSource = ctx.createBufferSource();
