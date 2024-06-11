@@ -11,7 +11,6 @@ import {
   MediaStreamClip,
   DEFAULT_AUDIO_CONF,
   concatPCMFragments,
-  concatFloat32Array,
 } from '@webav/av-cliper';
 import { renderCtrls } from './sprites/render-ctrl';
 import { ESpriteManagerEvt, SpriteManager } from './sprites/sprite-manager';
@@ -71,7 +70,7 @@ export class AVCanvas {
     container.appendChild(this.#cvsEl);
     attchEl.appendChild(container);
 
-    // createEmptyOscillatorNode(this.#audioCtx).connect(this.#captureAudioDest);
+    createEmptyOscillatorNode(this.#audioCtx).connect(this.#captureAudioDest);
 
     Rect.CTRL_SIZE = 12 / (900 / this.#cvsEl.width);
     this.#spriteManager = new SpriteManager();
@@ -141,8 +140,7 @@ export class AVCanvas {
   }
 
   #audioCtx = new AudioContext();
-  // #captureAudioDest = this.#audioCtx.createMediaStreamDestination();
-  #captureAudioDest = createAudioTrackGen();
+  #captureAudioDest = this.#audioCtx.createMediaStreamDestination();
 
   #playingAudioCache: Set<AudioBufferSourceNode> = new Set();
   #render() {
@@ -157,19 +155,12 @@ export class AVCanvas {
     this.#updateRenderTime(ts);
 
     const ctxDestAudioData: Float32Array[][] = [];
-    // 已经渲染的声音则不需要输出到 AudioContext.destination 再次渲染
-    const renderedAudioData: Float32Array[][] = [];
     for (const s of this.#spriteManager.getSprites()) {
       cvsCtx.save();
       const { audio } = s.render(cvsCtx, ts - s.time.offset);
       cvsCtx.restore();
 
-      const clip = s.getClip();
-      if (clip instanceof MediaStreamClip && clip.meta.isRenderedToSpeaker) {
-        renderedAudioData.push(audio);
-      } else {
-        ctxDestAudioData.push(audio);
-      }
+      ctxDestAudioData.push(audio);
     }
     cvsCtx.resetTransform();
 
@@ -182,6 +173,7 @@ export class AVCanvas {
       if (ctxDestADSource != null) {
         ctxDestADSource.start(curAudioTime);
         ctxDestADSource.connect(this.#audioCtx.destination);
+        ctxDestADSource.connect(this.#captureAudioDest);
 
         this.#playingAudioCache.add(ctxDestADSource);
         ctxDestADSource.onended = () => {
@@ -191,20 +183,6 @@ export class AVCanvas {
         this.#playState.audioPlayAt =
           curAudioTime + (ctxDestADSource.buffer?.duration ?? 0);
       }
-      // const renderedADSource = convertPCM2AudioSource(
-      //   renderedAudioData,
-      //   this.#audioCtx,
-      // );
-      // if (renderedADSource != null) {
-      //   ctxDestADSource?.connect(this.#captureAudioDest);
-
-      //   renderedADSource.start(curAudioTime);
-      //   renderedADSource.connect(this.#captureAudioDest);
-      //   renderedADSource.onended = () => {
-      //     ctxDestADSource?.disconnect();
-      //   };
-      // }
-      this.#captureAudioDest.write([...ctxDestAudioData, ...renderedAudioData]);
     }
   }
 
@@ -254,8 +232,15 @@ export class AVCanvas {
   }
 
   // proxy to SpriteManager
-  addSprite: SpriteManager['addSprite'] = (...args) =>
-    this.#spriteManager.addSprite(...args);
+  addSprite: SpriteManager['addSprite'] = async (vs) => {
+    const clip = vs.getClip();
+    if (clip instanceof MediaStreamClip && clip.audioTrack != null) {
+      this.#audioCtx
+        .createMediaStreamSource(new MediaStream([clip.audioTrack]))
+        .connect(this.#captureAudioDest);
+    }
+    this.#spriteManager.addSprite(vs);
+  };
   removeSprite: SpriteManager['removeSprite'] = (...args) =>
     this.#spriteManager.removeSprite(...args);
 
@@ -264,8 +249,7 @@ export class AVCanvas {
     this.#destroyed = true;
 
     this.#audioCtx.close();
-    // this.#captureAudioDest.disconnect();
-    this.#captureAudioDest.destroy();
+    this.#captureAudioDest.disconnect();
     this.#evtTool.destroy();
     this.#stopRender();
     this.#cvsEl.parentElement?.remove();
@@ -283,8 +267,7 @@ export class AVCanvas {
       this.#cvsEl
         .captureStream()
         .getTracks()
-        .concat(this.#captureAudioDest.getTrack()),
-      // .concat(this.#captureAudioDest.stream.getTracks()),
+        .concat(this.#captureAudioDest.stream.getTracks()),
     );
     Log.info(
       'AVCanvas.captureStream, tracks:',
@@ -444,77 +427,24 @@ function createEmptyOscillatorNode(ctx: AudioContext) {
 function createAudioTrackGen() {
   const gen = new MediaStreamTrackGenerator({ kind: 'audio' });
   const adWriter = gen.writable.getWriter();
-  let audioDataPool: [Float32Array, Float32Array] = [
-    new Float32Array(0),
-    new Float32Array(0),
-  ];
-  let lastTime = performance.now();
-  const sampleRate = DEFAULT_AUDIO_CONF.sampleRate;
 
-  const stopTimer = workerTimer(() => {
-    const now = performance.now();
-    const numberOfFrames = Math.round(((now - lastTime) / 1000) * sampleRate);
-    if (numberOfFrames <= 0) return;
-
-    // console.log(111112333, numberOfFrames, audioDataPool[0].length);
-    const adData = mixinPCM([
-      [new Float32Array(numberOfFrames), new Float32Array(numberOfFrames)],
-      audioDataPool.map((d) => d.slice(0, numberOfFrames)),
-    ]);
-    audioDataPool = audioDataPool.map((d) => d.slice(numberOfFrames)) as [
-      Float32Array,
-      Float32Array,
-    ];
-
-    // console.log(3333, numberOfFrames, adData.length);
-    // adWriter.write(
-    //   new AudioData({
-    //     numberOfChannels: 2,
-    //     sampleRate,
-    //     numberOfFrames,
-    //     timestamp: lastTime * 1000,
-    //     format: 'f32-planar',
-    //     data: adData,
-    //   }),
-    // );
-    lastTime = now;
-  }, 1000 / 30);
   return {
     write: (pcm: Float32Array[][]) => {
       if (pcm.length === 0) return;
-      console.log(
-        1111,
-        pcm.map((p) => p[0]?.length),
-      );
       const adData = mixinPCM(pcm);
       if (adData.length === 0) return;
       const numberOfFrames = adData.length / 2;
       adWriter.write(
         new AudioData({
           numberOfChannels: 2,
-          sampleRate,
+          sampleRate: DEFAULT_AUDIO_CONF.sampleRate,
           numberOfFrames,
-          timestamp: lastTime * 1000,
+          timestamp: performance.now() * 1000,
           format: 'f32-planar',
           data: adData,
         }),
       );
-
-      // const mergedByChan = concatPCMFragments(pcm);
-      // if (mergedByChan.length === 0) return;
-
-      // audioDataPool[0] = concatFloat32Array([
-      //   audioDataPool[0],
-      //   mergedByChan[0],
-      // ]);
-      // audioDataPool[1] = concatFloat32Array([
-      //   audioDataPool[1],
-      //   mergedByChan[1] ?? mergedByChan[0],
-      // ]);
     },
     getTrack: () => gen as MediaStreamAudioTrack,
-    destroy: () => {
-      stopTimer();
-    },
   };
 }
