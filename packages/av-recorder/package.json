@@ -1,6 +1,6 @@
 {
   "name": "@webav/av-recorder",
-  "version": "0.9.0",
+  "version": "0.10.0",
   "private": false,
   "repository": "https://github.com/bilibili/WebAV",
   "keywords": [
@@ -23,6 +23,7 @@
     "test": "vitest",
     "test:coverage": "vitest run --coverage",
     "build": "vite build && tsc -p build.tsconfig.json --outDir dist",
+    "build:dev": "vite build --watch --emptyOutDir false & tsc -p build.tsconfig.json --outDir dist --watch",
     "build:api": "typedoc src/av-recorder.ts --tsconfig build.tsconfig.json --out ../../doc-site/public/_api/av-recorder",
     "prepublishOnly": "yarn build"
   },
@@ -36,7 +37,7 @@
     "@types/dom-mediacapture-transform": "^0.1.5",
     "@types/dom-webcodecs": "^0.1.7",
     "@types/wicg-file-system-access": "^2020.9.6",
-    "@webav/av-cliper": "^0.9.0",
+    "@webav/av-cliper": "^0.10.0",
     "fix-webm-duration": "^1.0.5"
   }
 }

@@ -2,17 +2,15 @@
 nav: DEMO
 group:
   title: 视频录制
-  order: 5
 
-order: 1
+order: 2
 ---
 
-# 录制摄像头
+# 摄像头
 
 录制摄像头，输出 MP4（AVC, AAC）实时视频流，视频流可以写入本地文件，或上传到服务器。
 
-下面示例演示将流写入本地文件，录制过程中流式写入数据，所以一开始就需要创建一个本地文件。  
-将 `recorder.outputStream` 数据上传到服务器，即可实现推送实时流数据。
+下面示例演示将流写入本地文件，录制过程中流式写入数据，所以一开始就需要创建一个本地文件。
 
 ```tsx
 import React, { useState, useRef, useEffect } from 'react';
