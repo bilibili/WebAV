@@ -72,10 +72,17 @@ const template = {
   'vite.config.ts': `
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
+import fixReactVirtualized from 'esbuild-plugin-react-virtualized';
 
 // https://vitejs.dev/config/
 export default defineConfig({
   plugins: [react()],
+  optimizeDeps: {
+    esbuildOptions: {
+      // 仅用于修复视频剪辑 demo，时间轴模块的依赖 @xzdarcy/react-timeline-editor 的 导入问题
+      plugins: [fixReactVirtualized],
+    },
+  },
 });
 `,
   'index.html': `
@@ -86,6 +93,7 @@ export default defineConfig({
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Vite + React + TS</title>
+    <link rel="stylesheet" href="./src/index.css">
   </head>
   <body>
     <div id="root"></div>
@@ -107,7 +115,8 @@ export default defineConfig({
   },
   "dependencies": {
     "react": "^18.2.0",
-    "react-dom": "^18.2.0"
+    "react-dom": "^18.2.0",
+    "antd": "^5.11.5"
   },
   "devDependencies": {
     "@types/react": "^18.2.66",
@@ -119,6 +128,9 @@ export default defineConfig({
     "eslint-plugin-react-hooks": "^4.6.0",
     "eslint-plugin-react-refresh": "^0.4.6",
     "typescript": "^5.2.2",
+    "esbuild-plugin-react-virtualized": "^1.0.4",
+    "postcss": "^8.4.38",
+    "tailwindcss": "^3.4.1",
     "vite": "^5.2.0"
   }
 }
@@ -142,5 +154,24 @@ module.exports = {
     ],
   },
 }
-`
+`,
+'tailwind.config.js': `
+module.exports = {
+  theme: {},
+  variants: {},
+  plugins: [],
+  content: [
+    './src/**/*.tsx',
+  ],
+}`,
+'src/index.css': `
+  @tailwind components;
+  @tailwind utilities;
+`,
+'postcss.config.js': `
+export default {
+  plugins: {
+    tailwindcss: {},
+  },
+};`
 }
