@@ -2,7 +2,7 @@
 nav: DEMO
 group:
   title: 绿幕抠图
-  order: 4
+  order: 5
 
 order: 1
 ---
