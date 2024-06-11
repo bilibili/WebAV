@@ -2664,38 +2664,37 @@
     react-refresh "^0.14.0"
 
 "@webav/av-canvas@file:../packages/av-canvas":
-  version "0.9.0-beta.16"
+  version "0.9.0"
   dependencies:
-    "@webav/av-cliper" "^0.9.0-beta.16"
+    "@webav/av-cliper" "^0.9.0"
 
-"@webav/av-cliper@^0.9.0-beta.16":
-  version "0.9.0-beta.16"
-  resolved "https://registry.npmmirror.com/@webav/av-cliper/-/av-cliper-0.9.0-beta.16.tgz#c0b4db51010e7333c249a850d92fa6f69cdf43a0"
-  integrity sha512-IB2R4wRvP9VUKYXf6njX6PYqoFdqrNq96MmX7g1vesp0Mum+TQNBMDIOBCUntcwUoD+DjeC060Gc1DFrsUYY4g==
+"@webav/av-cliper@^0.9.0":
+  version "0.9.0"
+  resolved "https://registry.npmjs.org/@webav/av-cliper/-/av-cliper-0.9.0.tgz#0019b598d95e98dee8075948cd8d5402ba334521"
+  integrity sha512-BTbU+hfpl0/rYaMLG0EtDKT2WBd1dLK9io+vqk0AxqOf4f2KBYdNXlFB4N4HeOac2hLG+8bR6nhYCgOltaW3Tw==
   dependencies:
     "@types/dom-webcodecs" "^0.1.7"
     "@webav/mp4box.js" "0.5.3-fenghen"
     m3u8-parser "^7.1.0"
-    opfs-tools "^0.4.1"
+    opfs-tools "^0.5.1"
     wave-resampler "^1.0.0"
 
 "@webav/av-cliper@file:../packages/av-cliper":
-  version "0.9.0-beta.16"
+  version "0.9.0"
   dependencies:
     "@types/dom-webcodecs" "^0.1.7"
     "@webav/mp4box.js" "0.5.3-fenghen"
     m3u8-parser "^7.1.0"
-    opfs-tools "^0.4.1"
+    opfs-tools "^0.5.1"
     wave-resampler "^1.0.0"
 
 "@webav/av-recorder@file:../packages/av-recorder":
-  version "0.9.0-beta.16"
+  version "0.9.0"
   dependencies:
     "@types/dom-mediacapture-transform" "^0.1.5"
     "@types/dom-webcodecs" "^0.1.7"
     "@types/wicg-file-system-access" "^2020.9.6"
-    "@webav/av-cliper" "^0.9.0-beta.16"
-    "@webav/mp4box.js" "0.5.3-fenghen"
+    "@webav/av-cliper" "^0.9.0"
     fix-webm-duration "^1.0.5"
 
 "@webav/mp4box.js@0.5.3-fenghen":
@@ -8766,10 +8765,10 @@ open@^9.1.0:
     is-inside-container "^1.0.0"
     is-wsl "^2.2.0"
 
-opfs-tools@^0.4.1:
-  version "0.4.2"
-  resolved "https://registry.npmmirror.com/opfs-tools/-/opfs-tools-0.4.2.tgz#9dffef1f99eaafa152ec0e2bbb7c8b48d84eaddb"
-  integrity sha512-eAHRFWqyhltUTFK6Pap7sJcIpYSqhvRkPXPmJ0ySgW5Nk+B9GNldHmiw3B+mFYMJlX5wV4gm2ByHIHxPLmUE8g==
+opfs-tools@^0.5.1:
+  version "0.5.1"
+  resolved "https://registry.npmjs.org/opfs-tools/-/opfs-tools-0.5.1.tgz#79619873814b6eae1861bf549513d82b443e5e6a"
+  integrity sha512-3efBndh+72eOqWbf1ZQNOTvBMT1xE5nYFn1anyS5BFGnDrMHVe6zhEepfvu0JPuuSbUI9VCfSmMHylyb7pcyZQ==
 
 ora@^1.3.0:
   version "1.4.0"
@@ -9537,11 +9536,6 @@ prettier-plugin-packagejson@2.4.3:
   dependencies:
     sort-package-json "2.4.1"
     synckit "0.8.5"
-
-prettier@^2.7.1:
-  version "2.8.8"
-  resolved "https://registry.npmjs.org/prettier/-/prettier-2.8.8.tgz#e8c5d7e98a4305ffe3de2e1fc4aca1a71c28b1da"
-  integrity sha512-tdN8qQGvNjw4CHbY+XXk0JgCXn9QiF21a55rBe5LJAU+kDyC4WQn4+awm2Xfk2lQMk5fKup9XgzTZtGkjBdP9Q==
 
 pretty-error@^4.0.0:
   version "4.0.0"
