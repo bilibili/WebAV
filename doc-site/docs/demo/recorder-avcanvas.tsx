@@ -1,10 +1,11 @@
+import { AVCanvas } from '@webav/av-canvas';
 import {
-  AVCanvas,
-  AudioSprite,
-  ImgSprite,
-  TextSprite,
-  VideoSprite,
-} from '@webav/av-canvas';
+  ImgClip,
+  MediaStreamClip,
+  VisibleSprite,
+  createEl,
+  renderTxt2ImgBitmap,
+} from '@webav/av-cliper';
 import { AVRecorder } from '@webav/av-recorder';
 import { Button } from 'antd';
 import React, { useEffect, useState } from 'react';
@@ -14,11 +15,10 @@ function initCvs(attchEl: HTMLDivElement | null) {
   if (attchEl == null) return;
   avCvs = new AVCanvas(attchEl, {
     bgColor: '#333',
-    resolution: {
-      width: 1920,
-      height: 1080,
-    },
+    width: 1920,
+    height: 1080,
   });
+  avCvs.play({ start: 0, end: Infinity });
 }
 
 let recorder: AVRecorder | null = null;
@@ -29,13 +29,9 @@ async function start() {
   });
   const writer = await fileHandle.createWritable();
   recorder = new AVRecorder(avCvs.captureStream(), {
-    width: 1920,
-    height: 1080,
     bitrate: 5e6,
-    audioCodec: 'aac',
   });
-  await recorder.start();
-  recorder.outputStream?.pipeTo(writer).catch(console.error);
+  recorder.start().pipeTo(writer).catch(console.error);
 }
 
 export default function UI() {
@@ -51,14 +47,15 @@ export default function UI() {
       <Button
         onClick={async () => {
           if (avCvs == null) return;
-          const mediaStream = await navigator.mediaDevices.getUserMedia({
-            video: true,
-            audio: true,
-          });
-          const vs = new VideoSprite('userMedia', mediaStream, {
-            audioCtx: avCvs.spriteManager.audioCtx,
-          });
-          await avCvs.spriteManager.addSprite(vs);
+          const spr = new VisibleSprite(
+            new MediaStreamClip(
+              await navigator.mediaDevices.getUserMedia({
+                video: true,
+                audio: true,
+              }),
+            ),
+          );
+          await avCvs.addSprite(spr);
         }}
       >
         Camera & Micphone
@@ -67,14 +64,15 @@ export default function UI() {
       <Button
         onClick={async () => {
           if (avCvs == null) return;
-          const mediaStream = await navigator.mediaDevices.getDisplayMedia({
-            video: true,
-            audio: true,
-          });
-          const vs = new VideoSprite('display', mediaStream, {
-            audioCtx: avCvs.spriteManager.audioCtx,
-          });
-          await avCvs.spriteManager.addSprite(vs);
+          const spr = new VisibleSprite(
+            new MediaStreamClip(
+              await navigator.mediaDevices.getDisplayMedia({
+                video: true,
+                audio: true,
+              }),
+            ),
+          );
+          await avCvs.addSprite(spr);
         }}
       >
         Share screen
@@ -83,11 +81,14 @@ export default function UI() {
       <Button
         onClick={async () => {
           if (avCvs == null) return;
-          const is = new ImgSprite(
-            'img',
-            await loadFile({ 'image/*': ['.png', '.gif', '.jpeg', '.jpg'] }),
-          );
-          await avCvs.spriteManager.addSprite(is);
+          const localFile = await loadFile({
+            'image/*': ['.png', '.gif', '.jpeg', '.jpg'],
+          });
+          const opts = /\.gif$/.test(localFile.name)
+            ? { type: 'image/gif', stream: localFile.stream() }
+            : localFile.stream();
+          const spr = new VisibleSprite(new ImgClip(opts));
+          await avCvs.addSprite(spr);
         }}
       >
         Image
@@ -96,12 +97,19 @@ export default function UI() {
       <Button
         onClick={async () => {
           if (avCvs == null) return;
-          const vs = new VideoSprite(
-            'video',
-            await loadFile({ 'video/*': ['.webm', '.mp4'] }),
-            { audioCtx: avCvs.spriteManager.audioCtx },
+          const videoEl = createEl('video') as HTMLVideoElement;
+          videoEl.src = URL.createObjectURL(
+            await loadFile({ 'video/*': ['.webm', '.mp4', '.mov', '.mkv'] }),
           );
-          await avCvs.spriteManager.addSprite(vs);
+          videoEl.loop = true;
+          videoEl.autoplay = true;
+          await videoEl.play();
+
+          const spr = new VisibleSprite(
+            // @ts-ignore
+            new MediaStreamClip(videoEl.captureStream()),
+          );
+          await avCvs.addSprite(spr);
         }}
       >
         Video
@@ -110,12 +118,19 @@ export default function UI() {
       <Button
         onClick={async () => {
           if (avCvs == null) return;
-          const as = new AudioSprite(
-            'audio',
-            await loadFile({ 'audio/*': ['.mp3', '.wav', '.ogg'] }),
-            { audioCtx: avCvs.spriteManager.audioCtx },
+          const audioEl = createEl('audio') as HTMLAudioElement;
+          audioEl.src = URL.createObjectURL(
+            await loadFile({ 'video/*': ['.mp3', '.wav', '.ogg', '.m4a'] }),
           );
-          await avCvs.spriteManager.addSprite(as);
+          audioEl.loop = true;
+          audioEl.autoplay = true;
+          await audioEl.play();
+
+          const spr = new VisibleSprite(
+            // @ts-ignore
+            new MediaStreamClip(audioEl.captureStream()),
+          );
+          await avCvs.addSprite(spr);
         }}
       >
         Audio
@@ -124,8 +139,15 @@ export default function UI() {
       <Button
         onClick={async () => {
           if (avCvs == null) return;
-          const fs = new TextSprite('text', '示例文字');
-          await avCvs.spriteManager.addSprite(fs);
+          const spr = new VisibleSprite(
+            new ImgClip(
+              await renderTxt2ImgBitmap(
+                '示例文字',
+                'font-size: 80px; color: red;',
+              ),
+            ),
+          );
+          await avCvs.addSprite(spr);
         }}
       >
         Text
@@ -161,5 +183,5 @@ async function loadFile(accept: Record<string, string[]>) {
   const [fileHandle] = await (window as any).showOpenFilePicker({
     types: [{ accept }],
   });
-  return await fileHandle.getFile();
+  return (await fileHandle.getFile()) as File;
 }
