@@ -1,14 +1,25 @@
 import { type IPreviewerProps } from 'dumi';
 import { type Project } from '@stackblitz/sdk';
+import { IFiles } from 'codesandbox-import-utils/lib/api/define';
 
 export function modifyStackBlitzData(memo: Project, props: IPreviewerProps) {
   // if use default template: 'create-react-app', demo won't install dependencies automatically
   memo.template = 'node';
+  return createTemplate(memo, props, true);
+}
+
+export function modifyCodeSandboxData(memo: { files: IFiles }, props: IPreviewerProps) {
+  return createTemplate(memo, props, false);
+}
+
+function createTemplate(memo: { files: IFiles } | Project, props: IPreviewerProps, isStackBlitz: boolean) {
   Object.entries(memo.files).forEach(([name, content]) => {
     if (name !== 'index.html' && name !== 'package.json') {
       memo.files[`src/${name}`] = content;
     }
-    delete memo.files[name];
+    if (name !== 'sandbox.config.json') {
+      delete memo.files[name];
+    }
   });
   Object.entries(template).forEach(([name, content]) => {
     if (name === 'package.json') {
@@ -22,7 +33,7 @@ export function modifyStackBlitzData(memo: Project, props: IPreviewerProps) {
       packageJson.dependencies = { ...npmDeps, ...packageJson.dependencies };
       content = JSON.stringify(packageJson, null, 2);
     }
-    memo.files[name] = content;
+    memo.files[name] = isStackBlitz ? content : { content: content, isBinary: false };
   });
 
   return memo;
