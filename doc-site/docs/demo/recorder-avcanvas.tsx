@@ -85,7 +85,7 @@ export default function UI() {
             'image/*': ['.png', '.gif', '.jpeg', '.jpg'],
           });
           const opts = /\.gif$/.test(localFile.name)
-            ? { type: 'image/gif', stream: localFile.stream() }
+            ? ({ type: 'image/gif', stream: localFile.stream() } as const)
             : localFile.stream();
           const spr = new VisibleSprite(new ImgClip(opts));
           await avCvs.addSprite(spr);
