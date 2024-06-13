@@ -114,7 +114,7 @@ document.querySelector('#decode-audio')?.addEventListener('click', () => {
 });
 
 const videos = {
-  'bunny.mp4': './video/bunny.mp4',
+  'bunny.mp4': './video/pri-test-metadata.mp4',
   'bear.mp4': './video/bear-vp9.mp4',
 };
 document.querySelector('#decode-video')?.addEventListener('click', () => {
