@@ -113,6 +113,7 @@ export class Combinator {
 
   #evtTool = new EventTool<{
     OutputProgress: (progress: number) => void;
+    error: (err: Error) => void;
   }>();
   on = this.#evtTool.on;
 
@@ -218,7 +219,9 @@ export class Combinator {
         this.destroy();
       },
       onError: (err) => {
+        this.#evtTool.emit('error', err);
         closeOutStream(err);
+        this.destroy();
       },
     });
 
@@ -262,16 +265,18 @@ export class Combinator {
   ): () => void {
     let inputProgress = 0;
     let stoped = false;
+    let err: Error | null = null;
 
     const _run = async () => {
       // 33ms ≈ 30FPS
-      const timeSlice = 33 * 1000;
+      const timeSlice = 33e3;
 
       let frameCnt = 0;
       const { width, height } = this.#cvs;
       const ctx = this.#ctx;
       let ts = 0;
       while (true) {
+        if (err != null) return;
         if (
           stoped ||
           (maxTime === -1 ? false : ts > maxTime) ||
@@ -363,10 +368,11 @@ export class Combinator {
       }
     };
 
-    _run().catch((err) => {
-      this.#log.error(err);
+    _run().catch((e) => {
+      err = e;
+      this.#log.error(e);
       exit();
-      onError(err);
+      onError(e);
     });
 
     // 初始 1 避免 NaN

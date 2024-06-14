@@ -1,4 +1,4 @@
-import { test, expect } from 'vitest';
+import { test, expect, vi } from 'vitest';
 import { OffscreenSprite } from '../sprite/offscreen-sprite';
 import { AudioClip, IClip, ImgClip, MP4Clip } from '../clips';
 import { Combinator } from '../combinator';
@@ -47,9 +47,16 @@ test('Combinator.output throw an error', async () => {
   const com = new Combinator();
   await com.addSprite(spr);
 
+  const errHdlr = vi.fn();
+  com.on('error', errHdlr);
+
   const reader = com.output().getReader();
   expect(async () => {
-    await reader.read();
+    try {
+      await reader.read();
+    } finally {
+      expect(errHdlr).toBeCalledWith(Error('xxx'));
+    }
   }).rejects.toThrowError('xxx');
 });
 
