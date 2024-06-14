@@ -118,6 +118,7 @@ declare module '@webav/mp4box.js' {
     hdr_size: number;
     start: number;
     type: string;
+    data?: Uint8Array;
     write: (dataStream: DataStream) => void;
     parse: (dataStream: DataStream) => void;
     add: (name: string) => BoxParser;
