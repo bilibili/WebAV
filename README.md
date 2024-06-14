@@ -6,9 +6,11 @@ An audio/video toolkit built with pure web technologies, planned to include crea
 
 ## Motivation
 
-Chrome 94 released the WebCodecs API, meaning JS can now handle audio/video as well. Before this, frontend developers could only use ffmpeg.wasm in limited scenarios. Through simple tests of decoding and re-encoding videos, it was found WebCodecs has 20x the performance of ffmpeg.wasm.
+Chrome 94 released the WebCodecs API, meaning JS can now handle audio/video as well. Before this, frontend developers could only use ffmpeg.wasm in limited scenarios. Through simple tests of decoding and re-encoding videos, it was found WebCodecs has 20x the performance of ffmpeg.wasm.  
+_WebAV is compatible with Chrome 102 and above due to the use of the new OPFS API._
 
-Chrome 94 开放了 WebCodecs API，意味着 JS 也能处理音视频了。在此之前，前端开发在会在有限的场景使用 ffmpeg.wasm，经过简单地测试解码和重编码视频发现，WebCodecs 性能是 ffmpeg.wasm 的 20 倍。
+Chrome 94 开放了 WebCodecs API，意味着 JS 也能处理音视频了。在此之前，前端开发在会在有限的场景使用 ffmpeg.wasm，经过简单地测试解码和重编码视频发现，WebCodecs 性能是 ffmpeg.wasm 的 20 倍。  
+_WebAV 兼容 Chrome102 及以上版本，因为使用 opfs 新 API。_
 
 This is an experimental project attempting to provide easy-to-use APIs for handling audio/video data in the browser. The project is under active development, feel free to open issues to report bugs or suggest new features.
 
