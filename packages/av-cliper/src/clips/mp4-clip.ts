@@ -497,7 +497,6 @@ async function parseMP4Stream(
               Error('MP4Clip must contain at least one video or audio track'),
             );
           }
-          console.log(111111, data.file.moov.udta);
           Log.info(
             'mp4BoxFile moov ready',
             {
