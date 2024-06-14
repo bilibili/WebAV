@@ -70,6 +70,7 @@ document.querySelector('#mp4-img')?.addEventListener('click', () => {
       videoCodec: 'avc1.42E032',
       bgColor: 'white',
       // audio: false,
+      metaDataTags: { hello: 'world' },
     });
 
     await com.addSprite(spr1, { main: true });

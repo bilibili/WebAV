@@ -15,6 +15,10 @@ interface ICombinatorOpts {
    * false 合成的视频文件中排除音轨
    */
   audio?: false;
+  /**
+   * 向输出的视频中写入 meta tags 数据
+   */
+  metaDataTags?: Record<string, string>;
 }
 
 let COM_ID = 0;
@@ -133,6 +137,7 @@ export class Combinator {
               sampleRate: DEFAULT_AUDIO_CONF.sampleRate,
               channelCount: DEFAULT_AUDIO_CONF.channelCount,
             },
+      metaDataTags: opts.metaDataTags,
     });
 
     TOTAL_COM_ENCODE_QSIZE.set(this, this.#remux.getEecodeQueueSize);

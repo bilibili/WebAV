@@ -36,6 +36,7 @@ interface IRecodeMuxOpts {
     sampleRate: number;
     channelCount: number;
   } | null;
+  metaDataTags?: Record<string, string>;
 }
 
 export function recodemux(opts: IRecodeMuxOpts): {
@@ -67,8 +68,10 @@ export function recodemux(opts: IRecodeMuxOpts): {
     metaBox.size = metaBox.data.byteLength;
   };
 
-  avSyncEvtTool.once('VideoReady', addMetadata);
-  avSyncEvtTool.once('AudioReady', addMetadata);
+  if (opts.metaDataTags != null) {
+    avSyncEvtTool.once('VideoReady', addMetadata);
+    avSyncEvtTool.once('AudioReady', addMetadata);
+  }
 
   let vEncoder =
     opts.video != null
