@@ -118,8 +118,11 @@ declare module '@webav/mp4box.js' {
     hdr_size: number;
     start: number;
     type: string;
+    data?: Uint8Array;
     write: (dataStream: DataStream) => void;
     parse: (dataStream: DataStream) => void;
+    add: (name: string) => BoxParser;
+    addEntry: (value: string, name: string) => BoxParser;
   }
 
   export interface TrakBoxParser extends BoxParser {
@@ -258,6 +261,7 @@ declare module '@webav/mp4box.js' {
     moofs: MOOFBoxParser[];
     moov?: MOOVBoxParser;
 
+    add: (name: string) => BoxParser;
     addTrack: (opts: VideoTrackOpts | AudioTrackOpts) => number;
     addSample: (trackId: number, buf: ArrayBuffer, sample: SampleOpts) => void;
     releaseUsedSamples(id: number, usedCount: number): void;

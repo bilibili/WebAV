@@ -25,6 +25,7 @@ document.querySelector('#mp4-img')?.addEventListener('click', () => {
     const spr1 = new OffscreenSprite(
       new MP4Clip((await fetch(resList[0])).body!),
     );
+    spr1.time.duration = 3e6;
 
     const spr2 = new OffscreenSprite(
       new ImgClip(
@@ -69,6 +70,7 @@ document.querySelector('#mp4-img')?.addEventListener('click', () => {
       videoCodec: 'avc1.42E032',
       bgColor: 'white',
       // audio: false,
+      metaDataTags: { hello: 'world' },
     });
 
     await com.addSprite(spr1, { main: true });

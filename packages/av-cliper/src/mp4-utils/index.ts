@@ -19,6 +19,7 @@ import { EventTool } from '../event-tool';
 import { SampleTransform } from './sample-transform';
 import { extractFileConfig, unsafeReleaseMP4BoxFile } from './mp4box-utils';
 import { tmpfile, write } from 'opfs-tools';
+import { createMetaBox } from './meta-box';
 
 type TCleanFn = () => void;
 
@@ -35,6 +36,7 @@ interface IRecodeMuxOpts {
     sampleRate: number;
     channelCount: number;
   } | null;
+  metaDataTags?: Record<string, string>;
 }
 
 export function recodemux(opts: IRecodeMuxOpts): {
@@ -52,6 +54,25 @@ export function recodemux(opts: IRecodeMuxOpts): {
   const avSyncEvtTool = new EventTool<
     Record<'VideoReady' | 'AudioReady', () => void>
   >();
+
+  let metaAdded = false;
+  const addMetadata = () => {
+    if (metaAdded) return;
+    metaAdded = true;
+    if (mp4file.moov == null) return;
+
+    const udtaBox = mp4file.moov.add('udta');
+    const metaBox = udtaBox.add('meta');
+    const data = { hello: 'world', foo: 'bar' };
+    metaBox.data = createMetaBox(data);
+    metaBox.size = metaBox.data.byteLength;
+  };
+
+  if (opts.metaDataTags != null) {
+    avSyncEvtTool.once('VideoReady', addMetadata);
+    avSyncEvtTool.once('AudioReady', addMetadata);
+  }
+
   let vEncoder =
     opts.video != null
       ? encodeVideoTrack(opts.video, mp4file, avSyncEvtTool)
