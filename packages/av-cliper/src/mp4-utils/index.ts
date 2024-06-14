@@ -51,8 +51,8 @@ const createHdlrBox = (): Uint8Array => {
   const tec = new TextEncoder();
   const handlerType = tec.encode('mdta');
   const nameBytes = tec.encode('mp4 handler');
-  // size4 + hdlr4 + ?8 + mdta4 + nameSize
-  const size = 4 + 4 + 8 + 4 + nameBytes.byteLength + 1;
+  // header8 + ?8 + mdta4 + ?12 + nameSize + endFlag1
+  const size = 8 + 8 + 4 + 12 + nameBytes.byteLength + 1;
   const buffer = new Uint8Array(size);
   const view = new DataView(buffer.buffer);
 
@@ -63,8 +63,7 @@ const createHdlrBox = (): Uint8Array => {
   view.setUint32(8, 0);
 
   buffer.set(handlerType, 16);
-  buffer.set(nameBytes, 20);
-  buffer[buffer.byteLength - 1] = 0; // Null terminator
+  buffer.set(nameBytes, 32);
 
   return buffer;
 };
@@ -114,19 +113,21 @@ const createIlstBox = (data: Record<string, string>): Uint8Array => {
   const valueData = Object.entries(data).map(([_, value], index) => {
     const keyId = index + 1; // Assuming keys start from 1
     const valueBytes = tec.encode(value);
-    // size4 + idx4 + valueSize4 + data + value
-    const entrySize = 4 + 4 + 4 + 4 + valueBytes.byteLength;
+    // size4 + keyId4 + valueSize4 + data4 + idx4 + ?4 + value
+    const entrySize = 4 + 4 + 4 + 4 + 4 + 4 + valueBytes.byteLength;
 
     const buffer = new Uint8Array(entrySize);
     const view = new DataView(buffer.buffer);
     view.setUint32(0, entrySize);
     view.setUint32(4, keyId);
 
-    view.setUint32(8, 4 + valueBytes.byteLength);
+    view.setUint32(8, 16 + valueBytes.byteLength);
     buffer.set(dataStrBuf, 12); // 'data' type
 
+    // data idx=1
+    view.setUint32(16, 1);
     // Value
-    buffer.set(valueBytes, 16);
+    buffer.set(valueBytes, 24);
 
     return buffer;
   });
