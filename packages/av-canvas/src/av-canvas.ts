@@ -216,7 +216,7 @@ export class AVCanvas {
     audioPlayAt: 0,
   };
   /**
-   * 播放 `AVCanvas`
+   * 每 33ms 更新一次画布，绘制已添加的 Sprite
    * @param opts - 播放选项
    * @param opts.start - 开始播放的时间（单位：微秒）
    * @param [opts.end] - 结束播放的时间（单位：微秒）。如果未指定，则播放到最后一个 Sprite 的结束时间
