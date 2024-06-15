@@ -42,12 +42,9 @@ document.querySelector('#decode-img')?.addEventListener('click', () => {
       if (vf == null) return;
       ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
       ctx.drawImage(vf, 0, 0);
-      const timer = setTimeout(
-        () => {
-          render(frames[++i]);
-        },
-        (vf.duration ?? 0) / 1000,
-      );
+      const timer = setTimeout(() => {
+        render(frames[++i]);
+      }, (vf.duration ?? 0) / 1000);
       stopImg = () => {
         clearTimeout(timer);
       };
@@ -68,7 +65,7 @@ document.querySelector('#decode-audio')?.addEventListener('click', () => {
     stopAudio();
     const audioType = (
       document.querySelector(
-        'input[name=audio-type]:checked',
+        'input[name=audio-type]:checked'
       ) as HTMLInputElement
     ).value;
     // @ts-expect-error
@@ -114,18 +111,18 @@ document.querySelector('#decode-audio')?.addEventListener('click', () => {
 });
 
 const videos = {
-  'bunny.mp4': './video/pri-test-metadata.mp4',
+  'bunny.mp4': './video/bunny_0.mp4',
   'bear.mp4': './video/bear-vp9.mp4',
 };
 document.querySelector('#decode-video')?.addEventListener('click', () => {
   (async () => {
     const videoType = (
       document.querySelector(
-        'input[name=video-type]:checked',
+        'input[name=video-type]:checked'
       ) as HTMLInputElement
     ).value;
     const speed = document.querySelector(
-      'input[name=playrate]:checked',
+      'input[name=playrate]:checked'
     ) as HTMLInputElement;
 
     // @ts-expect-error
@@ -159,7 +156,7 @@ document.querySelector('#decode-video')?.addEventListener('click', () => {
 
       const timer = setInterval(async () => {
         const { state, video } = await clip.tick(
-          Math.round((performance.now() - startTime) * 1000) * times,
+          Math.round((performance.now() - startTime) * 1000) * times
         );
         if (state === 'done') {
           clearInterval(timer);
@@ -184,7 +181,7 @@ document.querySelector('#decode-subtitles')?.addEventListener('click', () => {
     stopImg();
     const subtitlesType = (
       document.querySelector(
-        'input[name=subtitles-type]:checked',
+        'input[name=subtitles-type]:checked'
       ) as HTMLInputElement
     ).value;
 
