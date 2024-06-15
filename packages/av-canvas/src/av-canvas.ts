@@ -75,7 +75,7 @@ export class AVCanvas {
   /**
    * 创建 `AVCanvas` 类的实例。
    * @param attchEl - 要添加画布的元素。
-   * @param opts - 画布的选项，包括背景颜色和分辨率。
+   * @param opts - 画布的选项
    * @param opts.bgColor - 画布的背景颜色。
    * @param opts.width - 画布的宽度。
    * @param opts.height - 画布的高度。
@@ -218,10 +218,10 @@ export class AVCanvas {
   /**
    * 播放 `AVCanvas`
    * @param opts - 播放选项
-   * @param opts.start - 开始播放的时间（单位：秒）
-   * @param [opts.end] - 结束播放的时间（单位：秒）。如果未指定，则播放到最后一个精灵的结束时间
+   * @param opts.start - 开始播放的时间（单位：微秒）
+   * @param [opts.end] - 结束播放的时间（单位：微秒）。如果未指定，则播放到最后一个 Sprite 的结束时间
    * @param [opts.playbackRate] - 播放速率。1 表示正常速度，2 表示两倍速度，0.5 表示半速等。如果未指定，则默认为 1
-   * @throws 如果开始时间不是有限数、大于等于结束时间或小于 0，则抛出错误
+   * @throws 如果开始时间大于等于结束时间或小于 0，则抛出错误
    */
   play(opts: { start: number; end?: number; playbackRate?: number }) {
     const end =
@@ -254,14 +254,14 @@ export class AVCanvas {
   }
 
   /**
-   * 暂停 `AVCanvas`
+   * 暂停播放，画布内容不再更新
    */
   pause() {
     this.#pause();
   }
 
   /**
-   * 预览 `AVCanvas` 指定时间帧
+   * 预览 `AVCanvas` 指定时间的图像帧
    */
   previewFrame(time: number) {
     this.#updateRenderTime(time);
@@ -275,7 +275,7 @@ export class AVCanvas {
     this.#spriteManager.removeSprite(...args);
 
   /**
-   * 销毁 `AVCanvas`
+   * 销毁实例
    */
   destroy(): void {
     if (this.#destroyed) return;
@@ -291,7 +291,7 @@ export class AVCanvas {
   }
 
   /**
-   * 合成所有素材的图像与音频，返回 `MediaStream` 可用于 WebRTC 推流
+   * 合成所有素材的图像与音频，返回 `MediaStream` 可用于 WebRTC 推流，或由 AVRecorder 录制生成视频文件
    * @returns- {@link MediaStream}
    */
   captureStream(): MediaStream {
@@ -313,7 +313,6 @@ export class AVCanvas {
   /**
    * 创建视频合成器 {@link Combinator}
    * @param opts - 创建 Combinator 的可选参数
-   * @returns 返回一个 Promise，resolve 为创建的 Combinator
    * @throws 如果没有添加素材，会抛出错误
    */
   async createCombinator(opts: { bitrate?: number } = {}) {
