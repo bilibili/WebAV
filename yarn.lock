@@ -6476,10 +6476,10 @@ onetime@^6.0.0:
   dependencies:
     mimic-fn "^4.0.0"
 
-opfs-tools@^0.5.1:
-  version "0.5.1"
-  resolved "https://registry.npmjs.org/opfs-tools/-/opfs-tools-0.5.1.tgz#79619873814b6eae1861bf549513d82b443e5e6a"
-  integrity sha512-3efBndh+72eOqWbf1ZQNOTvBMT1xE5nYFn1anyS5BFGnDrMHVe6zhEepfvu0JPuuSbUI9VCfSmMHylyb7pcyZQ==
+opfs-tools@^0.5.2:
+  version "0.5.2"
+  resolved "https://registry.npmjs.org/opfs-tools/-/opfs-tools-0.5.2.tgz#2fc9a503b10372c6b2ac44abe182390015948d1e"
+  integrity sha512-AZ/7D9A2O6aokTU0EknjRsuGgN40dDUgO92erRl5dx1ig95CuDO6iQWgbFsLGROCUaG/ggS80KUr1PdlHqZd6w==
 
 os-homedir@^1.0.0:
   version "1.0.2"
@@ -6950,7 +6950,12 @@ postcss@^8.4.23, postcss@^8.4.38:
     picocolors "^1.0.0"
     source-map-js "^1.2.0"
 
-prettier@2.8.1, prettier@^3.2.5:
+prettier@2.8.1:
+  version "2.8.1"
+  resolved "https://registry.npmjs.org/prettier/-/prettier-2.8.1.tgz#4e1fd11c34e2421bc1da9aea9bd8127cd0a35efc"
+  integrity sha512-lqGoSJBQNJidqCHE80vqZJHWHRFoNYsSpP9AjFhlhi9ODCJA541svILes/+/1GM3VaL/abZi7cpFzOpdR9UPKg==
+
+prettier@^3.2.5:
   version "3.3.1"
   resolved "https://registry.npmjs.org/prettier/-/prettier-3.3.1.tgz#e68935518dd90bb7ec4821ba970e68f8de16e1ac"
   integrity sha512-7CAwy5dRsxs8PHXT3twixW9/OEll8MLE0VRPCJyl7CkS6VHGPSlsVaWTiASPTyGyYRyApxlaWTzwUxVNrhcwDg==
@@ -9244,6 +9249,7 @@ wordwrap@^1.0.0:
   integrity sha512-gvVzJFlPycKc5dZN4yPkP8w7Dc37BtP1yczEneOb4uq34pXZcvrtRTmWV8W+Ume+XCxKgbjM+nevkyFPMybd4Q==
 
 "wrap-ansi-cjs@npm:wrap-ansi@^7.0.0", wrap-ansi@^7.0.0:
+  name wrap-ansi-cjs
   version "7.0.0"
   resolved "https://registry.npmjs.org/wrap-ansi/-/wrap-ansi-7.0.0.tgz#67e145cff510a6a6984bdf1152911d69d2eb9e43"
   integrity sha512-YVGIj2kamLSTxw6NsZjoBxfSwsn0ycdesmc4p+Q21c5zPuZ1pl+NfxVdxPtdHvmNVOQ6XSYG4AUtyt/Fi7D16Q==
