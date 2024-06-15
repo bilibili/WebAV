@@ -14,12 +14,20 @@ export function modifyCodeSandboxData(memo: { files: IFiles }, props: IPreviewer
 
 function createTemplate(memo: { files: IFiles } | Project, props: IPreviewerProps, isStackBlitz: boolean) {
   Object.entries(memo.files).forEach(([name, content]) => {
+    if (name === 'sandbox.config.json') {
+      memo.files[name] = {
+        content: JSON.stringify({
+          template: 'node',
+          startScript: 'dev',
+        }, null, 2),
+        isBinary: false,
+      };
+      return;
+    }
     if (name !== 'index.html' && name !== 'package.json') {
       memo.files[`src/${name}`] = content;
     }
-    if (name !== 'sandbox.config.json') {
-      delete memo.files[name];
-    }
+    delete memo.files[name];
   });
   Object.entries(template).forEach(([name, content]) => {
     if (name === 'package.json') {
@@ -114,7 +122,7 @@ export default defineConfig({
 `,
   'package.json': `
 {
-  "name": "An auto-generated demo by dumi",
+  "name": "demo",
   "private": true,
   "version": "0.0.0",
   "type": "module",
