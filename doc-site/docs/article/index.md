@@ -7,8 +7,10 @@ sidebar: false
 
 <div style="background: #fff; padding: 16px; border-radius: 10px;">
 
-# 相关文章索引
+# 相关资料索引
 
+- [Web 音视频知识图谱](https://github.com/hughfenghen/WebAV-KnowledgeGraph)
+  - 音视频涉及了非常多的 Web API，该项目整理相关的 API、SDK、文章、对外产品，帮助初学者入门
 - [WebCodecs 开启 Web 音视频新篇章](//hughfenghen.github.io/posts/2023/10/06/webcodecs-new-era-for-media-on-the-web/)
   - LVS (Live Video Stack) 分享主题，是后面系列文章的总结
 - [【译】WebCodecs 说明](https://hughfenghen.github.io/posts/2023/10/02/webcodecs-explainer/)
