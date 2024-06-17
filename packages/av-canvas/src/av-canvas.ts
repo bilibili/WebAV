@@ -9,7 +9,6 @@ import {
   VisibleSprite,
   MediaStreamClip,
   DEFAULT_AUDIO_CONF,
-  concatPCMFragments,
 } from '@webav/av-cliper';
 import { renderCtrls } from './sprites/render-ctrl';
 import { ESpriteManagerEvt, SpriteManager } from './sprites/sprite-manager';
