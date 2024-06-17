@@ -195,23 +195,25 @@ export class AVCanvas {
 
     if (step !== 0) {
       const curAudioTime = Math.max(this.#audioCtx.currentTime, audioPlayAt);
-      const ctxDestADSource = convertPCM2AudioSource(
+      const audioSourceArr = convertPCM2AudioSource(
         ctxDestAudioData,
         this.#audioCtx,
       );
-      if (ctxDestADSource != null) {
-        ctxDestADSource.start(curAudioTime);
-        ctxDestADSource.connect(this.#audioCtx.destination);
-        ctxDestADSource.connect(this.#captureAudioDest);
 
-        this.#playingAudioCache.add(ctxDestADSource);
-        ctxDestADSource.onended = () => {
-          ctxDestADSource.disconnect();
-          this.#playingAudioCache.delete(ctxDestADSource);
+      let addTime = 0;
+      for (const ads of audioSourceArr) {
+        ads.start(curAudioTime);
+        ads.connect(this.#audioCtx.destination);
+        ads.connect(this.#captureAudioDest);
+
+        this.#playingAudioCache.add(ads);
+        ads.onended = () => {
+          ads.disconnect();
+          this.#playingAudioCache.delete(ads);
         };
-        this.#playState.audioPlayAt =
-          curAudioTime + (ctxDestADSource.buffer?.duration ?? 0);
+        addTime = Math.max(addTime, ads.buffer?.duration ?? 0);
       }
+      this.#playState.audioPlayAt = curAudioTime + addTime;
     }
   }
 
@@ -356,19 +358,23 @@ export class AVCanvas {
 }
 
 function convertPCM2AudioSource(pcmData: Float32Array[][], ctx: AudioContext) {
-  if (pcmData.length === 0) return null;
-  const [chan0, chan1] = concatPCMFragments(pcmData);
-  if (chan0 == null || chan0.length === 0) return null;
-  const buf = ctx.createBuffer(
-    2,
-    chan0.length / 2,
-    DEFAULT_AUDIO_CONF.sampleRate,
-  );
-  buf.copyToChannel(chan0, 0);
-  buf.copyToChannel(chan1, 1);
-  const audioSource = ctx.createBufferSource();
-  audioSource.buffer = buf;
-  return audioSource;
+  const asArr: AudioBufferSourceNode[] = [];
+  if (pcmData.length === 0) return asArr;
+
+  for (const [chan0Buf, chan1Buf] of pcmData) {
+    if (chan0Buf == null) continue;
+    const buf = ctx.createBuffer(
+      2,
+      chan0Buf.length,
+      DEFAULT_AUDIO_CONF.sampleRate,
+    );
+    buf.copyToChannel(chan0Buf, 0);
+    buf.copyToChannel(chan1Buf ?? chan0Buf, 1);
+    const audioSource = ctx.createBufferSource();
+    audioSource.buffer = buf;
+    asArr.push(audioSource);
+  }
+  return asArr;
 }
 
 /**
