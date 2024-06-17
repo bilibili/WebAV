@@ -289,7 +289,7 @@ export class AVCanvas {
       audioNode.connect(this.#captureAudioDest);
       this.#sprMapAudioNode.set(vs, audioNode);
     }
-    this.#spriteManager.addSprite(vs);
+    await this.#spriteManager.addSprite(vs);
   };
   removeSprite: SpriteManager['removeSprite'] = (vs) => {
     this.#sprMapAudioNode.get(vs)?.disconnect();
