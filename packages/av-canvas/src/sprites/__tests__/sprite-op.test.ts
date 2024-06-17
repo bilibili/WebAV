@@ -25,7 +25,7 @@ describe('draggabelSprite', () => {
     const spyAEL = vi.spyOn(cvsEl, 'addEventListener');
     const spyREL = vi.spyOn(cvsEl, 'removeEventListener');
 
-    const clear = draggabelSprite(cvsEl, sprMng);
+    const clear = draggabelSprite(cvsEl, sprMng, document.body);
     expect(spyAEL).toBeCalledWith('mousedown', expect.any(Function));
     expect(clear).toBeInstanceOf(Function);
 
@@ -40,7 +40,7 @@ describe('draggabelSprite', () => {
     vi.spyOn(vs.rect, 'checkHit').mockReturnValue(true);
     await sprMng.addSprite(vs);
     sprMng.activeSprite = vs;
-    const clear = draggabelSprite(cvsEl, sprMng);
+    const clear = draggabelSprite(cvsEl, sprMng, document.body);
     cvsEl.dispatchEvent(new MouseEvent('mousedown'));
 
     expect(spyAEL).toBeCalledTimes(2);
@@ -70,7 +70,7 @@ describe('draggabelSprite', () => {
     await sprMng.addSprite(vs);
     sprMng.activeSprite = vs;
 
-    const clear = draggabelSprite(cvsEl, sprMng);
+    const clear = draggabelSprite(cvsEl, sprMng, document.body);
     cvsEl.dispatchEvent(crtMSEvt4Offset('mousedown', 110, 110));
 
     window.dispatchEvent(
@@ -106,7 +106,7 @@ describe('scale sprite', () => {
     vs.rect.h = 100;
 
     // 激活 sprite
-    const clear = draggabelSprite(cvsEl, sprMng);
+    const clear = draggabelSprite(cvsEl, sprMng, document.body);
     cvsEl.dispatchEvent(crtMSEvt4Offset('mousedown', 0, 0));
     expect(sprMng.activeSprite).toBe(vs);
 
@@ -135,7 +135,7 @@ describe('scale sprite', () => {
     vs.rect.h = 100;
 
     // 激活 sprite
-    const clear = draggabelSprite(cvsEl, sprMng);
+    const clear = draggabelSprite(cvsEl, sprMng, document.body);
     cvsEl.dispatchEvent(crtMSEvt4Offset('mousedown', 0, 0));
     expect(sprMng.activeSprite).toBe(vs);
 
@@ -165,7 +165,7 @@ describe('rotate sprite', () => {
     vs.rect.h = 100;
 
     // 激活 sprite
-    const clear = draggabelSprite(cvsEl, sprMng);
+    const clear = draggabelSprite(cvsEl, sprMng, document.body);
     cvsEl.dispatchEvent(crtMSEvt4Offset('mousedown', 0, 0));
     expect(sprMng.activeSprite).toBe(vs);
 

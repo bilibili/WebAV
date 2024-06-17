@@ -66,7 +66,11 @@ test('dynamicCusor', async () => {
   expect(cvsEl.style.cursor).toBe('nwse-resize');
 
   cvsEl.dispatchEvent(
-    crtMSEvt4Offset('mousemove', rotate.x + center.x, rotate.y + center.y),
+    crtMSEvt4Offset(
+      'mousemove',
+      rotate.x + center.x + 1,
+      rotate.y + center.y + 1,
+    ),
   );
   expect(cvsEl.style.cursor).toBe('crosshair');
 
