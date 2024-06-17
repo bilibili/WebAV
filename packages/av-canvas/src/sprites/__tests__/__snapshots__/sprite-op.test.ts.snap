@@ -5,12 +5,9 @@ exports[`rotate sprite > rotate sprite 1`] = `2.356194490192345`;
 exports[`rotate sprite > rotate sprite 2`] = `2.819842099193151`;
 
 exports[`scale sprite > drag rb(bottom right) ctrl 1`] = `
-M {
-  "angle": 0,
-  "h": 200,
+O {
+  "fixedAspectRatio": false,
   "master": null,
-  "w": 200,
-  "x": 0,
-  "y": 0,
+  "on": [Function],
 }
 `;
