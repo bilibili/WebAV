@@ -292,10 +292,17 @@ export function file2stream(
   let sendedBoxIdx = 0;
   const boxes = file.boxes;
 
+  let firstMoofReady = false;
   const deltaBuf = (): Uint8Array | null => {
-    // boxes.length >= 4 表示完成了 ftyp moov，且有了第一个 moof mdat
-    // 避免moov未完成时写入文件，导致文件无法被识别
-    if (boxes.length < 4 || sendedBoxIdx >= boxes.length) return null;
+    // 避免 moov 未完成时写入文件，导致文件无法被识别
+    if (!firstMoofReady) {
+      if (boxes.find((box) => box.type === 'moof') != null) {
+        firstMoofReady = true;
+      } else {
+        return null;
+      }
+    }
+    if (sendedBoxIdx >= boxes.length) return null;
 
     const ds = new mp4box.DataStream();
     ds.endianness = mp4box.DataStream.BIG_ENDIAN;

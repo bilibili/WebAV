@@ -14,7 +14,8 @@ describe('file2stream', () => {
       // @ts-expect-error
       ...Array(5)
         .fill(0)
-        .map(() => ({
+        .map((_, idx) => ({
+          type: ['ftyp', 'moov', 'moof', 'mdat'][idx],
           write: (ds: any) => {
             ds.writeUint8Array(new Uint8Array([1]));
           },
