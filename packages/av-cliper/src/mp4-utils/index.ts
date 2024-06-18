@@ -307,9 +307,21 @@ export function file2stream(
     const ds = new mp4box.DataStream();
     ds.endianness = mp4box.DataStream.BIG_ENDIAN;
 
-    for (let i = sendedBoxIdx; i < boxes.length; i++) {
-      boxes[i].write(ds);
-      delete boxes[i];
+    let i = sendedBoxIdx;
+    try {
+      for (; i < boxes.length; ) {
+        boxes[i].write(ds);
+        delete boxes[i];
+        i += 1;
+      }
+    } catch (err) {
+      const errBox = boxes[i];
+      if (err instanceof Error && errBox != null) {
+        throw Error(
+          `${err.message} | deltaBuf( boxType: ${errBox.type}, boxSize: ${errBox.size}, boxDataLen: ${errBox.data?.length ?? -1})`,
+        );
+      }
+      throw err;
     }
 
     unsafeReleaseMP4BoxFile(file);
