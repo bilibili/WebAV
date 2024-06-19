@@ -1,6 +1,6 @@
 {
   "name": "@webav/av-recorder",
-  "version": "0.11.4",
+  "version": "0.11.5",
   "private": false,
   "repository": "https://github.com/bilibili/WebAV",
   "keywords": [
@@ -38,7 +38,7 @@
     "@types/dom-mediacapture-transform": "^0.1.5",
     "@types/dom-webcodecs": "^0.1.7",
     "@types/wicg-file-system-access": "^2020.9.6",
-    "@webav/av-cliper": "^0.11.4",
+    "@webav/av-cliper": "^0.11.5",
     "fix-webm-duration": "^1.0.5"
   }
 }
