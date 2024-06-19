@@ -99,7 +99,7 @@ export default function UI() {
 因为需要在流结束的时候去修正时长信息，所以无法在录制过程中实时上传数据。
 
 ```ts
-const outStream = await fixFMP4Duration(recorder.outputStream);
+const outStream = await fixFMP4Duration(recorder.start());
 ```
 
 以下是完整的示例代码，与上一个示例的差异在于：  
@@ -126,9 +126,8 @@ async function start(videoEl: HTMLVideoElement) {
     width: 1280,
     height: 720,
   });
-  await recorder.start();
 
-  (await fixFMP4Duration(recorder.outputStream))
+  (await fixFMP4Duration(recorder.start()))
     .pipeTo(await createFileWriter())
     .catch(console.error);
 }
