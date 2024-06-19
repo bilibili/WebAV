@@ -41,3 +41,20 @@ test('hls loader default time', async () => {
   expect(video?.timestamp).toBe(10e6);
   video?.close();
 });
+
+test('hls loader async load m4s files', async () => {
+  const loader = await createHLSLoader(m3u8Url, 5);
+  const [{ actualStartTime, actualEndTime, stream }] = loader.load() ?? [];
+  expect(stream).toBeInstanceOf(ReadableStream);
+  expect([actualStartTime, Math.round(actualEndTime / 1e6)]).toEqual([0, 60]);
+
+  const clip = new MP4Clip(stream);
+  await clip.ready;
+  expect(Math.round(clip.meta.duration / 1e6)).toBe(
+    Math.round((actualEndTime - actualStartTime) / 1e6),
+  );
+
+  const { video } = await clip.tick(10e6);
+  expect(video?.timestamp).toBe(10e6);
+  video?.close();
+});
