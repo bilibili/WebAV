@@ -36,6 +36,7 @@ interface IRecodeMuxOpts {
     sampleRate: number;
     channelCount: number;
   } | null;
+  duration?: number;
   metaDataTags?: Record<string, string>;
 }
 
@@ -55,23 +56,29 @@ export function recodemux(opts: IRecodeMuxOpts): {
     Record<'VideoReady' | 'AudioReady', () => void>
   >();
 
-  let metaAdded = false;
-  const addMetadata = () => {
-    if (metaAdded) return;
-    metaAdded = true;
-    if (mp4file.moov == null) return;
-
-    const udtaBox = mp4file.moov.add('udta');
+  const addMetadata = (
+    moov: NonNullable<MP4File['moov']>,
+    tags: NonNullable<IRecodeMuxOpts['metaDataTags']>,
+  ) => {
+    const udtaBox = moov.add('udta');
     const metaBox = udtaBox.add('meta');
-    const data = { hello: 'world', foo: 'bar' };
-    metaBox.data = createMetaBox(data);
+    metaBox.data = createMetaBox(tags);
     metaBox.size = metaBox.data.byteLength;
   };
 
-  if (opts.metaDataTags != null) {
-    avSyncEvtTool.once('VideoReady', addMetadata);
-    avSyncEvtTool.once('AudioReady', addMetadata);
-  }
+  let moovReady = false;
+  const onMoovReady = () => {
+    if (mp4file.moov == null || moovReady) return;
+    moovReady = true;
+
+    if (opts.metaDataTags != null) addMetadata(mp4file.moov, opts.metaDataTags);
+    if (opts.duration != null) {
+      mp4file.moov.mvhd.duration = opts.duration;
+    }
+  };
+
+  avSyncEvtTool.once('VideoReady', onMoovReady);
+  avSyncEvtTool.once('AudioReady', onMoovReady);
 
   let vEncoder =
     opts.video != null

@@ -97,9 +97,7 @@ export class Combinator {
   // 中断输出
   #stopOutput: (() => void) | null = null;
 
-  #remux;
-
-  #opts;
+  #opts: Required<ICombinatorOpts>;
 
   #hasVideoTrack: boolean;
 
@@ -116,32 +114,20 @@ export class Combinator {
     const ctx = this.#cvs.getContext('2d', { alpha: false });
     if (ctx == null) throw Error('Can not create 2d offscreen context');
     this.#ctx = ctx;
-    this.#opts = Object.assign({ bgColor: '#000' }, opts);
+    this.#opts = Object.assign(
+      {
+        bgColor: '#000',
+        width: 0,
+        height: 0,
+        videoCodec: 'avc1.42E032',
+        audio: true,
+        bitrate: 5e6,
+        metaDataTags: null,
+      },
+      opts,
+    );
 
     this.#hasVideoTrack = width * height > 0;
-
-    this.#remux = recodemux({
-      video: this.#hasVideoTrack
-        ? {
-            width,
-            height,
-            expectFPS: 30,
-            codec: opts.videoCodec ?? 'avc1.42E032',
-            bitrate: opts.bitrate ?? 5_000_000,
-          }
-        : null,
-      audio:
-        opts.audio === false
-          ? null
-          : {
-              codec: 'aac',
-              sampleRate: DEFAULT_AUDIO_CONF.sampleRate,
-              channelCount: DEFAULT_AUDIO_CONF.channelCount,
-            },
-      metaDataTags: opts.metaDataTags,
-    });
-
-    TOTAL_COM_ENCODE_QSIZE.set(this, this.#remux.getEecodeQueueSize);
   }
 
   /**
@@ -165,8 +151,36 @@ export class Combinator {
     this.#sprites.sort((a, b) => a.zIndex - b.zIndex);
   }
 
+  #startRecodeMux(duration: number) {
+    const { width, height, videoCodec, bitrate, audio, metaDataTags } =
+      this.#opts;
+    const recodeMuxer = recodemux({
+      video: this.#hasVideoTrack
+        ? {
+            width,
+            height,
+            expectFPS: 30,
+            codec: videoCodec,
+            bitrate,
+          }
+        : null,
+      audio:
+        audio === false
+          ? null
+          : {
+              codec: 'aac',
+              sampleRate: DEFAULT_AUDIO_CONF.sampleRate,
+              channelCount: DEFAULT_AUDIO_CONF.channelCount,
+            },
+      duration,
+      metaDataTags: metaDataTags,
+    });
+    TOTAL_COM_ENCODE_QSIZE.set(this, recodeMuxer.getEecodeQueueSize);
+    return recodeMuxer;
+  }
+
   output(): ReadableStream<Uint8Array> {
-    if (this.#sprites.length === 0) throw Error('No clip added');
+    if (this.#sprites.length === 0) throw Error('No sprite added');
 
     const mainSpr = this.#sprites.find((it) => it.main);
     // 最大时间，优先取 main sprite，不存在则取最大值
@@ -189,14 +203,15 @@ export class Combinator {
     }
 
     this.#log.info(`start combinate video, maxTime:${maxTime}`);
+    const remux = this.#startRecodeMux(maxTime);
     let starTime = performance.now();
-    const stopReCodeMux = this.#run(maxTime, {
+    const stopReCodeMux = this.#run(remux, maxTime, {
       onProgress: (prog) => {
         this.#log.debug('OutputProgress:', prog);
         this.#evtTool.emit('OutputProgress', prog);
       },
       onEnded: async () => {
-        await this.#remux.flush();
+        await remux.flush();
         this.#log.info(
           '===== output ended =====, cost:',
           performance.now() - starTime,
@@ -213,11 +228,11 @@ export class Combinator {
 
     this.#stopOutput = () => {
       stopReCodeMux();
-      this.#remux.close();
+      remux.close();
       closeOutStream();
     };
     const { stream, stop: closeOutStream } = file2stream(
-      this.#remux.mp4file,
+      remux.mp4file,
       500,
       this.destroy,
     );
@@ -235,6 +250,7 @@ export class Combinator {
   }
 
   #run(
+    remux: ReturnType<typeof recodemux>,
     maxTime: number,
     {
       onProgress,
@@ -308,7 +324,7 @@ export class Combinator {
         if (this.#opts.audio !== false) {
           if (audios.flat().every((a) => a.length === 0)) {
             // 当前时刻无音频时，使用无声音频占位，否则会导致后续音频播放时间偏差
-            this.#remux.encodeAudio(
+            remux.encodeAudio(
               createAudioPlaceholder(
                 ts,
                 timeSlice,
@@ -317,7 +333,7 @@ export class Combinator {
             );
           } else {
             const data = mixinPCM(audios);
-            this.#remux.encodeAudio(
+            remux.encodeAudio(
               new AudioData({
                 timestamp: ts,
                 numberOfChannels: DEFAULT_AUDIO_CONF.channelCount,
@@ -336,7 +352,7 @@ export class Combinator {
             timestamp: ts,
           });
 
-          this.#remux.encodeVideo(vf, {
+          remux.encodeVideo(vf, {
             keyFrame: frameCnt % 150 === 0,
           });
           ctx.resetTransform();
@@ -364,7 +380,7 @@ export class Combinator {
     // 避免 进度值 回退
     let lastProg = 0;
     const outProgTimer = setInterval(() => {
-      const s = this.#remux.getEecodeQueueSize();
+      const s = remux.getEecodeQueueSize();
       maxEncodeQSize = Math.max(maxEncodeQSize, s);
       outProgress = s / maxEncodeQSize;
       lastProg = Math.max(outProgress * 0.5 + inputProgress * 0.5, lastProg);
