@@ -59,7 +59,7 @@ test('hls loader async load m4s files', async () => {
   video?.close();
 });
 
-test('hla loader async load m4s files with error stop correctly', async () => {
+test('hls loader async load m4s files with error stop correctly', async () => {
   const fetchSpy = vi.spyOn(globalThis, 'fetch');
   try {
     const loader = await createHLSLoader(m3u8Url, 4);
