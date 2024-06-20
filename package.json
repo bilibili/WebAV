@@ -18,7 +18,7 @@
     "typescript": "^5.4.5",
     "vite": "^5.2.11",
     "vitest": "^1.6.0",
-    "webdriverio": "^8.36.1"
+    "webdriverio": "^8.39.0"
   },
   "resolutions": {
     "prettier": "^3.2.5"
