@@ -21,7 +21,7 @@ let THRESHOLD = 1;
 const localFile = tmpfile();
 
 let writer: Awaited<ReturnType<typeof localFile.createWriter>> | null = null;
-(async function init() {
+const initPromise = (async function init() {
   writer = await localFile.createWriter();
 })();
 
@@ -60,6 +60,7 @@ export const Log = {
   },
 
   async dump() {
+    await initPromise;
     await writer?.flush();
     return await localFile.text();
   },
