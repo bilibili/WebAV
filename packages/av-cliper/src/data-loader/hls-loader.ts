@@ -20,15 +20,8 @@ export async function createHLSLoader(m3u8URL: string, concurrency = 10) {
 
   const segmentBufferFetchqueue = {} as Record<string, Promise<ArrayBuffer>>;
 
-  async function downloadSegGroup(
-    filterSegGroup: Record<
-      string,
-      {
-        actualStartTime: number;
-        actualEndTime: number;
-        segments: Parser['manifest']['segments'];
-      }
-    >,
+  async function downloadSegments(
+    segments: Parser['manifest']['segments'],
     ctrl: ReadableStreamDefaultController<Uint8Array>,
   ) {
     function createTaskQueue(concurrency: number) {
@@ -48,8 +41,8 @@ export async function createHLSLoader(m3u8URL: string, concurrency = 10) {
             await task?.();
             next();
           } catch (err) {
-            // 异常时中断流
-            ctrl.close();
+            queue.length = 0;
+            ctrl.error(err);
             Log.error(err);
           }
           running--;
@@ -65,18 +58,18 @@ export async function createHLSLoader(m3u8URL: string, concurrency = 10) {
 
     const runTask = createTaskQueue(concurrency);
 
-    for (const [, gData] of Object.entries(filterSegGroup)) {
-      for (const [, item] of gData.segments.entries()) {
-        const url = new URL(item.uri, base).href;
-        runTask(
-          () => (segmentBufferFetchqueue[url] = fetchSegmentBufferPromise(url)),
-        );
-      }
+    for (const [, item] of segments.entries()) {
+      const url = new URL(item.uri, base).href;
+      runTask(
+        () => (segmentBufferFetchqueue[url] = fetchSegmentBufferPromise(url)),
+      );
     }
   }
 
   async function getSegmentBuffer(url: string) {
-    return segmentBufferFetchqueue[url];
+    const segmentBuffer = await segmentBufferFetchqueue[url];
+    delete segmentBufferFetchqueue[url];
+    return segmentBuffer;
   }
 
   return {
@@ -139,7 +132,7 @@ export async function createHLSLoader(m3u8URL: string, concurrency = 10) {
             actualEndTime,
             stream: new ReadableStream<Uint8Array>({
               start: async (ctrl) => {
-                downloadSegGroup(filterSegGroup, ctrl);
+                downloadSegments(segments, ctrl);
                 ctrl.enqueue(
                   new Uint8Array(
                     await (
