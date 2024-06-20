@@ -41,7 +41,7 @@ export async function createHLSLoader(m3u8URL: string, concurrency = 10) {
             await task?.();
             next();
           } catch (err) {
-            queue.length = 0;
+            queue = [];
             ctrl.error(err);
             Log.error(err);
           }
