@@ -1,4 +1,4 @@
-import { expect, test } from 'vitest';
+import { expect, test, vi } from 'vitest';
 import { MP4Clip } from '../../clips/mp4-clip';
 import { createHLSLoader } from '../hls-loader';
 
@@ -57,4 +57,17 @@ test('hls loader async load m4s files', async () => {
   const { video } = await clip.tick(10e6);
   expect(video?.timestamp).toBe(10e6);
   video?.close();
+});
+
+test('hla loader async load m4s files with error stop correctly', async () => {
+  const fetchSpy = vi.spyOn(globalThis, 'fetch');
+  try {
+    const loader = await createHLSLoader(m3u8Url, 4);
+    fetchSpy.mockRejectedValueOnce(new Error('fetch error'));
+    loader.load() ?? [];
+  } catch (e: any) {
+    expect(e.message).toBe('fetch error');
+  }
+  expect(fetchSpy).toHaveBeenCalledTimes(6);
+  fetchSpy.mockRestore();
 });
