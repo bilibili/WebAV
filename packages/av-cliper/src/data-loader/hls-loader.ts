@@ -1,9 +1,10 @@
 import { Parser } from 'm3u8-parser';
+import { Log } from '../log';
 
 /**
  * 创建一个 HLS 资源加载器
  */
-export async function createHLSLoader(m3u8URL: string) {
+export async function createHLSLoader(m3u8URL: string, concurrency = 10) {
   const parser = new Parser();
   parser.push(await (await fetch(m3u8URL)).text());
   parser.end();
@@ -16,6 +17,60 @@ export async function createHLSLoader(m3u8URL: string) {
     {} as Record<string, Parser['manifest']['segments']>,
   );
   const base = new URL(m3u8URL, location.href);
+
+  const segmentBufferFetchqueue = {} as Record<string, Promise<ArrayBuffer>>;
+
+  async function downloadSegments(
+    segments: Parser['manifest']['segments'],
+    ctrl: ReadableStreamDefaultController<Uint8Array>,
+  ) {
+    function createTaskQueue(concurrency: number) {
+      let running = 0;
+      const queue = [] as Array<() => Promise<ArrayBuffer>>;
+
+      async function runTask(task: () => Promise<ArrayBuffer>) {
+        queue.push(task);
+        next();
+      }
+
+      async function next() {
+        if (running < concurrency && queue.length) {
+          const task = queue.shift();
+          running++;
+          try {
+            await task?.();
+            next();
+          } catch (err) {
+            queue = [];
+            ctrl.error(err);
+            Log.error(err);
+          }
+          running--;
+        }
+      }
+
+      return runTask;
+    }
+
+    async function fetchSegmentBufferPromise(url: string) {
+      return (await fetch(url)).arrayBuffer();
+    }
+
+    const runTask = createTaskQueue(concurrency);
+
+    for (const [, item] of segments.entries()) {
+      const url = new URL(item.uri, base).href;
+      runTask(
+        () => (segmentBufferFetchqueue[url] = fetchSegmentBufferPromise(url)),
+      );
+    }
+  }
+
+  async function getSegmentBuffer(url: string) {
+    const segmentBuffer = await segmentBufferFetchqueue[url];
+    delete segmentBufferFetchqueue[url];
+    return segmentBuffer;
+  }
 
   return {
     /**
@@ -77,6 +132,7 @@ export async function createHLSLoader(m3u8URL: string) {
             actualEndTime,
             stream: new ReadableStream<Uint8Array>({
               start: async (ctrl) => {
+                downloadSegments(segments, ctrl);
                 ctrl.enqueue(
                   new Uint8Array(
                     await (
@@ -86,13 +142,8 @@ export async function createHLSLoader(m3u8URL: string) {
                 );
               },
               pull: async (ctrl) => {
-                ctrl.enqueue(
-                  new Uint8Array(
-                    await (
-                      await fetch(new URL(segments[segIdx].uri, base).href)
-                    ).arrayBuffer(),
-                  ),
-                );
+                const url = new URL(segments[segIdx].uri, base).href;
+                ctrl.enqueue(new Uint8Array(await getSegmentBuffer(url)));
                 segIdx += 1;
                 if (segIdx >= segments.length) ctrl.close();
               },
