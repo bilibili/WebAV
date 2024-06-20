@@ -26,7 +26,7 @@ export async function createHLSLoader(m3u8URL: string, concurrency = 10) {
   ) {
     function createTaskQueue(concurrency: number) {
       let running = 0;
-      const queue = [] as Array<() => Promise<ArrayBuffer>>;
+      let queue = [] as Array<() => Promise<ArrayBuffer>>;
 
       async function runTask(task: () => Promise<ArrayBuffer>) {
         queue.push(task);
