@@ -3,6 +3,7 @@ import { MP4Clip } from '../../clips/mp4-clip';
 import { createHLSLoader } from '../hls-loader';
 
 const m3u8Url = `//${location.host}/video/m3u8/bunny.m3u8`;
+const m3u8MultUrl = `//${location.host}/video/m3u8/bunny_mult.m3u8`;
 
 test('hls loader specify time', async () => {
   const loader = await createHLSLoader(m3u8Url);
@@ -73,13 +74,15 @@ test('hls loader async load m4s files with error stop correctly', async () => {
 });
 
 test('hls loader tells load progress correctly', async () => {
-  const loader = await createHLSLoader(m3u8Url);
-  let curProgress = 0;
-  loader.on('progress', (progress) => {
-    expect(progress).toBeGreaterThan(curProgress);
-    curProgress = progress;
+  const loader = await createHLSLoader(m3u8MultUrl);
+  const streams = loader.load() ?? [];
+  streams.forEach(async ({ stream, on }) => {
+    let curProgress = 0;
+    on('progress', (progress) => {
+      expect(progress).toBeGreaterThan(curProgress);
+      curProgress = progress;
+    });
+    const clip = new MP4Clip(stream);
+    await clip.ready;
   });
-  const [{ stream }] = loader.load() ?? [];
-  const clip = new MP4Clip(stream);
-  await clip.ready;
 });
