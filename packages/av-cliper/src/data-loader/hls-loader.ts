@@ -135,6 +135,7 @@ export async function createHLSLoader(m3u8URL: string, concurrency = 10) {
 
       if (Object.keys(filterSegGroup).length === 0) return null;
 
+      let streamIdx = 0;
       return Object.entries(filterSegGroup).map(
         ([initUri, { actualStartTime, actualEndTime, segments }]) => {
           let segIdx = 0;
@@ -157,8 +158,14 @@ export async function createHLSLoader(m3u8URL: string, concurrency = 10) {
                 const url = new URL(segments[segIdx].uri, base).href;
                 ctrl.enqueue(new Uint8Array(await getSegmentBuffer(url)));
                 segIdx += 1;
-                if (segIdx >= segments.length) ctrl.close();
-                evtTool.destroy();
+                if (segIdx >= segments.length) {
+                  ctrl.close();
+                  streamIdx++;
+                  // 如果所有流都已经下载完毕，销毁事件监听器
+                  if (streamIdx >= Object.keys(filterSegGroup).length) {
+                    evtTool.destroy();
+                  }
+                }
               },
             }),
           };
