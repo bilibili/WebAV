@@ -231,6 +231,13 @@ export class AVCanvas {
     this.#pause();
   }
 
+  get activeSprite() {
+    return this.#spriteManager.activeSprite;
+  }
+  set activeSprite(s: VisibleSprite | null) {
+    this.#spriteManager.activeSprite = s;
+  }
+
   #sprMapAudioNode = new WeakMap<VisibleSprite, AudioNode>();
   addSprite: SpriteManager['addSprite'] = async (vs) => {
     if (this.#audioCtx.state === 'suspended')
