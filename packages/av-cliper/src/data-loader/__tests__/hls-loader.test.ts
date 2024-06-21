@@ -72,7 +72,7 @@ test('hls loader async load m4s files with error stop correctly', async () => {
   fetchSpy.mockRestore();
 });
 
-test.only('hls loader tells load progress correctly', async () => {
+test('hls loader tells load progress correctly', async () => {
   const loader = await createHLSLoader(m3u8Url);
   let curProgress = 0;
   loader.on('progress', (progress) => {
