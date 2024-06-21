@@ -48,7 +48,7 @@ export async function createHLSLoader(m3u8URL: string, concurrency = 10) {
             done++;
             evtTool.emit(
               'progress',
-              Math.round((done / segments.length) * 100),
+              Math.round((done / segments.length) * 100) / 100,
             );
             next();
           } catch (err) {
@@ -141,6 +141,7 @@ export async function createHLSLoader(m3u8URL: string, concurrency = 10) {
           return {
             actualStartTime,
             actualEndTime,
+            on: evtTool.on,
             stream: new ReadableStream<Uint8Array>({
               start: async (ctrl) => {
                 downloadSegments(segments, ctrl);
@@ -164,6 +165,5 @@ export async function createHLSLoader(m3u8URL: string, concurrency = 10) {
         },
       );
     },
-    on: evtTool.on,
   };
 }
