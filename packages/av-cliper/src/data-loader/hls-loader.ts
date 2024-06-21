@@ -1,5 +1,6 @@
 import { Parser } from 'm3u8-parser';
 import { Log } from '../log';
+import { EventTool } from '../event-tool';
 
 /**
  * 创建一个 HLS 资源加载器
@@ -18,6 +19,10 @@ export async function createHLSLoader(m3u8URL: string, concurrency = 10) {
   );
   const base = new URL(m3u8URL, location.href);
 
+  const evtTool = new EventTool<{
+    progress: (progress: number) => void;
+  }>();
+
   const segmentBufferFetchqueue = {} as Record<string, Promise<ArrayBuffer>>;
 
   async function downloadSegments(
@@ -26,6 +31,7 @@ export async function createHLSLoader(m3u8URL: string, concurrency = 10) {
   ) {
     function createTaskQueue(concurrency: number) {
       let running = 0;
+      let done = 0;
       let queue = [] as Array<() => Promise<ArrayBuffer>>;
 
       async function runTask(task: () => Promise<ArrayBuffer>) {
@@ -39,6 +45,11 @@ export async function createHLSLoader(m3u8URL: string, concurrency = 10) {
           running++;
           try {
             await task?.();
+            done++;
+            evtTool.emit(
+              'progress',
+              Math.round((done / segments.length) * 100),
+            );
             next();
           } catch (err) {
             queue = [];
@@ -146,11 +157,13 @@ export async function createHLSLoader(m3u8URL: string, concurrency = 10) {
                 ctrl.enqueue(new Uint8Array(await getSegmentBuffer(url)));
                 segIdx += 1;
                 if (segIdx >= segments.length) ctrl.close();
+                evtTool.destroy();
               },
             }),
           };
         },
       );
     },
+    on: evtTool.on,
   };
 }

@@ -71,3 +71,15 @@ test('hls loader async load m4s files with error stop correctly', async () => {
   expect(fetchSpy).toHaveBeenCalledTimes(6);
   fetchSpy.mockRestore();
 });
+
+test.only('hls loader tells load progress correctly', async () => {
+  const loader = await createHLSLoader(m3u8Url);
+  let curProgress = 0;
+  loader.on('progress', (progress) => {
+    expect(progress).toBeGreaterThan(curProgress);
+    curProgress = progress;
+  });
+  const [{ stream }] = loader.load() ?? [];
+  const clip = new MP4Clip(stream);
+  await clip.ready;
+});
