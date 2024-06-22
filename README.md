@@ -180,16 +180,9 @@ If you are a beginner in the field of web audio and video, you can start by lear
 [Articles by the Author](https://bilibili.github.io/WebAV/article)  
 [Web Audio and Video Knowledge Graph](https://github.com/bilibili/WebAV-KnowledgeGraph)
 
-<!-- ## Sponsorship
+## Sponsor Author
 
-If this project has been helpful to you, scan the QR code to treat the author to a milk tea :)
-
-<img src="https://github.com/bilibili/WebAV/assets/3307051/4b25836a-3f85-4160-b0bf-6c8360fad9a4" width=200 />
-<img src="https://github.com/bilibili/WebAV/assets/3307051/b0d8ff07-71c9-46c1-af33-019420d17c06" width=200 />
-
----
-
-Add WeChat `liujun_fenghen` with the note WebAV to join the WebAV audio and video technology exchange WeChat group. -->
+[Paypal.me](https://paypal.me/hughfenghen)
 
 <!--
 ChatGPT:
