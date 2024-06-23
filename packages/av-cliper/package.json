@@ -26,16 +26,19 @@
     "build:dev": "vite build --watch --emptyOutDir false & tsc -p build.tsconfig.json --outDir dist --watch",
     "build:api": "typedoc src/index.ts --tsconfig build.tsconfig.json --out ../../doc-site/public/_api/av-cliper",
     "build:api:watch": "typedoc src/index.ts --tsconfig build.tsconfig.json --out ../../doc-site/public/_api/av-cliper --watch",
-    "prepublishOnly": "yarn build"
+    "prepublishOnly": "pnpm build"
   },
   "files": [
     "dist"
   ],
   "dependencies": {
-    "@types/dom-webcodecs": "^0.1.7",
     "@webav/mp4box.js": "0.5.3-fenghen",
     "m3u8-parser": "^7.1.0",
     "opfs-tools": "^0.5.3",
     "wave-resampler": "^1.0.0"
+  },
+  "devDependencies": {
+    "@types/dom-mediacapture-transform": "^0.1.5",
+    "@types/dom-webcodecs": "^0.1.11"
   }
 }

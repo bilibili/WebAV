@@ -26,7 +26,7 @@
     "build:dev": "vite build --watch --emptyOutDir false & tsc -p build.tsconfig.json --outDir dist --watch",
     "build:api": "typedoc src/av-recorder.ts --tsconfig build.tsconfig.json --out ../../doc-site/public/_api/av-recorder",
     "build:api:watch": "typedoc src/av-recorder.ts --tsconfig build.tsconfig.json --out ../../doc-site/public/_api/av-recorder --watch",
-    "prepublishOnly": "yarn build"
+    "prepublishOnly": "pnpm build"
   },
   "files": [
     "dist"
@@ -38,7 +38,7 @@
     "@types/dom-mediacapture-transform": "^0.1.5",
     "@types/dom-webcodecs": "^0.1.7",
     "@types/wicg-file-system-access": "^2020.9.6",
-    "@webav/av-cliper": "^0.11.9",
+    "@webav/av-cliper": "workspace:*",
     "fix-webm-duration": "^1.0.5"
   }
 }

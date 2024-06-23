@@ -25,7 +25,7 @@
     "build": "vite build && tsc -p build.tsconfig.json --outDir dist",
     "build:api": "typedoc src/index.ts --tsconfig build.tsconfig.json --out ../../doc-site/public/_api/av-canvas",
     "build:api:watch": "typedoc src/index.ts --tsconfig build.tsconfig.json --out ../../doc-site/public/_api/av-canvas --watch",
-    "prepublishOnly": "yarn build",
+    "prepublishOnly": "pnpm build",
     "preview": "vite preview"
   },
   "files": [
@@ -45,6 +45,6 @@
     "tailwindcss": "^3.4.3"
   },
   "dependencies": {
-    "@webav/av-cliper": "^0.11.9"
+    "@webav/av-cliper": "workspace:*"
   }
 }
