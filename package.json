@@ -28,6 +28,7 @@
     "publish:all:next": "pnpm publish -r --tag next",
     "build:api": "pnpm -F '@webav/*' run build:api",
     "changelog": "conventional-changelog -p angular -i CHANGELOG.md -s",
+    "upver": "pnpm changeset version",
     "postinstall": "simple-git-hooks"
   },
   "workspaces": [
