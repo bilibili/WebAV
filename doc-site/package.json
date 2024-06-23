@@ -2,6 +2,7 @@
   "name": "WebAV-Doc-Site",
   "version": "0.0.1",
   "description": "WebAV-Doc-Site",
+  "private": true,
   "scripts": {
     "dev": "dumi dev",
     "build": "dumi build"
