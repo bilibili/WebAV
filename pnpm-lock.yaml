@@ -113,8 +113,8 @@ importers:
         specifier: ^2020.9.6
         version: 2020.9.8
       '@webav/av-recorder':
-        specifier: ^0.11.9
-        version: 0.11.9
+        specifier: ^0.12.1
+        version: 0.12.1
       '@xzdarcy/react-timeline-editor':
         specifier: ^0.1.9
         version: 0.1.9(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
@@ -2339,11 +2339,11 @@ packages:
   '@webav/av-canvas@file:packages/av-canvas':
     resolution: {directory: packages/av-canvas, type: directory}
 
-  '@webav/av-cliper@0.11.9':
-    resolution: {integrity: sha512-kD9fOZ9NJBU6GGl9fADMltJXbfE3VWBI8aV6xb9HIGhAZPCdWVSnfZI4aBvguTo0/jakDPQL6HYeG1wshuzy0A==}
+  '@webav/av-cliper@0.12.1':
+    resolution: {integrity: sha512-YzE2Yf7Fp2x1djN8gshzIhBk1AyN5iqghffdf8ph82akJuwMwCh5aLZ/xyhQT4GN/yV5EQq7sObQkRSmaIC55g==}
 
-  '@webav/av-recorder@0.11.9':
-    resolution: {integrity: sha512-M1cUynVNfwcuzCDImeo7a04WodM8iStUN3cvYBg92k1CpjBhlCtB3BkmR0uenakJ6ibmuD+3l+Yl6WflD527UA==}
+  '@webav/av-recorder@0.12.1':
+    resolution: {integrity: sha512-4E5eW1jjLyVQXJvum4SOEtJLE7mMIpAuVRudlWFaT8J7KKJcLftSrrfBtMtRbp/CvQzdAd9+SZyi/76+iBcPow==}
 
   '@webav/av-recorder@file:packages/av-recorder':
     resolution: {directory: packages/av-recorder, type: directory}
@@ -12130,20 +12130,19 @@ snapshots:
     dependencies:
       '@webav/av-cliper': link:packages/av-cliper
 
-  '@webav/av-cliper@0.11.9':
+  '@webav/av-cliper@0.12.1':
     dependencies:
-      '@types/dom-webcodecs': 0.1.11
       '@webav/mp4box.js': 0.5.3-fenghen
       m3u8-parser: 7.1.0
       opfs-tools: 0.5.3
       wave-resampler: 1.0.0
 
-  '@webav/av-recorder@0.11.9':
+  '@webav/av-recorder@0.12.1':
     dependencies:
       '@types/dom-mediacapture-transform': 0.1.9
       '@types/dom-webcodecs': 0.1.11
       '@types/wicg-file-system-access': 2020.9.8
-      '@webav/av-cliper': 0.11.9
+      '@webav/av-cliper': 0.12.1
       fix-webm-duration: 1.0.5
 
   '@webav/av-recorder@file:packages/av-recorder':
