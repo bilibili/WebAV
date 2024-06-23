@@ -162,17 +162,17 @@ recorder.start(); // => ReadableStream
 ### Running the Project
 
 1. Clone the current project locally
-2. Execute `yarn install && yarn build` in the root directory
-3. Change directory to the specific package (e.g., av-cliper) and run `yarn dev`
+2. Execute `pnpm install && pnpm build` in the root directory
+3. Change directory to the specific package (e.g., av-cliper) and run `pnpm dev`
 4. The path is the filename in the DEMO directory, such as `concat-media.html`
 5. Open the DEMO URL in the browser, such as `http://localhost:6066/concat-media.html`
-6. Run unit tests for the package with `yarn test`
+6. Run unit tests for the package with `pnpm test`
 
 ### Running the WebAV Site
 
 1. Clone the current project locally
-2. Execute `yarn install && yarn build` in the root directory
-3. Change directory to `doc-site` and run `yarn dev`
+2. Execute `pnpm install && pnpm build` in the root directory
+3. Change directory to `doc-site` and run `pnpm dev`
 4. Follow the terminal prompts to visit the specified URL
 
 If you are a beginner in the field of web audio and video, you can start by learning the basics:
