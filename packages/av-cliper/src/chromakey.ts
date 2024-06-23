@@ -250,10 +250,10 @@ function getKeyColor(imgSource: TImgSource) {
 
 /**
  * 绿幕抠图
- * keyColor 需要扣除的背景色，若不传则取第一个像素点
- * similarity 背景色相似度阈值，过小可能保留背景色，过大可能扣掉更多非背景像素点
- * smoothness 平滑度；过小可能出现锯齿，过大导致整体变透明
- * spill      饱和度；过小可能保留绿色混合，过大导致图片变灰度
+ * - `keyColor` 需要扣除的背景色，若不传则取第一个像素点
+ * - `similarity` 背景色相似度阈值，过小可能保留背景色，过大可能扣掉更多非背景像素点
+ * - `smoothness` 平滑度；过小可能出现锯齿，过大导致整体变透明
+ * - `spill`      饱和度；过小可能保留绿色混合，过大导致图片变灰度
  * @param opts: {
  *   keyColor?: [r, g, b]
  *   similarity: number
