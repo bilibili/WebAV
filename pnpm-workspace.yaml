@@ -1,0 +1,6 @@
+packages:
+  # all packages in direct subdirs of packages/
+  - 'packages/*'
+  - 'doc-site'
+  # exclude packages that are inside test directories
+  - '!**/__tests__/**'

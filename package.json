@@ -20,7 +20,7 @@
     "vitest": "^1.6.0",
     "webdriverio": "^8.39.0"
   },
-  "resolutions": {
+  "overrides": {
     "prettier": "^3.2.5"
   },
   "scripts": {
@@ -36,7 +36,7 @@
   ],
   "simple-git-hooks": {
     "commit-msg": "node scripts/verify-commit.js",
-    "pre-commit": "yarn lint-staged"
+    "pre-commit": "pnpm lint-staged"
   },
   "lint-staged": {
     "*.{json,ts,tsx,js,md}": [

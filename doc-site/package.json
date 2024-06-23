@@ -3,7 +3,6 @@
   "version": "0.0.1",
   "description": "WebAV-Doc-Site",
   "scripts": {
-    "start": "npm run dev",
     "dev": "dumi dev",
     "build": "dumi build"
   },
