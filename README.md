@@ -182,6 +182,8 @@ If you are a beginner in the field of web audio and video, you can start by lear
 
 ## Sponsor Author
 
+If this project has been helpful to you, please sponsor the author to a milk tea ：）
+
 [Paypal.me](https://paypal.me/hughfenghen)
 
 <!--
