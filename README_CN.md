@@ -162,17 +162,17 @@ recorder.start(); // => ReadableStream
 ### 运行项目
 
 1. clone 当前项目到本地
-2. 在根目录下执行 `yarn install && yarn build`
-3. cd 跳转到特定 package (假设为 av-cliper)，运行 `yarn dev`
+2. 在根目录下执行 `pnpm install && pnpm build`
+3. cd 跳转到特定 package (假设为 av-cliper)，运行 `pnpm dev`
 4. path 为 DEMO 目录下的文件名，如 `concat-media.html`
 5. 在浏览器中打开 DEMO URL，如 `http://localhost:6066/concat-media.html`
-6. `yarn test` 运行该 package 的单元测试
+6. `pnpm test` 运行该 package 的单元测试
 
 ### 运行 WebAV 站点
 
 1. clone 当前项目到本地
-2. 在根目录下执行 `yarn install && yarn build`
-3. cd 跳转到 `doc-site` 目录，执行 `yarn dev`
+2. 在根目录下执行 `pnpm install && pnpm build`
+3. cd 跳转到 `doc-site` 目录，执行 `pnpm dev`
 4. 根据终端提示，访问指定 URL
 
 如果你是 Web 音视频领域的初学者，可以先了解入门知识

@@ -33,17 +33,13 @@ jobs:
           node-version: 18 # 或者您需要的 Node.js 版本
 
       - name: Install packages dependencies
-        run: yarn install --frozen-lockfile
+        run: pnpm install --frozen-lockfile
 
       - name: Build:api
-        run: yarn build && yarn build:api
-
-      - name: Install doc-site dependencies
-        run: yarn install --frozen-lockfile
-        working-directory: ./doc-site
+        run: pnpm build && pnpm build:api
 
       - name: Build doc-site
-        run: yarn build
+        run: pnpm build
         working-directory: ./doc-site
 
       - name: Setup Pages

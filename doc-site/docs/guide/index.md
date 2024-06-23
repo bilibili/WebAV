@@ -20,7 +20,7 @@ npm install @webav/av-cliper
 
 # or
 
-yarn add @webav/av-cliper
+pnpm add @webav/av-cliper
 ```
 
 ## API
@@ -44,11 +44,11 @@ WebAV 项目包含三个模块，使用 TypeDoc 生成 API 文档
 
 若你对 WebAV 感兴趣，可以尝试在本地启动项目
 
-1. 安装依赖：在根目录执行 `yarn install`
-2. 构建所有 packages：在根目录执行 `yarn build`
+1. 安装依赖：在根目录执行 `pnpm install`
+2. 构建所有 packages：在根目录执行 `pnpm build`
 3. 运行 DEMO
    1. cd 到特定的 package 目录，比如 `cd packages/av-cliper`
-   2. 执行 `yarn dev`
+   2. 执行 `pnpm dev`
 4. 访问 DEMO
    1. 复制控制台中打印的 baseUrl，类似 `http://localhost:6066/`
    2. 确定对应 DEMO 的 path，是 `packages/av-cliper/demo` 目录下的文件名，如 `concat-media.html`
