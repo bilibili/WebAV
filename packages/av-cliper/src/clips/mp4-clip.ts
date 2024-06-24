@@ -629,20 +629,23 @@ class VideoFrameFinder {
       }
 
       if (hasValidFrame) {
-        const chunks = await Promise.all(
-          this.samples
-            .slice(this.#videoDecCusorIdx, endIdx)
-            .map((s) =>
+        const samples = this.samples.slice(this.#videoDecCusorIdx, endIdx);
+        if (samples[0]?.is_sync !== true) {
+          Log.warn('First sample not key frame');
+        } else {
+          const chunks = await Promise.all(
+            samples.map((s) =>
               sample2Chunk(s, EncodedVideoChunk, this.localFileReader),
             ),
-        );
-        // Wait for the previous asynchronous operation to complete, at which point the task may have already been terminated
-        if (aborter.abort) return null;
+          );
+          // Wait for the previous asynchronous operation to complete, at which point the task may have already been terminated
+          if (aborter.abort) return null;
 
-        this.#lastVfDur = chunks[0]?.duration ?? 0;
-        for (const c of chunks) dec.decode(c);
-        this.#inputChunkCnt += chunks.length;
-        dec.flush().catch(Log.error);
+          this.#lastVfDur = chunks[0]?.duration ?? 0;
+          for (const c of chunks) dec.decode(c);
+          this.#inputChunkCnt += chunks.length;
+          dec.flush().catch(Log.error);
+        }
       }
       this.#videoDecCusorIdx = endIdx;
     }
