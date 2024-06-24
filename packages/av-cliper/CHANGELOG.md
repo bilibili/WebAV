@@ -1,5 +1,11 @@
 # @webav/av-cliper
 
+## 0.12.3
+
+### Patch Changes
+
+- 53b37c7: fix: hardware decode error
+
 ## 0.12.2
 
 ### Patch Changes
