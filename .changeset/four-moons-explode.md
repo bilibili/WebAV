@@ -2,4 +2,4 @@
 '@webav/av-cliper': patch
 ---
 
-add progress callback for hlsloader
+feat: add progress event for hlsloader
