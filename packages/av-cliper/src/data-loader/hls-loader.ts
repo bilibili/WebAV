@@ -19,15 +19,12 @@ export async function createHLSLoader(m3u8URL: string, concurrency = 10) {
   );
   const base = new URL(m3u8URL, location.href);
 
-  const evtTool = new EventTool<{
-    progress: (progress: number) => void;
-  }>();
-
   const segmentBufferFetchqueue = {} as Record<string, Promise<ArrayBuffer>>;
 
   async function downloadSegments(
     segments: Parser['manifest']['segments'],
     ctrl: ReadableStreamDefaultController<Uint8Array>,
+    evtTool: EventTool<{ progress: (progress: number) => void }>,
   ) {
     function createTaskQueue(concurrency: number) {
       let running = 0;
@@ -54,6 +51,7 @@ export async function createHLSLoader(m3u8URL: string, concurrency = 10) {
           } catch (err) {
             queue = [];
             ctrl.error(err);
+            evtTool.destroy();
             Log.error(err);
           }
           running--;
@@ -135,17 +133,21 @@ export async function createHLSLoader(m3u8URL: string, concurrency = 10) {
 
       if (Object.keys(filterSegGroup).length === 0) return null;
 
-      let streamIdx = 0;
       return Object.entries(filterSegGroup).map(
         ([initUri, { actualStartTime, actualEndTime, segments }]) => {
           let segIdx = 0;
+
+          const evtTool = new EventTool<{
+            progress: (progress: number) => void;
+          }>();
+
           return {
             actualStartTime,
             actualEndTime,
             on: evtTool.on,
             stream: new ReadableStream<Uint8Array>({
               start: async (ctrl) => {
-                downloadSegments(segments, ctrl);
+                downloadSegments(segments, ctrl, evtTool);
                 ctrl.enqueue(
                   new Uint8Array(
                     await (
@@ -160,11 +162,7 @@ export async function createHLSLoader(m3u8URL: string, concurrency = 10) {
                 segIdx += 1;
                 if (segIdx >= segments.length) {
                   ctrl.close();
-                  streamIdx++;
-                  // 如果所有流都已经下载完毕，销毁事件监听器
-                  if (streamIdx >= Object.keys(filterSegGroup).length) {
-                    evtTool.destroy();
-                  }
+                  evtTool.destroy();
                 }
               },
             }),
