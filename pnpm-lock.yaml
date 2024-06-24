@@ -61,7 +61,7 @@ importers:
         version: file:packages/av-canvas
       '@webav/av-cliper':
         specifier: file:../packages/av-cliper
-        version: link:../packages/av-cliper
+        version: file:packages/av-cliper
       '@webav/av-recorder':
         specifier: file:../packages/av-recorder
         version: file:packages/av-recorder
@@ -146,8 +146,8 @@ importers:
         specifier: ^7.1.0
         version: 7.1.0
       opfs-tools:
-        specifier: ^0.5.3
-        version: 0.5.3
+        specifier: ^0.5.4
+        version: 0.5.4
       wave-resampler:
         specifier: ^1.0.0
         version: 1.0.0
@@ -2341,6 +2341,9 @@ packages:
 
   '@webav/av-cliper@0.12.1':
     resolution: {integrity: sha512-YzE2Yf7Fp2x1djN8gshzIhBk1AyN5iqghffdf8ph82akJuwMwCh5aLZ/xyhQT4GN/yV5EQq7sObQkRSmaIC55g==}
+
+  '@webav/av-cliper@file:packages/av-cliper':
+    resolution: {directory: packages/av-cliper, type: directory}
 
   '@webav/av-recorder@0.12.1':
     resolution: {integrity: sha512-4E5eW1jjLyVQXJvum4SOEtJLE7mMIpAuVRudlWFaT8J7KKJcLftSrrfBtMtRbp/CvQzdAd9+SZyi/76+iBcPow==}
@@ -6409,6 +6412,9 @@ packages:
 
   opfs-tools@0.5.3:
     resolution: {integrity: sha512-VFpTBRK9mPkN1n1t7KfcqL5hLf+l7I6bh8VYvFMNMMeVLee35UVgvVrH/sdAih0Z5HtoX/NGz6CEFvY7/o/5QA==}
+
+  opfs-tools@0.5.4:
+    resolution: {integrity: sha512-bgPB3DM786CJKcTfB3QD8MtQYt5UWMxO+p3AX7PRPPulJ86a2o0KFrgwZ0fzIjOJVJHpZNeOtBx2uycHf6BhEw==}
 
   optionator@0.9.4:
     resolution: {integrity: sha512-6IpQ7mKUxRcZNLIObR0hz7lxsapSSIYNZJwXPGeF0mTVqGKFIXj1DQcMoT22S3ROcLyY/rz0PWaWZ9ayWmad9g==}
@@ -12137,6 +12143,13 @@ snapshots:
       opfs-tools: 0.5.3
       wave-resampler: 1.0.0
 
+  '@webav/av-cliper@file:packages/av-cliper':
+    dependencies:
+      '@webav/mp4box.js': 0.5.3-fenghen
+      m3u8-parser: 7.1.0
+      opfs-tools: 0.5.3
+      wave-resampler: 1.0.0
+
   '@webav/av-recorder@0.12.1':
     dependencies:
       '@types/dom-mediacapture-transform': 0.1.9
@@ -17313,6 +17326,8 @@ snapshots:
       is-wsl: 2.2.0
 
   opfs-tools@0.5.3: {}
+
+  opfs-tools@0.5.4: {}
 
   optionator@0.9.4:
     dependencies:
