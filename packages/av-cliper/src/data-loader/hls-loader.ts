@@ -1,5 +1,6 @@
 import { Parser } from 'm3u8-parser';
 import { Log } from '../log';
+import { EventTool } from '../event-tool';
 
 /**
  * 创建一个 HLS 资源加载器
@@ -23,9 +24,11 @@ export async function createHLSLoader(m3u8URL: string, concurrency = 10) {
   async function downloadSegments(
     segments: Parser['manifest']['segments'],
     ctrl: ReadableStreamDefaultController<Uint8Array>,
+    evtTool: EventTool<{ progress: (progress: number) => void }>,
   ) {
     function createTaskQueue(concurrency: number) {
       let running = 0;
+      let done = 0;
       let queue = [] as Array<() => Promise<ArrayBuffer>>;
 
       async function runTask(task: () => Promise<ArrayBuffer>) {
@@ -39,10 +42,16 @@ export async function createHLSLoader(m3u8URL: string, concurrency = 10) {
           running++;
           try {
             await task?.();
+            done++;
+            evtTool.emit(
+              'progress',
+              Math.round((done / segments.length) * 100) / 100,
+            );
             next();
           } catch (err) {
             queue = [];
             ctrl.error(err);
+            evtTool.destroy();
             Log.error(err);
           }
           running--;
@@ -127,12 +136,18 @@ export async function createHLSLoader(m3u8URL: string, concurrency = 10) {
       return Object.entries(filterSegGroup).map(
         ([initUri, { actualStartTime, actualEndTime, segments }]) => {
           let segIdx = 0;
+
+          const evtTool = new EventTool<{
+            progress: (progress: number) => void;
+          }>();
+
           return {
             actualStartTime,
             actualEndTime,
+            on: evtTool.on,
             stream: new ReadableStream<Uint8Array>({
               start: async (ctrl) => {
-                downloadSegments(segments, ctrl);
+                downloadSegments(segments, ctrl, evtTool);
                 ctrl.enqueue(
                   new Uint8Array(
                     await (
@@ -145,7 +160,10 @@ export async function createHLSLoader(m3u8URL: string, concurrency = 10) {
                 const url = new URL(segments[segIdx].uri, base).href;
                 ctrl.enqueue(new Uint8Array(await getSegmentBuffer(url)));
                 segIdx += 1;
-                if (segIdx >= segments.length) ctrl.close();
+                if (segIdx >= segments.length) {
+                  ctrl.close();
+                  evtTool.destroy();
+                }
               },
             }),
           };
