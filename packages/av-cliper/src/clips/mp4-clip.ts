@@ -582,6 +582,7 @@ class VideoFrameFinder {
   // fix VideoFrame duration is null
   #lastVfDur = 0;
 
+  #downgradeSoftDecode = false;
   #videoDecCusorIdx = 0;
   #videoFrames: VideoFrame[] = [];
   #outputFrameCnt = 0;
@@ -644,7 +645,21 @@ class VideoFrameFinder {
           this.#lastVfDur = chunks[0]?.duration ?? 0;
           for (const c of chunks) dec.decode(c);
           this.#inputChunkCnt += chunks.length;
-          dec.flush().catch(Log.error);
+          try {
+            await dec.flush();
+          } catch (err) {
+            if (
+              !(err instanceof Error) ||
+              !err.message.includes('Decoding error') ||
+              this.#downgradeSoftDecode
+            ) {
+              throw err;
+            }
+            this.#downgradeSoftDecode = true;
+            Log.warn('Downgrade to software decode');
+            this.#reset();
+            return this.#parseFrame(time, dec, aborter);
+          }
         }
       }
       this.#videoDecCusorIdx = endIdx;
@@ -658,7 +673,7 @@ class VideoFrameFinder {
     this.#videoDecCusorIdx = 0;
     this.#inputChunkCnt = 0;
     this.#outputFrameCnt = 0;
-    this.#dec?.close();
+    if (this.#dec?.state === 'configured') this.#dec.close();
     this.#dec = new VideoDecoder({
       output: (vf) => {
         let rsVf = vf;
@@ -673,7 +688,12 @@ class VideoFrameFinder {
       },
       error: Log.error,
     });
-    this.#dec.configure(this.conf);
+    this.#dec.configure({
+      ...this.conf,
+      ...(this.#downgradeSoftDecode
+        ? { hardwareAcceleration: 'prefer-software' }
+        : {}),
+    });
   };
 
   destroy = () => {
