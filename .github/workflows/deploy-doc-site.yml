@@ -25,25 +25,27 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
+
+      - name: set pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
 
       - name: Set up Node.js
-        uses: actions/setup-node@v2
+        uses: actions/setup-node@v4
         with:
-          node-version: 18 # 或者您需要的 Node.js 版本
+          node-version: 20
+          cache: 'pnpm'
 
       - name: Install packages dependencies
-        run: yarn install --frozen-lockfile
+        run: pnpm install --frozen-lockfile --ignore-scripts
 
       - name: Build:api
-        run: yarn build && yarn build:api
-
-      - name: Install doc-site dependencies
-        run: yarn install --frozen-lockfile
-        working-directory: ./doc-site
+        run: pnpm build && pnpm build:api
 
       - name: Build doc-site
-        run: yarn build
+        run: pnpm build
         working-directory: ./doc-site
 
       - name: Setup Pages

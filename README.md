@@ -1,112 +1,200 @@
 # WebAV
 
-An audio/video toolkit built with pure web technologies, planned to include creation, editing, and exporting capabilities, applicable to products like live streaming, tutorial recording, video clipping, etc.
+English | [中文](./README_CN.md)
 
-使用纯 Web 技术构建的音视频工具，计划包含创建、编辑、导出功能，可应用于直播、教程录制、视频剪辑等产品中。
+WebAV is an SDK for **creating/editing** video files on the web platform, built on WebCodecs.
 
-## Motivation
+### Key Features
 
-Chrome 94 released the WebCodecs API, meaning JS can now handle audio/video as well. Before this, frontend developers could only use ffmpeg.wasm in limited scenarios. Through simple tests of decoding and re-encoding videos, it was found WebCodecs has 20x the performance of ffmpeg.wasm.  
-_WebAV is compatible with Chrome 102 and above due to the use of the new OPFS API._
+- Cross-platform: Runs on Edge, Chrome browsers, and Electron
+- High performance: 10-20 times faster than ffmpeg.wasm
+- Small size: Approximately 50kb (MINIFIED + GZIPPED, without tree-shaking)
 
-Chrome 94 开放了 WebCodecs API，意味着 JS 也能处理音视频了。在此之前，前端开发在会在有限的场景使用 ffmpeg.wasm，经过简单地测试解码和重编码视频发现，WebCodecs 性能是 ffmpeg.wasm 的 20 倍。  
-_WebAV 兼容 Chrome102 及以上版本，因为使用 opfs 新 API。_
+_Compatible with Chrome 102+_
 
-This is an experimental project attempting to provide easy-to-use APIs for handling audio/video data in the browser. The project is under active development, feel free to open issues to report bugs or suggest new features.
+### Use Cases
 
-这是一个实验性项目，尝试提供简单易用的 API 在浏览器中处理音视频数据。项目正在积极迭代，可提交 issue 来反馈 Bug 和新功能建议。
+- Batch audio and video file processing, such as adding watermarks, dubbing, and embedding subtitles
+- Building audio and video related products, such as video editing, live streaming, and video animation production
 
-## Packages
+## DEMO
 
-- [AVCliper](packages/av-cliper/README.md)  
-  Audio/Video Clipping Toolkit.  
-  音视频剪辑工具库。
-- [AVCanvas](packages/av-canvas/README.md)  
-  Combine Text, Image, Video, Audio, UserMedia, DisplayMedia to generate MediaStream.  
-  使用文字、图片、音视频文件、摄像头&麦克风、分享屏幕来生成 MediaStream。
-- [AVRecorder](packages/av-recorder/README.md)  
-  Record MediaStream, export MP4 stream.  
-  录制 MediaStream，导出 MP4 流。
+The WebAV project offers a variety of quick DEMO experiences. Visit the [DEMO Homepage](https://bilibili.github.io/WebAV/demo) to check the compatibility of your current device.
 
-## Site
+_Note: The test video resources are hosted on GitHub pages, so starting a DEMO may require some network loading time._
 
-[API](https://bilibili.github.io/WebAV/guide)
+Here are some feature demos you might be interested in:
 
-[DEMO](https://bilibili.github.io/WebAV/demo/)  
-Here you can find rich demos that you can experience online immediately.  
-这里有丰富的可立即在线体验的 DEMO。
+- [Video Concatenation](https://bilibili.github.io/WebAV/demo/2_1-concat-video)
+- [Video Editing](https://bilibili.github.io/WebAV/demo/6_4-video-editor)
+- [Live Recording](https://bilibili.github.io/WebAV/demo/4_2-recorder-avcanvas)
+- WebAV + Canvas + WebAudio [Decode and Play Video](https://bilibili.github.io/WebAV/demo/1_1-decode-video)
 
-[Articles by the author (zh_CN)](https://bilibili.github.io/WebAV/article)  
-[作者写的相关文章](https://bilibili.github.io/WebAV/article)  
-[Web 音视频知识图谱](https://github.com/bilibili/WebAV-KnowledgeGraph)
+## Packages Introduction
 
-## Features
+### [av-cliper](https://bilibili.github.io/WebAV/_api/av-cliper/)
 
-- Audio/Video Clipper [AVCliper](packages/av-cliper/README.md)
-  - Combine mp4, mp3, images, text by timeline
-  - Embed SRT subtitles
-  - Video muting, audio mixing, volume control, audio looping, audio resampling
-  - Video frame by frame processing, built-in chroma key
-  - Animation properties: x, y, w, h, opacity, angle
-- Canvas [AVCanvas](packages/av-canvas/README.md)
-  - Move, rotate, flip, scale to fit, warp
-  - Media sources: camera, microphone, screen sharing
-  - Resource types: video, audio, image, text
-- Recorder [AVRecorder](packages/av-recorder/README.md)
+`av-cliper` is the foundational SDK for audio and video data processing. It provides basic classes and functions to help developers quickly achieve their target functionalities.
 
-  - Record video from MediaStream, AVCanvas, export to MP4
+Here is a brief introduction to the core API of `av-cliper`:
 
-- 音视频剪辑 [AVCliper](packages/av-cliper/README.md)
-  - mp4、mp3、图片、文字 按时间线合成
-  - 嵌入 SRT 字幕
-  - 视频消音、音频混流、音量控制、音频循环、音频重采样
-  - 视频逐帧处理，内置 绿幕抠图
-  - 动画属性：x, y, w, h, opacity, angle
-- 画布 [AVCanvas](packages/av-canvas/README.md)
-  - 移动、旋转、翻转、等比缩放、变形
-  - 媒体来源：摄像头、麦克风、分享屏幕
-  - 资源类型：视频、音频、图片、文字
-- 录制 [AVRecorder](packages/av-recorder/README.md)
-  - 从 MediaStream、AVCanvas 中录制视频，导出 MP4
+- `IClip` abstracts audio and video materials, parses audio and video, image, and subtitle resources, and provides data to other modules.
+- `Sprite<IClip>` attaches spatial and temporal attributes to materials, allowing control over the spatial position and time offset of the video in the material, achieving multi-material collaboration, animation, and other functions.
+- `Combinator` can add multiple Sprites, and based on their positions, layers, and time offsets, synthesize and output as a video file.
 
-## Development
+<details>
+<summary style="cursor: pointer;"> Code Demo: Add a Moving Semi-transparent Watermark to a Video </summary>
 
-This repo uses lerna + yarn to manage packages.
+```js
+import {
+  ImgClip,
+  MP4Clip,
+  OffscreenSprite,
+  renderTxt2ImgBitmap,
+  Combinator,
+} from '@webav/av-cliper';
 
-1. Install dependencies: Run `yarn install` in root directory
-2. Build all packages: Run `yarn build` in root directory
-3. Run DEMO
-   1. cd into specific package, e.g. `cd packages/av-cliper`
-   2. Run `yarn dev`
-4. Access DEMO in browser
-   1. Copy baseUrl printed in console, e.g. `http://localhost:6066/`
-   2. Locate DEMO path, it's filename in `packages/av-cliper/demo` dir, like `concat-media.html`
-   3. Open final URL in browser: `http://localhost:6066/concat-media.html`
+const spr1 = new OffscreenSprite(
+  new MP4Clip((await fetch('./video/bunny.mp4')).body),
+);
+const spr2 = new OffscreenSprite(
+  new ImgClip(
+    await renderTxt2ImgBitmap(
+      'Watermark',
+      `font-size:40px; color: white; text-shadow: 2px 2px 6px red;`,
+    ),
+  ),
+);
+spr2.time = { offset: 0, duration: 5e6 };
+spr2.setAnimation(
+  {
+    '0%': { x: 0, y: 0 },
+    '25%': { x: 1200, y: 680 },
+    '50%': { x: 1200, y: 0 },
+    '75%': { x: 0, y: 680 },
+    '100%': { x: 0, y: 0 },
+  },
+  { duration: 4e6, iterCount: 1 },
+);
+spr2.zIndex = 10;
+spr2.opacity = 0.5;
 
-当前仓库是使用 lerna + yarn 管理 packages。
+const com = new Combinator({
+  width: 1280,
+  height: 720,
+});
 
-1. 安装依赖：在根目录执行 `yarn install`
-2. 构建所有 packages：在根目录执行 `yarn build`
-3. 运行 DEMO
-   1. cd 到特定的 package 目录，比如 `cd packages/av-cliper`
-   2. 执行 `yarn dev`
-4. 访问 DEMO
-   1. 复制控制台中打印的 baseUrl，类似 `http://localhost:6066/`
-   2. 确定对应 DEMO 的 path，是 `packages/av-cliper/demo` 目录下的文件名，如 `concat-media.html`
-   3. 在浏览器打开最终 URL：`http://localhost:6066/concat-media.html`
+await com.addSprite(spr1);
+await com.addSprite(spr2);
 
-若你有意贡献代码，建议先跟通过 Github Issue、Discussions、微信（`liujun_fenghen`）与作者讨论
+com.output(); // => ReadableStream
+```
 
-## Sponsor 赞助
+</details>
 
-如果该项目对你有帮助，扫描二维码请作者喝奶茶 ：）  
-If this project has been helpful to you, please scan the QR code to treat the author to a milk tea ：）
+### [av-canvas](https://bilibili.github.io/WebAV/_api/av-canvas/)
 
-<img src="https://github.com/bilibili/WebAV/assets/3307051/4b25836a-3f85-4160-b0bf-6c8360fad9a4" width=200 />
-<img src="https://github.com/bilibili/WebAV/assets/3307051/b0d8ff07-71c9-46c1-af33-019420d17c06" width=200 />
+`av-canvas` relies on the basic capabilities of `av-cliper` and provides a canvas that responds to user operations on Sprites (dragging, scaling, rotating), enabling quick implementation of products like video editing and live streaming workstations.
 
----
+<details>
+<summary style="cursor: pointer;"> Code Demo: Add Video and Text to the Canvas </summary>
 
-加微信 `liujun_fenghen` 备注 WebAV 邀请进入微信群
+```js
+import {
+  ImgClip,
+  MP4Clip,
+  VisibleSprite,
+  renderTxt2ImgBitmap,
+} from '@webav/av-cliper';
+import { AVCanvas } from '@webav/av-canvas';
 
-[Plan](./plan.md)
+const avCvs = new AVCanvas(document.querySelector('#app'), {
+  width: 1280,
+  height: 720,
+});
+
+const spr1 = new VisibleSprite(
+  new MP4Clip((await fetch('./video/bunny.mp4')).body),
+);
+const spr2 = new VisibleSprite(
+  new ImgClip(
+    await renderTxt2ImgBitmap(
+      'Watermark',
+      `font-size:40px; color: white; text-shadow: 2px 2px 6px red;`,
+    ),
+  ),
+);
+
+await avCvs.add(spr1);
+await avCvs.add(spr2);
+
+// Export user-edited materials into a video
+// (await avCvs.createCombinator()).output()
+
+// Capture stream from the canvas (MediaStream) for live streaming or video recording
+// avCvs.captureStream()
+```
+
+</details>
+
+### [av-recorder](https://bilibili.github.io/WebAV/_api/av-canvas/)
+
+`av-recorder` records `MediaStream` and outputs the video file stream in MP4 format.
+
+<details>
+<summary style="cursor: pointer;"> Code Demo: Record Camera and Microphone, Output MP4 File Stream </summary>
+
+```js
+import { AVRecorder } from '@webav/av-recorder';
+const mediaStream = await navigator.mediaDevices.getUserMedia({
+  video: true,
+  audio: true,
+});
+
+const recorder = new AVRecorder(mediaStream);
+recorder.start(); // => ReadableStream
+```
+
+</details>
+
+## Contributing
+
+### Running the Project
+
+1. Clone the current project locally
+2. Execute `pnpm install && pnpm build` in the root directory
+3. Change directory to the specific package (e.g., av-cliper) and run `pnpm dev`
+4. The path is the filename in the DEMO directory, such as `concat-media.html`
+5. Open the DEMO URL in the browser, such as `http://localhost:6066/concat-media.html`
+6. Run unit tests for the package with `pnpm test`
+
+### Running the WebAV Site
+
+1. Clone the current project locally
+2. Execute `pnpm install && pnpm build` in the root directory
+3. Change directory to `doc-site` and run `pnpm dev`
+4. Follow the terminal prompts to visit the specified URL
+
+If you are a beginner in the field of web audio and video, you can start by learning the basics:
+
+[Articles by the Author](https://bilibili.github.io/WebAV/article)  
+[Web Audio and Video Knowledge Graph](https://github.com/bilibili/WebAV-KnowledgeGraph)
+
+## Sponsor Author
+
+If this project has been helpful to you, please sponsor the author to a milk tea ：）
+
+[Paypal.me](https://paypal.me/hughfenghen)
+
+<!--
+ChatGPT:
+
+你是一位精通中英文的资深翻译，长时间从事计算机领域的技术文章翻译工作。
+
+我正在为一个音视频开源项目撰写 README 中文文档，需要你帮忙将中文翻译为英文。
+
+翻译过程有以下要求：
+- 翻译结果需符合英语母语者的习惯，符合技术文章规范，可以进行适当润色
+- 翻译的内容为 Markdown 文本，翻译结果应该保持 Markdown 格式
+- 不需要翻译 html、js 代码，但需要翻译代码中中文注释
+- 不需要翻译 URL 链接 -->
