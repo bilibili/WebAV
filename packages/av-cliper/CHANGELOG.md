@@ -1,5 +1,12 @@
 # @webav/av-cliper
 
+## 0.12.2
+
+### Patch Changes
+
+- 01b6724: feat: add progress event for hlsloader
+- 834d322: fix: MP4Clip throw error when fisrt sample not key frame
+
 ## 0.12.1
 
 ### Patch Changes
