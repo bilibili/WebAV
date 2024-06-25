@@ -28,6 +28,28 @@ function createInitCvsEl(resolution: IResolution): HTMLCanvasElement {
   return cvsEl;
 }
 
+/**
+ *
+ * 可在浏览器环境中快速实现视频剪辑功能，且非常容易集成的直播推流工作台中。
+ * @description
+ * 支持用户添加各种素材，并拖动改变它们的位置：
+  - 添加/删除素材（视频、音频、图片、文字）
+  - 分割（裁剪）素材
+  - 控制素材在视频中的空间属性（坐标、旋转、缩放）
+  - 控制素材在视频中的时间属性（偏移、时长）
+  - 实时预览播放
+  - 纯浏览器环境生成视频
+ * @see [直播录制](https://bilibili.github.io/WebAV/demo/4_2-recorder-avcanvas)
+ * @see [视频剪辑](https://bilibili.github.io/WebAV/demo/6_4-video-editor)
+ * @example
+ *
+const avCvs = new AVCanvas(document.querySelector('#app'), {
+    bgColor: '#333',
+    width: 1920,
+    height: 1080,
+});
+ *
+ */
 export class AVCanvas {
   #cvsEl: HTMLCanvasElement;
 
@@ -50,6 +72,14 @@ export class AVCanvas {
 
   #opts;
 
+  /**
+   * 创建 `AVCanvas` 类的实例。
+   * @param attchEl - 要添加画布的元素。
+   * @param opts - 画布的选项
+   * @param opts.bgColor - 画布的背景颜色。
+   * @param opts.width - 画布的宽度。
+   * @param opts.height - 画布的高度。
+   */
   constructor(
     attchEl: HTMLElement,
     opts: {
@@ -185,6 +215,14 @@ export class AVCanvas {
     // step: (1000 / 30) * 1000,
     audioPlayAt: 0,
   };
+  /**
+   * 每 33ms 更新一次画布，绘制已添加的 Sprite
+   * @param opts - 播放选项
+   * @param opts.start - 开始播放的时间（单位：微秒）
+   * @param [opts.end] - 结束播放的时间（单位：微秒）。如果未指定，则播放到最后一个 Sprite 的结束时间
+   * @param [opts.playbackRate] - 播放速率。1 表示正常速度，2 表示两倍速度，0.5 表示半速等。如果未指定，则默认为 1
+   * @throws 如果开始时间大于等于结束时间或小于 0，则抛出错误
+   */
   play(opts: { start: number; end?: number; playbackRate?: number }) {
     const end =
       opts.end ??
@@ -214,9 +252,17 @@ export class AVCanvas {
     this.#evtTool.emit('playing');
     Log.info('AVCanvs play by:', this.#playState);
   }
+
+  /**
+   * 暂停播放，画布内容不再更新
+   */
   pause() {
     this.#pause();
   }
+
+  /**
+   * 预览 `AVCanvas` 指定时间的图像帧
+   */
   previewFrame(time: number) {
     this.#updateRenderTime(time);
     this.#pause();
@@ -228,6 +274,9 @@ export class AVCanvas {
   removeSprite: SpriteManager['removeSprite'] = (...args) =>
     this.#spriteManager.removeSprite(...args);
 
+  /**
+   * 销毁实例
+   */
   destroy(): void {
     if (this.#destroyed) return;
     this.#destroyed = true;
@@ -241,6 +290,10 @@ export class AVCanvas {
     this.#spriteManager.destroy();
   }
 
+  /**
+   * 合成所有素材的图像与音频，返回 `MediaStream` 可用于 WebRTC 推流，或由 AVRecorder 录制生成视频文件
+   * @returns- {@link MediaStream}
+   */
   captureStream(): MediaStream {
     const ms = new MediaStream();
     this.#cvsEl
@@ -257,6 +310,11 @@ export class AVCanvas {
     return ms;
   }
 
+  /**
+   * 创建视频合成器 {@link Combinator}
+   * @param opts - 创建 Combinator 的可选参数
+   * @throws 如果没有添加素材，会抛出错误
+   */
   async createCombinator(opts: { bitrate?: number } = {}) {
     const com = new Combinator({ ...this.#opts, ...opts });
     const sprites = this.#spriteManager.getSprites({ time: false });

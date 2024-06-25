@@ -22,6 +22,20 @@ import { tmpfile, write } from 'opfs-tools';
 
 type TCleanFn = () => void;
 
+/**
+ * 定义 recodemux 函数的配置选项。
+ * @interface
+ * @property video - 视频配置选项，如果为 null 则不处理视频。
+ * @property video.width - 视频的宽度。
+ * @property video.height - 视频的高度。
+ * @property video.expectFPS - 期望的帧率。
+ * @property video.codec - 视频编码格式。
+ * @property video.bitrate - 视频比特率。
+ * @property audio - 音频配置选项，如果为 null 则不处理音频。
+ * @property audio.codec - 音频编码格式。
+ * @property audio.sampleRate - 音频采样率。
+ * @property audio.channelCount - 音频通道数。
+ */
 interface IRecodeMuxOpts {
   video: {
     width: number;
@@ -37,6 +51,17 @@ interface IRecodeMuxOpts {
   } | null;
 }
 
+/**
+ * 处理音视频的编码和解码。
+ * @param opts - 配置选项，包括音频和视频的配置。
+ * @returns {Object} 返回一个对象，包含以下方法：
+ * - encodeVideo: 用于编码视频帧回调函数。
+ * - encodeAudio: 用于编码音频数据回调函数。
+ * - close: 用于关闭编码器和解码器。
+ * - flush: 用于清空编码器和解码器的队列。
+ * - mp4file: MP4 文件实例。
+ * - getEecodeQueueSize: 获取编码队列的大小。
+ */
 export function recodemux(opts: IRecodeMuxOpts): {
   encodeVideo: (frame: VideoFrame, options?: VideoEncoderEncodeOptions) => void;
   encodeAudio: (data: AudioData) => void;
@@ -258,6 +283,15 @@ export function _deprecated_stream2file(stream: ReadableStream<Uint8Array>): {
   };
 }
 
+/**
+ * 将 MP4 文件转换为可读流。
+ * @param file - MP4 文件实例 {@link MP4File}。
+ * @param timeSlice - 时间片，用于控制流的发送速度。
+ * @param [onCancel] - 可选的取消回调函数，当流被取消时调用。
+ * @returns 返回一个对象，包含以下属性：
+ * - stream: 可读流，流的数据是 `Uint8Array` 类型。
+ * - stop: 停止函数，可以用于停止流的发送。
+ */
 export function file2stream(
   file: MP4File,
   timeSlice: number,
@@ -334,6 +368,11 @@ export function file2stream(
   };
 }
 
+/**
+ * 修复 MP4 文件的 Box 时长
+ * @param inMP4File - 输入的 MP4 文件
+ * @returns 返回一个函数，该函数返回一个 Promise，解析为一个可读流或 null
+ */
 function fixMP4BoxFileDuration(
   inMP4File: MP4File,
 ): () => Promise<ReadableStream<Uint8Array> | null> {
@@ -342,6 +381,9 @@ function fixMP4BoxFileDuration(
   const tracks: Array<{ track: TrakBoxParser; id: number }> = [];
   let totalDuration = 0;
 
+  /**
+   * 将数据写入临时文件
+   */
   async function write2TmpFile() {
     const buf = box2Buf(boxes, sendedBoxIdx);
     sendedBoxIdx = boxes.length;
@@ -361,6 +403,10 @@ function fixMP4BoxFileDuration(
   }
 
   let moovPrevBoxes: typeof boxes = [];
+  /**
+   * 检查 moov box 是否准备好
+   * @returns {boolean} 如果 moov box 准备好，返回 `true`，否则返回 `false`
+   */
   function moovBoxReady() {
     if (moovPrevBoxes.length > 0) return true;
 
@@ -425,6 +471,12 @@ function fixMP4BoxFileDuration(
     return await rsFile.stream();
   };
 
+  /**
+   * 将 mp4box 转换为 buffer
+   * @param source - box 的源数组
+   * @param startIdx - 开始的索引
+   * @returns 返回一个 Uint8Array 或 null
+   */
   function box2Buf(source: typeof boxes, startIdx: number): Uint8Array | null {
     if (startIdx >= source.length) return null;
 
@@ -461,8 +513,16 @@ function chunk2MP4SampleOpts(
 }
 
 /**
- * 快速顺序合并多个mp4流，要求所有mp4的属性是一致的
+ * 快速顺序合并多个mp4流，要求所有mp4的属性是一致的。
  * 属性包括（不限于）：音视频编码格式、分辨率、采样率
+ *
+ * @param streams 一个包含 Uint8Array 的可读流数组。
+ * @returns 返回一个 Promise，该 Promise 在解析时返回一个包含合并后的 MP4 数据的可读流。
+ * @throws 如果无法从流生成文件，将抛出错误。
+ *
+ * @example
+ * const streams = [stream1, stream2, stream3];
+ * const resultStream = await fastConcatMP4(streams);
  */
 export async function fastConcatMP4(
   streams: ReadableStream<Uint8Array>[],
@@ -551,6 +611,13 @@ export async function fixFMP4Duration(
   return await fastConcatMP4([stream]);
 }
 
+/**
+ * 创建 MP4 音频样本解码器。
+ * @param adConf - 音频解码器配置参数 {@link AudioDecoderConfig}。
+ * @returns 返回一个对象，包含 `decode` 和 `close` 方法。
+ * - `decode` 方法用于解码 MP4 音频样本，返回解码后的音频数据数组。
+ * - `close` 方法用于关闭音频解码器。
+ */
 function createMP4AudioSampleDecoder(
   adConf: Parameters<AudioDecoder['configure']>[0],
 ) {
@@ -658,8 +725,13 @@ function audioFade(pcmData: Float32Array, chanCnt: number, sampleRate: number) {
 }
 
 /**
- * 混合mp4与音频文件，仅重编码音频
- * @returns
+ * 混合 MP4 与音频文件，仅重编码音频
+ * @param mp4Stream - MP4 流。
+ * @param audio - 音频对象，包含音频流、音量和循环属性。
+ * @param audio.stream - 音频流。
+ * @param audio.volume - 音频音量。
+ * @param audio.loop - 是否循环播放音频。
+ * @returns 输出混合后的音频流。
  */
 export function mixinMP4AndAudio(
   mp4Stream: ReadableStream<Uint8Array>,
@@ -754,6 +826,11 @@ export function mixinMP4AndAudio(
     },
   });
 
+  /**
+   * 获取输入音频切片。
+   * @param len - 切片长度。
+   * @returns 返回音频切片数组。
+   */
   function getInputAudioSlice(len: number) {
     const rs = inputAudioPCM.map((chanBuf) =>
       audio.loop
@@ -770,6 +847,9 @@ export function mixinMP4AndAudio(
     return rs;
   }
 
+  /**
+   * 将输入音频添加到轨道。
+   */
   async function addInputAudio2Track(vdieoSamples: MP4Sample[]) {
     const firstSamp = vdieoSamples[0];
     const lastSamp = vdieoSamples[vdieoSamples.length - 1];
@@ -786,6 +866,9 @@ export function mixinMP4AndAudio(
     );
   }
 
+  /**
+   * 混合音频样本和输入 PCM。
+   */
   async function mixinAudioSampleAndInputPCM(samples: MP4Sample[]) {
     if (audioSampleDecoder == null) return;
 
@@ -810,6 +893,12 @@ export function mixinMP4AndAudio(
   return outStream;
 }
 
+/**
+ * 创建 ESDS 盒子（MPEG-4 Elementary Stream Descriptor）。
+ * ESDS 盒子用于描述 MPEG-4 的流信息，如编解码器类型、流类型、最大比特率、平均比特率等。
+ * @param config - 配置信息，可以是 `ArrayBuffer` 或 `ArrayBufferView` 类型。
+ * @return 返回一个 ESDS 盒子对象。
+ */
 function createESDSBox(config: ArrayBuffer | ArrayBufferView) {
   const configlen = config.byteLength;
   const buf = new Uint8Array([
