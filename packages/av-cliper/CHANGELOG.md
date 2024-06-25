@@ -1,5 +1,11 @@
 # @webav/av-cliper
 
+## 0.12.4
+
+### Patch Changes
+
+- abeae6a: fix: mp4clip timeout error
+
 ## 0.12.3
 
 ### Patch Changes
