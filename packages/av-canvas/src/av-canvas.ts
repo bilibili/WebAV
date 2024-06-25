@@ -311,6 +311,8 @@ function convertPCM2AudioSource(pcmData: Float32Array[][], ctx: AudioContext) {
 
   for (const [chan0Buf, chan1Buf] of pcmData) {
     if (chan0Buf == null) continue;
+    if (chan0Buf.length <= 0) continue;
+
     const buf = ctx.createBuffer(
       2,
       chan0Buf.length,
