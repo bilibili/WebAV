@@ -23,7 +23,13 @@ import { createMetaBox } from './meta-box';
 
 type TCleanFn = () => void;
 
+/**
+ * 定义 recodemux 函数的配置选项
+ */
 interface IRecodeMuxOpts {
+  /**
+   * 视频配置选项，如果为 null 则不处理视频。
+   */
   video: {
     width: number;
     height: number;
@@ -31,21 +37,49 @@ interface IRecodeMuxOpts {
     codec: string;
     bitrate: number;
   } | null;
+  /**
+   * 音频配置选项，如果为 null 则不处理音频。
+   */
   audio: {
     codec: 'opus' | 'aac';
     sampleRate: number;
     channelCount: number;
   } | null;
+  /**
+   * 预设时长，不代表 track 实际时长
+   */
   duration?: number;
   metaDataTags?: Record<string, string>;
 }
 
+/**
+ * 处理音视频的编码和解码。
+ * @param opts - 编码音视频数据的配置
+ */
 export function recodemux(opts: IRecodeMuxOpts): {
+  /**
+   * 编码视频帧
+   */
   encodeVideo: (frame: VideoFrame, options?: VideoEncoderEncodeOptions) => void;
+  /**
+   * 编码音频数据
+   */
   encodeAudio: (data: AudioData) => void;
+  /**
+   * close 编码器，停止任务
+   */
   close: TCleanFn;
+  /**
+   * 清空编码器队列
+   */
   flush: () => Promise<void>;
+  /**
+   * mp4box 实例
+   */
   mp4file: MP4File;
+  /**
+   * 返回队列长度（背压），用于控制生产视频的进度，队列过大会会占用大量显存
+   */
   getEecodeQueueSize: () => number;
 } {
   Log.info('recodemux opts:', opts);
@@ -286,12 +320,24 @@ export function _deprecated_stream2file(stream: ReadableStream<Uint8Array>): {
   };
 }
 
+/**
+ * 将 MP4 文件转换为可读流。
+ * @param file - MP4 文件实例 {@link MP4File}。
+ * @param timeSlice - 时间片，用于控制流的发送速度。
+ * @param [onCancel] - 当返回的流被取消时触发
+ */
 export function file2stream(
   file: MP4File,
   timeSlice: number,
   onCancel?: TCleanFn,
 ): {
+  /**
+   * 可读流，流的数据是 `Uint8Array`
+   */
   stream: ReadableStream<Uint8Array>;
+  /**
+   * 流的生产者主动停止向流中输出数据，可向消费者传递错误信息
+   */
   stop: (err?: Error) => void;
 } {
   let timerId = 0;
@@ -508,8 +554,16 @@ function chunk2MP4SampleOpts(
 }
 
 /**
- * 快速顺序合并多个mp4流，要求所有mp4的属性是一致的
+ * 快速拼接多个mp4流，要求所有mp4的属性是一致的。
  * 属性包括（不限于）：音视频编码格式、分辨率、采样率
+ *
+ * @param streams 一个包含 Uint8Array 的可读流数组。
+ * @returns 返回一个 Promise，该 Promise 在解析时返回一个包含合并后的 MP4 数据的可读流。
+ * @throws 如果无法从流生成文件，将抛出错误。
+ *
+ * @example
+ * const streams = [stream1, stream2, stream3];
+ * const resultStream = await fastConcatMP4(streams);
  */
 export async function fastConcatMP4(
   streams: ReadableStream<Uint8Array>[],
@@ -598,6 +652,13 @@ export async function fixFMP4Duration(
   return await fastConcatMP4([stream]);
 }
 
+/**
+ * 创建 MP4 音频样本解码器。
+ * @param adConf - 音频解码器配置参数 {@link AudioDecoderConfig}。
+ * @returns 返回一个对象，包含 `decode` 和 `close` 方法。
+ * - `decode` 方法用于解码 MP4 音频样本，返回解码后的音频数据数组。
+ * - `close` 方法用于关闭音频解码器。
+ */
 function createMP4AudioSampleDecoder(
   adConf: Parameters<AudioDecoder['configure']>[0],
 ) {
@@ -705,8 +766,13 @@ function audioFade(pcmData: Float32Array, chanCnt: number, sampleRate: number) {
 }
 
 /**
- * 混合mp4与音频文件，仅重编码音频
- * @returns
+ * 视频配音；混合 MP4 与音频文件，仅重编码音频，视频轨道不变
+ * @param mp4Stream - MP4 流
+ * @param audio - 音频信息
+ * @param audio.stream - 音频数据流
+ * @param audio.volume - 音频音量
+ * @param audio.loop - 音频时长小于视频时，是否循环使用音频流
+ * @returns 输出混合后的音频流
  */
 export function mixinMP4AndAudio(
   mp4Stream: ReadableStream<Uint8Array>,
@@ -857,6 +923,12 @@ export function mixinMP4AndAudio(
   return outStream;
 }
 
+/**
+ * 创建 ESDS 盒子（MPEG-4 Elementary Stream Descriptor）
+ * ESDS 盒子用于描述 MPEG-4 的流信息，如编解码器类型、流类型、最大比特率、平均比特率等
+ * @param config - 配置信息，可以是 `ArrayBuffer` 或 `ArrayBufferView` 类型
+ * @return 返回一个 ESDS box
+ */
 function createESDSBox(config: ArrayBuffer | ArrayBufferView) {
   const configlen = config.byteLength;
   const buf = new Uint8Array([
