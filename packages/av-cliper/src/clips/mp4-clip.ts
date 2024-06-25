@@ -161,18 +161,18 @@ export class MP4Clip implements IClip {
         }),
       ]),
       new Promise<[]>((_, reject) => {
-        timeoutTimer = self.setTimeout(
-          () =>
-            reject(
-              Error(
-                `MP4Clip.tick timeout, ${JSON.stringify({
-                  videoReady,
-                  audioReady,
-                })}`,
-              ),
+        timeoutTimer = self.setTimeout(() => {
+          if (!audioReady) this.#audioFrameFinder?.reset();
+          if (!videoReady) this.#videoFrameFinder?.reset();
+          reject(
+            Error(
+              `MP4Clip.tick timeout, ${JSON.stringify({
+                videoReady,
+                audioReady,
+              })}`,
             ),
-          3000,
-        );
+          );
+        }, 3000);
       }),
     ]);
     clearTimeout(timeoutTimer);
@@ -569,7 +569,7 @@ class VideoFrameFinder {
   #curAborter = { abort: false };
   find = async (time: number): Promise<VideoFrame | null> => {
     if (this.#dec == null || time <= this.#ts || time - this.#ts > 3e6) {
-      this.#reset();
+      this.reset();
     }
 
     this.#curAborter.abort = true;
@@ -609,7 +609,7 @@ class VideoFrameFinder {
     }
 
     // 缺少帧数据
-    if (this.#outputFrameCnt < this.#inputChunkCnt) {
+    if (this.#outputFrameCnt < this.#inputChunkCnt && dec.decodeQueueSize > 0) {
       // 解码中，等待，然后重试
       await sleep(15);
     } else if (this.#videoDecCusorIdx >= this.samples.length) {
@@ -657,7 +657,7 @@ class VideoFrameFinder {
             }
             this.#downgradeSoftDecode = true;
             Log.warn('Downgrade to software decode');
-            this.#reset();
+            this.reset();
             return this.#parseFrame(time, dec, aborter);
           }
         }
@@ -667,13 +667,13 @@ class VideoFrameFinder {
     return this.#parseFrame(time, dec, aborter);
   };
 
-  #reset = () => {
+  reset = () => {
     this.#videoFrames.forEach((f) => f.close());
     this.#videoFrames = [];
     this.#videoDecCusorIdx = 0;
     this.#inputChunkCnt = 0;
     this.#outputFrameCnt = 0;
-    if (this.#dec?.state === 'configured') this.#dec.close();
+    if (this.#dec?.state !== 'closed') this.#dec?.close();
     this.#dec = new VideoDecoder({
       output: (vf) => {
         let rsVf = vf;
@@ -697,7 +697,7 @@ class VideoFrameFinder {
   };
 
   destroy = () => {
-    if (this.#dec?.state === 'configured') this.#dec.close();
+    if (this.#dec?.state !== 'closed') this.#dec?.close();
     this.#dec = null;
     this.#curAborter.abort = true;
     this.#videoFrames.forEach((f) => f.close());
@@ -723,7 +723,7 @@ class AudioFrameFinder {
   find = async (time: number): Promise<Float32Array[]> => {
     // 前后获取音频数据差异不能超过 100ms
     if (this.#dec == null || time <= this.#ts || time - this.#ts > 0.1e6) {
-      this.#reset();
+      this.reset();
       this.#ts = time;
       for (let i = 0; i < this.samples.length; i++) {
         if (this.samples[i].cts < time) continue;
@@ -814,13 +814,14 @@ class AudioFrameFinder {
     return this.#parseFrame(deltaTime, dec, aborter);
   };
 
-  #reset = () => {
+  reset = () => {
     this.#ts = 0;
     this.#decCusorIdx = 0;
     this.#pcmData = [
       new Float32Array(0), // left chan
       new Float32Array(0), // right chan
     ];
+    this.#dec?.close();
     this.#dec = createAudioChunksDecoder(
       this.conf,
       DEFAULT_AUDIO_CONF.sampleRate,
@@ -898,6 +899,10 @@ function createAudioChunksDecoder(
     decode(chunks: EncodedAudioChunk[], cb: OutputHandle) {
       tasks.push({ chunks, cb });
       run().catch(Log.error);
+    },
+    close() {
+      curCb = null;
+      if (adec.state !== 'closed') adec.close();
     },
   };
 }
