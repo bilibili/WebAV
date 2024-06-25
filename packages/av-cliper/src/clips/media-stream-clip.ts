@@ -1,6 +1,19 @@
 import { autoReadStream } from '../av-utils';
 import { IClip } from './iclip';
 
+/**
+ * 包装实时音视频流，仅用于 [AVCanvas](../../av-canvas/classes/AVCanvas.html)
+ *
+ * ⚠️ 不可用于 {@link Combinator} ，因为后台合成视频的速度是快于物理时间的，实时流无法提供非实时的数据
+ *
+ * @example
+ * const spr = new VisibleSprite(
+    new MediaStreamClip(
+      await navigator.mediaDevices.getUserMedia({ video: true, audio: true, }),
+    ),
+  );
+  await avCvs.addSprite(spr);
+ */
 export class MediaStreamClip implements IClip {
   static ctx: AudioContext | null = null;
 

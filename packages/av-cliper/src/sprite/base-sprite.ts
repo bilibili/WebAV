@@ -15,14 +15,31 @@ type TKeyFrameOpts = Partial<
   Record<`${number}%` | 'from' | 'to', Partial<TAnimateProps>>
 >;
 
+/**
+ * Sprite 基类
+ *
+ * @see {@link OffscreenSprite}
+ * @see {@link VisibleSprite}
+ */
 export abstract class BaseSprite {
+  /**
+   * 控制素材在视频中的空间属性（坐标、旋转、缩放）
+   */
   rect = new Rect();
 
+  /**
+   * 控制素材在视频中的时间偏移与时长，常用于剪辑场景时间轴（轨道）模块
+   *
+   * duration 不能大于引用 {@link IClip} 的时长，单位 微秒
+   */
   time = {
     offset: 0,
     duration: 0,
   };
 
+  /**
+   * 元素是否可见，用于不想删除，期望临时隐藏 Sprite 的场景
+   */
   visible = true;
 
   #evtTool = new EventTool<{
@@ -30,26 +47,44 @@ export abstract class BaseSprite {
       value: Partial<{ rect: Partial<Rect>; zIndex: number }>,
     ) => void;
   }>();
+  /**
+   * 监听属性变更事件
+   * @example
+   * sprite.on('propsChange', (changedProps) => {})
+   */
   on = this.#evtTool.on;
 
   #zIndex = 0;
   get zIndex(): number {
     return this.#zIndex;
   }
+
+  /**
+   * 控制素材间的层级关系，zIndex 值较小的素材会被遮挡
+   */
   set zIndex(v: number) {
     const changed = this.#zIndex !== v;
     this.#zIndex = v;
     if (changed) this.#evtTool.emit('propsChange', { zIndex: v });
   }
 
+  /**
+   * 不透明度
+   */
   opacity = 1;
 
+  /**
+   * 水平或垂直方向翻转素材
+   */
   flip: 'horizontal' | 'vertical' | null = null;
 
   #animatKeyFrame: TAnimationKeyFrame | null = null;
 
   #animatOpts: Required<IAnimationOpts> | null = null;
 
+  /**
+   * @see {@link IClip.ready}
+   */
   ready = Promise.resolve();
 
   constructor() {
@@ -81,6 +116,23 @@ export abstract class BaseSprite {
     ctx.globalAlpha = this.opacity;
   }
 
+  /**
+   * 给素材添加动画，使用方法参考 css animation
+   *
+   * @example
+   * sprite.setAnimation(
+      {
+        '0%': { x: 0, y: 0 },
+        '25%': { x: 1200, y: 680 },
+        '50%': { x: 1200, y: 0 },
+        '75%': { x: 0, y: 680 },
+        '100%': { x: 0, y: 0 },
+      },
+      { duration: 4, iterCount: 1 },
+    );
+   *
+   * @see [视频水印动画](https://bilibili.github.io/WebAV/demo/2_1-concat-video)
+   */
   setAnimation(keyFrame: TKeyFrameOpts, opts: IAnimationOpts): void {
     this.#animatKeyFrame = Object.entries(keyFrame).map(([k, val]) => {
       const numK = { from: 0, to: 100 }[k] ?? Number(k.slice(0, -1));
@@ -96,6 +148,9 @@ export abstract class BaseSprite {
     });
   }
 
+  /**
+   * 如果当前 sprite 已被设置动画，将 sprite 的动画属性设定到指定时间的状态
+   */
   animate(time: number): void {
     if (
       this.#animatKeyFrame == null ||
@@ -124,6 +179,11 @@ export abstract class BaseSprite {
     }
   }
 
+  /**
+   * 将当前 sprite 的属性赋值到目标
+   *
+   * 用于 clone，或 {@link VisibleSprite} 与 {@link OffscreenSprite} 实例间的类型转换
+   */
   copyStateTo<T extends BaseSprite>(target: T) {
     target.#animatKeyFrame = this.#animatKeyFrame;
     target.#animatOpts = this.#animatOpts;

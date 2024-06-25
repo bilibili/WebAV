@@ -2,6 +2,9 @@ import { BaseSprite } from './base-sprite';
 import { IClip } from '../clips';
 import { Log } from '../log';
 
+/**
+ * 包装 {@link IClip} 给素材扩展坐标、层级、透明度等信息，用于 {@link Combinator} 在后台合成视频
+ */
 export class OffscreenSprite extends BaseSprite {
   #clip: IClip;
 
@@ -21,6 +24,10 @@ export class OffscreenSprite extends BaseSprite {
     });
   }
 
+  /**
+   * 绘制素材指定时刻的图像到 canvas 上下文，并返回对应的音频数据
+   * @param time 指定时刻，微秒
+   */
   async offscreenRender(
     ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D,
     time: number,

@@ -25,6 +25,7 @@
     "build": "vite build && tsc -p build.tsconfig.json --outDir dist",
     "build:dev": "vite build --watch --emptyOutDir false & tsc -p build.tsconfig.json --outDir dist --watch",
     "build:api": "typedoc src/index.ts --tsconfig build.tsconfig.json --out ../../doc-site/public/_api/av-cliper",
+    "build:api:watch": "typedoc src/index.ts --tsconfig build.tsconfig.json --out ../../doc-site/public/_api/av-cliper --watch",
     "prepublishOnly": "pnpm build"
   },
   "files": [

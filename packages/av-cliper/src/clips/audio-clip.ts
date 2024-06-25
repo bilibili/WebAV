@@ -11,6 +11,9 @@ interface IAudioClipOpts {
   volume?: number;
 }
 
+/**
+ * 音频素材
+ */
 export class AudioClip implements IClip {
   static ctx: AudioContext | null = null;
 
@@ -23,6 +26,11 @@ export class AudioClip implements IClip {
     height: 0,
   };
 
+  /**
+   * 音频元信息
+   *
+   * ⚠️ 注意，这里是转换后（标准化）的元信息，非原始音频元信息
+   */
   get meta() {
     return {
       ...this.#meta,
@@ -33,12 +41,20 @@ export class AudioClip implements IClip {
 
   #chan0Buf = new Float32Array();
   #chan1Buf = new Float32Array();
+  /**
+   * 获取音频素材完整的 PCM 数据
+   */
   getPCMData(): Float32Array[] {
     return [this.#chan0Buf, this.#chan1Buf];
   }
 
   #opts;
 
+  /**
+   *
+   * @param dataSource 音频文件流
+   * @param opts 音频配置，控制音量、是否循环
+   */
   constructor(
     dataSource: ReadableStream<Uint8Array> | Float32Array[],
     opts: IAudioClipOpts = {},
@@ -96,8 +112,13 @@ export class AudioClip implements IClip {
   #ts = 0;
   #frameOffset = 0;
   /**
-   * Return the audio PCM data corresponding to the difference between the last and current moments. If the difference exceeds 3 seconds or the current time is less than the previous time, reset the state.
-   * CN: 返回上次与当前时刻差对应的音频 PCM 数据；若差值超过 3s 或当前时间小于上次时间，则重置状态
+   * 返回上次与当前时刻差对应的音频 PCM 数据；
+   *
+   * 若差值超过 3s 或当前时间小于上次时间，则重置状态
+   * @example
+   * tick(0) // => []
+   * tick(1e6) // => [leftChanPCM(1s), rightChanPCM(1s)]
+   *
    */
   async tick(time: number): Promise<{
     audio: Float32Array[];
@@ -141,6 +162,10 @@ export class AudioClip implements IClip {
     return { audio, state: 'success' };
   }
 
+  /**
+   * 按指定时间切割，返回前后两个音频素材
+   * @param time 时间，单位微秒
+   */
   async split(time: number) {
     await this.ready;
     const frameCnt = Math.ceil((time / 1e6) * DEFAULT_AUDIO_CONF.sampleRate);
@@ -162,6 +187,9 @@ export class AudioClip implements IClip {
     return clip;
   }
 
+  /**
+   * 销毁实例，释放资源
+   */
   destroy(): void {
     this.#chan0Buf = new Float32Array(0);
     this.#chan1Buf = new Float32Array(0);

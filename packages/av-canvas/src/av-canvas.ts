@@ -363,7 +363,7 @@ export class AVCanvas {
   }
 
   /**
-   * 创建视频合成器 {@link Combinator}
+   * 创建视频合成器 {@link Combinator}，用于将当前画布添加的 Sprite 导出为视频流
    * @param opts - 创建 Combinator 的可选参数
    * @throws 如果没有添加素材，会抛出错误
    */

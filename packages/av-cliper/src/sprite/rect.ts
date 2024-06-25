@@ -15,12 +15,27 @@ export interface IRectBaseProps {
   angle: number;
 }
 
+/**
+ * 用于控制素材在视频或画布中的空间属性：位置、大小、旋转
+ *
+ * 并提供控制点位置，支持用户在画布中缩放、旋转素材
+ *
+ * @see {@link Combinator}, {@link OffscreenSprite}
+ * @see [AVCanvas](../../av-canvas/classes/AVCanvas.html), {@link VisibleSprite}
+ *
+ * @see [视频剪辑](https://bilibili.github.io/WebAV/demo/6_4-video-editor)
+ */
 export class Rect implements IRectBaseProps {
   /**
-   * ctrl 节点的边长
+   * 统一设置所有 {@link Rect.ctrls} 的边长
+   *
+   * ⚠️ 交给 [AVCanvas](../../av-canvas/classes/AVCanvas.html) 设置，不要随意改变它的值
    */
   static CTRL_SIZE = 16;
 
+  /**
+   * 控制点：上、下、左、右，左上、左下、右上、右下、旋转
+   */
   static readonly CTRL_KEYS = [
     't',
     'b',
@@ -36,9 +51,17 @@ export class Rect implements IRectBaseProps {
   #evtTool = new EventTool<{
     propsChange: (props: Partial<IRectBaseProps>) => void;
   }>();
+  /**
+   * 监听属性变更事件
+   * @example
+   * rect.on('propsChange', (changedProps) => {})
+   */
   on = this.#evtTool.on;
 
   #x = 0;
+  /**
+   * x 坐标
+   */
   get x() {
     return this.#x;
   }
@@ -49,10 +72,16 @@ export class Rect implements IRectBaseProps {
   get y() {
     return this.#y;
   }
+  /**
+   * y 坐标
+   */
   set y(v) {
     this.#setBaseProps('y', v);
   }
   #w = 0;
+  /**
+   * 宽
+   */
   get w() {
     return this.#w;
   }
@@ -60,6 +89,9 @@ export class Rect implements IRectBaseProps {
     this.#setBaseProps('w', v);
   }
   #h = 0;
+  /**
+   * 高
+   */
   get h() {
     return this.#h;
   }
@@ -67,6 +99,10 @@ export class Rect implements IRectBaseProps {
     this.#setBaseProps('h', v);
   }
   #angle = 0;
+  /**
+   * 旋转角度
+   * @see [MDN Canvas rotate](https://developer.mozilla.org/docs/Web/API/CanvasRenderingContext2D/rotate)
+   */
   get angle() {
     return this.#angle;
   }
@@ -107,7 +143,9 @@ export class Rect implements IRectBaseProps {
   }
 
   /**
-   * ctrl.master is sprite rect
+   * 如果当前实例是 Rect 控制点（{@link Rect.ctrls}）之一，`master` 将指向该 Rect
+   *
+   * 控制点的坐标是相对于它的 `master` 定位到
    */
   master: Rect | null = null;
 
@@ -125,14 +163,26 @@ export class Rect implements IRectBaseProps {
     this.master = master ?? null;
   }
 
+  /**
+   * 根据坐标、宽高计算出来的矩形中心点
+   */
   get center(): IPoint {
     const { x, y, w, h } = this;
     return { x: x + w / 2, y: y + h / 2 };
   }
 
+  /**
+   * 是否保持固定宽高比例，禁止变形缩放
+   *
+   * 值为 true 时，{@link Rect.ctrls} 将缺少上下左右四个控制点
+   */
   fixedAspectRatio = false;
 
-  // 上下左右+四个角+旋转控制点
+  /**
+   * 根据坐标、宽高计算出来的矩形控制点
+   *
+   * {@link Rect.fixedAspectRatio} = `true` 时，将缺少上下左右(`t,b,l,r`)四个控制点
+   */
   get ctrls() {
     const { w, h } = this;
     // 控制点元素大小, 以 分辨率 为基准
@@ -172,7 +222,9 @@ export class Rect implements IRectBaseProps {
   }
 
   /**
-   * 检测点击是否命中
+   * 检测目标坐标是否命中当前实例
+   * @param tx 目标点 x 坐标
+   * @param ty 目标点 y 坐标
    */
   checkHit(tx: number, ty: number): boolean {
     let { angle, center, x, y, w, h, master } = this;

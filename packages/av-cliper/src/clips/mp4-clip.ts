@@ -40,6 +40,15 @@ type ThumbnailOpts = {
   step: number;
 };
 
+/**
+ * 包装 MP4 资源
+ *
+ * @example
+ * new MP4Clip((await fetch('<mp4 url>')).body)
+ * new MP4Clip(mp4File.stream())
+ *
+ * @see [解码视频](https://bilibili.github.io/WebAV/demo/1_1-decode-video)
+ */
 export class MP4Clip implements IClip {
   #log = Log.create(`MP4Clip id:${CLIP_ID++},`);
 
