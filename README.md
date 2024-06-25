@@ -9,6 +9,7 @@ WebAV is an SDK for **creating/editing** video files on the web platform, built 
 - Cross-platform: Runs on Edge, Chrome browsers, and Electron
 - High performance: 10-20 times faster than ffmpeg.wasm
 - Small size: Approximately 50kb (MINIFIED + GZIPPED, without tree-shaking)
+- Cost Reduction: By utilizing client-side computation entirely, server costs are reduced.
 
 _Compatible with Chrome 102+_
 
