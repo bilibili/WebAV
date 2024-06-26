@@ -104,8 +104,8 @@ importers:
         specifier: ^2020.9.6
         version: 2020.9.8
       '@webav/av-recorder':
-        specifier: ^0.12.1
-        version: 0.12.1
+        specifier: workspace:*
+        version: link:../av-recorder
       '@xzdarcy/react-timeline-editor':
         specifier: ^0.1.9
         version: 0.1.9(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
@@ -2326,12 +2326,6 @@ packages:
 
   '@webassemblyjs/wast-printer@1.12.1':
     resolution: {integrity: sha512-+X4WAlOisVWQMikjbcvY2e0rwPsKQ9F688lksZhBcPycBBuii3O7m8FACbDMWDojpAqvjIncrG8J0XHKyQfVeA==}
-
-  '@webav/av-cliper@0.12.1':
-    resolution: {integrity: sha512-YzE2Yf7Fp2x1djN8gshzIhBk1AyN5iqghffdf8ph82akJuwMwCh5aLZ/xyhQT4GN/yV5EQq7sObQkRSmaIC55g==}
-
-  '@webav/av-recorder@0.12.1':
-    resolution: {integrity: sha512-4E5eW1jjLyVQXJvum4SOEtJLE7mMIpAuVRudlWFaT8J7KKJcLftSrrfBtMtRbp/CvQzdAd9+SZyi/76+iBcPow==}
 
   '@webav/mp4box.js@0.5.3-fenghen':
     resolution: {integrity: sha512-jAN15I3Po1Z6Ns02iknb6KGbird9rd1h9TGldzbwsar+88ZlHd+oVjOQnFavBdNDc5vmULUnldcWGDdKc02npw==}
@@ -6391,9 +6385,6 @@ packages:
   open@9.1.0:
     resolution: {integrity: sha512-OS+QTnw1/4vrf+9hh1jc1jnYjzSG4ttTBB8UxOwAnInG3Uo4ssetzC1ihqaIHjLJnA5GGlRl6QlZXOTQhRBUvg==}
     engines: {node: '>=14.16'}
-
-  opfs-tools@0.5.3:
-    resolution: {integrity: sha512-VFpTBRK9mPkN1n1t7KfcqL5hLf+l7I6bh8VYvFMNMMeVLee35UVgvVrH/sdAih0Z5HtoX/NGz6CEFvY7/o/5QA==}
 
   opfs-tools@0.5.4:
     resolution: {integrity: sha512-bgPB3DM786CJKcTfB3QD8MtQYt5UWMxO+p3AX7PRPPulJ86a2o0KFrgwZ0fzIjOJVJHpZNeOtBx2uycHf6BhEw==}
@@ -12114,21 +12105,6 @@ snapshots:
       '@webassemblyjs/ast': 1.12.1
       '@xtuc/long': 4.2.2
 
-  '@webav/av-cliper@0.12.1':
-    dependencies:
-      '@webav/mp4box.js': 0.5.3-fenghen
-      m3u8-parser: 7.1.0
-      opfs-tools: 0.5.3
-      wave-resampler: 1.0.0
-
-  '@webav/av-recorder@0.12.1':
-    dependencies:
-      '@types/dom-mediacapture-transform': 0.1.9
-      '@types/dom-webcodecs': 0.1.11
-      '@types/wicg-file-system-access': 2020.9.8
-      '@webav/av-cliper': 0.12.1
-      fix-webm-duration: 1.0.5
-
   '@webav/mp4box.js@0.5.3-fenghen': {}
 
   '@xtuc/ieee754@1.2.0': {}
@@ -17287,8 +17263,6 @@ snapshots:
       define-lazy-prop: 3.0.0
       is-inside-container: 1.0.0
       is-wsl: 2.2.0
-
-  opfs-tools@0.5.3: {}
 
   opfs-tools@0.5.4: {}
 
