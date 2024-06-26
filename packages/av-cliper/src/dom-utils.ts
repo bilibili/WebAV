@@ -1,9 +1,20 @@
 // 在主线程中执行的 工具函数
 
+/**
+ * 创建一个新的 HTML 元素
+ * @param tagName - 要创建的元素的标签名
+ * @returns 新创建的 HTML 元素
+ */
 export function createEl(tagName: string): HTMLElement {
   return document.createElement(tagName);
 }
 
+/**
+ * 将文本渲染为图片
+ * @param txt - 要渲染的文本
+ * @param cssText - 应用于文本的 CSS 样式
+ * @returns 渲染后的图片元素
+ */
 export function renderTxt2Img(txt: string, cssText: string): HTMLImageElement {
   const div = createEl('pre');
   div.style.cssText = `margin: 0; ${cssText}; visibility: hidden; position: fixed;`;
@@ -32,6 +43,19 @@ export function renderTxt2Img(txt: string, cssText: string): HTMLImageElement {
   return img;
 }
 
+/**
+ * 将文本渲染为 {@link ImageBitmap}，用来创建 {@link ImgClip}
+ * @param txt - 要渲染的文本
+ * @param cssText - 应用于文本的 CSS 样式
+ *
+ * @example
+ * new ImgClip(
+ *   await renderTxt2ImgBitmap(
+ *     '水印',
+ *    `font-size:40px; color: white; text-shadow: 2px 2px 6px red;`,
+ *   )
+ * )
+ */
 export async function renderTxt2ImgBitmap(
   txt: string,
   cssText: string,

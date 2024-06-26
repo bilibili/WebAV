@@ -24,6 +24,7 @@
     "test:coverage": "vitest run --coverage",
     "build": "vite build && tsc -p build.tsconfig.json --outDir dist",
     "build:api": "typedoc src/index.ts --tsconfig build.tsconfig.json --out ../../doc-site/public/_api/av-canvas",
+    "build:api:watch": "typedoc src/index.ts --tsconfig build.tsconfig.json --out ../../doc-site/public/_api/av-canvas --watch",
     "prepublishOnly": "pnpm build",
     "preview": "vite preview"
   },

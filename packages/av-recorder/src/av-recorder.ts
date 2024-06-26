@@ -13,6 +13,23 @@ import {
 } from './types';
 
 type TState = 'inactive' | 'recording' | 'paused' | 'stopped';
+
+/**
+ * 录制媒体流 MediaStream，生成 MP4 文件流
+ *
+ * 如果你期望录制为 WebM 格式，请使用 [MediaRecorder](https://developer.mozilla.org/en-US/docs/Web/API/MediaRecorder)
+ *
+ * @example
+ * const recorder = new AVRecorder(
+ * await navigator.mediaDevices.getUserMedia({
+ *   video: true,
+ *   audio: true,
+ * })
+);
+
+recorder.start() // => ReadableStream
+ * @see [录制摄像头](https://bilibili.github.io/WebAV/demo/4_1-recorder-usermedia)
+ */
 export class AVRecorder {
   #state: TState = 'inactive';
   get state(): TState {
@@ -37,6 +54,11 @@ export class AVRecorder {
   }
 
   #stopStream = () => {};
+  /**
+   * 开始录制，返回 MP4 文件流
+   * @param timeSlice 控制流输出数据的时间间隔，单位毫秒
+   *
+   */
   start(timeSlice: number = 500): ReadableStream<Uint8Array> {
     if (this.#state === 'stopped') throw Error('AVRecorder is stopped');
     Log.info('AVRecorder.start recoding');
@@ -59,11 +81,17 @@ export class AVRecorder {
     return stream;
   }
 
+  /**
+   * 暂停录制
+   */
   pause(): void {
     this.#state = 'paused';
     this.#recoderPauseCtrl.pause();
     this.#evtTool.emit('stateChange', this.#state);
   }
+  /**
+   * 恢复录制
+   */
   resume(): void {
     if (this.#state === 'stopped') throw Error('AVRecorder is stopped');
     this.#state = 'recording';
@@ -71,6 +99,9 @@ export class AVRecorder {
     this.#evtTool.emit('stateChange', this.#state);
   }
 
+  /**
+   * 停止
+   */
   async stop(): Promise<void> {
     if (this.#state === 'stopped') return;
     this.#state = 'stopped';

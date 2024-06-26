@@ -2,13 +2,27 @@ type EventKey = string | symbol;
 
 type EventToolType = Record<EventKey, (...args: any[]) => any>;
 
+/**
+ * 事件工具类
+ *
+ * @example
+ * const evtTool = new EventTool<{
+ *   timeupdate: (time: number) => void;
+ *   paused: () => void;
+ *   playing: () => void;
+ * }>()
+ * evtTool.on('paused', () => {})
+ * evtTool.emit('paused')
+ */
 export class EventTool<T extends EventToolType> {
   /**
    * 在两个 EventTool 实例间转发消息
    * @param from
    * @param to
    * @param evtTypes 需转发的消息类型
-   * @returns
+   *
+   * @example
+   * EventTool.forwardEvent(from, to, ['evtName']),
    */
   static forwardEvent<
     T1 extends EventToolType,
@@ -39,7 +53,7 @@ export class EventTool<T extends EventToolType> {
   #listeners = new Map<keyof T, Set<T[keyof T]>>();
 
   /**
-   * 监听EventType中定义的事件，调用方【必须】在合适的时机自行移除监听
+   * 监听EventType中定义的事件
    */
   on = <Type extends keyof T>(type: Type, listener: T[Type]): (() => void) => {
     const handlers = this.#listeners.get(type) ?? new Set<T[keyof T]>();
@@ -59,6 +73,7 @@ export class EventTool<T extends EventToolType> {
 
   /**
    * 监听事件，首次触发后自动移除监听
+   *
    * 期望回调一次的事件，使用once; 期望多次回调使用on
    */
   once = <Type extends keyof T>(

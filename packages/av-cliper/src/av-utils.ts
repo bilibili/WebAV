@@ -42,7 +42,7 @@ export function concatPCMFragments(
 }
 
 /**
- * 从 AudioData 中提取 PCM 数据
+ * 从 AudioData 中提取 PCM 数据的工具函数
  */
 export function extractPCM4AudioData(ad: AudioData): Float32Array[] {
   if (ad.format === 'f32-planar') {
@@ -96,6 +96,12 @@ export function extractPCM4AudioBuffer(ab: AudioBuffer): Float32Array[] {
     });
 }
 
+/**
+ * 调整音频数据的音量
+ * @param ad - 要调整的音频对象
+ * @param volume - 音量调整系数（0.0 - 1.0）
+ * @returns 调整音量后的新音频数据
+ */
 export function adjustAudioDataVolume(ad: AudioData, volume: number) {
   const data = new Float32Array(
     concatFloat32Array(extractPCM4AudioData(ad)),
@@ -112,6 +118,23 @@ export function adjustAudioDataVolume(ad: AudioData, volume: number) {
   return newAd;
 }
 
+/**
+ * 解码图像流，返回一个视频帧数组。
+ *
+ * @param stream - 包含图像数据的可读流。
+ * @param type - 图像的 MIME 类型，例如 'image/jpeg'。
+ *
+ * @returns 返回一个 Promise，该 Promise 在解码完成后解析为 {@link VideoFrame} 数组。
+ *
+ * @see [解码动图](https://bilibili.github.io/WebAV/demo/1_3-decode-image)
+ *
+ * @example
+ *
+ * const frames = await decodeImg(
+ *   (await fetch('<gif url>')).body!,
+ *   `image/gif`,
+ * );
+ */
 export async function decodeImg(
   stream: ReadableStream<Uint8Array>,
   type: string,
@@ -135,7 +158,19 @@ export async function decodeImg(
 
 /**
  * 混合双通道音轨的 PCM 数据，并将多声道并排成一个 Float32Array 输出
- * 如果只传入一个音轨[Float32Array[]]，返回结果是将这个一个音轨的左右声道并排成 Float32Array
+ * @param audios - 一个二维数组，每个元素是一个 Float32Array 数组，代表一个音频流的 PCM 数据。
+ * 每个 Float32Array 数组的第一个元素是左声道数据，第二个元素（如果有）是右声道数据。
+ * 如果只有左声道数据，则右声道将复用左声道数据。
+ *
+ * @returns 返回一个 Float32Array，返回结果是将这个一个音轨的左右声道并排成 Float32Array。
+ *
+ * @example
+ *
+ * const audios = [
+ *   [new Float32Array([0.1, 0.2, 0.3]), new Float32Array([0.4, 0.5, 0.6])],
+ *   [new Float32Array([0.7, 0.8, 0.9])],
+ * ];
+ * const mixed = mixinPCM(audios);
  */
 export function mixinPCM(audios: Float32Array[][]): Float32Array {
   const maxLen = Math.max(...audios.map((a) => a[0]?.length ?? 0));
@@ -159,11 +194,22 @@ export function mixinPCM(audios: Float32Array[][]): Float32Array {
 }
 
 /**
- * 音频 PCM 重采样
- * @param pcmData PCM
- * @param curRate 当前采样率
- * @param target { rate: 目标采样率, chanCount: 目标声道数 }
- * @returns PCM
+ * 对 PCM 音频数据进行重采样。
+ *
+ * @param pcmData - 一个 Float32Array 数组，每个元素代表一个声道的 PCM 数据。
+ * @param curRate - 当前的采样率。
+ * @param target - 目标参数对象。
+ * @param target.rate - 目标采样率。
+ * @param target.chanCount - 目标声道数。
+ *
+ * @returns 返回一个 Promise，该 Promise 在重采样完成后解析为一个 Float32Array 数组，每个元素代表一个声道的 PCM 数据。
+ *
+ * @example
+ *
+ * const pcmData = [new Float32Array([0.1, 0.2, 0.3]), new Float32Array([0.4, 0.5, 0.6])];
+ * const curRate = 44100;
+ * const target = { rate: 48000, chanCount: 2 };
+ * const resampled = await audioResample(pcmData, curRate, target);
  */
 export async function audioResample(
   pcmData: Float32Array[],
@@ -208,6 +254,12 @@ export async function audioResample(
   return extractPCM4AudioBuffer(await ctx.startRendering());
 }
 
+/**
+ * 使当前执行环境暂停一段时间。
+ * @param time - 暂停的时间，单位为毫秒。
+ * @example
+ * await sleep(1000);  // 暂停 1 秒
+ */
 export function sleep(time: number): Promise<void> {
   return new Promise((resolve) => {
     const stop = workerTimer(() => {
@@ -218,7 +270,18 @@ export function sleep(time: number): Promise<void> {
 }
 
 /**
- *  循环 即 环形取值，主要用于截取 PCM
+ * 从给定的 Float32Array 中提取一个环形切片，超出边界从 0 开始循环
+ *
+ * 主要用于截取 PCM 实现循环播放
+ *
+ * @param data - 输入的 Float32Array。
+ * @param start - 切片的开始索引。
+ * @param end - 切片的结束索引。
+ * @returns - 返回一个新的 Float32Array，包含从 start 到 end 的数据。
+ *
+ * @example
+ * const data = new Float32Array([0, 1, 2, 3, 4, 5]);
+ * ringSliceFloat32Array(data, 4, 6); // => Float32Array [4, 5, 0]
  */
 export function ringSliceFloat32Array(
   data: Float32Array,
@@ -235,6 +298,28 @@ export function ringSliceFloat32Array(
   return rs;
 }
 
+/**
+ * 自动读取流并处理每个数据块。
+ *
+ * @template ST - 可读流的类型。
+ * @param stream - 要读取的流。
+ * @param cbs - 回调函数对象。
+ * @param cbs.onChunk - 当读取到新的数据块时调用的函数。该函数接收一个参数，即数据块，并返回一个 Promise。
+ * @param cbs.onDone - 当读取完所有数据块时调用的函数。
+ * @returns - 返回一个函数，调用该函数可以停止读取流。
+ *
+ * @example
+ * const stream = getSomeReadableStream();
+ * const onChunk = async (chunk) => {
+ *   console.log('New chunk:', chunk);
+ * };
+ * const onDone = () => {
+ *   console.log('Done reading stream');
+ * };
+ * const stopReading = autoReadStream(stream, { onChunk, onDone });
+ * // Later...
+ * stopReading();
+ */
 export function autoReadStream<ST extends ReadableStream>(
   stream: ST,
   cbs: {

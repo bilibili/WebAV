@@ -2,6 +2,21 @@ import { BaseSprite } from './base-sprite';
 import { IClip } from '../clips';
 import { Log } from '../log';
 
+/**
+ * 包装 {@link IClip} 给素材扩展坐标、层级、透明度等信息，用于 {@link Combinator} 在后台合成视频
+ *
+ * 跟 {@link VisibleSprite} 非常相似，应用场景不同
+ *
+ * @example
+ * const spr = new OffscreenSprite(
+ *   new MP4Clip((await fetch('<mp4 url>')).body),
+ * );
+ * spr.opacity = 0.5 // 半透明
+ * spr.rect.x = 100 // x 坐标偏移 100 像素
+ * spr.time.offset = 10e6 // 视频第 10s 开始绘制该视频素材
+ *
+ * @see [视频合成](https://bilibili.github.io/WebAV/demo/2_1-concat-video)
+ */
 export class OffscreenSprite extends BaseSprite {
   #clip: IClip;
 
@@ -21,6 +36,10 @@ export class OffscreenSprite extends BaseSprite {
     });
   }
 
+  /**
+   * 绘制素材指定时刻的图像到 canvas 上下文，并返回对应的音频数据
+   * @param time 指定时刻，微秒
+   */
   async offscreenRender(
     ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D,
     time: number,

@@ -36,7 +36,11 @@ worker.onmessage = () => {
   }
 };
 /**
- * 解决页面后台时，定时器不（或延迟）执行的问题
+ * 专门解决页面长时间处于后台时，定时器不（或延迟）执行的问题
+ *
+ * 跟 `setInterval` 很相似，⚠️ 但 time 会有一定偏差，请优先使用 `setInterval`
+ *
+ * @see [JS 定时器时长控制细节](https://hughfenghen.github.io/posts/2023/06/15/timer-delay/)
  */
 export const workerTimer = (
   handler: () => void,

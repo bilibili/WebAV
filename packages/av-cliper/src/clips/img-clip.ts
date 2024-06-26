@@ -4,6 +4,24 @@ import { IClip } from './iclip';
 
 type AnimateImgType = 'avif' | 'webp' | 'png' | 'gif';
 
+/**
+ * 图像素材，支持动图
+ *
+ * 普通文字可通过 {@link renderTxt2ImgBitmap} 转换成图片素材
+ *
+ * @example
+ * new ImgClip((await fetch('<img url>')).body);
+ *
+ * @example
+ * new ImgClip(
+ *   await renderTxt2ImgBitmap(
+ *     '水印',
+ *    `font-size:40px; color: white; text-shadow: 2px 2px 6px red;`,
+ *   )
+ * )
+ *
+ * @see [视频合成](https://bilibili.github.io/WebAV/demo/2_1-concat-video)
+ */
 export class ImgClip implements IClip {
   ready: IClip['ready'];
 
@@ -14,6 +32,12 @@ export class ImgClip implements IClip {
     height: 0,
   };
 
+  /**
+   * ⚠️ 静态图片的 duration 为 Infinity
+   *
+   * 使用 Sprite 包装时需要将它的 duration 设置为有限数
+   *
+   */
   get meta() {
     return { ...this.#meta };
   }
@@ -22,6 +46,10 @@ export class ImgClip implements IClip {
 
   #frames: VideoFrame[] = [];
 
+  /**
+   * 静态图片可使用 流、ImageBitmap 初始化
+   * 动图需要使用 VideoFrame[] 或提供图片类型
+   */
   constructor(
     dataSource:
       | ReadableStream

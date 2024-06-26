@@ -35,6 +35,17 @@ interface SubtitleStruct {
   text: string;
 }
 
+/**
+ * 嵌入式字幕，将字幕（目前仅支持 SRT 格式）嵌入视频画面中
+ *
+ * @example
+ * const es = new EmbedSubtitlesClip(srtSubtitleStr, {
+ *   videoWidth: 1280,
+ *   videoHeight: 720,
+ *   fontFamily: 'Noto Sans SC',
+ *   color: 'white',
+ * });
+ */
 export class EmbedSubtitlesClip implements IClip {
   ready: IClip['ready'];
 
@@ -192,6 +203,9 @@ export class EmbedSubtitlesClip implements IClip {
     }
   }
 
+  /**
+   * @see {@link IClip.tick}
+   */
   async tick(time: number): Promise<{
     video?: VideoFrame;
     state: 'done' | 'success';
@@ -237,6 +251,9 @@ export class EmbedSubtitlesClip implements IClip {
     return { video: vf.clone(), state: 'success' };
   }
 
+  /**
+   * @see {@link IClip.destroy}
+   */
   async split(time: number) {
     await this.ready;
     let hitIdx = -1;
@@ -270,10 +287,16 @@ export class EmbedSubtitlesClip implements IClip {
     ] as [this, this];
   }
 
+  /**
+   * @see {@link IClip.clone}
+   */
   async clone() {
     return new EmbedSubtitlesClip(this.#subtitles.slice(0), this.#opts) as this;
   }
 
+  /**
+   * @see {@link IClip.destroy}
+   */
   destroy() {
     this.#lastVF?.close();
   }

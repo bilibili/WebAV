@@ -52,7 +52,30 @@ const encoderIdle = (() => {
   };
 })();
 
+/**
+ * 视频合成器；能添加多个 {@link VisibleSprite}，根据它们位置、层级、时间偏移等信息，合成输出为视频文件
+ * @see [视频合成](https://bilibili.github.io/WebAV/demo/2_1-concat-video)
+ * @see [视频配音](https://bilibili.github.io/WebAV/demo/2_2-video-add-audio)
+ * @example
+ * const spr1 = new OffscreenSprite(
+ *   new MP4Clip((await fetch('<mp4 url>')).body),
+ * );
+ * const spr2 = new OffscreenSprite(
+ *   new AudioClip((await fetch('<audio url>')).body),
+ * );
+ * const com = new Combinator({ width: 1280, height: 720, });
+
+ * await com.addSprite(spr1);
+ * await com.addSprite(spr2);
+
+ * com.output(); // => ReadableStream
+ *
+ */
 export class Combinator {
+  /**
+   * 检测当前环境的兼容性
+   * @param args.videoCodec 指定视频编码格式，默认 avc1.42E032
+   */
   static async isSupported(
     args = {
       videoCodec: 'avc1.42E032',
@@ -107,6 +130,10 @@ export class Combinator {
   }>();
   on = this.#evtTool.on;
 
+  /**
+   * 根据配置创建合成器实例
+   * @param opts ICombinatorOpts
+   */
   constructor(opts: ICombinatorOpts = {}) {
     const { width = 0, height = 0 } = opts;
     this.#cvs = new OffscreenCanvas(width, height);
@@ -131,9 +158,9 @@ export class Combinator {
   }
 
   /**
-   * 当 opts.main 为 true 的素材时间结束时会终结合并流程；
-   * 比如合并 mp4（main） + mp3 + img， 所有资源可以缺省持续时间（duration）；
-   * mp4（main）时间终点会终结合并流程
+   * 添加用于合成视频的 Sprite，视频时长默认取所有素材 duration 字段的最大值
+   * @param os Sprite
+   * @param opts.main 如果 main 为 true，视频时长为该素材的 duration 值
    */
   async addSprite(
     os: OffscreenSprite,
@@ -179,6 +206,9 @@ export class Combinator {
     return recodeMuxer;
   }
 
+  /**
+   * 输出视频文件二进制流
+   */
   output(): ReadableStream<Uint8Array> {
     if (this.#sprites.length === 0) throw Error('No sprite added');
 
@@ -240,6 +270,9 @@ export class Combinator {
     return stream;
   }
 
+  /**
+   * 销毁实例，释放资源
+   */
   destroy() {
     if (this.#destroyed) return;
     this.#destroyed = true;
