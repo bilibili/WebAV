@@ -1,5 +1,11 @@
 # @webav/av-cliper
 
+## 0.12.6
+
+### Patch Changes
+
+- fix: mp4clip timeout, because dec.flush not resoloved
+
 ## 0.12.5
 
 ## 0.12.4

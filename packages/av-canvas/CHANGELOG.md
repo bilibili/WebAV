@@ -1,5 +1,13 @@
 # @webav/av-canvas
 
+## 0.12.6
+
+### Patch Changes
+
+- fix: mp4clip timeout, because dec.flush not resoloved
+- Updated dependencies
+  - @webav/av-cliper@0.12.6
+
 ## 0.12.5
 
 ### Patch Changes
