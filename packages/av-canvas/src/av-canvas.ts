@@ -31,15 +31,19 @@ function createInitCvsEl(resolution: IResolution): HTMLCanvasElement {
 
 /**
  *
- * 可在浏览器环境中快速实现视频剪辑功能，且非常容易集成的直播推流工作台中。
+ * 一个可交互的画布，让用户添加各种素材，支持基础交互（拖拽、缩放、旋转、时间偏移）
+ *
+ * 用于在 Web 环境中实现视频剪辑、直播推流工作台功能
+ *
  * @description
- * 支持用户添加各种素材，并拖动改变它们的位置：
+ *
   - 添加/删除素材（视频、音频、图片、文字）
   - 分割（裁剪）素材
   - 控制素材在视频中的空间属性（坐标、旋转、缩放）
   - 控制素材在视频中的时间属性（偏移、时长）
   - 实时预览播放
   - 纯浏览器环境生成视频
+
  * @see [直播录制](https://bilibili.github.io/WebAV/demo/4_2-recorder-avcanvas)
  * @see [视频剪辑](https://bilibili.github.io/WebAV/demo/6_4-video-editor)
  * @example
@@ -341,8 +345,12 @@ export class AVCanvas {
   }
 
   /**
-   * 合成所有素材的图像与音频，返回 `MediaStream` 可用于 WebRTC 推流，或由 AVRecorder 录制生成视频文件
-   * @returns- {@link MediaStream}
+   * 合成所有素材的图像与音频，返回实时媒体流 `MediaStream`
+   *
+   * 可用于 WebRTC 推流，或由 {@link [AVRecorder](../../av-recorder/classes/AVRecorder.html)} 录制生成视频文件
+   *
+   * @see [直播录制](https://bilibili.github.io/WebAV/demo/4_2-recorder-avcanvas)
+   *
    */
   captureStream(): MediaStream {
     if (this.#audioCtx.state === 'suspended') {
@@ -363,9 +371,15 @@ export class AVCanvas {
   }
 
   /**
-   * 创建视频合成器 {@link Combinator}，用于将当前画布添加的 Sprite 导出为视频流
+   * 创建一个视频合成器 {@link [Combinator](../../av-cliper/classes/Combinator.html)} 实例，用于将当前画布添加的 Sprite 导出为视频文件流
+   *
    * @param opts - 创建 Combinator 的可选参数
    * @throws 如果没有添加素材，会抛出错误
+   *
+   * @example
+   * avCvs.createCombinator().output() // => ReadableStream
+   *
+   * @see [视频剪辑](https://bilibili.github.io/WebAV/demo/6_4-video-editor)
    */
   async createCombinator(opts: { bitrate?: number } = {}) {
     const com = new Combinator({ ...this.#opts, ...opts });

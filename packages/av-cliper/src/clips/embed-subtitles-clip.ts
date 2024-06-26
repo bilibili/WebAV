@@ -36,7 +36,7 @@ interface SubtitleStruct {
 }
 
 /**
- * 嵌入式字幕，将字幕（当前仅支持 SRT 格式）嵌入视频画面中
+ * 嵌入式字幕，将字幕（目前仅支持 SRT 格式）嵌入视频画面中
  *
  * @example
  * const es = new EmbedSubtitlesClip(srtSubtitleStr, {

@@ -41,13 +41,18 @@ type ThumbnailOpts = {
 };
 
 /**
- * 包装 MP4 资源
+ * MP4 素材，解析 MP4 文件，使用 {@link MP4Clip.tick} 按需解码指定时间的图像帧
+ *
+ * 可用于实现视频抽帧、生成缩略图、视频编辑等功能
  *
  * @example
  * new MP4Clip((await fetch('<mp4 url>')).body)
  * new MP4Clip(mp4File.stream())
  *
- * @see [解码视频](https://bilibili.github.io/WebAV/demo/1_1-decode-video)
+ * @see {@link Combinator}
+ * @see [AVCanvas](../../av-canvas/classes/AVCanvas.html)
+ *
+ * @see [解码播放视频](https://bilibili.github.io/WebAV/demo/1_1-decode-video)
  */
 export class MP4Clip implements IClip {
   #log = Log.create(`MP4Clip id:${CLIP_ID++},`);
@@ -140,9 +145,22 @@ export class MP4Clip implements IClip {
     });
   }
 
-  // 默认直接返回
-  tickInterceptor = async (_: number, tickRet: any) => tickRet;
+  /**
+   * 拦截 {@link MP4Clip.tick} 方法返回的数据，用于对图像、音频数据二次处理
+   * @param time 调用 tick 的时间
+   * @param tickRet tick 返回的数据
+   *
+   * @see [移除视频绿幕背景](https://bilibili.github.io/WebAV/demo/3_2-chromakey-video)
+   */
+  tickInterceptor: <T extends Awaited<ReturnType<MP4Clip['tick']>>>(
+    time: number,
+    tickRet: T,
+  ) => Promise<T> = async (_, tickRet) => tickRet;
 
+  /**
+   * 获取素材指定时刻的图像帧、音频数据
+   * @param time 微秒
+   */
   async tick(time: number): Promise<{
     video?: VideoFrame;
     audio: Float32Array[];
@@ -158,7 +176,7 @@ export class MP4Clip implements IClip {
     let audioReady = false;
     let videoReady = false;
     let timeoutTimer = 0;
-    const [audio, video] = await Promise.race([
+    const [audio, video] = (await Promise.race([
       Promise.all([
         this.#audioFrameFinder?.find(time).then((rs) => {
           audioReady = true;
@@ -183,7 +201,7 @@ export class MP4Clip implements IClip {
           );
         }, 3000);
       }),
-    ]);
+    ])) as [Float32Array[], VideoFrame];
     clearTimeout(timeoutTimer);
 
     if (video == null) {

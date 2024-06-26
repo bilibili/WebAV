@@ -24,7 +24,7 @@ order: 1
 如果你想在视频中绘制普通图片，可参考以下方式创建 `ImgClip` 实例，再添加到 `Combinator`
 
 ```js
-new ImgClip(await createImageBitmap(await (await fetch('<img url>')).blob()));
+new ImgClip((await fetch('<img url>')).body);
 ```
 
 如果你想在视频上方再叠加另一个视频，参考 DEMO：“绿幕抠图 - 视频背景”

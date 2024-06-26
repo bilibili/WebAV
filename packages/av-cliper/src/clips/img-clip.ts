@@ -4,6 +4,13 @@ import { IClip } from './iclip';
 
 type AnimateImgType = 'avif' | 'webp' | 'png' | 'gif';
 
+/**
+ * 图像素材，支持动图
+ *
+ * @example
+ * new ImgClip((await fetch('<img url>')).body);
+ *
+ */
 export class ImgClip implements IClip {
   ready: IClip['ready'];
 
@@ -14,6 +21,12 @@ export class ImgClip implements IClip {
     height: 0,
   };
 
+  /**
+   * ⚠️ 静态图片的 duration 为 Infinity
+   *
+   * 使用 Sprite 包装时需要将它的 duration 设置为有限数
+   *
+   */
   get meta() {
     return { ...this.#meta };
   }
@@ -22,6 +35,10 @@ export class ImgClip implements IClip {
 
   #frames: VideoFrame[] = [];
 
+  /**
+   * 静态图片可使用 流、ImageBitmap 初始化
+   * 动图需要使用 VideoFrame[] 或提供图片类型
+   */
   constructor(
     dataSource:
       | ReadableStream

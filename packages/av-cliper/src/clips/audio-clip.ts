@@ -12,7 +12,12 @@ interface IAudioClipOpts {
 }
 
 /**
- * 音频素材
+ * 音频素材，为创建、编辑音视频功能提供音频数据
+ *
+ * @example
+ * new AudioClip((await fetch('<mp3 url>')).body, {
+      loop: true,
+    }),
  */
 export class AudioClip implements IClip {
   static ctx: AudioContext | null = null;
