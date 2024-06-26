@@ -21,10 +21,10 @@ type TState = 'inactive' | 'recording' | 'paused' | 'stopped';
  *
  * @example
  * const recorder = new AVRecorder(
-  await navigator.mediaDevices.getUserMedia({
-    video: true,
-    audio: true,
-  })
+ * await navigator.mediaDevices.getUserMedia({
+ *   video: true,
+ *   audio: true,
+ * })
 );
 
 recorder.start() // => ReadableStream

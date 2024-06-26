@@ -40,11 +40,11 @@ interface SubtitleStruct {
  *
  * @example
  * const es = new EmbedSubtitlesClip(srtSubtitleStr, {
-    videoWidth: 1280,
-    videoHeight: 720,
-    fontFamily: 'Noto Sans SC',
-    color: 'white',
-  });
+ *   videoWidth: 1280,
+ *   videoHeight: 720,
+ *   fontFamily: 'Noto Sans SC',
+ *   color: 'white',
+ * });
  */
 export class EmbedSubtitlesClip implements IClip {
   ready: IClip['ready'];

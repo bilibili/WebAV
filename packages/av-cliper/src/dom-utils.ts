@@ -44,10 +44,17 @@ export function renderTxt2Img(txt: string, cssText: string): HTMLImageElement {
 }
 
 /**
- * 将文本渲染为 {@link ImageBitmap}
+ * 将文本渲染为 {@link ImageBitmap}，用来创建 {@link ImgClip}
  * @param txt - 要渲染的文本
  * @param cssText - 应用于文本的 CSS 样式
- * @returns 包含渲染文本的 {@link ImageBitmap}
+ *
+ * @example
+ * new ImgClip(
+ *   await renderTxt2ImgBitmap(
+ *     '水印',
+ *    `font-size:40px; color: white; text-shadow: 2px 2px 6px red;`,
+ *   )
+ * )
  */
 export async function renderTxt2ImgBitmap(
   txt: string,

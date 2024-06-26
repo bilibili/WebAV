@@ -4,6 +4,19 @@ import { Log } from '../log';
 
 /**
  * 包装 {@link IClip} 给素材扩展坐标、层级、透明度等信息，用于 {@link [AVCanvas](../../av-canvas/classes/AVCanvas.html)} 响应用户交互
+ *
+ * 跟 {@link OffscreenSprite} 非常相似，应用场景不同
+ *
+ * @example
+ * const spr = new VisibleSprite(
+ *   new MP4Clip((await fetch('<mp4 url>')).body),
+ * );
+ * spr.opacity = 0.5 // 半透明
+ * spr.rect.x = 100 // x 坐标偏移 100 像素
+ * spr.time.offset = 10e6 // 视频第 10s 开始绘制素材
+ *
+ * @see [视频剪辑](https://bilibili.github.io/WebAV/demo/6_4-video-editor)
+ *
  */
 export class VisibleSprite extends BaseSprite {
   #clip: IClip;

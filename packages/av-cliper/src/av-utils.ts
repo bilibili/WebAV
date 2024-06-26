@@ -42,7 +42,7 @@ export function concatPCMFragments(
 }
 
 /**
- * 从 AudioData 中提取 PCM 数据
+ * 从 AudioData 中提取 PCM 数据的工具函数
  */
 export function extractPCM4AudioData(ad: AudioData): Float32Array[] {
   if (ad.format === 'f32-planar') {
@@ -270,7 +270,8 @@ export function sleep(time: number): Promise<void> {
 }
 
 /**
- * 从给定的 Float32Array 中提取一个环形切片，超出边界从 0 开始
+ * 从给定的 Float32Array 中提取一个环形切片，超出边界从 0 开始循环
+ *
  * 主要用于截取 PCM 实现循环播放
  *
  * @param data - 输入的 Float32Array。
@@ -280,9 +281,7 @@ export function sleep(time: number): Promise<void> {
  *
  * @example
  * const data = new Float32Array([0, 1, 2, 3, 4, 5]);
- * const start = 4;
- * const end = 6;
- * ringSliceFloat32Array(data, start, end); // => Float32Array [4, 5, 0]
+ * ringSliceFloat32Array(data, 4, 6); // => Float32Array [4, 5, 0]
  */
 export function ringSliceFloat32Array(
   data: Float32Array,

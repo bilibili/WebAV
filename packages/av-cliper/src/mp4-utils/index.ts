@@ -321,10 +321,10 @@ export function _deprecated_stream2file(stream: ReadableStream<Uint8Array>): {
 }
 
 /**
- * 将 MP4 文件转换为可读流。
+ * 将 mp4box file 转换为文件流，用于上传服务器或存储到本地
  * @param file - MP4 文件实例 {@link MP4File}。
  * @param timeSlice - 时间片，用于控制流的发送速度。
- * @param [onCancel] - 当返回的流被取消时触发
+ * @param onCancel - 当返回的流被取消时触发该回调函数
  */
 export function file2stream(
   file: MP4File,
@@ -554,7 +554,7 @@ function chunk2MP4SampleOpts(
 }
 
 /**
- * 快速拼接多个mp4流，要求所有mp4的属性是一致的。
+ * 快速拼接多个mp4 文件流，要求所有 mp4 的属性一致，
  * 属性包括（不限于）：音视频编码格式、分辨率、采样率
  *
  * @param streams 一个包含 Uint8Array 的可读流数组。

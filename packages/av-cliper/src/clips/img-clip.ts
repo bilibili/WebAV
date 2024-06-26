@@ -7,9 +7,20 @@ type AnimateImgType = 'avif' | 'webp' | 'png' | 'gif';
 /**
  * 图像素材，支持动图
  *
+ * 普通文字可通过 {@link renderTxt2ImgBitmap} 转换成图片素材
+ *
  * @example
  * new ImgClip((await fetch('<img url>')).body);
  *
+ * @example
+ * new ImgClip(
+ *   await renderTxt2ImgBitmap(
+ *     '水印',
+ *    `font-size:40px; color: white; text-shadow: 2px 2px 6px red;`,
+ *   )
+ * )
+ *
+ * @see [视频合成](https://bilibili.github.io/WebAV/demo/2_1-concat-video)
  */
 export class ImgClip implements IClip {
   ready: IClip['ready'];

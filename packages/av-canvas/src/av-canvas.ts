@@ -47,12 +47,11 @@ function createInitCvsEl(resolution: IResolution): HTMLCanvasElement {
  * @see [直播录制](https://bilibili.github.io/WebAV/demo/4_2-recorder-avcanvas)
  * @see [视频剪辑](https://bilibili.github.io/WebAV/demo/6_4-video-editor)
  * @example
- *
-const avCvs = new AVCanvas(document.querySelector('#app'), {
-    bgColor: '#333',
-    width: 1920,
-    height: 1080,
-});
+ * const avCvs = new AVCanvas(document.querySelector('#app'), {
+ *   bgColor: '#333',
+ *   width: 1920,
+ *   height: 1080,
+ * });
  *
  */
 export class AVCanvas {
@@ -293,12 +292,12 @@ export class AVCanvas {
    * 添加 {@link VisibleSprite}
    * @param args {@link VisibleSprite}
    * @example
-   const sprite = new VisibleSprite(
-      new ImgClip({
-        type: 'image/gif',
-        stream: (await fetch('https://xx.gif')).body!,
-      }),
-    );
+   * const sprite = new VisibleSprite(
+   *   new ImgClip({
+   *     type: 'image/gif',
+   *     stream: (await fetch('https://xx.gif')).body!,
+   *   }),
+   * );
    */
   addSprite: SpriteManager['addSprite'] = async (vs) => {
     if (this.#audioCtx.state === 'suspended')
@@ -319,8 +318,8 @@ export class AVCanvas {
    * @param args
    * @returns
    * @example
-   const sprite = new VisibleSprite();
-   avCvs.removeSprite(sprite);
+   * const sprite = new VisibleSprite();
+   * avCvs.removeSprite(sprite);
    */
   removeSprite: SpriteManager['removeSprite'] = (vs) => {
     this.#sprMapAudioNode.get(vs)?.disconnect();

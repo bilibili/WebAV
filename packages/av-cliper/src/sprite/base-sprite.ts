@@ -121,15 +121,15 @@ export abstract class BaseSprite {
    *
    * @example
    * sprite.setAnimation(
-      {
-        '0%': { x: 0, y: 0 },
-        '25%': { x: 1200, y: 680 },
-        '50%': { x: 1200, y: 0 },
-        '75%': { x: 0, y: 680 },
-        '100%': { x: 0, y: 0 },
-      },
-      { duration: 4, iterCount: 1 },
-    );
+   *   {
+   *     '0%': { x: 0, y: 0 },
+   *     '25%': { x: 1200, y: 680 },
+   *     '50%': { x: 1200, y: 0 },
+   *     '75%': { x: 0, y: 680 },
+   *     '100%': { x: 0, y: 0 },
+   *   },
+   *   { duration: 4, iterCount: 1 },
+   * );
    *
    * @see [视频水印动画](https://bilibili.github.io/WebAV/demo/2_1-concat-video)
    */

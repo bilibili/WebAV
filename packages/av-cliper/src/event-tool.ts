@@ -3,16 +3,16 @@ type EventKey = string | symbol;
 type EventToolType = Record<EventKey, (...args: any[]) => any>;
 
 /**
- * 事件监听工具类
+ * 事件工具类
  *
  * @example
  * const evtTool = new EventTool<{
-    timeupdate: (time: number) => void;
-    paused: () => void;
-    playing: () => void;
-  }>()
-  evtTool.on('paused', () => {})
-  evtTool.emit('paused')
+ *   timeupdate: (time: number) => void;
+ *   paused: () => void;
+ *   playing: () => void;
+ * }>()
+ * evtTool.on('paused', () => {})
+ * evtTool.emit('paused')
  */
 export class EventTool<T extends EventToolType> {
   /**

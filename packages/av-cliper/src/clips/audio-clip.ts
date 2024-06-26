@@ -16,8 +16,8 @@ interface IAudioClipOpts {
  *
  * @example
  * new AudioClip((await fetch('<mp3 url>')).body, {
-      loop: true,
-    }),
+ *   loop: true,
+ * }),
  */
 export class AudioClip implements IClip {
   static ctx: AudioContext | null = null;
@@ -202,6 +202,9 @@ export class AudioClip implements IClip {
   }
 }
 
+/**
+ * 拼接多个 AudioClip
+ */
 export async function concatAudioClip(
   clips: AudioClip[],
   opts?: IAudioClipOpts,

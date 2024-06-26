@@ -5,6 +5,9 @@ interface IPoint {
   y: number;
 }
 
+/**
+ * @see {@link Rect.CTRL_KEYS}
+ */
 export type TCtrlKey = (typeof Rect.CTRL_KEYS)[number];
 
 export interface IRectBaseProps {
@@ -16,9 +19,11 @@ export interface IRectBaseProps {
 }
 
 /**
- * 用于控制素材在视频或画布中的空间属性：位置、大小、旋转
+ * 用于记录素材在视频或画布中的空间属性：位置、大小、旋转
  *
  * 并提供控制点位置，支持用户在画布中缩放、旋转素材
+ *
+ * 一般由内部 WebAV SDK 内部创建维护
  *
  * @see {@link Combinator}, {@link OffscreenSprite}
  * @see [AVCanvas](../../av-canvas/classes/AVCanvas.html), {@link VisibleSprite}

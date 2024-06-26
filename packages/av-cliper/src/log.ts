@@ -44,12 +44,28 @@ const lvHandler = ['debug', 'info', 'warn', 'error'].reduce(
 );
 
 const map = new Map<Function, number>();
+
+/**
+ * 全局日志对象
+ */
 export const Log = {
+  /**
+   * 设置记录日志的级别
+   *
+   * @example
+   * Log.setLogLevel(Log.warn) // 记录 warn，error 日志
+   */
   setLogLevel: <T extends Function>(logfn: T) => {
     THRESHOLD = map.get(logfn) ?? 1;
   },
   ...lvHandler,
-  // 生成一个 log 实例，所有输出前都会附加 tag
+  /**
+   * 生成一个 log 实例，所有输出前都会附加 tag
+   *
+   * @example
+   * const log = Log.create('<prefix>')
+   * log.info('xxx') // '<prefix> xxx'
+   */
   create: (tag: string) => {
     return Object.fromEntries(
       Object.entries(lvHandler).map(([k, h]) => [
@@ -59,6 +75,13 @@ export const Log = {
     );
   },
 
+  /**
+   * 将所有日志导出为一个字符串
+   *
+   * @example
+   * Log.dump() // => [level][time]  内容...
+   *
+   */
   async dump() {
     await initPromise;
     await writer?.flush();

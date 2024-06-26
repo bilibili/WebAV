@@ -58,17 +58,17 @@ const encoderIdle = (() => {
  * @see [视频配音](https://bilibili.github.io/WebAV/demo/2_2-video-add-audio)
  * @example
  * const spr1 = new OffscreenSprite(
-    new MP4Clip((await fetch('<mp4 url>')).body),
-  );
-  const spr2 = new OffscreenSprite(
-    new AudioClip((await fetch('<audio url>')).body),
-  );
-  const com = new Combinator({ width: 1280, height: 720, });
+ *   new MP4Clip((await fetch('<mp4 url>')).body),
+ * );
+ * const spr2 = new OffscreenSprite(
+ *   new AudioClip((await fetch('<audio url>')).body),
+ * );
+ * const com = new Combinator({ width: 1280, height: 720, });
 
-  await com.addSprite(spr1);
-  await com.addSprite(spr2);
+ * await com.addSprite(spr1);
+ * await com.addSprite(spr2);
 
-  com.output(); // => ReadableStream
+ * com.output(); // => ReadableStream
  *
  */
 export class Combinator {

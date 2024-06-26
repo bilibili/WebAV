@@ -8,11 +8,11 @@ import { IClip } from './iclip';
  *
  * @example
  * const spr = new VisibleSprite(
-    new MediaStreamClip(
-      await navigator.mediaDevices.getUserMedia({ video: true, audio: true, }),
-    ),
-  );
-  await avCvs.addSprite(spr);
+ *   new MediaStreamClip(
+ *     await navigator.mediaDevices.getUserMedia({ video: true, audio: true, }),
+ *   ),
+ * );
+ * await avCvs.addSprite(spr);
  */
 export class MediaStreamClip implements IClip {
   static ctx: AudioContext | null = null;
