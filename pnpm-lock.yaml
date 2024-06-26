@@ -56,15 +56,6 @@ importers:
 
   doc-site:
     dependencies:
-      '@webav/av-canvas':
-        specifier: file:../packages/av-canvas
-        version: file:packages/av-canvas
-      '@webav/av-cliper':
-        specifier: file:../packages/av-cliper
-        version: file:packages/av-cliper
-      '@webav/av-recorder':
-        specifier: file:../packages/av-recorder
-        version: file:packages/av-recorder
       '@xzdarcy/react-timeline-editor':
         specifier: ^0.1.9
         version: 0.1.9(react-dom@18.1.0(react@18.1.0))(react@18.1.0)
@@ -2336,20 +2327,11 @@ packages:
   '@webassemblyjs/wast-printer@1.12.1':
     resolution: {integrity: sha512-+X4WAlOisVWQMikjbcvY2e0rwPsKQ9F688lksZhBcPycBBuii3O7m8FACbDMWDojpAqvjIncrG8J0XHKyQfVeA==}
 
-  '@webav/av-canvas@file:packages/av-canvas':
-    resolution: {directory: packages/av-canvas, type: directory}
-
   '@webav/av-cliper@0.12.1':
     resolution: {integrity: sha512-YzE2Yf7Fp2x1djN8gshzIhBk1AyN5iqghffdf8ph82akJuwMwCh5aLZ/xyhQT4GN/yV5EQq7sObQkRSmaIC55g==}
 
-  '@webav/av-cliper@file:packages/av-cliper':
-    resolution: {directory: packages/av-cliper, type: directory}
-
   '@webav/av-recorder@0.12.1':
     resolution: {integrity: sha512-4E5eW1jjLyVQXJvum4SOEtJLE7mMIpAuVRudlWFaT8J7KKJcLftSrrfBtMtRbp/CvQzdAd9+SZyi/76+iBcPow==}
-
-  '@webav/av-recorder@file:packages/av-recorder':
-    resolution: {directory: packages/av-recorder, type: directory}
 
   '@webav/mp4box.js@0.5.3-fenghen':
     resolution: {integrity: sha512-jAN15I3Po1Z6Ns02iknb6KGbird9rd1h9TGldzbwsar+88ZlHd+oVjOQnFavBdNDc5vmULUnldcWGDdKc02npw==}
@@ -12132,18 +12114,7 @@ snapshots:
       '@webassemblyjs/ast': 1.12.1
       '@xtuc/long': 4.2.2
 
-  '@webav/av-canvas@file:packages/av-canvas':
-    dependencies:
-      '@webav/av-cliper': link:packages/av-cliper
-
   '@webav/av-cliper@0.12.1':
-    dependencies:
-      '@webav/mp4box.js': 0.5.3-fenghen
-      m3u8-parser: 7.1.0
-      opfs-tools: 0.5.3
-      wave-resampler: 1.0.0
-
-  '@webav/av-cliper@file:packages/av-cliper':
     dependencies:
       '@webav/mp4box.js': 0.5.3-fenghen
       m3u8-parser: 7.1.0
@@ -12156,14 +12127,6 @@ snapshots:
       '@types/dom-webcodecs': 0.1.11
       '@types/wicg-file-system-access': 2020.9.8
       '@webav/av-cliper': 0.12.1
-      fix-webm-duration: 1.0.5
-
-  '@webav/av-recorder@file:packages/av-recorder':
-    dependencies:
-      '@types/dom-mediacapture-transform': 0.1.9
-      '@types/dom-webcodecs': 0.1.11
-      '@types/wicg-file-system-access': 2020.9.8
-      '@webav/av-cliper': link:packages/av-cliper
       fix-webm-duration: 1.0.5
 
   '@webav/mp4box.js@0.5.3-fenghen': {}
