@@ -645,9 +645,8 @@ class VideoFrameFinder {
           this.#lastVfDur = chunks[0]?.duration ?? 0;
           for (const c of chunks) dec.decode(c);
           this.#inputChunkCnt += chunks.length;
-          try {
-            await dec.flush();
-          } catch (err) {
+          // 某些场景 flush 不会被 resolved
+          dec.flush().catch((err) => {
             if (
               !(err instanceof Error) ||
               !err.message.includes('Decoding error') ||
@@ -658,8 +657,7 @@ class VideoFrameFinder {
             this.#downgradeSoftDecode = true;
             Log.warn('Downgrade to software decode');
             this.reset();
-            return this.#parseFrame(time, dec, aborter);
-          }
+          });
         }
       }
       this.#videoDecCusorIdx = endIdx;
