@@ -36,8 +36,9 @@ jobs:
 
       - name: Prep commit message
         uses: sergeysova/jq-action@v2
-        run: |
-          echo "NEW_VERSION=$(pnpm changeset status --output=release.json && jq -r '.releases[0].newVersion' release.json && rm release.json)" >> "$GITHUB_ENV"
+        with:
+          cmd: |
+            echo "NEW_VERSION=$(pnpm changeset status --output=release.json && jq -r '.releases[0].newVersion' release.json && rm release.json)" >> "$GITHUB_ENV"
 
       - name: Create Release Pull Request
         uses: changesets/action@v1
