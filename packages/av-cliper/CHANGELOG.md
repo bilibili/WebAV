@@ -1,5 +1,11 @@
 # @webav/av-cliper
 
+## 0.13.0
+
+### Minor Changes
+
+- f83b3fa: docs(api): add a lot of api doc
+
 ## 0.12.6
 
 ### Patch Changes
