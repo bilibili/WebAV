@@ -1,5 +1,13 @@
 # @webav/av-canvas
 
+## 0.13.1
+
+### Patch Changes
+
+- 68eab28: feat: custom changeset commit
+- Updated dependencies [68eab28]
+  - @webav/av-cliper@0.13.1
+
 ## 0.13.0
 
 ### Minor Changes
