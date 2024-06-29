@@ -46,7 +46,7 @@ const lvHandler = ['debug', 'info', 'warn', 'error'].reduce(
 const map = new Map<Function, number>();
 
 /**
- * 全局日志对象
+ * 全局日志对象，将日志内容写入 OPFS 临时文件
  */
 export const Log = {
   /**
