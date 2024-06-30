@@ -331,8 +331,8 @@ export class MP4Clip implements IClip {
     const preClip = new MP4Clip(
       {
         localFile: this.#localFile,
-        videoSamples: preVideoSlice,
-        audioSamples: preAudioSlice,
+        videoSamples: preVideoSlice ?? [],
+        audioSamples: preAudioSlice ?? [],
         decoderConf: this.#decoderConf,
       },
       this.#opts,
@@ -340,8 +340,8 @@ export class MP4Clip implements IClip {
     const postClip = new MP4Clip(
       {
         localFile: this.#localFile,
-        videoSamples: postVideoSlice,
-        audioSamples: postAudioSlice,
+        videoSamples: postVideoSlice ?? [],
+        audioSamples: postAudioSlice ?? [],
         decoderConf: this.#decoderConf,
       },
       this.#opts,
@@ -672,18 +672,22 @@ class VideoFrameFinder {
           this.#lastVfDur = chunks[0]?.duration ?? 0;
           for (const c of chunks) dec.decode(c);
           this.#inputChunkCnt += chunks.length;
-          // 某些场景 flush 不会被 resolved
+          // windows 设备 flush 可能不会被 resolved
           dec.flush().catch((err) => {
-            if (
-              !(err instanceof Error) ||
-              !err.message.includes('Decoding error') ||
-              this.#downgradeSoftDecode
-            ) {
+            if (!(err instanceof Error)) throw err;
+            if (err.message.includes('Decoding error')) {
+              if (this.#downgradeSoftDecode) {
+                throw err;
+              } else {
+                this.#downgradeSoftDecode = true;
+                this.reset();
+              }
+            }
+            // reset 中断的解码器，预期会抛出 AbortedError
+            if (!err.message.includes('Aborted due to close')) {
               throw err;
             }
-            this.#downgradeSoftDecode = true;
             Log.warn('Downgrade to software decode');
-            this.reset();
           });
         }
       }
@@ -996,6 +1000,7 @@ function createVF2BlobConvtr(
 }
 
 function splitVideoSampleByTime(videoSamples: ExtMP4Sample[], time: number) {
+  if (videoSamples.length === 0) return [];
   let gopStartIdx = 0;
   let gopEndIdx = 0;
   let hitIdx = -1;
@@ -1041,6 +1046,7 @@ function splitVideoSampleByTime(videoSamples: ExtMP4Sample[], time: number) {
 }
 
 function splitAudioSampleByTime(audioSamples: ExtMP4Sample[], time: number) {
+  if (audioSamples.length === 0) return [];
   let hitIdx = -1;
   for (let i = 0; i < audioSamples.length; i++) {
     const s = audioSamples[i];
