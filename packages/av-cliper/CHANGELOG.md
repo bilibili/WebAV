@@ -1,5 +1,11 @@
 # @webav/av-cliper
 
+## 0.13.2
+
+### Patch Changes
+
+- 6eebf28: fix: throw Error when MP4Clip.splitTrack then invoke split
+
 ## 0.13.1
 
 ### Patch Changes
