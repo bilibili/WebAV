@@ -22,7 +22,16 @@ const localFile = tmpfile();
 
 let writer: Awaited<ReturnType<typeof localFile.createWriter>> | null = null;
 const initPromise = (async function init() {
-  writer = await localFile.createWriter();
+  try {
+    writer = await localFile.createWriter();
+  } catch (err) {
+    if (!(err instanceof Error)) throw err;
+    if (err.message.includes('createSyncAccessHandle is not a function')) {
+      console.warn(err);
+    } else {
+      throw err;
+    }
+  }
 })();
 
 type LvName = 'debug' | 'info' | 'warn' | 'error';
