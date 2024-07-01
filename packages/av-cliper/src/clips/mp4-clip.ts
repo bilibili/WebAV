@@ -10,13 +10,18 @@ import { Log } from '../log';
 import { extractFileConfig, sample2ChunkOpts } from '../mp4-utils/mp4box-utils';
 import { SampleTransform } from '../mp4-utils/sample-transform';
 import { DEFAULT_AUDIO_CONF, IClip } from './iclip';
-import { tmpfile, write } from 'opfs-tools';
+import { file, tmpfile, write } from 'opfs-tools';
 
 let CLIP_ID = 0;
 
+type OPFSToolFile = ReturnType<typeof file>;
+function isOTFile(obj: any): obj is OPFSToolFile {
+  return obj.kind === 'file' && obj.createReader instanceof Function;
+}
+
 // 用于内部创建 MP4Clip 实例
 type MPClipCloneArgs = Awaited<ReturnType<typeof parseMP4Stream>> & {
-  localFile: ReturnType<typeof tmpfile>;
+  localFile: OPFSToolFile;
 };
 
 interface MP4DecoderConf {
@@ -30,9 +35,7 @@ interface MP4ClipOpts {
 
 type ExtMP4Sample = Omit<MP4Sample, 'data'> & { deleted?: boolean; data: null };
 
-type LocalFileReader = Awaited<
-  ReturnType<ReturnType<typeof tmpfile>['createReader']>
->;
+type LocalFileReader = Awaited<ReturnType<OPFSToolFile['createReader']>>;
 
 type ThumbnailOpts = {
   start: number;
@@ -74,7 +77,7 @@ export class MP4Clip implements IClip {
     return { ...this.#meta };
   }
 
-  #localFile: ReturnType<typeof tmpfile>;
+  #localFile: OPFSToolFile;
 
   #volume = 1;
 
@@ -96,13 +99,14 @@ export class MP4Clip implements IClip {
   #opts: MP4ClipOpts = { audio: true };
 
   constructor(
-    source: ReadableStream<Uint8Array> | MPClipCloneArgs,
+    source: OPFSToolFile | ReadableStream<Uint8Array> | MPClipCloneArgs,
     opts: {
       audio?: boolean | { volume: number };
     } = { audio: true },
   ) {
     if (
       !(source instanceof ReadableStream) &&
+      !isOTFile(source) &&
       !Array.isArray(source.videoSamples)
     ) {
       throw Error('Illegal argument');
@@ -119,12 +123,18 @@ export class MP4Clip implements IClip {
       return await this.#localFile.stream();
     };
 
-    this.#localFile = 'localFile' in source ? source.localFile : tmpfile();
+    this.#localFile = isOTFile(source)
+      ? source
+      : 'localFile' in source
+        ? source.localFile // from clone
+        : tmpfile();
 
     this.ready = (
       source instanceof ReadableStream
         ? initByStream(source).then((s) => parseMP4Stream(s, this.#opts))
-        : Promise.resolve(source)
+        : isOTFile(source)
+          ? source.stream().then((s) => parseMP4Stream(s, this.#opts))
+          : Promise.resolve(source)
     ).then(async ({ videoSamples, audioSamples, decoderConf }) => {
       this.#videoSamples = videoSamples;
       this.#audioSamples = audioSamples;
@@ -972,7 +982,7 @@ type Constructor<T> = {
 async function sample2Chunk<T extends EncodedAudioChunk | EncodedVideoChunk>(
   s: ExtMP4Sample,
   clazz: Constructor<T>,
-  reader: Awaited<ReturnType<ReturnType<typeof tmpfile>['createReader']>>,
+  reader: Awaited<ReturnType<OPFSToolFile['createReader']>>,
 ): Promise<T> {
   const data = await reader.read(s.size, { at: s.offset });
   return new clazz(
