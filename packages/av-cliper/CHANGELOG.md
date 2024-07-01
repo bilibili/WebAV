@@ -1,5 +1,11 @@
 # @webav/av-cliper
 
+## 0.13.3
+
+### Patch Changes
+
+- bf41f68: fix: create log file error when init
+
 ## 0.13.2
 
 ### Patch Changes
