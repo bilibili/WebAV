@@ -21,6 +21,7 @@
   "scripts": {
     "dev": "vite demo --config demo-vite.config.ts",
     "test": "vitest --config test-vite.config.ts",
+    "ci:test": "vitest --config test-vite.config.ts run",
     "test:coverage": "vitest run --coverage",
     "build": "vite build && tsc -p build.tsconfig.json --outDir dist",
     "build:dev": "vite build --watch --emptyOutDir false & tsc -p build.tsconfig.json --outDir dist --watch",

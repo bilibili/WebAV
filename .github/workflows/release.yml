@@ -34,6 +34,9 @@ jobs:
       - name: Install Dependencies
         run: pnpm install --frozen-lockfile --ignore-scripts
 
+      - name: Unit test
+        run: pnpm ci:test
+
       - name: Prep commit message
         run: |
           echo "NEW_VERSION=$(pnpm changeset status --output=release.json && jq -r '.releases[0].newVersion' release.json && rm release.json)" >> "$GITHUB_ENV"
