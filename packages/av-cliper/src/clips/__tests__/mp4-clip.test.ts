@@ -1,5 +1,6 @@
 import { expect, test } from 'vitest';
 import { MP4Clip } from '../mp4-clip';
+import { file, write } from 'opfs-tools';
 
 const mp4_123 = `//${location.host}/video/123.mp4`;
 
@@ -127,4 +128,17 @@ test('MP4Clip.splitTrack, then split', async () => {
   const [vTrakClip, aTrakClip] = await clip.splitTrack();
   expect((await vTrakClip.split(10e6)).length).toBe(2);
   expect((await aTrakClip.split(10e6)).length).toBe(2);
+});
+
+test('create instance by opfs file', async () => {
+  const f = file('test-create-mp4clip');
+  try {
+    await write(f, (await fetch(mp4_123)).body!);
+    const clip = new MP4Clip(f);
+    await clip.ready;
+    expect(Math.round(clip.meta.duration / 1e6)).toBe(1);
+    clip.destroy();
+  } finally {
+    f.remove();
+  }
 });

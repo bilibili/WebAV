@@ -10,13 +10,18 @@ import { Log } from '../log';
 import { extractFileConfig, sample2ChunkOpts } from '../mp4-utils/mp4box-utils';
 import { SampleTransform } from '../mp4-utils/sample-transform';
 import { DEFAULT_AUDIO_CONF, IClip } from './iclip';
-import { tmpfile, write } from 'opfs-tools';
+import { file, tmpfile, write } from 'opfs-tools';
 
 let CLIP_ID = 0;
 
+type OPFSToolFile = ReturnType<typeof file>;
+function isOTFile(obj: any): obj is OPFSToolFile {
+  return obj.kind === 'file' && obj.createReader instanceof Function;
+}
+
 // 用于内部创建 MP4Clip 实例
 type MPClipCloneArgs = Awaited<ReturnType<typeof parseMP4Stream>> & {
-  localFile: ReturnType<typeof tmpfile>;
+  localFile: OPFSToolFile;
 };
 
 interface MP4DecoderConf {
@@ -30,9 +35,7 @@ interface MP4ClipOpts {
 
 type ExtMP4Sample = Omit<MP4Sample, 'data'> & { deleted?: boolean; data: null };
 
-type LocalFileReader = Awaited<
-  ReturnType<ReturnType<typeof tmpfile>['createReader']>
->;
+type LocalFileReader = Awaited<ReturnType<OPFSToolFile['createReader']>>;
 
 type ThumbnailOpts = {
   start: number;
@@ -74,7 +77,7 @@ export class MP4Clip implements IClip {
     return { ...this.#meta };
   }
 
-  #localFile: ReturnType<typeof tmpfile>;
+  #localFile: OPFSToolFile;
 
   #volume = 1;
 
@@ -96,13 +99,14 @@ export class MP4Clip implements IClip {
   #opts: MP4ClipOpts = { audio: true };
 
   constructor(
-    source: ReadableStream<Uint8Array> | MPClipCloneArgs,
+    source: OPFSToolFile | ReadableStream<Uint8Array> | MPClipCloneArgs,
     opts: {
       audio?: boolean | { volume: number };
     } = { audio: true },
   ) {
     if (
       !(source instanceof ReadableStream) &&
+      !isOTFile(source) &&
       !Array.isArray(source.videoSamples)
     ) {
       throw Error('Illegal argument');
@@ -119,12 +123,18 @@ export class MP4Clip implements IClip {
       return await this.#localFile.stream();
     };
 
-    this.#localFile = 'localFile' in source ? source.localFile : tmpfile();
+    this.#localFile = isOTFile(source)
+      ? source
+      : 'localFile' in source
+        ? source.localFile // from clone
+        : tmpfile();
 
     this.ready = (
       source instanceof ReadableStream
         ? initByStream(source).then((s) => parseMP4Stream(s, this.#opts))
-        : Promise.resolve(source)
+        : isOTFile(source)
+          ? source.stream().then((s) => parseMP4Stream(s, this.#opts))
+          : Promise.resolve(source)
     ).then(async ({ videoSamples, audioSamples, decoderConf }) => {
       this.#videoSamples = videoSamples;
       this.#audioSamples = audioSamples;
@@ -229,10 +239,6 @@ export class MP4Clip implements IClip {
     imgWidth = 100,
     opts?: Partial<ThumbnailOpts>,
   ): Promise<Array<{ ts: number; img: Blob }>> {
-    const vc = this.#decoderConf.video;
-    const localFileReader = await this.#localFile.createReader();
-    if (vc == null || localFileReader == null) return Promise.resolve([]);
-
     const { width, height } = this.#meta;
     const convtr = createVF2BlobConvtr(
       imgWidth,
@@ -242,6 +248,12 @@ export class MP4Clip implements IClip {
 
     return new Promise<Array<{ ts: number; img: Blob }>>(async (resolve) => {
       const pngPromises: Array<{ ts: number; img: Promise<Blob> }> = [];
+      const vc = this.#decoderConf.video;
+      if (vc == null) {
+        resolver();
+        return;
+      }
+
       async function resolver() {
         resolve(
           await Promise.all(
@@ -281,8 +293,10 @@ export class MP4Clip implements IClip {
           if (vf) pushPngPromise(vf);
           cur += step;
         }
+        videoFrameFinder.destroy();
         resolver();
       } else {
+        const localFileReader = await this.#localFile.createReader();
         // only decode key frame
         const samples = await Promise.all(
           this.#videoSamples
@@ -292,6 +306,7 @@ export class MP4Clip implements IClip {
             .map((s) => sample2Chunk(s, EncodedVideoChunk, localFileReader)),
         );
         if (samples.length === 0) {
+          await localFileReader.close();
           resolver();
           return;
         }
@@ -301,7 +316,10 @@ export class MP4Clip implements IClip {
           output: (vf) => {
             cnt += 1;
             pushPngPromise(vf);
-            if (cnt === samples.length) resolver();
+            if (cnt === samples.length) {
+              localFileReader.close();
+              resolver();
+            }
           },
           error: Log.error,
         });
@@ -731,6 +749,7 @@ class VideoFrameFinder {
     this.#curAborter.abort = true;
     this.#videoFrames.forEach((f) => f.close());
     this.#videoFrames = [];
+    this.localFileReader.close();
   };
 }
 
@@ -864,6 +883,7 @@ class AudioFrameFinder {
       new Float32Array(0), // left chan
       new Float32Array(0), // right chan
     ];
+    this.localFileReader.close();
   };
 }
 
@@ -972,7 +992,7 @@ type Constructor<T> = {
 async function sample2Chunk<T extends EncodedAudioChunk | EncodedVideoChunk>(
   s: ExtMP4Sample,
   clazz: Constructor<T>,
-  reader: Awaited<ReturnType<ReturnType<typeof tmpfile>['createReader']>>,
+  reader: Awaited<ReturnType<OPFSToolFile['createReader']>>,
 ): Promise<T> {
   const data = await reader.read(s.size, { at: s.offset });
   return new clazz(
