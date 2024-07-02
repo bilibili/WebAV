@@ -239,10 +239,6 @@ export class MP4Clip implements IClip {
     imgWidth = 100,
     opts?: Partial<ThumbnailOpts>,
   ): Promise<Array<{ ts: number; img: Blob }>> {
-    const vc = this.#decoderConf.video;
-    const localFileReader = await this.#localFile.createReader();
-    if (vc == null || localFileReader == null) return Promise.resolve([]);
-
     const { width, height } = this.#meta;
     const convtr = createVF2BlobConvtr(
       imgWidth,
@@ -252,6 +248,12 @@ export class MP4Clip implements IClip {
 
     return new Promise<Array<{ ts: number; img: Blob }>>(async (resolve) => {
       const pngPromises: Array<{ ts: number; img: Promise<Blob> }> = [];
+      const vc = this.#decoderConf.video;
+      if (vc == null) {
+        resolver();
+        return;
+      }
+
       async function resolver() {
         resolve(
           await Promise.all(
@@ -291,8 +293,10 @@ export class MP4Clip implements IClip {
           if (vf) pushPngPromise(vf);
           cur += step;
         }
+        videoFrameFinder.destroy();
         resolver();
       } else {
+        const localFileReader = await this.#localFile.createReader();
         // only decode key frame
         const samples = await Promise.all(
           this.#videoSamples
@@ -302,6 +306,7 @@ export class MP4Clip implements IClip {
             .map((s) => sample2Chunk(s, EncodedVideoChunk, localFileReader)),
         );
         if (samples.length === 0) {
+          await localFileReader.close();
           resolver();
           return;
         }
@@ -311,7 +316,10 @@ export class MP4Clip implements IClip {
           output: (vf) => {
             cnt += 1;
             pushPngPromise(vf);
-            if (cnt === samples.length) resolver();
+            if (cnt === samples.length) {
+              localFileReader.close();
+              resolver();
+            }
           },
           error: Log.error,
         });
@@ -741,6 +749,7 @@ class VideoFrameFinder {
     this.#curAborter.abort = true;
     this.#videoFrames.forEach((f) => f.close());
     this.#videoFrames = [];
+    this.localFileReader.close();
   };
 }
 
@@ -874,6 +883,7 @@ class AudioFrameFinder {
       new Float32Array(0), // left chan
       new Float32Array(0), // right chan
     ];
+    this.localFileReader.close();
   };
 }
 
