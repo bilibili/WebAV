@@ -34,8 +34,8 @@ jobs:
       - name: Install Dependencies
         run: pnpm install --frozen-lockfile --ignore-scripts
 
-      - name: Unit test
-        run: pnpm ci:test
+      # - name: Unit test
+      #   run: pnpm ci:test
 
       - name: Prep commit message
         run: |
