@@ -1,5 +1,12 @@
 # @webav/av-recorder
 
+## 0.13.4
+
+### Patch Changes
+
+- Updated dependencies [5971c9b]
+  - @webav/av-cliper@0.13.4
+
 ## 0.13.3
 
 ### Patch Changes

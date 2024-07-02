@@ -1,5 +1,11 @@
 # @webav/av-cliper
 
+## 0.13.4
+
+### Patch Changes
+
+- 5971c9b: feat: improve storage for mpclip
+
 ## 0.13.3
 
 ### Patch Changes
