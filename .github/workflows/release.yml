@@ -44,5 +44,7 @@ jobs:
           version: pnpm upver
           title: 'Release v${{env.NEW_VERSION}}'
           commit: 'Release v${{env.NEW_VERSION}}'
+          publish: pnpm publish:all
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
