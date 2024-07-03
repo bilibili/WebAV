@@ -688,25 +688,16 @@ class VideoFrameFinder {
           if (aborter.abort) return null;
 
           this.#lastVfDur = chunks[0]?.duration ?? 0;
-          for (const c of chunks) dec.decode(c);
-          this.#inputChunkCnt += chunks.length;
-          // windows 设备 flush 可能不会被 resolved
-          dec.flush().catch((err) => {
-            if (!(err instanceof Error)) throw err;
-            if (err.message.includes('Decoding error')) {
-              if (this.#downgradeSoftDecode) {
-                throw err;
-              } else {
-                this.#downgradeSoftDecode = true;
-                this.reset();
-              }
-            }
-            // reset 中断的解码器，预期会抛出 AbortedError
-            if (!err.message.includes('Aborted due to close')) {
-              throw err;
-            }
-            Log.warn('Downgrade to software decode');
+          decodeGoP(dec, chunks, {
+            softDecode: this.#downgradeSoftDecode,
+            onDowngradeSoft: () => {
+              this.#downgradeSoftDecode = true;
+              Log.warn('Downgrade to software decode');
+              this.reset();
+            },
           });
+
+          this.#inputChunkCnt += chunks.length;
         }
       }
       this.#videoDecCusorIdx = endIdx;
@@ -1080,4 +1071,77 @@ function splitAudioSampleByTime(audioSamples: ExtMP4Sample[], time: number) {
     .slice(hitIdx)
     .map((s) => ({ ...s, cts: s.cts - time }));
   return [preSlice, postSlice];
+}
+
+// 兼容 IDR 帧解码异常
+function decodeGoP(
+  dec: VideoDecoder,
+  chunks: EncodedVideoChunk[],
+  opts: {
+    idrFrameDowngrade?: boolean;
+    softDecode: boolean;
+    onDowngradeSoft: () => void;
+  },
+) {
+  let i = 0;
+  try {
+    for (; i < chunks.length; i++) dec.decode(chunks[i]);
+  } catch (err) {
+    if (opts.idrFrameDowngrade || !(err instanceof Error)) throw err;
+    if (
+      i === 0 &&
+      err.message.includes('A key frame is required after configure')
+    ) {
+      const newChunk = removeNonIDRData(chunks[0]);
+      if (newChunk == null) throw err;
+
+      Log.warn('remove non IDR data, retry decode');
+      chunks[0] = newChunk;
+      decodeGoP(dec, chunks, {
+        ...opts,
+        idrFrameDowngrade: true,
+      });
+    } else {
+      throw err;
+    }
+  }
+
+  // windows 某些设备 flush 可能不会被 resolved，所以不能 await flush
+  dec.flush().catch((err) => {
+    if (!(err instanceof Error)) throw err;
+    if (err.message.includes('Decoding error')) {
+      if (opts.softDecode) {
+        throw err;
+      } else {
+        opts.onDowngradeSoft();
+      }
+    }
+    // reset 中断解码器，预期会抛出 AbortedError
+    if (!err.message.includes('Aborted due to close')) {
+      throw err;
+    }
+  });
+}
+
+// 当 IDR 帧前面携带其它数据（如 SEI）可能导致解码失败
+function removeNonIDRData(chunk: EncodedVideoChunk) {
+  const buf = new ArrayBuffer(chunk.byteLength);
+  chunk.copyTo(buf);
+  const u8 = new Uint8Array(buf);
+  let i = 0;
+  for (; i < chunk.byteLength - 4; ) {
+    if ((u8[i + 4] & 0x1f) === 5) break;
+    // 跳至下一个 NALU 继续检查
+    i += (u8[i] << 24) + (u8[i + 1] << 16) + (u8[i + 2] << 8) + u8[i + 3] + 4;
+  }
+
+  if (i < buf.byteLength) {
+    return new EncodedVideoChunk({
+      type: chunk.type,
+      timestamp: chunk.timestamp,
+      duration: chunk.duration ?? 0,
+      data: buf.slice(i),
+    });
+  }
+  return null;
 }
