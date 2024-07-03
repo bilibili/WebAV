@@ -1,5 +1,11 @@
 # @webav/av-cliper
 
+## 0.13.5
+
+### Patch Changes
+
+- ebbb64c: fix: decode error when IDR frame has SEI data
+
 ## 0.13.4
 
 ### Patch Changes
