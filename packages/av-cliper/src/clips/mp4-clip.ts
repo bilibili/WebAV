@@ -206,7 +206,7 @@ export class MP4Clip implements IClip {
               `MP4Clip.tick timeout, ${JSON.stringify({
                 videoReady,
                 audioReady,
-              })}`,
+              })}, time: ${time}`,
             ),
           );
         }, 3000);
@@ -792,7 +792,7 @@ class AudioFrameFinder {
     dec: ReturnType<typeof createAudioChunksDecoder> | null = null,
     aborter: { abort: boolean },
   ): Promise<Float32Array[]> => {
-    if (dec == null || aborter.abort) return [];
+    if (dec == null || aborter.abort || dec.state === 'closed') return [];
 
     const frameCnt = Math.ceil(deltaTime * (this.#sampleRate / 1e6));
     if (frameCnt === 0) return [];
@@ -861,6 +861,7 @@ class AudioFrameFinder {
       new Float32Array(0), // right chan
     ];
     this.#dec?.close();
+    this.#decoding = false;
     this.#dec = createAudioChunksDecoder(
       this.conf,
       DEFAULT_AUDIO_CONF.sampleRate,
@@ -915,7 +916,7 @@ function createAudioChunksDecoder(
 
   let tasks: Array<{ chunks: EncodedAudioChunk[]; cb: OutputHandle }> = [];
   async function run() {
-    if (curCb != null) return;
+    if (curCb != null || adec.state !== 'configured') return;
 
     const t = tasks.shift();
     if (t == null) return;
@@ -943,6 +944,9 @@ function createAudioChunksDecoder(
     close() {
       curCb = null;
       if (adec.state !== 'closed') adec.close();
+    },
+    get state() {
+      return adec.state;
     },
   };
 }
