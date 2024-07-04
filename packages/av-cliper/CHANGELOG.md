@@ -1,5 +1,11 @@
 # @webav/av-cliper
 
+## 0.13.6
+
+### Patch Changes
+
+- 737cb31: fix: cant stop decode audio when reset
+
 ## 0.13.5
 
 ### Patch Changes
