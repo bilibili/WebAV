@@ -48,7 +48,7 @@ const TimelineEditor = ({
       <div>
         <span className="ml-[10px]">缩放：</span>
         <button
-          onClick={() => setScale(scale + 1)}
+          onClick={() => setScale(scale + 10)}
           className="border rounded-full"
         >
           -
