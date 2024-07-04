@@ -21,18 +21,6 @@ let THRESHOLD = 1;
 const localFile = tmpfile();
 
 let writer: Awaited<ReturnType<typeof localFile.createWriter>> | null = null;
-const initPromise = (async function init() {
-  try {
-    writer = await localFile.createWriter();
-  } catch (err) {
-    if (!(err instanceof Error)) throw err;
-    if (err.message.includes('createSyncAccessHandle is not a function')) {
-      console.warn(err);
-    } else {
-      throw err;
-    }
-  }
-})();
 
 type LvName = 'debug' | 'info' | 'warn' | 'error';
 const lvHandler = ['debug', 'info', 'warn', 'error'].reduce(
@@ -102,6 +90,21 @@ map.set(Log.debug, 0);
 map.set(Log.info, 1);
 map.set(Log.warn, 2);
 map.set(Log.error, 3);
+
+const initPromise = (async function init() {
+  try {
+    writer = await localFile.createWriter();
+    Log.info(navigator.userAgent);
+    Log.info('date: ' + new Date().toLocaleDateString());
+  } catch (err) {
+    if (!(err instanceof Error)) throw err;
+    if (err.message.includes('createSyncAccessHandle is not a function')) {
+      console.warn(err);
+    } else {
+      throw err;
+    }
+  }
+})();
 
 if (import.meta.env?.DEV) {
   Log.setLogLevel(Log.debug);
