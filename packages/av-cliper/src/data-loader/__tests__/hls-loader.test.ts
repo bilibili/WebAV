@@ -69,20 +69,51 @@ test('hls loader async load m4s files with error stop correctly', async () => {
   } catch (e: any) {
     expect(e.message).toBe('fetch error');
   }
-  expect(fetchSpy).toHaveBeenCalledTimes(6);
+  expect(fetchSpy).toHaveBeenCalledTimes(2);
   fetchSpy.mockRestore();
 });
 
 test('hls loader tells load progress correctly', async () => {
-  const loader = await createHLSLoader(m3u8MultUrl);
+  const loader = await createHLSLoader(m3u8MultUrl, 5);
   const streams = loader.load() ?? [];
-  streams.forEach(async ({ stream, on }) => {
-    let curProgress = 0;
-    on('progress', (progress) => {
-      expect(progress).toBeGreaterThan(curProgress);
-      curProgress = progress;
-    });
-    const clip = new MP4Clip(stream);
-    await clip.ready;
+
+  await Promise.all(
+    streams.map(async ({ stream, on }) => {
+      return new Promise(async (resolve) => {
+        let curProgress = 0;
+        on('progress', (progress) => {
+          expect(progress).toBeGreaterThan(curProgress);
+          curProgress = progress;
+        });
+        const clip = new MP4Clip(stream);
+        await clip.ready;
+        resolve(null);
+      });
+    }),
+  );
+});
+
+test('hls loader custom fetch', async () => {
+  const loader = await createHLSLoader(m3u8MultUrl, {
+    concurrency: 5,
+    segmentFetch(url) {
+      return fetch(url);
+    },
   });
+  const streams = loader.load() ?? [];
+
+  await Promise.all(
+    streams.map(async ({ stream, on }) => {
+      return new Promise(async (resolve) => {
+        let curProgress = 0;
+        on('progress', (progress) => {
+          expect(progress).toBeGreaterThan(curProgress);
+          curProgress = progress;
+        });
+        const clip = new MP4Clip(stream);
+        await clip.ready;
+        resolve(null);
+      });
+    }),
+  );
 });

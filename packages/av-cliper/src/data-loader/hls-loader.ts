@@ -1,11 +1,71 @@
 import { Parser } from 'm3u8-parser';
 import { Log } from '../log';
 import { EventTool } from '../event-tool';
+import { ConcurrencyController } from './ConcurrencyController';
+
+type HLSLoader = {
+  load(
+    expectStartTime?: number,
+    expectEndTime?: number,
+  ):
+    | {
+        actualStartTime: number;
+        actualEndTime: number;
+        on: <Type extends 'progress'>(
+          type: Type,
+          listener: {
+            progress: (progress: number) => void;
+          }[Type],
+        ) => () => void;
+        stream: ReadableStream<Uint8Array>;
+      }[]
+    | null;
+};
+type HLSLoaderConfig = {
+  // 并发下载数量
+  concurrency?: number;
+  // 自定义m4s下载
+  segmentFetch?: (url: string) => Promise<Response>;
+};
+
+const DEFAULT_CONCURRENCY = 5;
+const GLOBAL_DEFAULT_CONCURRENCY = 15;
+
+const globalConcurrencyController = new ConcurrencyController(
+  GLOBAL_DEFAULT_CONCURRENCY,
+);
+
+export function setGlobalConcurrency(max: number) {
+  globalConcurrencyController.setMax(max);
+}
 
 /**
  * 创建一个 HLS 资源加载器
  */
-export async function createHLSLoader(m3u8URL: string, concurrency = 10) {
+export async function createHLSLoader(
+  m3u8URL: string,
+  concurrency?: number,
+): Promise<HLSLoader>;
+export async function createHLSLoader(
+  m3u8URL: string,
+  config?: HLSLoaderConfig,
+): Promise<HLSLoader>;
+export async function createHLSLoader(
+  m3u8URL: string,
+  params?: number | HLSLoaderConfig,
+): Promise<HLSLoader> {
+  // 参数初始化兼容
+  let concurrency = DEFAULT_CONCURRENCY;
+  let segmentFetch = null as unknown as HLSLoaderConfig['segmentFetch'];
+  if (typeof params === 'number') {
+    concurrency = params;
+  } else {
+    concurrency = params?.concurrency ?? concurrency;
+    segmentFetch = params?.segmentFetch ?? segmentFetch;
+  }
+
+  const concurrencyController = new ConcurrencyController(concurrency);
+
   const parser = new Parser();
   parser.push(await (await fetch(m3u8URL)).text());
   parser.end();
@@ -19,66 +79,60 @@ export async function createHLSLoader(m3u8URL: string, concurrency = 10) {
   );
   const base = new URL(m3u8URL, location.href);
 
-  const segmentBufferFetchqueue = {} as Record<string, Promise<ArrayBuffer>>;
-
   async function downloadSegments(
     segments: Parser['manifest']['segments'],
+    fetchQueue: Promise<Response>[],
     ctrl: ReadableStreamDefaultController<Uint8Array>,
     evtTool: EventTool<{ progress: (progress: number) => void }>,
   ) {
-    function createTaskQueue(concurrency: number) {
-      let running = 0;
-      let done = 0;
-      let queue = [] as Array<() => Promise<ArrayBuffer>>;
+    let done = 0;
+    let error = false;
 
-      async function runTask(task: () => Promise<ArrayBuffer>) {
-        queue.push(task);
-        next();
+    function releaseSlot() {
+      globalConcurrencyController.releaseSlot();
+      concurrencyController.releaseSlot();
+    }
+
+    async function runTask(url: string) {
+      // 获取全局和局部并发配额
+      await Promise.all([
+        concurrencyController.requestSlot(),
+        globalConcurrencyController.requestSlot(),
+      ]);
+
+      if (error) {
+        releaseSlot();
+        return new Response();
       }
 
-      async function next() {
-        if (running < concurrency && queue.length) {
-          const task = queue.shift();
-          running++;
-          try {
-            await task?.();
-            done++;
-            evtTool.emit(
-              'progress',
-              Math.round((done / segments.length) * 100) / 100,
-            );
-            next();
-          } catch (err) {
-            queue = [];
-            ctrl.error(err);
-            evtTool.destroy();
-            Log.error(err);
-          }
-          running--;
+      let res: Response;
+
+      try {
+        res = await (segmentFetch ?? fetch)(url);
+        if (!res.ok) {
+          throw new Error(`fetch segment failed: ${res.status} ${res.url}`);
         }
+        done++;
+        evtTool.emit(
+          'progress',
+          Math.round((done / segments.length) * 100) / 100,
+        );
+      } catch (err) {
+        ctrl.error(err);
+        evtTool.destroy();
+        Log.error(err);
+        error = true;
+        res = new Response();
+      } finally {
+        releaseSlot();
       }
-
-      return runTask;
+      return res;
     }
-
-    async function fetchSegmentBufferPromise(url: string) {
-      return (await fetch(url)).arrayBuffer();
-    }
-
-    const runTask = createTaskQueue(concurrency);
 
     for (const [, item] of segments.entries()) {
       const url = new URL(item.uri, base).href;
-      runTask(
-        () => (segmentBufferFetchqueue[url] = fetchSegmentBufferPromise(url)),
-      );
+      fetchQueue.push(runTask(url));
     }
-  }
-
-  async function getSegmentBuffer(url: string) {
-    const segmentBuffer = await segmentBufferFetchqueue[url];
-    delete segmentBufferFetchqueue[url];
-    return segmentBuffer;
   }
 
   return {
@@ -135,7 +189,7 @@ export async function createHLSLoader(m3u8URL: string, concurrency = 10) {
 
       return Object.entries(filterSegGroup).map(
         ([initUri, { actualStartTime, actualEndTime, segments }]) => {
-          let segIdx = 0;
+          const fetchQueue: Promise<Response>[] = [];
 
           const evtTool = new EventTool<{
             progress: (progress: number) => void;
@@ -147,7 +201,7 @@ export async function createHLSLoader(m3u8URL: string, concurrency = 10) {
             on: evtTool.on,
             stream: new ReadableStream<Uint8Array>({
               start: async (ctrl) => {
-                downloadSegments(segments, ctrl, evtTool);
+                downloadSegments(segments, fetchQueue, ctrl, evtTool);
                 ctrl.enqueue(
                   new Uint8Array(
                     await (
@@ -157,13 +211,15 @@ export async function createHLSLoader(m3u8URL: string, concurrency = 10) {
                 );
               },
               pull: async (ctrl) => {
-                const url = new URL(segments[segIdx].uri, base).href;
-                ctrl.enqueue(new Uint8Array(await getSegmentBuffer(url)));
-                segIdx += 1;
-                if (segIdx >= segments.length) {
+                const res = await fetchQueue.shift();
+                if (!res) {
                   ctrl.close();
                   evtTool.destroy();
                 }
+                const ui8a = new Uint8Array(
+                  await (res as Response).arrayBuffer(),
+                );
+                ctrl.enqueue(ui8a);
               },
             }),
           };
