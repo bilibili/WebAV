@@ -199,16 +199,22 @@ export class MP4Clip implements IClip {
       ]),
       new Promise<[]>((_, reject) => {
         timeoutTimer = self.setTimeout(() => {
-          if (!audioReady) this.#audioFrameFinder?.reset();
-          if (!videoReady) this.#videoFrameFinder?.reset();
-          reject(
-            Error(
-              `MP4Clip.tick timeout, ${JSON.stringify({
-                videoReady,
-                audioReady,
-              })}, time: ${time}`,
-            ),
-          );
+          let errMsg = `MP4Clip.tick timeout, ${JSON.stringify({
+            videoReady,
+            audioReady,
+          })}, `;
+
+          const aFinder = this.#audioFrameFinder;
+          if (!audioReady && aFinder != null) {
+            errMsg += JSON.stringify(aFinder.getState());
+            aFinder?.reset();
+          }
+          const vFinder = this.#videoFrameFinder;
+          if (!videoReady && vFinder != null) {
+            errMsg += JSON.stringify(vFinder.getState());
+            vFinder.reset();
+          }
+          reject(Error(errMsg));
         }, 3000);
       }),
     ])) as [Float32Array[], VideoFrame];
@@ -734,6 +740,18 @@ class VideoFrameFinder {
     });
   };
 
+  getState = () => ({
+    time: this.#ts,
+    decState: this.#dec?.state,
+    decQSize: this.#dec?.decodeQueueSize,
+    decCusorIdx: this.#videoDecCusorIdx,
+    sampleLen: this.samples.length,
+    inputCnt: this.#inputChunkCnt,
+    outputCnt: this.#outputFrameCnt,
+    cacheFrameLen: this.#videoFrames.length,
+    softDeocde: this.#downgradeSoftDecode,
+  });
+
   destroy = () => {
     if (this.#dec?.state !== 'closed') this.#dec?.close();
     this.#dec = null;
@@ -868,6 +886,16 @@ class AudioFrameFinder {
     );
   };
 
+  getState = () => ({
+    time: this.#ts,
+    decState: this.#dec?.state,
+    decoding: this.#decoding,
+    decQSize: this.#dec?.decodeQueueSize,
+    decCusorIdx: this.#decCusorIdx,
+    sampleLen: this.samples.length,
+    pcmLen: this.#pcmData[0]?.length,
+  });
+
   destroy = () => {
     this.#dec = null;
     this.#curAborter.abort = true;
@@ -948,6 +976,9 @@ function createAudioChunksDecoder(
     get state() {
       return adec.state;
     },
+    get decodeQueueSize() {
+      return adec.decodeQueueSize;
+    },
   };
 }
 
@@ -989,8 +1020,10 @@ async function sample2Chunk<T extends EncodedAudioChunk | EncodedVideoChunk>(
   clazz: Constructor<T>,
   reader: Awaited<ReturnType<OPFSToolFile['createReader']>>,
 ): Promise<T> {
+  // todo: perf
   const data = await reader.read(s.size, { at: s.offset });
   return new clazz(
+    // todo: perf
     sample2ChunkOpts({
       ...s,
       data,
@@ -1089,6 +1122,7 @@ function decodeGoP(
 ) {
   let i = 0;
   try {
+    if (dec.state !== 'configured') return;
     for (; i < chunks.length; i++) dec.decode(chunks[i]);
   } catch (err) {
     if (opts.idrFrameDowngrade || !(err instanceof Error)) throw err;
