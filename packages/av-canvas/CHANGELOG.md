@@ -1,5 +1,13 @@
 # @webav/av-canvas
 
+## 0.13.7
+
+### Patch Changes
+
+- 0fe21e5: chore: add timeout error log
+- Updated dependencies [0fe21e5]
+  - @webav/av-cliper@0.13.7
+
 ## 0.13.6
 
 ### Patch Changes

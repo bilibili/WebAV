@@ -1,5 +1,11 @@
 # @webav/av-cliper
 
+## 0.13.7
+
+### Patch Changes
+
+- 0fe21e5: chore: add timeout error log
+
 ## 0.13.6
 
 ### Patch Changes
