@@ -137,8 +137,8 @@ importers:
         specifier: ^7.1.0
         version: 7.1.0
       opfs-tools:
-        specifier: ^0.5.6
-        version: 0.5.6
+        specifier: ^0.5.7
+        version: 0.5.7
       wave-resampler:
         specifier: ^1.0.0
         version: 1.0.0
@@ -6386,8 +6386,8 @@ packages:
     resolution: {integrity: sha512-OS+QTnw1/4vrf+9hh1jc1jnYjzSG4ttTBB8UxOwAnInG3Uo4ssetzC1ihqaIHjLJnA5GGlRl6QlZXOTQhRBUvg==}
     engines: {node: '>=14.16'}
 
-  opfs-tools@0.5.6:
-    resolution: {integrity: sha512-HPz33sPTpBE0TujNyT9v2FjnsbCbNeIIx2iv+OrFSBWnM0uHCd4lWBwI6IgsUZujWnt5Sr6Wd/pASvWWpzrXxA==}
+  opfs-tools@0.5.7:
+    resolution: {integrity: sha512-jxOizmfGfEWw4GleqDuF8USejoJU78Hl1mb09J9PD+EZyPcEoDUqlb1aN47A/SJ84yWEc7xvrsLBPTeJm9Z4fg==}
 
   optionator@0.9.4:
     resolution: {integrity: sha512-6IpQ7mKUxRcZNLIObR0hz7lxsapSSIYNZJwXPGeF0mTVqGKFIXj1DQcMoT22S3ROcLyY/rz0PWaWZ9ayWmad9g==}
@@ -17264,7 +17264,7 @@ snapshots:
       is-inside-container: 1.0.0
       is-wsl: 2.2.0
 
-  opfs-tools@0.5.6: {}
+  opfs-tools@0.5.7: {}
 
   optionator@0.9.4:
     dependencies:
