@@ -4,12 +4,13 @@
 
 WebAV 是一个在 Web 平台上**创建/编辑**视频文件的 SDK，基于 WebCodecs 构建。
 
-### 主要特性
+### 优势
 
 - 跨平台：支持在 Edge、Chrome 浏览器，以及 Electron 中运行
-- 性能强：是 ffmpeg.wasm 的 10～20 倍
+- 零成本：完全使用客户端计算，无需服务器成本
+- 隐私安全：不会上传用户的任何数据
+- 高性能：是 ffmpeg.wasm 的 10～20 倍
 - 体积小：约 50kb（MINIFIED + GZIPPED, 未 tree-shaking）
-- 降成本：完全使用客户端计算，降低服务器成本。
 
 _兼容 chrome 102+_
 
