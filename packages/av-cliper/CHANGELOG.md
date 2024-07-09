@@ -1,5 +1,11 @@
 # @webav/av-cliper
 
+## 0.13.8
+
+### Patch Changes
+
+- c7fcdcf: fix: gen thumbnails throw decode error
+
 ## 0.13.7
 
 ### Patch Changes
