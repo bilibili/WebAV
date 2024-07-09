@@ -239,6 +239,8 @@ export class MP4Clip implements IClip {
     imgWidth = 100,
     opts?: Partial<ThumbnailOpts>,
   ): Promise<Array<{ ts: number; img: Blob }>> {
+    await this.ready;
+
     const { width, height } = this.#meta;
     const convtr = createVF2BlobConvtr(
       imgWidth,
@@ -298,14 +300,14 @@ export class MP4Clip implements IClip {
       } else {
         const localFileReader = await this.#localFile.createReader();
         // only decode key frame
-        const samples = await Promise.all(
+        const chunks = await Promise.all(
           this.#videoSamples
             .filter(
               (s) => !s.deleted && s.is_sync && s.cts >= start && s.cts <= end,
             )
             .map((s) => sample2Chunk(s, EncodedVideoChunk, localFileReader)),
         );
-        if (samples.length === 0) {
+        if (chunks.length === 0) {
           await localFileReader.close();
           resolver();
           return;
@@ -316,7 +318,7 @@ export class MP4Clip implements IClip {
           output: (vf) => {
             cnt += 1;
             pushPngPromise(vf);
-            if (cnt === samples.length) {
+            if (cnt === chunks.length) {
               localFileReader.close();
               resolver();
             }
@@ -324,10 +326,7 @@ export class MP4Clip implements IClip {
           error: Log.error,
         });
         dec.configure(vc);
-        samples.forEach((c) => {
-          dec.decode(c);
-        });
-        await dec.flush();
+        decodeGoP(dec, chunks, {});
       }
     });
   }
@@ -689,11 +688,14 @@ class VideoFrameFinder {
 
           this.#lastVfDur = chunks[0]?.duration ?? 0;
           decodeGoP(dec, chunks, {
-            softDecode: this.#downgradeSoftDecode,
-            onDowngradeSoft: () => {
-              this.#downgradeSoftDecode = true;
-              Log.warn('Downgrade to software decode');
-              this.reset();
+            onDecodingError: (err) => {
+              if (this.#downgradeSoftDecode) {
+                throw err;
+              } else {
+                this.#downgradeSoftDecode = true;
+                Log.warn('Downgrade to software decode');
+                this.reset();
+              }
             },
           });
 
@@ -1073,14 +1075,13 @@ function splitAudioSampleByTime(audioSamples: ExtMP4Sample[], time: number) {
   return [preSlice, postSlice];
 }
 
-// 兼容 IDR 帧解码异常
+// 兼容解码错误
 function decodeGoP(
   dec: VideoDecoder,
   chunks: EncodedVideoChunk[],
   opts: {
     idrFrameDowngrade?: boolean;
-    softDecode: boolean;
-    onDowngradeSoft: () => void;
+    onDecodingError?: (err: Error) => void;
   },
 ) {
   let i = 0;
@@ -1092,6 +1093,7 @@ function decodeGoP(
       i === 0 &&
       err.message.includes('A key frame is required after configure')
     ) {
+      // 第一帧携带 SEI 信息会导致解码失败
       const newChunk = removeNonIDRData(chunks[0]);
       if (newChunk == null) throw err;
 
@@ -1109,12 +1111,12 @@ function decodeGoP(
   // windows 某些设备 flush 可能不会被 resolved，所以不能 await flush
   dec.flush().catch((err) => {
     if (!(err instanceof Error)) throw err;
-    if (err.message.includes('Decoding error')) {
-      if (opts.softDecode) {
-        throw err;
-      } else {
-        opts.onDowngradeSoft();
-      }
+    if (
+      err.message.includes('Decoding error') &&
+      opts.onDecodingError != null
+    ) {
+      opts.onDecodingError(err);
+      return;
     }
     // reset 中断解码器，预期会抛出 AbortedError
     if (!err.message.includes('Aborted due to close')) {
