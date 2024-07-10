@@ -55,6 +55,17 @@ test('thumbnails', async () => {
   clip.destroy();
 });
 
+test('thumbnails aborted', async () => {
+  const clip = new MP4Clip((await fetch(mp4_bunny)).body!);
+  await clip.ready;
+  clip.thumbnails().catch((err) => {
+    expect((err as Error).message).toBe('generate thumbnails aborted');
+  });
+  await Promise.resolve();
+  clip.thumbnails(100, { step: 1e6 });
+  clip.destroy();
+});
+
 const mp4_bunny_1 = `//${location.host}/video/bunny_1.mp4`;
 
 test('clone mp4clip', async () => {
