@@ -234,6 +234,7 @@ export class MP4Clip implements IClip {
     });
   }
 
+  #thumbAborter = new AbortController();
   /**
    * Generate thumbnails, default generate 100px width thumbnails by every key frame.
    *
@@ -245,7 +246,13 @@ export class MP4Clip implements IClip {
     imgWidth = 100,
     opts?: Partial<ThumbnailOpts>,
   ): Promise<Array<{ ts: number; img: Blob }>> {
+    this.#thumbAborter.abort();
+    this.#thumbAborter = new AbortController();
+    const aborterSignal = this.#thumbAborter.signal;
+
     await this.ready;
+    const abortMsg = 'generate thumbnails aborted';
+    if (aborterSignal.aborted) throw Error(abortMsg);
 
     const { width, height } = this.#meta;
     const convtr = createVF2BlobConvtr(
@@ -254,87 +261,68 @@ export class MP4Clip implements IClip {
       { quality: 0.1, type: 'image/png' },
     );
 
-    return new Promise<Array<{ ts: number; img: Blob }>>(async (resolve) => {
-      const pngPromises: Array<{ ts: number; img: Promise<Blob> }> = [];
-      const vc = this.#decoderConf.video;
-      if (vc == null) {
-        resolver();
-        return;
-      }
-
-      async function resolver() {
-        resolve(
-          await Promise.all(
-            pngPromises.map(async (it) => ({
-              ts: it.ts,
-              img: await it.img,
-            })),
-          ),
-        );
-      }
-
-      function pushPngPromise(vf: VideoFrame) {
-        pngPromises.push({
-          ts: vf.timestamp,
-          img: convtr(vf),
-        });
-      }
-
-      const { start = 0, end = this.#meta.duration, step } = opts ?? {};
-      if (step) {
-        if (
-          this.#decoderConf.video == null ||
-          this.#videoSamples.length === 0
-        ) {
+    return new Promise<Array<{ ts: number; img: Blob }>>(
+      async (resolve, reject) => {
+        let pngPromises: Array<{ ts: number; img: Promise<Blob> }> = [];
+        const vc = this.#decoderConf.video;
+        if (vc == null || this.#videoSamples.length === 0) {
           resolver();
           return;
         }
-        let cur = start;
-        // 创建一个新的 VideoFrameFinder 实例，避免与 tick 方法共用而导致冲突
-        const videoFrameFinder = new VideoFrameFinder(
-          await this.#localFile.createReader(),
-          this.#videoSamples,
-          this.#decoderConf.video,
-        );
-        while (cur <= end) {
-          const vf = await videoFrameFinder.find(cur);
-          if (vf) pushPngPromise(vf);
-          cur += step;
-        }
-        videoFrameFinder.destroy();
-        resolver();
-      } else {
-        const localFileReader = await this.#localFile.createReader();
-        // only decode key frame
-        const chunks = await Promise.all(
-          this.#videoSamples
-            .filter(
-              (s) => !s.deleted && s.is_sync && s.cts >= start && s.cts <= end,
-            )
-            .map((s) => sample2Chunk(s, EncodedVideoChunk, localFileReader)),
-        );
-        if (chunks.length === 0) {
-          await localFileReader.close();
-          resolver();
-          return;
+        aborterSignal.addEventListener('abort', () => {
+          reject(Error(abortMsg));
+        });
+
+        async function resolver() {
+          if (aborterSignal.aborted) return;
+          resolve(
+            await Promise.all(
+              pngPromises.map(async (it) => ({
+                ts: it.ts,
+                img: await it.img,
+              })),
+            ),
+          );
         }
 
-        let cnt = 0;
-        const dec = new VideoDecoder({
-          output: (vf) => {
-            cnt += 1;
-            pushPngPromise(vf);
-            if (cnt === chunks.length) {
-              localFileReader.close();
-              resolver();
-            }
-          },
-          error: Log.error,
-        });
-        dec.configure(vc);
-        decodeGoP(dec, chunks, {});
-      }
-    });
+        function pushPngPromise(vf: VideoFrame) {
+          pngPromises.push({
+            ts: vf.timestamp,
+            img: convtr(vf),
+          });
+        }
+
+        const { start = 0, end = this.#meta.duration, step } = opts ?? {};
+        if (step) {
+          let cur = start;
+          // 创建一个新的 VideoFrameFinder 实例，避免与 tick 方法共用而导致冲突
+          const videoFrameFinder = new VideoFrameFinder(
+            await this.#localFile.createReader(),
+            this.#videoSamples,
+            vc,
+          );
+          while (cur <= end && !aborterSignal.aborted) {
+            const vf = await videoFrameFinder.find(cur);
+            if (vf) pushPngPromise(vf);
+            cur += step;
+          }
+          videoFrameFinder.destroy();
+          resolver();
+        } else {
+          await thumbnailByKeyFrame(
+            this.#videoSamples,
+            this.#localFile,
+            vc,
+            aborterSignal,
+            { start, end },
+            (vf, done) => {
+              pushPngPromise(vf);
+              if (done) resolver();
+            },
+          );
+        }
+      },
+    );
   }
 
   async split(time: number) {
@@ -1184,4 +1172,42 @@ function removeNonIDRData(chunk: EncodedVideoChunk) {
     });
   }
   return null;
+}
+
+async function thumbnailByKeyFrame(
+  samples: ExtMP4Sample[],
+  localFile: OPFSToolFile,
+  decConf: VideoDecoderConfig,
+  abortSingl: AbortSignal,
+  time: { start: number; end: number },
+  onOutput: (vf: VideoFrame, done: boolean) => void,
+) {
+  const fileReader = await localFile.createReader();
+  let cnt = 0;
+  const dec = new VideoDecoder({
+    output: (vf) => {
+      cnt += 1;
+      const done = cnt === chunks.length;
+      onOutput(vf, done);
+      if (done) fileReader.close();
+    },
+    error: Log.error,
+  });
+  abortSingl.addEventListener('abort', () => {
+    fileReader.close();
+    dec.close();
+  });
+
+  const chunks = await Promise.all(
+    samples
+      .filter(
+        (s) =>
+          !s.deleted && s.is_sync && s.cts >= time.start && s.cts <= time.end,
+      )
+      .map((s) => sample2Chunk(s, EncodedVideoChunk, fileReader)),
+  );
+  if (chunks.length === 0 || abortSingl.aborted) return;
+
+  dec.configure(decConf);
+  decodeGoP(dec, chunks, {});
 }
