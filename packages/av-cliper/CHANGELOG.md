@@ -1,5 +1,11 @@
 # @webav/av-cliper
 
+## 0.13.9
+
+### Patch Changes
+
+- 60fd9ed: fix: deocde timeout because many thumbnails task
+
 ## 0.13.8
 
 ### Patch Changes
