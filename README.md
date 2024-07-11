@@ -1,5 +1,9 @@
 # WebAV
 
+![GitHub commit activity](https://img.shields.io/github/commit-activity/m/bilibili/WebAV)
+![NPM downloads](https://img.shields.io/npm/dm/@webav/av-cliper)
+[![Release](https://github.com/bilibili/WebAV/actions/workflows/release.yml/badge.svg)](https://github.com/bilibili/WebAV/actions/workflows/release.yml)
+
 English | [中文](./README_CN.md)
 
 WebAV is an SDK for **creating/editing** video files on the web platform, built on WebCodecs.
