@@ -1,5 +1,9 @@
 # WebAV
 
+![GitHub commit activity](https://img.shields.io/github/commit-activity/m/bilibili/WebAV)
+![NPM downloads](https://img.shields.io/npm/dm/@webav/av-cliper)
+[![Release](https://github.com/bilibili/WebAV/actions/workflows/release.yml/badge.svg)](https://github.com/bilibili/WebAV/actions/workflows/release.yml)
+
 [English](./README.md) | 中文
 
 WebAV 是一个在 Web 平台上**创建/编辑**视频文件的 SDK，基于 WebCodecs 构建。
