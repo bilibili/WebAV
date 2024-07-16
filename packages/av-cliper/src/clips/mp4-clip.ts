@@ -37,10 +37,14 @@ type ExtMP4Sample = Omit<MP4Sample, 'data'> & { deleted?: boolean; data: null };
 
 type LocalFileReader = Awaited<ReturnType<OPFSToolFile['createReader']>>;
 
+type ThumbnailFilter<T = ExtMP4Sample> = (array: T[]) => T[];
+
 type ThumbnailOpts = {
   start: number;
   end: number;
   step: number;
+  imgOptions: ImageEncodeOptions;
+  filter: ThumbnailFilter;
 };
 
 /**
@@ -255,10 +259,18 @@ export class MP4Clip implements IClip {
     if (aborterSignal.aborted) throw Error(abortMsg);
 
     const { width, height } = this.#meta;
+    let defaultImgOpts = { quality: 0.1, type: 'image/png' };
+    const {
+      start = 0,
+      end = this.#meta.duration,
+      step,
+      imgOptions,
+      filter: customFilter,
+    } = opts ?? {};
     const convtr = createVF2BlobConvtr(
       imgWidth,
       Math.round(height * (imgWidth / width)),
-      { quality: 0.1, type: 'image/png' },
+      { ...defaultImgOpts, ...imgOptions },
     );
 
     return new Promise<Array<{ ts: number; img: Blob }>>(
@@ -292,7 +304,6 @@ export class MP4Clip implements IClip {
           });
         }
 
-        const { start = 0, end = this.#meta.duration, step } = opts ?? {};
         if (step) {
           let cur = start;
           // 创建一个新的 VideoFrameFinder 实例，避免与 tick 方法共用而导致冲突
@@ -319,6 +330,7 @@ export class MP4Clip implements IClip {
               pushPngPromise(vf);
               if (done) resolver();
             },
+            customFilter,
           );
         }
       },
@@ -1181,6 +1193,7 @@ async function thumbnailByKeyFrame(
   abortSingl: AbortSignal,
   time: { start: number; end: number },
   onOutput: (vf: VideoFrame, done: boolean) => void,
+  customFilter?: ThumbnailFilter,
 ) {
   const fileReader = await localFile.createReader();
   let cnt = 0;
@@ -1197,14 +1210,12 @@ async function thumbnailByKeyFrame(
     fileReader.close();
     dec.close();
   });
-
+  const keyFrames = samples.filter(
+    (s) => !s.deleted && s.is_sync && s.cts >= time.start && s.cts <= time.end,
+  );
+  const selectedKeyFrame = customFilter ? customFilter?.(keyFrames) : keyFrames;
   const chunks = await Promise.all(
-    samples
-      .filter(
-        (s) =>
-          !s.deleted && s.is_sync && s.cts >= time.start && s.cts <= time.end,
-      )
-      .map((s) => sample2Chunk(s, EncodedVideoChunk, fileReader)),
+    selectedKeyFrame.map((s) => sample2Chunk(s, EncodedVideoChunk, fileReader)),
   );
   if (chunks.length === 0 || abortSingl.aborted) return;
 
