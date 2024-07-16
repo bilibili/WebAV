@@ -27,7 +27,7 @@ export default defineConfig({
       github: 'https://github.com/bilibili/WebAV',
     },
     footer:
-      '<div>碰到问题请去 <a href="https://github.com/bilibili/WebAV/issues/">WebAV Issues</a> 中反馈</div><div class="flex" style="justify-content: center;"><a class="github-button" href="https://github.com/bilibili/WebAV" data-color-scheme="no-preference: light; light: light; dark: dark;" data-icon="octicon-star" data-size="large" data-show-count="true" aria-label="Star hughfenghen/WebAV on GitHub">Star</a></div>',
+      '<div>碰到问题请去 <a href="https://github.com/bilibili/WebAV/issues/">WebAV Issues</a> 中反馈</div><div class="flex" style="justify-content: center;"><a href="https://github.com/bilibili/WebAV"><img src="https://img.shields.io/github/stars/bilibili/WebAV"></a></div>',
   },
   ...(process.env.NODE_ENV === 'development'
     ? {
