@@ -45,6 +45,7 @@ async function start(
     }, 1000 / 30);
 
     stopRender = () => {
+      clip.destroy();
       clearInterval(timer);
     };
   }
