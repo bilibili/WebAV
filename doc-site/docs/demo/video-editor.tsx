@@ -281,15 +281,21 @@ export default function App() {
       <button
         className="mx-[10px]"
         onClick={async () => {
-          const stream =
-            clipSource === 'local'
-              ? (
-                  await loadFile({
-                    'image/*': ['.png', '.gif', '.jpeg', '.jpg'],
-                  })
-                ).stream()
-              : (await fetch(clipsSrc[2])).body!;
-          const spr = new VisibleSprite(new ImgClip(stream));
+          let args;
+          if (clipSource === 'local') {
+            const f = await loadFile({
+              'image/*': ['.png', '.jpeg', '.jpg', '.gif'],
+            });
+            const stream = f.stream();
+            if (/\.gif$/.test(f.name)) {
+              args = { type: 'image/gif', stream };
+            } else {
+              args = stream;
+            }
+          } else {
+            args = (await fetch(clipsSrc[2])).body!;
+          }
+          const spr = new VisibleSprite(new ImgClip(args));
           await avCvs?.addSprite(spr);
           addSprite2Track('3-img', spr, '图片');
         }}
