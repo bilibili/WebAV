@@ -1,4 +1,4 @@
-import { decodeImg } from '@webav/av-cliper';
+import { ImgClip } from '@webav/av-cliper';
 import { Button, Radio } from 'antd';
 import React, { useState } from 'react';
 import { assetsPrefix } from './utils';
@@ -15,31 +15,40 @@ async function start(
   ctx: CanvasRenderingContext2D,
   imgType: keyof typeof imgs,
 ) {
-  const frames = await decodeImg(
-    (await fetch(imgs[imgType])).body!,
-    `image/${imgType}`,
-  );
-
+  const clip = new ImgClip({
+    type: `image/${imgType}`,
+    stream: (await fetch(imgs[imgType])).body!,
+  });
+  await clip.ready;
   stopRender();
-  let i = 0;
-  function render(vf: VideoFrame) {
-    if (vf == null) return;
-    ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
-    ctx.drawImage(vf, 0, 0);
-
-    const timer = setTimeout(
-      () => {
-        render(frames[++i]);
-        vf.close();
-      },
-      (vf.duration ?? 0) / 1000,
-    );
+  function render() {
+    let startTime = performance.now();
+    const timer = setInterval(async () => {
+      const { video } = await clip.tick(
+        Math.round((performance.now() - startTime) * 1000),
+      );
+      if (video != null) {
+        ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+        ctx.drawImage(
+          video,
+          0,
+          0,
+          video.codedWidth,
+          video.codedHeight,
+          0,
+          0,
+          ctx.canvas.width,
+          ctx.canvas.height,
+        );
+        video.close();
+      }
+    }, 1000 / 30);
 
     stopRender = () => {
-      clearTimeout(timer);
+      clearInterval(timer);
     };
   }
-  render(frames[0]);
+  render();
 }
 
 export default createUI(start);
