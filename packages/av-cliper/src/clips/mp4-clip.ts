@@ -31,6 +31,10 @@ interface MP4DecoderConf {
 
 interface MP4ClipOpts {
   audio?: boolean | { volume: number };
+  /**
+   * 不安全，随时可能废弃
+   */
+  __unsafe_hardwareAcceleration__?: HardwarePreference;
 }
 
 type ExtMP4Sample = Omit<MP4Sample, 'data'> & { deleted?: boolean; data: null };
@@ -100,9 +104,7 @@ export class MP4Clip implements IClip {
 
   constructor(
     source: OPFSToolFile | ReadableStream<Uint8Array> | MPClipCloneArgs,
-    opts: {
-      audio?: boolean | { volume: number };
-    } = { audio: true },
+    opts: MP4ClipOpts = { audio: true },
   ) {
     if (
       !(source instanceof ReadableStream) &&
@@ -140,7 +142,17 @@ export class MP4Clip implements IClip {
       this.#audioSamples = audioSamples;
       this.#decoderConf = decoderConf;
       const { videoFrameFinder, audioFrameFinder } = genDeocder(
-        decoderConf,
+        {
+          video:
+            decoderConf.video == null
+              ? null
+              : {
+                  ...decoderConf.video,
+                  hardwareAcceleration:
+                    this.#opts.__unsafe_hardwareAcceleration__,
+                },
+          audio: decoderConf.audio,
+        },
         await this.#localFile.createReader(),
         videoSamples,
         audioSamples,
@@ -299,7 +311,10 @@ export class MP4Clip implements IClip {
           const videoFrameFinder = new VideoFrameFinder(
             await this.#localFile.createReader(),
             this.#videoSamples,
-            vc,
+            {
+              ...vc,
+              hardwareAcceleration: this.#opts.__unsafe_hardwareAcceleration__,
+            },
           );
           while (cur <= end && !aborterSignal.aborted) {
             const vf = await videoFrameFinder.find(cur);

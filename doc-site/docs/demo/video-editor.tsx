@@ -17,6 +17,15 @@ import { assetsPrefix, createFileWriter } from './utils';
 
 type TLActionWithName = TimelineAction & { name: string };
 
+const uhaParam = new URLSearchParams(location.search).get('UHA');
+const __unsafe_hardwareAcceleration__ = [
+  'no-preference',
+  'prefer-hardware',
+  'prefer-software',
+].includes(uhaParam)
+  ? uhaParam
+  : undefined;
+
 const TimelineEditor = ({
   timelineData: tlData,
   onPreviewTime,
@@ -143,6 +152,7 @@ export default function App() {
   const tlState = useRef<TimelineState>();
 
   const [playing, setPlaying] = useState(false);
+  const [clipSource, setClipSource] = useState('remote');
 
   const [cvsWrapEl, setCvsWrapEl] = useState<HTMLDivElement | null>(null);
   const [tlData, setTLData] = useState<TimelineRow[]>([
@@ -215,11 +225,38 @@ export default function App() {
   return (
     <div className="canvas-wrap">
       <div ref={(el) => setCvsWrapEl(el)}></div>
+      <input
+        type="radio"
+        id="clip-source-remote"
+        name="clip-source"
+        defaultChecked={clipSource === 'remote'}
+        onChange={() => {
+          setClipSource('remote');
+        }}
+      />
+      <label htmlFor="clip-source-remote"> 示例素材</label>
+      <input
+        type="radio"
+        id="clip-source-local"
+        name="clip-source"
+        defaultChecked={clipSource === 'local'}
+        onChange={() => {
+          setClipSource('local');
+        }}
+      />
+      <label htmlFor="clip-source-local"> 本地素材</label>
+      <span className="mx-[10px]">|</span>
       <button
         className="mx-[10px]"
         onClick={async () => {
+          const stream =
+            clipSource === 'local'
+              ? (await loadFile({ 'video/*': ['.mp4', '.mov'] })).stream()
+              : (await fetch(clipsSrc[0])).body!;
           const spr = new VisibleSprite(
-            new MP4Clip((await fetch(clipsSrc[0])).body!),
+            new MP4Clip(stream, {
+              __unsafe_hardwareAcceleration__,
+            }),
           );
           await avCvs?.addSprite(spr);
           addSprite2Track('1-video', spr, '视频');
@@ -230,9 +267,11 @@ export default function App() {
       <button
         className="mx-[10px]"
         onClick={async () => {
-          const spr = new VisibleSprite(
-            new AudioClip((await fetch(clipsSrc[1])).body!),
-          );
+          const stream =
+            clipSource === 'local'
+              ? (await loadFile({ 'audio/*': ['.m4a', '.mp3'] })).stream()
+              : (await fetch(clipsSrc[1])).body!;
+          const spr = new VisibleSprite(new AudioClip(stream));
           await avCvs?.addSprite(spr);
           addSprite2Track('2-audio', spr, '音频');
         }}
@@ -242,9 +281,15 @@ export default function App() {
       <button
         className="mx-[10px]"
         onClick={async () => {
-          const spr = new VisibleSprite(
-            new ImgClip((await fetch(clipsSrc[2])).body!),
-          );
+          const stream =
+            clipSource === 'local'
+              ? (
+                  await loadFile({
+                    'image/*': ['.png', '.gif', '.jpeg', '.jpg'],
+                  })
+                ).stream()
+              : (await fetch(clipsSrc[2])).body!;
+          const spr = new VisibleSprite(new ImgClip(stream));
           await avCvs?.addSprite(spr);
           addSprite2Track('3-img', spr, '图片');
         }}
@@ -286,7 +331,7 @@ export default function App() {
         className="mx-[10px]"
         onClick={async () => {
           if (avCvs == null) return;
-          (await avCvs.createCombinator())
+          (await avCvs.createCombinator({ __unsafe_hardwareAcceleration__ }))
             .output()
             .pipeTo(await createFileWriter());
         }}
@@ -362,4 +407,11 @@ export default function App() {
       ></TimelineEditor>
     </div>
   );
+}
+
+async function loadFile(accept: Record<string, string[]>) {
+  const [fileHandle] = await (window as any).showOpenFilePicker({
+    types: [{ accept }],
+  });
+  return (await fileHandle.getFile()) as File;
 }

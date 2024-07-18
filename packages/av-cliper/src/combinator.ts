@@ -19,6 +19,10 @@ interface ICombinatorOpts {
    * 向输出的视频中写入 meta tags 数据
    */
   metaDataTags?: Record<string, string>;
+  /**
+   * 不安全，随时可能废弃
+   */
+  __unsafe_hardwareAcceleration__?: HardwarePreference;
 }
 
 let COM_ID = 0;
@@ -189,6 +193,8 @@ export class Combinator {
             expectFPS: 30,
             codec: videoCodec,
             bitrate,
+            __unsafe_hardwareAcceleration__:
+              this.#opts.__unsafe_hardwareAcceleration__,
           }
         : null,
       audio:

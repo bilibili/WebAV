@@ -36,6 +36,10 @@ interface IRecodeMuxOpts {
     expectFPS: number;
     codec: string;
     bitrate: number;
+    /**
+     * 不安全，随时可能废弃
+     */
+    __unsafe_hardwareAcceleration__?: HardwareAcceleration;
   } | null;
   /**
    * 音频配置选项，如果为 null 则不处理音频。
@@ -211,7 +215,7 @@ function createVideoEncoder(
   encoder.configure({
     codec: videoOpts.codec,
     framerate: videoOpts.expectFPS,
-    // hardwareAcceleration: 'prefer-hardware',
+    hardwareAcceleration: videoOpts.__unsafe_hardwareAcceleration__,
     // 码率
     bitrate: videoOpts.bitrate,
     width: videoOpts.width,
