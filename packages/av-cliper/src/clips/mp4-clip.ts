@@ -1,16 +1,15 @@
 import { MP4Info, MP4Sample } from '@webav/mp4box.js';
 import {
   audioResample,
-  autoReadStream,
   concatPCMFragments,
   extractPCM4AudioData,
   sleep,
 } from '../av-utils';
 import { Log } from '../log';
 import { extractFileConfig, sample2ChunkOpts } from '../mp4-utils/mp4box-utils';
-import { SampleTransform } from '../mp4-utils/sample-transform';
 import { DEFAULT_AUDIO_CONF, IClip } from './iclip';
 import { file, tmpfile, write } from 'opfs-tools';
+import { fileToMP4Samples } from '../mp4-utils/opfs-2-sample';
 
 let CLIP_ID = 0;
 
@@ -133,9 +132,13 @@ export class MP4Clip implements IClip {
 
     this.ready = (
       source instanceof ReadableStream
-        ? initByStream(source).then((s) => parseMP4Stream(s, this.#opts))
+        ? initByStream(source).then(() =>
+            parseMP4Stream(this.#localFile, this.#opts),
+          )
         : isOTFile(source)
-          ? source.stream().then((s) => parseMP4Stream(s, this.#opts))
+          ? source
+              .stream()
+              .then(() => parseMP4Stream(this.#localFile, this.#opts))
           : Promise.resolve(source)
     ).then(async ({ videoSamples, audioSamples, decoderConf }) => {
       this.#videoSamples = videoSamples;
@@ -519,10 +522,7 @@ function genDeocder(
   };
 }
 
-async function parseMP4Stream(
-  source: ReadableStream<Uint8Array>,
-  opts: MP4ClipOpts = {},
-) {
+async function parseMP4Stream(localFile: OPFSToolFile, opts: MP4ClipOpts = {}) {
   let mp4Info: MP4Info;
   const decoderConf: MP4DecoderConf = { video: null, audio: null };
   let videoSamples: ExtMP4Sample[] = [];
@@ -535,42 +535,42 @@ async function parseMP4Stream(
   }>(async (resolve, reject) => {
     let videoDeltaTS = -1;
     let audioDeltaTS = -1;
-    const stopRead = autoReadStream(source.pipeThrough(new SampleTransform()), {
-      onChunk: async ({ chunkType, data }) => {
-        if (chunkType === 'ready') {
-          // mp4File = data.file;
-          mp4Info = data.info;
-          let { videoDecoderConf: vc, audioDecoderConf: ac } =
-            extractFileConfig(data.file, data.info);
-          decoderConf.video = vc ?? null;
-          decoderConf.audio = ac ?? null;
-          if (vc == null && ac == null) {
-            stopRead();
-            reject(
-              Error('MP4Clip must contain at least one video or audio track'),
-            );
-          }
-          Log.info(
-            'mp4BoxFile moov ready',
-            {
-              ...data.info,
-              tracks: null,
-              videoTracks: null,
-              audioTracks: null,
-            },
-            decoderConf,
+    const { stop } = await fileToMP4Samples(localFile, {
+      onReady: (data) => {
+        mp4Info = data.info;
+        let { videoDecoderConf: vc, audioDecoderConf: ac } = extractFileConfig(
+          data.mp4BoxFile,
+          data.info,
+        );
+        decoderConf.video = vc ?? null;
+        decoderConf.audio = ac ?? null;
+        if (vc == null && ac == null) {
+          stop();
+          reject(
+            Error('MP4Clip must contain at least one video or audio track'),
           );
-        } else if (chunkType === 'samples') {
-          if (data.type === 'video') {
-            if (videoDeltaTS === -1) videoDeltaTS = data.samples[0].dts;
-            for (const s of data.samples) {
-              videoSamples.push(normalizeTimescale(s, videoDeltaTS));
-            }
-          } else if (data.type === 'audio' && opts.audio) {
-            if (audioDeltaTS === -1) audioDeltaTS = data.samples[0].dts;
-            for (const s of data.samples) {
-              audioSamples.push(normalizeTimescale(s, audioDeltaTS));
-            }
+        }
+        Log.info(
+          'mp4BoxFile moov ready',
+          {
+            ...data.info,
+            tracks: null,
+            videoTracks: null,
+            audioTracks: null,
+          },
+          decoderConf,
+        );
+      },
+      onSamples: (data) => {
+        if (data.type === 'video') {
+          if (videoDeltaTS === -1) videoDeltaTS = data.samples[0].dts;
+          for (const s of data.samples) {
+            videoSamples.push(normalizeTimescale(s, videoDeltaTS));
+          }
+        } else if (data.type === 'audio' && opts.audio) {
+          if (audioDeltaTS === -1) audioDeltaTS = data.samples[0].dts;
+          for (const s of data.samples) {
+            audioSamples.push(normalizeTimescale(s, audioDeltaTS));
           }
         }
       },
