@@ -1,6 +1,6 @@
 # AVCliper
 
-WebCodecs-based, combine video, audio, images, text, with animation support  
+WebCodecs-based, combine video, audio, images, text, with animation support
 基于 WebCodecs 合成 视频、音频、图片、文字，支持动画
 
 ## Basic Concepts 基础概念
@@ -15,7 +15,7 @@ WebCodecs-based, combine video, audio, images, text, with animation support
 
 <hr />
 
-- `Combinator`： 视频合成器， add `OffscreenSprite`， output 视频流
+- `Combinator`： 视频合成器，添加 `OffscreenSprite`， 输出视频流
   - 目前仅支持输出 MP4 格式的二进制流
 - `IClip`： 资源的抽象封装，按时间片段读取（`IClip.tick(time)`）资源的原始数据，`IClip` 接口的实现类有：
   - `MP4Clip, AudioClip, ImgClip, EmbedSubtitlesClip`（内嵌 SRT 字幕），这些是合成视频所支持的资源类型
