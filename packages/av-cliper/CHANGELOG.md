@@ -1,5 +1,11 @@
 # @webav/av-cliper
 
+## 0.13.10
+
+### Patch Changes
+
+- 623d12c: fix: not working in nested inlined worker
+
 ## 0.13.9
 
 ### Patch Changes
