@@ -8,6 +8,8 @@ const videos = assetsPrefix({
   'bear.mp4': 'video/bear-vp9.mp4',
 });
 
+let currentClip = null as null | MP4Clip;
+
 async function start(
   speed: number,
   videoType: keyof typeof videos,
@@ -15,6 +17,8 @@ async function start(
 ) {
   const resp1 = await fetch(videos[videoType]);
   const clip = new MP4Clip(resp1.body!);
+  currentClip = clip;
+  const checkExpired = () => currentClip !== clip;
   await clip.ready;
 
   if (speed === Infinity) {
@@ -25,7 +29,7 @@ async function start(
 
   async function fastestDecode() {
     let time = 0;
-    while (true) {
+    while (!checkExpired()) {
       const { state, video } = await clip.tick(time);
       if (state === 'done') break;
       if (video != null && state === 'success') {
@@ -52,6 +56,12 @@ async function start(
     let startTime = performance.now();
 
     const timer = setInterval(async () => {
+      if (checkExpired()) {
+        clearInterval(timer);
+        clip.destroy();
+        return;
+      }
+
       const { state, video } = await clip.tick(
         Math.round((performance.now() - startTime) * 1000) * times,
       );
