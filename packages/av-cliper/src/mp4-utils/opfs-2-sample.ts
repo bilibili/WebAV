@@ -49,21 +49,17 @@ export async function fileToMP4Samples(
     cbs.onDone();
   };
 
-  let inputBufOffset = 0;
   const chunkSize = 1024 * 100;
   async function readChunk(start: number, end: number) {
     if (start >= end - 1) return;
     const data = await reader.read(end - start, { at: start });
     const inputBuf = data as MP4ArrayBuffer;
-    inputBuf.fileStart = inputBufOffset;
-    inputBufOffset += inputBuf.byteLength;
+    inputBuf.fileStart = start;
     const next = await file.appendBuffer(inputBuf);
-    console.log({ start, end, next, len: inputBuf.byteLength });
-    if (!next || next === start) {
+    if (!next) {
       return cbs.onDone();
     }
-    const nextStart = start + chunkSize;
-    await readChunk(nextStart, nextStart + chunkSize);
+    await readChunk(next, next + chunkSize);
   }
 
   await readChunk(0, chunkSize);
