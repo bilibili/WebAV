@@ -53,7 +53,7 @@ export class EventTool<T extends EventToolType> {
   #listeners = new Map<keyof T, Set<T[keyof T]>>();
 
   /**
-   * 监听EventType中定义的事件
+   * 监听 EventType 中定义的事件
    */
   on = <Type extends keyof T>(type: Type, listener: T[Type]): (() => void) => {
     const handlers = this.#listeners.get(type) ?? new Set<T[keyof T]>();
@@ -74,7 +74,7 @@ export class EventTool<T extends EventToolType> {
   /**
    * 监听事件，首次触发后自动移除监听
    *
-   * 期望回调一次的事件，使用once; 期望多次回调使用on
+   * 期望回调一次的事件，使用 once; 期望多次回调使用 on
    */
   once = <Type extends keyof T>(
     type: Type,

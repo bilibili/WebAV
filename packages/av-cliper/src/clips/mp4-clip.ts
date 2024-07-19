@@ -248,9 +248,9 @@ export class MP4Clip implements IClip {
 
   #thumbAborter = new AbortController();
   /**
-   * Generate thumbnails, default generate 100px width thumbnails by every key frame.
+   * 生成缩略图，默认每个关键帧生成一个 100px 宽度的缩略图。
    *
-   * @param imgWidth thumbnail width, default 100
+   * @param imgWidth 缩略图宽度，默认 100
    * @param opts Partial<ThumbnailOpts>
    * @returns Promise<Array<{ ts: number; img: Blob }>>
    */
