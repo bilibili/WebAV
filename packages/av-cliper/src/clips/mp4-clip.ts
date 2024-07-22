@@ -143,7 +143,7 @@ export class MP4Clip implements IClip {
       this.#videoSamples = videoSamples;
       this.#audioSamples = audioSamples;
       this.#decoderConf = decoderConf;
-      const { videoFrameFinder, audioFrameFinder } = genDeocder(
+      const { videoFrameFinder, audioFrameFinder } = genDecoder(
         {
           video:
             decoderConf.video == null
@@ -490,7 +490,7 @@ function genMeta(
   return meta;
 }
 
-function genDeocder(
+function genDecoder(
   decoderConf: MP4DecoderConf,
   localFileReader: LocalFileReader,
   videoSamples: ExtMP4Sample[],
