@@ -301,7 +301,7 @@ export class Combinator {
       onError: (err: Error) => void;
     },
   ): () => void {
-    let inputProgress = 0;
+    let progress = 0;
     let stoped = false;
     let err: Error | null = null;
 
@@ -324,7 +324,7 @@ export class Combinator {
           await onEnded();
           return;
         }
-        inputProgress = ts / maxTime;
+        progress = ts / maxTime;
 
         ctx.fillStyle = this.#opts.bgColor;
         ctx.fillRect(0, 0, width, height);
@@ -413,17 +413,8 @@ export class Combinator {
       onError(e);
     });
 
-    // 初始 1 避免 NaN
-    let maxEncodeQSize = 1;
-    let outProgress = 0;
-    // 避免 进度值 回退
-    let lastProg = 0;
     const outProgTimer = setInterval(() => {
-      const s = remux.getEecodeQueueSize();
-      maxEncodeQSize = Math.max(maxEncodeQSize, s);
-      outProgress = s / maxEncodeQSize;
-      lastProg = Math.max(outProgress * 0.5 + inputProgress * 0.5, lastProg);
-      onProgress(lastProg);
+      onProgress(progress);
     }, 500);
 
     const exit = () => {
