@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="shortcut icon" href="data:image/x-icon;," type="image/x-icon">
+
+  <title>AVCliper Concat Media</title>
+  <link href="https://hughfenghen.github.io/font/noto-sans.css" rel="stylesheet">
+
+  <style>
+    #app {
+      width: 900px;
+      height: 500px;
+      margin: 50px 50px;
+      overflow: hidden;
+      position: relative;
+    }
+
+    canvas {
+      width: 900px;
+      height: 500px;
+    }
+  </style>
+</head>
+
+<body>
+  <!-- <canvas id="canvas" width="1280" height="720"></canvas> -->
+  <!-- <br> -->
+  <button id="frag-10min">frag-10min</button>
+  <p />
+  <div>
+    <span>startTime:</span><span id="startTime"></span> |
+    <span>cost:</span><span id="cost">---</span>
+  </div>
+  <div id="progress"></div>
+  <hr>
+  <script type="module" src="performance.demo.ts"></script>
+  <script src="https://cdn.jsdelivr.net/npm/opfs-tools-explorer"></script>
+  <script>
+    OTExplorer.init();
+  </script>
+
+</body>
+
+</html>

@@ -183,6 +183,7 @@ function encodeVideoTrack(
     });
     cache = [];
   });
+  // todo: perf
   const encoder = createVideoEncoder(opts, (chunk, meta) => {
     if (trackId === -1 && meta != null) {
       videoTrackOpts.avcDecoderConfigRecord = meta.decoderConfig
