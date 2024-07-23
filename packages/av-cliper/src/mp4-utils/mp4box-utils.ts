@@ -99,7 +99,7 @@ export function sample2ChunkOpts(s: {
   cts: number;
   timescale: number;
   duration: number;
-  data: ArrayBuffer;
+  data: ArrayBuffer | ArrayBufferView;
 }): EncodedAudioChunkInit | EncodedVideoChunkInit {
   return {
     type: (s.is_sync ? 'key' : 'delta') as EncodedVideoChunkType,

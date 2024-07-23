@@ -687,10 +687,10 @@ class VideoFrameFinder {
         if (samples[0]?.is_sync !== true) {
           Log.warn('First sample not key frame');
         } else {
-          const chunks = await Promise.all(
-            samples.map((s) =>
-              sample2Chunk(s, EncodedVideoChunk, this.localFileReader),
-            ),
+          const chunks = await samples2Chunks(
+            samples,
+            EncodedVideoChunk,
+            this.localFileReader,
           );
           // Wait for the previous asynchronous operation to complete, at which point the task may have already been terminated
           if (aborter.abort) return null;
@@ -840,21 +840,20 @@ class AudioFrameFinder {
     } else {
       // 启动解码任务
       const samples = [];
-      for (let i = this.#decCusorIdx; i < this.samples.length; i++) {
-        this.#decCusorIdx = i;
+      let i = this.#decCusorIdx;
+      while (i < this.samples.length) {
         const s = this.samples[i];
+        const next = this.samples[i + 1];
+        i += 1;
         if (s.deleted) continue;
-        if (samples.length >= 10) break;
         samples.push(s);
+        if (next == null || s.offset + s.size !== next.offset) break;
       }
+      this.#decCusorIdx = i;
 
       this.#decoding = true;
       dec.decode(
-        await Promise.all(
-          samples.map((s) =>
-            sample2Chunk(s, EncodedAudioChunk, this.localFileReader),
-          ),
-        ),
+        await samples2Chunks(samples, EncodedAudioChunk, this.localFileReader),
         (pcmArr, done) => {
           if (pcmArr.length === 0) return;
           // 音量调节
@@ -1016,24 +1015,28 @@ function createPromiseQueue<T extends any>(onResult: (data: T) => void) {
   };
 }
 
-type Constructor<T> = {
-  new (...args: any[]): T;
-};
-
-async function sample2Chunk<T extends EncodedAudioChunk | EncodedVideoChunk>(
-  s: ExtMP4Sample,
-  clazz: Constructor<T>,
+async function samples2Chunks<T extends EncodedAudioChunk | EncodedVideoChunk>(
+  samples: ExtMP4Sample[],
+  Clazz: { new (...args: any[]): T },
   reader: Awaited<ReturnType<OPFSToolFile['createReader']>>,
-): Promise<T> {
-  // todo: perf
-  const data = await reader.read(s.size, { at: s.offset });
-  return new clazz(
-    // todo: perf
-    sample2ChunkOpts({
-      ...s,
-      data,
+): Promise<T[]> {
+  const first = samples[0];
+  const last = samples.at(-1);
+  if (last == null) return [];
+  const data = new Uint8Array(
+    await reader.read(last.offset + last.size - first.offset, {
+      at: first.offset,
     }),
   );
+  return samples.map((s) => {
+    const offset = s.offset - first.offset;
+    return new Clazz({
+      type: s.is_sync ? 'key' : 'delta',
+      timestamp: s.cts,
+      duration: s.duration,
+      data: data.subarray(offset, offset + s.size),
+    });
+  });
 }
 
 function createVF2BlobConvtr(
@@ -1213,13 +1216,13 @@ async function thumbnailByKeyFrame(
     dec.close();
   });
 
-  const chunks = await Promise.all(
-    samples
-      .filter(
-        (s) =>
-          !s.deleted && s.is_sync && s.cts >= time.start && s.cts <= time.end,
-      )
-      .map((s) => sample2Chunk(s, EncodedVideoChunk, fileReader)),
+  const chunks = await samples2Chunks(
+    samples.filter(
+      (s) =>
+        !s.deleted && s.is_sync && s.cts >= time.start && s.cts <= time.end,
+    ),
+    EncodedVideoChunk,
+    fileReader,
   );
   if (chunks.length === 0 || abortSingl.aborted) return;
 
