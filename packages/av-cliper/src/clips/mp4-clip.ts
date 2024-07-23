@@ -36,7 +36,10 @@ interface MP4ClipOpts {
   __unsafe_hardwareAcceleration__?: HardwarePreference;
 }
 
-type ExtMP4Sample = Omit<MP4Sample, 'data'> & { deleted?: boolean; data: null };
+type ExtMP4Sample = Omit<MP4Sample, 'data'> & {
+  deleted?: boolean;
+  data: null | Uint8Array;
+};
 
 type LocalFileReader = Awaited<ReturnType<OPFSToolFile['createReader']>>;
 
@@ -568,7 +571,8 @@ async function parseMP4Stream(
           } else if (data.type === 'audio' && opts.audio) {
             if (audioDeltaTS === -1) audioDeltaTS = data.samples[0].dts;
             for (const s of data.samples) {
-              audioSamples.push(normalizeTimescale(s, audioDeltaTS));
+              // 音频数据量可控，直接保存在内存中
+              audioSamples.push(normalizeTimescale(s, audioDeltaTS, false));
             }
           }
         }
@@ -597,14 +601,14 @@ async function parseMP4Stream(
     });
   });
 
-  function normalizeTimescale(s: MP4Sample, delta = 0) {
+  function normalizeTimescale(s: MP4Sample, delta = 0, releaseData = true) {
     return {
       ...s,
       cts: ((s.cts - delta) / s.timescale) * 1e6,
       dts: ((s.dts - delta) / s.timescale) * 1e6,
       duration: (s.duration / s.timescale) * 1e6,
       timescale: 1e6,
-      data: null,
+      data: releaseData ? null : s.data,
     };
   }
 }
@@ -686,9 +690,8 @@ class VideoFrameFinder {
         if (samples[0]?.is_sync !== true) {
           Log.warn('First sample not key frame');
         } else {
-          const chunks = await samples2Chunks(
+          const chunks = await videosamples2Chunks(
             samples,
-            EncodedVideoChunk,
             this.localFileReader,
           );
           // Wait for the previous asynchronous operation to complete, at which point the task may have already been terminated
@@ -836,20 +839,25 @@ class AudioFrameFinder {
     } else {
       // 启动解码任务
       const samples = [];
-      let i = this.#decCusorIdx;
-      while (i < this.samples.length) {
+      for (let i = this.#decCusorIdx; i < this.samples.length; i += 1) {
+        this.#decCusorIdx = i;
         const s = this.samples[i];
-        const next = this.samples[i + 1];
-        i += 1;
         if (s.deleted) continue;
         samples.push(s);
-        if (next == null || s.offset + s.size !== next.offset) break;
+        if (samples.length >= 10) break;
       }
-      this.#decCusorIdx = i;
 
       this.#decoding = true;
       dec.decode(
-        await samples2Chunks(samples, EncodedAudioChunk, this.localFileReader),
+        samples.map(
+          (s) =>
+            new EncodedAudioChunk({
+              type: 'key',
+              timestamp: s.cts,
+              duration: s.duration,
+              data: s.data!,
+            }),
+        ),
         (pcmArr, done) => {
           if (pcmArr.length === 0) return;
           // 音量调节
@@ -1037,11 +1045,10 @@ function emitAudioFrames(
   return audio;
 }
 
-async function samples2Chunks<T extends EncodedAudioChunk | EncodedVideoChunk>(
+async function videosamples2Chunks(
   samples: ExtMP4Sample[],
-  Clazz: { new (...args: any[]): T },
   reader: Awaited<ReturnType<OPFSToolFile['createReader']>>,
-): Promise<T[]> {
+): Promise<EncodedVideoChunk[]> {
   const first = samples[0];
   const last = samples.at(-1);
   if (last == null) return [];
@@ -1052,7 +1059,7 @@ async function samples2Chunks<T extends EncodedAudioChunk | EncodedVideoChunk>(
   );
   return samples.map((s) => {
     const offset = s.offset - first.offset;
-    return new Clazz({
+    return new EncodedVideoChunk({
       type: s.is_sync ? 'key' : 'delta',
       timestamp: s.cts,
       duration: s.duration,
@@ -1238,12 +1245,11 @@ async function thumbnailByKeyFrame(
     dec.close();
   });
 
-  const chunks = await samples2Chunks(
+  const chunks = await videosamples2Chunks(
     samples.filter(
       (s) =>
         !s.deleted && s.is_sync && s.cts >= time.start && s.cts <= time.end,
     ),
-    EncodedVideoChunk,
     fileReader,
   );
   if (chunks.length === 0 || abortSingl.aborted) return;
