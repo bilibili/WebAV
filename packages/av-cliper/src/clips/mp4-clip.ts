@@ -2,12 +2,11 @@ import { MP4Info, MP4Sample } from '@webav/mp4box.js';
 import {
   audioResample,
   autoReadStream,
-  concatPCMFragments,
   extractPCM4AudioData,
   sleep,
 } from '../av-utils';
 import { Log } from '../log';
-import { extractFileConfig, sample2ChunkOpts } from '../mp4-utils/mp4box-utils';
+import { extractFileConfig } from '../mp4-utils/mp4box-utils';
 import { SampleTransform } from '../mp4-utils/sample-transform';
 import { DEFAULT_AUDIO_CONF, IClip } from './iclip';
 import { file, tmpfile, write } from 'opfs-tools';
@@ -806,10 +805,13 @@ class AudioFrameFinder {
   #ts = 0;
   #decCusorIdx = 0;
   #decoding = false;
-  #pcmData: [Float32Array, Float32Array] = [
-    new Float32Array(0), // left chan
-    new Float32Array(0), // right chan
-  ];
+  #pcmData: {
+    frameCnt: number;
+    data: [Float32Array, Float32Array][];
+  } = {
+    frameCnt: 0,
+    data: [],
+  };
   #parseFrame = async (
     deltaTime: number,
     dec: ReturnType<typeof createAudioChunksDecoder> | null = null,
@@ -817,18 +819,12 @@ class AudioFrameFinder {
   ): Promise<Float32Array[]> => {
     if (dec == null || aborter.abort || dec.state === 'closed') return [];
 
-    const frameCnt = Math.ceil(deltaTime * (this.#sampleRate / 1e6));
-    if (frameCnt === 0) return [];
+    const emitFrameCnt = Math.ceil(deltaTime * (this.#sampleRate / 1e6));
+    if (emitFrameCnt === 0) return [];
 
     // 数据满足需要
-    if (this.#pcmData[0].length > frameCnt) {
-      const audio = [
-        this.#pcmData[0].slice(0, frameCnt),
-        this.#pcmData[1].slice(0, frameCnt),
-      ];
-      this.#pcmData[0] = this.#pcmData[0].slice(frameCnt);
-      this.#pcmData[1] = this.#pcmData[1].slice(frameCnt);
-      return audio;
+    if (this.#pcmData.frameCnt > emitFrameCnt) {
+      return emitAudioFrames(this.#pcmData, emitFrameCnt);
     }
 
     if (this.#decoding) {
@@ -864,10 +860,8 @@ class AudioFrameFinder {
           // 补齐双声道
           if (pcmArr.length === 1) pcmArr = [pcmArr[0], pcmArr[0]];
 
-          this.#pcmData = concatPCMFragments([this.#pcmData, pcmArr]) as [
-            Float32Array,
-            Float32Array,
-          ];
+          this.#pcmData.data.push(pcmArr as [Float32Array, Float32Array]);
+          this.#pcmData.frameCnt += pcmArr[0].length;
           if (done) this.#decoding = false;
         },
       );
@@ -878,10 +872,10 @@ class AudioFrameFinder {
   reset = () => {
     this.#ts = 0;
     this.#decCusorIdx = 0;
-    this.#pcmData = [
-      new Float32Array(0), // left chan
-      new Float32Array(0), // right chan
-    ];
+    this.#pcmData = {
+      frameCnt: 0,
+      data: [],
+    };
     this.#dec?.close();
     this.#decoding = false;
     this.#dec = createAudioChunksDecoder(
@@ -897,16 +891,16 @@ class AudioFrameFinder {
     decQSize: this.#dec?.decodeQueueSize,
     decCusorIdx: this.#decCusorIdx,
     sampleLen: this.samples.length,
-    pcmLen: this.#pcmData[0]?.length,
+    pcmLen: this.#pcmData.frameCnt,
   });
 
   destroy = () => {
     this.#dec = null;
     this.#curAborter.abort = true;
-    this.#pcmData = [
-      new Float32Array(0), // left chan
-      new Float32Array(0), // right chan
-    ];
+    this.#pcmData = {
+      frameCnt: 0,
+      data: [],
+    };
     this.localFileReader.close();
   };
 }
@@ -1013,6 +1007,34 @@ function createPromiseQueue<T extends any>(onResult: (data: T) => void) {
       .then((rs) => updateRs(rs, emitIdx))
       .catch((err) => updateRs(err, emitIdx));
   };
+}
+
+function emitAudioFrames(
+  pcmData: { frameCnt: number; data: [Float32Array, Float32Array][] },
+  emitCnt: number,
+) {
+  const audio = [new Float32Array(emitCnt), new Float32Array(emitCnt)];
+  let offset = 0;
+  let i = 0;
+  for (; i < pcmData.data.length; ) {
+    const [chan0, chan1] = pcmData.data[i];
+    if (offset + chan0.length > emitCnt) {
+      const gapCnt = emitCnt - offset;
+      audio[0].set(chan0.subarray(0, gapCnt), offset);
+      audio[1].set(chan1.subarray(0, gapCnt), offset);
+      pcmData.data[i][0] = chan0.subarray(gapCnt, chan0.length);
+      pcmData.data[i][1] = chan1.subarray(gapCnt, chan1.length);
+      break;
+    } else {
+      audio[0].set(chan0, offset);
+      audio[1].set(chan1, offset);
+      offset += chan0.length;
+      i++;
+    }
+  }
+  pcmData.data = pcmData.data.slice(i);
+  pcmData.frameCnt -= emitCnt;
+  return audio;
 }
 
 async function samples2Chunks<T extends EncodedAudioChunk | EncodedVideoChunk>(

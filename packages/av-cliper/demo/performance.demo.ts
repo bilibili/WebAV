@@ -11,12 +11,17 @@ const costEl = document.querySelector('#cost')!;
 
 document.querySelector('#frag-10min')?.addEventListener('click', () => {
   (async () => {
-    const resList = ['./video/pri-bunny_1080p_avc-frag.mp4'];
+    const resPath = '/video/pri-bunny_1080p_avc-frag.mp4';
+    // const resPath = '/video/pri-cut-5.mp4';
+
+    const otFile = file(resPath);
+
+    if (!(await otFile.exists())) {
+      await write(otFile, (await fetch(resPath)).body!);
+    }
 
     let t = performance.now();
-    const spr1 = new OffscreenSprite(
-      new MP4Clip((await fetch(resList[0])).body!, { audio: false }),
-    );
+    const spr1 = new OffscreenSprite(new MP4Clip(otFile));
     await spr1.ready;
     console.log('111111111', performance.now() - t);
     const width = 1920;
@@ -67,13 +72,3 @@ document.querySelector('#frag-10min')?.addEventListener('click', () => {
     // com.output().pipeTo(await createFileWriter());
   })().catch(Log.error);
 });
-
-async function createFileWriter(
-  extName = 'mp4',
-): Promise<FileSystemWritableFileStream> {
-  // @ts-expect-error
-  const fileHandle = await window.showSaveFilePicker({
-    suggestedName: `WebAV-export-${Date.now()}.${extName}`,
-  });
-  return fileHandle.createWritable();
-}
