@@ -1,5 +1,11 @@
 # @webav/av-cliper
 
+## 0.13.11
+
+### Patch Changes
+
+- 23ba479: perf: imporve perf for MP4Clip
+
 ## 0.13.10
 
 ### Patch Changes
