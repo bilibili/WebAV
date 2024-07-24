@@ -13,6 +13,7 @@ document.querySelector('#frag-10min')?.addEventListener('click', () => {
   (async () => {
     const resPath = '/video/pri-bunny_1080p_avc-frag.mp4';
     // const resPath = '/video/pri-cut-5.mp4';
+    // const resPath = '/video/bunny_0.mp4';
 
     const otFile = file(resPath);
 

@@ -109,7 +109,7 @@ declare module '@webav/mp4box.js' {
     duration: number;
     offset: number;
     size: number;
-    data: ArrayBuffer;
+    data: Uint8Array;
   }
 
   interface BoxParser {
