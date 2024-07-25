@@ -228,7 +228,7 @@ function App() {
         className="mx-[10px]"
         onClick={async () => {
           const spr = new VisibleSprite(
-            new MP4Clip((await fetch('./video/pri-cut-11.mp4')).body!),
+            new MP4Clip((await fetch('./video/bunny_0.mp4')).body!),
           );
           await avCvs?.addSprite(spr);
           addSprite2Track('1-video', spr, '视频');
