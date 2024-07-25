@@ -693,6 +693,7 @@ class VideoFrameFinder {
           const chunks = await videosamples2Chunks(
             samples,
             this.localFileReader,
+            true,
           );
           // Wait for the previous asynchronous operation to complete, at which point the task may have already been terminated
           if (aborter.abort) return null;
@@ -1048,24 +1049,41 @@ function emitAudioFrames(
 async function videosamples2Chunks(
   samples: ExtMP4Sample[],
   reader: Awaited<ReturnType<OPFSToolFile['createReader']>>,
+  isContinuous: boolean,
 ): Promise<EncodedVideoChunk[]> {
   const first = samples[0];
   const last = samples.at(-1);
   if (last == null) return [];
-  const data = new Uint8Array(
-    await reader.read(last.offset + last.size - first.offset, {
-      at: first.offset,
-    }),
-  );
-  return samples.map((s) => {
-    const offset = s.offset - first.offset;
-    return new EncodedVideoChunk({
-      type: s.is_sync ? 'key' : 'delta',
-      timestamp: s.cts,
-      duration: s.duration,
-      data: data.subarray(offset, offset + s.size),
+  if (isContinuous) {
+    // 如果是连续的帧，一次性读取硬盘数据，降低 IO 次数
+    const data = new Uint8Array(
+      await reader.read(last.offset + last.size - first.offset, {
+        at: first.offset,
+      }),
+    );
+    return samples.map((s) => {
+      const offset = s.offset - first.offset;
+      return new EncodedVideoChunk({
+        type: s.is_sync ? 'key' : 'delta',
+        timestamp: s.cts,
+        duration: s.duration,
+        data: data.subarray(offset, offset + s.size),
+      });
     });
-  });
+  }
+  return await Promise.all(
+    samples.map(
+      async (s) =>
+        new EncodedVideoChunk({
+          type: s.is_sync ? 'key' : 'delta',
+          timestamp: s.cts,
+          duration: s.duration,
+          data: await reader.read(s.size, {
+            at: s.offset,
+          }),
+        }),
+    ),
+  );
 }
 
 function createVF2BlobConvtr(
@@ -1251,6 +1269,7 @@ async function thumbnailByKeyFrame(
         !s.deleted && s.is_sync && s.cts >= time.start && s.cts <= time.end,
     ),
     fileReader,
+    false,
   );
   if (chunks.length === 0 || abortSingl.aborted) return;
 
