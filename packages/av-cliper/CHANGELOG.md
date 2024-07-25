@@ -1,5 +1,11 @@
 # @webav/av-cliper
 
+## 0.14.2
+
+### Patch Changes
+
+- 85512d0: fix: A/V not sync
+
 ## 0.14.1
 
 ### Patch Changes
