@@ -693,7 +693,6 @@ class VideoFrameFinder {
           const chunks = await videosamples2Chunks(
             samples,
             this.localFileReader,
-            true,
           );
           // Wait for the previous asynchronous operation to complete, at which point the task may have already been terminated
           if (aborter.abort) return null;
@@ -840,13 +839,15 @@ class AudioFrameFinder {
     } else {
       // 启动解码任务
       const samples = [];
-      for (let i = this.#decCusorIdx; i < this.samples.length; i += 1) {
-        this.#decCusorIdx = i;
+      let i = this.#decCusorIdx;
+      while (i < this.samples.length) {
         const s = this.samples[i];
+        i += 1;
         if (s.deleted) continue;
         samples.push(s);
         if (samples.length >= 10) break;
       }
+      this.#decCusorIdx = i;
 
       this.#decoding = true;
       dec.decode(
@@ -1049,17 +1050,16 @@ function emitAudioFrames(
 async function videosamples2Chunks(
   samples: ExtMP4Sample[],
   reader: Awaited<ReturnType<OPFSToolFile['createReader']>>,
-  isContinuous: boolean,
 ): Promise<EncodedVideoChunk[]> {
   const first = samples[0];
   const last = samples.at(-1);
   if (last == null) return [];
-  if (isContinuous) {
-    // 如果是连续的帧，一次性读取硬盘数据，降低 IO 次数
+
+  const rangSize = last.offset + last.size - first.offset;
+  if (rangSize < 30e6) {
+    // 单次读取数据小于 30M，就一次性读取数据，降低 IO 频次
     const data = new Uint8Array(
-      await reader.read(last.offset + last.size - first.offset, {
-        at: first.offset,
-      }),
+      await reader.read(rangSize, { at: first.offset }),
     );
     return samples.map((s) => {
       const offset = s.offset - first.offset;
@@ -1071,6 +1071,7 @@ async function videosamples2Chunks(
       });
     });
   }
+
   return await Promise.all(
     samples.map(
       async (s) =>
@@ -1269,7 +1270,6 @@ async function thumbnailByKeyFrame(
         !s.deleted && s.is_sync && s.cts >= time.start && s.cts <= time.end,
     ),
     fileReader,
-    false,
   );
   if (chunks.length === 0 || abortSingl.aborted) return;
 
