@@ -839,13 +839,15 @@ class AudioFrameFinder {
     } else {
       // 启动解码任务
       const samples = [];
-      for (let i = this.#decCusorIdx; i < this.samples.length; i += 1) {
-        this.#decCusorIdx = i;
+      let i = this.#decCusorIdx;
+      while (i < this.samples.length) {
         const s = this.samples[i];
+        i += 1;
         if (s.deleted) continue;
         samples.push(s);
         if (samples.length >= 10) break;
       }
+      this.#decCusorIdx = i;
 
       this.#decoding = true;
       dec.decode(
