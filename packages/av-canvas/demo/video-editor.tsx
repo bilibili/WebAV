@@ -48,13 +48,13 @@ const TimelineEditor = ({
       <div>
         <span className="ml-[10px]">缩放：</span>
         <button
-          onClick={() => setScale(scale + 10)}
+          onClick={() => setScale(scale + 5)}
           className="border rounded-full"
         >
           -
         </button>
         <button
-          onClick={() => setScale(scale - 1 > 1 ? scale - 1 : 1)}
+          onClick={() => setScale(scale - 5 > 1 ? scale - 5 : 1)}
           className="border rounded-full"
         >
           +
@@ -228,7 +228,7 @@ function App() {
         className="mx-[10px]"
         onClick={async () => {
           const spr = new VisibleSprite(
-            new MP4Clip((await fetch('./video/bunny_0.mp4')).body!),
+            new MP4Clip((await fetch('./video/pri-cut-11.mp4')).body!),
           );
           await avCvs?.addSprite(spr);
           addSprite2Track('1-video', spr, '视频');
