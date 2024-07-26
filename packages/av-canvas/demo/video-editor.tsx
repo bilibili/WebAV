@@ -186,12 +186,17 @@ function App() {
     };
   }, [cvsWrapEl]);
 
-  function addSprite2Track(trackId: string, spr: VisibleSprite, name = '') {
+  function addSprite2Track(
+    trackId: string,
+    spr: VisibleSprite,
+    name = '',
+    autoSetStartTime = true,
+  ) {
     const track = tlData.find(({ id }) => id === trackId);
     if (track == null) return null;
 
     const start =
-      spr.time.offset === 0
+      autoSetStartTime && spr.time.offset === 0
         ? Math.max(...track.actions.map((a) => a.end), 0) * 1e6
         : spr.time.offset;
 
@@ -365,7 +370,7 @@ function App() {
             }
             newSpr.time.offset = sprsOffset[i];
             await avCvs.addSprite(newSpr);
-            addSprite2Track(track.id, newSpr, action.name);
+            addSprite2Track(track.id, newSpr, action.name, false);
           }
         }}
       ></TimelineEditor>
