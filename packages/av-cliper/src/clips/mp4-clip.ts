@@ -1138,9 +1138,15 @@ function splitVideoSampleByTime(videoSamples: ExtMP4Sample[], time: number) {
   const postSlice = videoSamples
     .slice(hitSample.is_sync ? gopEndIdx : gopStartIdx)
     .map((s) => ({ ...s, cts: s.cts - time }));
-  for (let i = 0; i < gopEndIdx - gopEndIdx; i++) {
-    const s = preSlice[i];
+
+  let postSyncCnt = 0;
+  for (const s of postSlice) {
+    // 遇到第二个关键帧结束循环
+    if (postSyncCnt > 0) break;
+    if (s.is_sync) postSyncCnt += 1;
+
     if (s.cts < 0) {
+      // 将第一个 GoP 中前半部分标记为 deleted
       s.deleted = true;
       s.cts = -1;
     }
