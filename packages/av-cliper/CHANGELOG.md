@@ -1,5 +1,11 @@
 # @webav/av-cliper
 
+## 0.14.3
+
+### Patch Changes
+
+- 663f948: fix: MP4Clip.split does not correctly mark samples #207
+
 ## 0.14.2
 
 ### Patch Changes
