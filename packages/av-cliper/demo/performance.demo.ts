@@ -42,7 +42,7 @@ document.querySelector('#frag-10min')?.addEventListener('click', () => {
     spr2.rect.x = (width - spr2.rect.w) / 2;
     spr2.rect.y = (height - spr2.rect.h) / 2;
 
-    spr1.time.duration = 100e6;
+    // spr1.time.duration = 100e6;
     console.log('resolution:', { width, height });
     const com = new Combinator({
       width,
