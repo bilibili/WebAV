@@ -14,6 +14,7 @@ import { Log } from '../log';
  * spr.opacity = 0.5 // 半透明
  * spr.rect.x = 100 // x 坐标偏移 100 像素
  * spr.time.offset = 10e6 // 视频第 10s 开始绘制素材
+ * spr.time.playbackRate = 2 // 双倍速播放
  *
  * @see [视频剪辑](https://bilibili.github.io/WebAV/demo/6_4-video-editor)
  *
@@ -31,7 +32,9 @@ export class VisibleSprite extends BaseSprite {
       this.rect.w = this.rect.w === 0 ? width : this.rect.w;
       this.rect.h = this.rect.h === 0 ? height : this.rect.h;
       this.time.duration =
-        this.time.duration === 0 ? duration : this.time.duration;
+        this.time.duration === 0
+          ? duration / this.time.playbackRate
+          : this.time.duration / this.time.playbackRate;
     });
   }
 
@@ -75,7 +78,8 @@ export class VisibleSprite extends BaseSprite {
     this.animate(time);
     super._render(ctx);
     const { w, h } = this.rect;
-    if (this.#lastTime !== time) this.#update(time);
+    const { playbackRate = 1 } = this.time;
+    if (this.#lastTime !== time) this.#update(time * playbackRate);
     this.#lastTime = time;
 
     const audio = this.#lastAudio;

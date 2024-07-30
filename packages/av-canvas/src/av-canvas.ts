@@ -13,7 +13,7 @@ import {
 import { renderCtrls } from './sprites/render-ctrl';
 import { ESpriteManagerEvt, SpriteManager } from './sprites/sprite-manager';
 import { activeSprite, draggabelSprite } from './sprites/sprite-op';
-import { IResolution } from './types';
+import { AudioSourceSchema, AudiosSchema, IResolution } from './types';
 import { createEl } from './utils';
 
 function createInitCvsEl(resolution: IResolution): HTMLCanvasElement {
@@ -185,13 +185,14 @@ export class AVCanvas {
     }
     this.#updateRenderTime(ts);
 
-    const ctxDestAudioData: Float32Array[][] = [];
+    const ctxDestAudioData: AudiosSchema[] = [];
     for (const s of this.#spriteManager.getSprites()) {
       cvsCtx.save();
       const { audio } = s.render(cvsCtx, ts - s.time.offset);
+      const audioConfig = { playbackRate: s.time.playbackRate ?? 1 };
       cvsCtx.restore();
 
-      ctxDestAudioData.push(audio);
+      ctxDestAudioData.push({ pcmData: audio, audioConfig });
     }
     cvsCtx.resetTransform();
 
@@ -203,8 +204,13 @@ export class AVCanvas {
       );
 
       let addTime = 0;
-      for (const ads of audioSourceArr) {
+      for (const data of audioSourceArr) {
+        const { audioSource: ads, audioConfig } = data;
+        const { playbackRate = 1 } = audioConfig;
+        const stopTime =
+          curAudioTime + (ads.buffer?.duration ?? 0 / playbackRate);
         ads.start(curAudioTime);
+        ads.stop(stopTime);
         ads.connect(this.#audioCtx.destination);
         ads.connect(this.#captureAudioDest);
 
@@ -213,7 +219,10 @@ export class AVCanvas {
           ads.disconnect();
           this.#playingAudioCache.delete(ads);
         };
-        addTime = Math.max(addTime, ads.buffer?.duration ?? 0);
+        addTime = Math.max(
+          addTime,
+          ads.buffer?.duration ? ads.buffer.duration / playbackRate : 0,
+        );
       }
       this.#playState.audioPlayAt = curAudioTime + addTime;
     }
@@ -400,11 +409,13 @@ export class AVCanvas {
   }
 }
 
-function convertPCM2AudioSource(pcmData: Float32Array[][], ctx: AudioContext) {
-  const asArr: AudioBufferSourceNode[] = [];
-  if (pcmData.length === 0) return asArr;
-
-  for (const [chan0Buf, chan1Buf] of pcmData) {
+function convertPCM2AudioSource(audiosData: AudiosSchema[], ctx: AudioContext) {
+  const asArr: AudioSourceSchema[] = [];
+  if (audiosData.every((data) => data.pcmData.length === 0)) return asArr;
+  for (const data of audiosData) {
+    const { pcmData, audioConfig } = data;
+    const { playbackRate = 1 } = audioConfig;
+    const [chan0Buf, chan1Buf] = pcmData;
     if (chan0Buf == null) continue;
     if (chan0Buf.length <= 0) continue;
 
@@ -417,7 +428,9 @@ function convertPCM2AudioSource(pcmData: Float32Array[][], ctx: AudioContext) {
     buf.copyToChannel(chan1Buf ?? chan0Buf, 1);
     const audioSource = ctx.createBufferSource();
     audioSource.buffer = buf;
-    asArr.push(audioSource);
+    // 设置音频播放速度
+    audioSource.playbackRate.value = playbackRate ?? 1;
+    asArr.push({ audioSource, audioConfig });
   }
   return asArr;
 }
