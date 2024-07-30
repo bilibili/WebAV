@@ -232,9 +232,18 @@ function App() {
       <button
         className="mx-[10px]"
         onClick={async () => {
-          const spr = new VisibleSprite(
-            new MP4Clip((await fetch('./video/bunny_0.mp4')).body!),
-          );
+          let clip = new MP4Clip((await fetch('./video/bunny_0.mp4')).body!);
+          clip.tickInterceptor = async (
+            _,
+            tickRet: ReturnType<MP4Clip['tick']>,
+          ) => {
+            if (tickRet.video == null) return tickRet;
+            // 可在此处对视频帧或音频数据进行处理
+            return {
+              ...tickRet,
+            };
+          };
+          const spr = new VisibleSprite(clip);
           await avCvs?.addSprite(spr);
           addSprite2Track('1-video', spr, '视频');
         }}
