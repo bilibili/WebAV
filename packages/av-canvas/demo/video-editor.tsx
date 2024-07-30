@@ -234,7 +234,7 @@ function App() {
         onClick={async () => {
           let clip = new MP4Clip((await fetch('./video/bunny_0.mp4')).body!);
           clip.tickInterceptor = async (
-            _,
+            _: number,
             tickRet: ReturnType<MP4Clip['tick']>,
           ) => {
             if (tickRet.video == null) return tickRet;
