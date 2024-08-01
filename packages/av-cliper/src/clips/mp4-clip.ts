@@ -197,42 +197,10 @@ export class MP4Clip implements IClip {
       });
     }
 
-    let audioReady = false;
-    let videoReady = false;
-    let timeoutTimer = 0;
-    const [audio, video] = (await Promise.race([
-      Promise.all([
-        this.#audioFrameFinder?.find(time).then((rs) => {
-          audioReady = true;
-          return rs;
-        }) ?? [],
-        this.#videoFrameFinder?.find(time).then((rs) => {
-          videoReady = true;
-          return rs;
-        }),
-      ]),
-      new Promise<[]>((_, reject) => {
-        timeoutTimer = self.setTimeout(() => {
-          let errMsg = `MP4Clip.tick timeout, ${JSON.stringify({
-            videoReady,
-            audioReady,
-          })}, `;
-
-          const aFinder = this.#audioFrameFinder;
-          if (!audioReady && aFinder != null) {
-            errMsg += JSON.stringify(aFinder.getState());
-            aFinder?.reset();
-          }
-          const vFinder = this.#videoFrameFinder;
-          if (!videoReady && vFinder != null) {
-            errMsg += JSON.stringify(vFinder.getState());
-            vFinder.reset();
-          }
-          reject(Error(errMsg));
-        }, 3000);
-      }),
-    ])) as [Float32Array[], VideoFrame];
-    clearTimeout(timeoutTimer);
+    const [audio, video] = await Promise.all([
+      this.#audioFrameFinder?.find(time) ?? [],
+      this.#videoFrameFinder?.find(time),
+    ]);
 
     if (video == null) {
       return await this.tickInterceptor(time, {
@@ -622,7 +590,7 @@ class VideoFrameFinder {
   ) {}
 
   #ts = 0;
-  #curAborter = { abort: false };
+  #curAborter = { abort: false, st: performance.now() };
   find = async (time: number): Promise<VideoFrame | null> => {
     if (this.#dec == null || time <= this.#ts || time - this.#ts > 3e6) {
       this.reset();
@@ -631,7 +599,7 @@ class VideoFrameFinder {
     this.#curAborter.abort = true;
     this.#ts = time;
 
-    this.#curAborter = { abort: false };
+    this.#curAborter = { abort: false, st: performance.now() };
     return await this.#parseFrame(time, this.#dec, this.#curAborter);
   };
 
@@ -646,7 +614,7 @@ class VideoFrameFinder {
   #parseFrame = async (
     time: number,
     dec: VideoDecoder | null,
-    aborter: { abort: boolean },
+    aborter: { abort: boolean; st: number },
   ): Promise<VideoFrame | null> => {
     if (dec == null || dec.state === 'closed' || aborter.abort) return null;
 
@@ -666,6 +634,11 @@ class VideoFrameFinder {
 
     // 缺少帧数据
     if (this.#outputFrameCnt < this.#inputChunkCnt && dec.decodeQueueSize > 0) {
+      if (performance.now() - aborter.st > 3e3) {
+        throw Error(
+          `MP4Clip.tick video timeout, ${JSON.stringify(this.#getState())}`,
+        );
+      }
       // 解码中，等待，然后重试
       await sleep(15);
     } else if (this.#videoDecCusorIdx >= this.samples.length) {
@@ -747,7 +720,7 @@ class VideoFrameFinder {
     });
   };
 
-  getState = () => ({
+  #getState = () => ({
     time: this.#ts,
     decState: this.#dec?.state,
     decQSize: this.#dec?.decodeQueueSize,
@@ -783,7 +756,7 @@ class AudioFrameFinder {
   }
 
   #dec: ReturnType<typeof createAudioChunksDecoder> | null = null;
-  #curAborter = { abort: false };
+  #curAborter = { abort: false, st: performance.now() };
   find = async (time: number): Promise<Float32Array[]> => {
     // 前后获取音频数据差异不能超过 100ms
     if (this.#dec == null || time <= this.#ts || time - this.#ts > 0.1e6) {
@@ -801,7 +774,7 @@ class AudioFrameFinder {
     const deltaTime = time - this.#ts;
     this.#ts = time;
 
-    this.#curAborter = { abort: false };
+    this.#curAborter = { abort: false, st: performance.now() };
     return await this.#parseFrame(deltaTime, this.#dec, this.#curAborter);
   };
 
@@ -818,7 +791,7 @@ class AudioFrameFinder {
   #parseFrame = async (
     deltaTime: number,
     dec: ReturnType<typeof createAudioChunksDecoder> | null = null,
-    aborter: { abort: boolean },
+    aborter: { abort: boolean; st: number },
   ): Promise<Float32Array[]> => {
     if (dec == null || aborter.abort || dec.state === 'closed') return [];
 
@@ -831,6 +804,12 @@ class AudioFrameFinder {
     }
 
     if (this.#decoding) {
+      if (performance.now() - aborter.st > 3e3) {
+        aborter.abort = true;
+        throw Error(
+          `MP4Clip.tick audio timeout, ${JSON.stringify(this.#getState())}`,
+        );
+      }
       // 解码中，等待
       await sleep(15);
     } else if (this.#decCusorIdx >= this.samples.length - 1) {
@@ -894,7 +873,7 @@ class AudioFrameFinder {
     );
   };
 
-  getState = () => ({
+  #getState = () => ({
     time: this.#ts,
     decState: this.#dec?.state,
     decoding: this.#decoding,
