@@ -186,8 +186,9 @@ function encodeVideoTrack(
   // todo: perf
   const encoder = createVideoEncoder(opts, (chunk, meta) => {
     if (trackId === -1 && meta != null) {
-      videoTrackOpts.avcDecoderConfigRecord = meta.decoderConfig
-        ?.description as ArrayBuffer;
+      const desc = meta.decoderConfig?.description as ArrayBuffer;
+      fixChromeConstraintSetFlagsBug(desc);
+      videoTrackOpts.avcDecoderConfigRecord = desc;
       trackId = mp4File.addTrack(videoTrackOpts);
       avSyncEvtTool.emit('VideoReady');
       Log.info('VideoEncoder, video track ready, trackId:', trackId);
@@ -202,6 +203,23 @@ function encodeVideoTrack(
   });
 
   return encoder;
+}
+
+// https://github.com/bilibili/WebAV/issues/203
+function fixChromeConstraintSetFlagsBug(desc: ArrayBuffer) {
+  const u8 = new Uint8Array(desc);
+  const constraintSetFlag = u8[2];
+  // 如果最高位是 0，最低位是 1，说明是 chrome 将这个值的二进制顺序搞反了
+  if (constraintSetFlag >> 7 === 0 && (constraintSetFlag & 1) === 1) {
+    let binaryString = constraintSetFlag
+      .toString(2)
+      .padStart(8, '0')
+      .split('')
+      .reverse()
+      .join('');
+
+    u8[2] = parseInt(binaryString, 2);
+  }
 }
 
 function createVideoEncoder(
