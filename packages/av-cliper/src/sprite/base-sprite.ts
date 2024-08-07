@@ -28,13 +28,23 @@ export abstract class BaseSprite {
   rect = new Rect();
 
   /**
-   * 控制素材在视频中的时间偏移与时长，常用于剪辑场景时间轴（轨道）模块
+   * 控制素材在视频中的时间偏移、时长与播放速率，常用于剪辑场景时间轴（轨道）模块
    *
    * duration 不能大于引用 {@link IClip} 的时长，单位 微秒
+   * playbackRate - 播放速率。1 表示正常速度，2 表示两倍速度，0.5 表示半速等。如果未指定，则默认为 1
    */
   time = {
     offset: 0,
     duration: 0,
+    _playbackRate: 1,
+    get playbackRate() {
+      return this._playbackRate;
+    },
+    set playbackRate(v: number) {
+      if (v < 0) throw Error('playbackRate must > 0');
+      this._playbackRate = v;
+      this.duration = this.duration / v;
+    },
   };
 
   /**
