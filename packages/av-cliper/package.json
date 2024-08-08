@@ -1,6 +1,6 @@
 {
   "name": "@webav/av-cliper",
-  "version": "0.14.3",
+  "version": "0.14.5",
   "private": false,
   "repository": "https://github.com/bilibili/WebAV",
   "keywords": [
@@ -35,7 +35,7 @@
   "dependencies": {
     "@webav/mp4box.js": "0.5.3-fenghen",
     "m3u8-parser": "^7.1.0",
-    "opfs-tools": "^0.5.8",
+    "opfs-tools": "^0.5.9",
     "wave-resampler": "^1.0.0"
   },
   "devDependencies": {

@@ -1,5 +1,17 @@
 # @webav/av-cliper
 
+## 0.14.5
+
+### Patch Changes
+
+- b77bd86: fix: VideoEncoder bug #203
+
+## 0.14.4
+
+### Patch Changes
+
+- 2e7bfad: chore: upgrade opfs-tools
+
 ## 0.14.3
 
 ### Patch Changes
