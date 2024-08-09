@@ -21,10 +21,8 @@ document.querySelector('#frag-10min')?.addEventListener('click', () => {
       await write(otFile, (await fetch(resPath)).body!);
     }
 
-    let t = performance.now();
     const spr1 = new OffscreenSprite(new MP4Clip(otFile));
     await spr1.ready;
-    console.log('111111111', performance.now() - t);
     const width = 1920;
     const height = 1080;
     // spr1.rect.y = (height - spr1.rect.h) / 2;
@@ -42,7 +40,7 @@ document.querySelector('#frag-10min')?.addEventListener('click', () => {
     spr2.rect.x = (width - spr2.rect.w) / 2;
     spr2.rect.y = (height - spr2.rect.h) / 2;
 
-    // spr1.time.duration = 100e6;
+    spr1.time.duration = 100e6;
     console.log('resolution:', { width, height });
     const com = new Combinator({
       width,
