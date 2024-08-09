@@ -19,6 +19,10 @@ interface ICombinatorOpts {
    * 向输出的视频中写入 meta tags 数据
    */
   metaDataTags?: Record<string, string>;
+  /**
+   * 不安全，随时可能废弃
+   */
+  __unsafe_hardwareAcceleration__?: HardwarePreference;
 }
 
 let COM_ID = 0;
@@ -189,6 +193,8 @@ export class Combinator {
             expectFPS: 30,
             codec: videoCodec,
             bitrate,
+            __unsafe_hardwareAcceleration__:
+              this.#opts.__unsafe_hardwareAcceleration__,
           }
         : null,
       audio:
@@ -295,7 +301,7 @@ export class Combinator {
       onError: (err: Error) => void;
     },
   ): () => void {
-    let inputProgress = 0;
+    let progress = 0;
     let stoped = false;
     let err: Error | null = null;
 
@@ -318,7 +324,7 @@ export class Combinator {
           await onEnded();
           return;
         }
-        inputProgress = ts / maxTime;
+        progress = ts / maxTime;
 
         ctx.fillStyle = this.#opts.bgColor;
         ctx.fillRect(0, 0, width, height);
@@ -407,17 +413,8 @@ export class Combinator {
       onError(e);
     });
 
-    // 初始 1 避免 NaN
-    let maxEncodeQSize = 1;
-    let outProgress = 0;
-    // 避免 进度值 回退
-    let lastProg = 0;
     const outProgTimer = setInterval(() => {
-      const s = remux.getEecodeQueueSize();
-      maxEncodeQSize = Math.max(maxEncodeQSize, s);
-      outProgress = s / maxEncodeQSize;
-      lastProg = Math.max(outProgress * 0.5 + inputProgress * 0.5, lastProg);
-      onProgress(lastProg);
+      onProgress(progress);
     }, 500);
 
     const exit = () => {

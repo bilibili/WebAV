@@ -15,12 +15,12 @@ import { createChromakey, fastConcatMP4 } from '../src';
   }
 })();
 
-const playerContiner = document.querySelector('#player-continer')!;
+const playerContainer = document.querySelector('#player-container')!;
 
 document.querySelector('#mp4-img')?.addEventListener('click', () => {
   (async () => {
     const resList = ['./video/webav1.mp4', './img/bunny.png'];
-    const { loadStream } = playOutputStream(resList, playerContiner);
+    const { loadStream } = playOutputStream(resList, playerContainer);
 
     const spr1 = new OffscreenSprite(
       new MP4Clip((await fetch(resList[0])).body!),
@@ -84,7 +84,7 @@ document.querySelector('#mp4-img')?.addEventListener('click', () => {
 document.querySelector('#mp4-mp3')?.addEventListener('click', () => {
   (async () => {
     const resList = ['./video/bunny_0.mp4', './audio/44.1kHz-2chan.mp3'];
-    const { loadStream } = playOutputStream(resList, playerContiner);
+    const { loadStream } = playOutputStream(resList, playerContainer);
 
     const resp1 = await fetch(resList[0]);
     const mp4Clip = new MP4Clip(resp1.body!);
@@ -115,7 +115,7 @@ document.querySelector('#mp4-mp3')?.addEventListener('click', () => {
 document.querySelector('#mix-audio')?.addEventListener('click', () => {
   (async () => {
     const resList = ['./audio/44.1kHz-2chan.m4a', './audio/16kHz-1chan.mp3'];
-    const { loadStream } = playOutputStream(resList, playerContiner, 'audio');
+    const { loadStream } = playOutputStream(resList, playerContainer, 'audio');
 
     const resp1 = await fetch(resList[0]);
     const resp2 = await fetch(resList[1]);
@@ -137,7 +137,7 @@ document.querySelector('#mix-audio')?.addEventListener('click', () => {
 document.querySelector('#concat-audio')?.addEventListener('click', () => {
   (async () => {
     const resList = ['./audio/16kHz-1chan.mp3', './audio/44.1kHz-2chan.m4a'];
-    const { loadStream } = playOutputStream(resList, playerContiner);
+    const { loadStream } = playOutputStream(resList, playerContainer);
 
     const clip = await concatAudioClip(
       await Promise.all(
@@ -157,7 +157,7 @@ document.querySelector('#concat-audio')?.addEventListener('click', () => {
 document.querySelector('#gif-m4a')?.addEventListener('click', () => {
   (async () => {
     const resList = ['./img/animated.gif', './audio/44.1kHz-2chan.m4a'];
-    const { loadStream } = playOutputStream(resList, playerContiner);
+    const { loadStream } = playOutputStream(resList, playerContainer);
 
     const resp1 = await fetch(resList[0]);
     const spr1 = new OffscreenSprite(
@@ -178,7 +178,7 @@ document.querySelector('#gif-m4a')?.addEventListener('click', () => {
 document.querySelector('#mp4-srt')?.addEventListener('click', () => {
   (async () => {
     const resList = ['./video/webav1.mp4', './subtitles/test-sample.srt'];
-    const { loadStream } = playOutputStream(resList, playerContiner);
+    const { loadStream } = playOutputStream(resList, playerContainer);
 
     const resp1 = await fetch(resList[0]);
     const spr1 = new OffscreenSprite(new MP4Clip(resp1.body!));
@@ -214,7 +214,7 @@ document.querySelector('#mp4-srt')?.addEventListener('click', () => {
 document.querySelector('#mp4-chromakey')?.addEventListener('click', () => {
   (async () => {
     const resList = ['./video/chromakey-test.mp4', './img/bunny.png'];
-    const { loadStream } = playOutputStream(resList, playerContiner);
+    const { loadStream } = playOutputStream(resList, playerContainer);
 
     const width = 1280;
     const height = 720;
@@ -313,7 +313,7 @@ document.querySelector('#complex')?.addEventListener('click', () => {
         return com.output();
       });
 
-    const { loadStream } = playOutputStream(mp4List, playerContiner);
+    const { loadStream } = playOutputStream(mp4List, playerContainer);
 
     // then concat multiple videos
     await loadStream(await fastConcatMP4(await Promise.all(coms)));
@@ -324,7 +324,7 @@ document.querySelector('#test-mem-cost')?.addEventListener('click', () => {
   (async () => {
     {
       const resURL = './video/pri-linglong.mp4';
-      const { loadStream } = playOutputStream([resURL], playerContiner);
+      const { loadStream } = playOutputStream([resURL], playerContainer);
 
       const spr1 = new OffscreenSprite(
         new MP4Clip((await fetch(resURL)).body!),

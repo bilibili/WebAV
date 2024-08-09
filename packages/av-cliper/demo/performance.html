@@ -28,22 +28,15 @@
 <body>
   <!-- <canvas id="canvas" width="1280" height="720"></canvas> -->
   <!-- <br> -->
-  <button id="mp4-img">mp4 + img</button>
-  <button id="mp4-mp3">mp4 + mp3</button>
-  <button id="gif-m4a">gif + m4a</button>
-  <button id="mix-audio">mixin audio</button>
-  <button id="concat-audio">concat audio</button>
-  <button id="mp4-srt">mp4 + srt</button>
-  <button id="mp4-chromakey">mp4(chromakey)</button>
-  <span> | </span>
-  <button id="complex">composite and concat video</button>
-  <span> | </span>
-  <button id="test-mem-cost">test mem cost</button>
+  <button id="frag-10min">frag-10min</button>
   <p />
-  <div id="player-container">
+  <div>
+    <span>startTime:</span><span id="startTime"></span> |
+    <span>cost:</span><span id="cost">---</span>
   </div>
+  <div id="progress"></div>
   <hr>
-  <script type="module" src="concat-media.ts"></script>
+  <script type="module" src="performance.demo.ts"></script>
   <script src="https://cdn.jsdelivr.net/npm/opfs-tools-explorer"></script>
   <script>
     OTExplorer.init();

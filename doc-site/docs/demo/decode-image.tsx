@@ -24,6 +24,7 @@ async function start(
   function render() {
     let startTime = performance.now();
     const timer = setInterval(async () => {
+<<<<<<< HEAD
       const { video } = await clip.tick(
         Math.round((performance.now() - startTime) * 1000),
       );
@@ -40,11 +41,21 @@ async function start(
           ctx.canvas.width,
           ctx.canvas.height,
         );
+=======
+      const { video } = await clip.tick((performance.now() - startTime) * 1000);
+      if (video != null) {
+        ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+        ctx.drawImage(video, 0, 0);
+>>>>>>> upstream/main
         video.close();
       }
     }, 1000 / 30);
 
     stopRender = () => {
+<<<<<<< HEAD
+=======
+      clip.destroy();
+>>>>>>> upstream/main
       clearInterval(timer);
     };
   }

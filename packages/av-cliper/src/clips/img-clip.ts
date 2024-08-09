@@ -47,7 +47,8 @@ export class ImgClip implements IClip {
   #frames: VideoFrame[] = [];
 
   /**
-   * 静态图片可使用 流、ImageBitmap 初始化
+   * 静态图片可使用流、ImageBitmap 初始化
+   *
    * 动图需要使用 VideoFrame[] 或提供图片类型
    */
   constructor(

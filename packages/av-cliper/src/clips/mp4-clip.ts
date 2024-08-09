@@ -2,12 +2,11 @@ import { MP4Info, MP4Sample } from '@webav/mp4box.js';
 import {
   audioResample,
   autoReadStream,
-  concatPCMFragments,
   extractPCM4AudioData,
   sleep,
 } from '../av-utils';
 import { Log } from '../log';
-import { extractFileConfig, sample2ChunkOpts } from '../mp4-utils/mp4box-utils';
+import { extractFileConfig } from '../mp4-utils/mp4box-utils';
 import { SampleTransform } from '../mp4-utils/sample-transform';
 import { DEFAULT_AUDIO_CONF, IClip } from './iclip';
 import { file, tmpfile, write } from 'opfs-tools';
@@ -31,9 +30,16 @@ interface MP4DecoderConf {
 
 interface MP4ClipOpts {
   audio?: boolean | { volume: number };
+  /**
+   * 不安全，随时可能废弃
+   */
+  __unsafe_hardwareAcceleration__?: HardwarePreference;
 }
 
-type ExtMP4Sample = Omit<MP4Sample, 'data'> & { deleted?: boolean; data: null };
+type ExtMP4Sample = Omit<MP4Sample, 'data'> & {
+  deleted?: boolean;
+  data: null | Uint8Array;
+};
 
 type LocalFileReader = Awaited<ReturnType<OPFSToolFile['createReader']>>;
 
@@ -100,9 +106,7 @@ export class MP4Clip implements IClip {
 
   constructor(
     source: OPFSToolFile | ReadableStream<Uint8Array> | MPClipCloneArgs,
-    opts: {
-      audio?: boolean | { volume: number };
-    } = { audio: true },
+    opts: MP4ClipOpts = { audio: true },
   ) {
     if (
       !(source instanceof ReadableStream) &&
@@ -139,8 +143,18 @@ export class MP4Clip implements IClip {
       this.#videoSamples = videoSamples;
       this.#audioSamples = audioSamples;
       this.#decoderConf = decoderConf;
-      const { videoFrameFinder, audioFrameFinder } = genDeocder(
-        decoderConf,
+      const { videoFrameFinder, audioFrameFinder } = genDecoder(
+        {
+          video:
+            decoderConf.video == null
+              ? null
+              : {
+                  ...decoderConf.video,
+                  hardwareAcceleration:
+                    this.#opts.__unsafe_hardwareAcceleration__,
+                },
+          audio: decoderConf.audio,
+        },
         await this.#localFile.createReader(),
         videoSamples,
         audioSamples,
@@ -236,9 +250,9 @@ export class MP4Clip implements IClip {
 
   #thumbAborter = new AbortController();
   /**
-   * Generate thumbnails, default generate 100px width thumbnails by every key frame.
+   * 生成缩略图，默认每个关键帧生成一个 100px 宽度的缩略图。
    *
-   * @param imgWidth thumbnail width, default 100
+   * @param imgWidth 缩略图宽度，默认 100
    * @param opts Partial<ThumbnailOpts>
    * @returns Promise<Array<{ ts: number; img: Blob }>>
    */
@@ -299,7 +313,10 @@ export class MP4Clip implements IClip {
           const videoFrameFinder = new VideoFrameFinder(
             await this.#localFile.createReader(),
             this.#videoSamples,
-            vc,
+            {
+              ...vc,
+              hardwareAcceleration: this.#opts.__unsafe_hardwareAcceleration__,
+            },
           );
           while (cur <= end && !aborterSignal.aborted) {
             const vf = await videoFrameFinder.find(cur);
@@ -473,7 +490,7 @@ function genMeta(
   return meta;
 }
 
-function genDeocder(
+function genDecoder(
   decoderConf: MP4DecoderConf,
   localFileReader: LocalFileReader,
   videoSamples: ExtMP4Sample[],
@@ -554,7 +571,8 @@ async function parseMP4Stream(
           } else if (data.type === 'audio' && opts.audio) {
             if (audioDeltaTS === -1) audioDeltaTS = data.samples[0].dts;
             for (const s of data.samples) {
-              audioSamples.push(normalizeTimescale(s, audioDeltaTS));
+              // 音频数据量可控，直接保存在内存中
+              audioSamples.push(normalizeTimescale(s, audioDeltaTS, false));
             }
           }
         }
@@ -583,14 +601,14 @@ async function parseMP4Stream(
     });
   });
 
-  function normalizeTimescale(s: MP4Sample, delta = 0) {
+  function normalizeTimescale(s: MP4Sample, delta = 0, releaseData = true) {
     return {
       ...s,
       cts: ((s.cts - delta) / s.timescale) * 1e6,
       dts: ((s.dts - delta) / s.timescale) * 1e6,
       duration: (s.duration / s.timescale) * 1e6,
       timescale: 1e6,
-      data: null,
+      data: releaseData ? null : s.data,
     };
   }
 }
@@ -672,10 +690,9 @@ class VideoFrameFinder {
         if (samples[0]?.is_sync !== true) {
           Log.warn('First sample not key frame');
         } else {
-          const chunks = await Promise.all(
-            samples.map((s) =>
-              sample2Chunk(s, EncodedVideoChunk, this.localFileReader),
-            ),
+          const chunks = await videosamples2Chunks(
+            samples,
+            this.localFileReader,
           );
           // Wait for the previous asynchronous operation to complete, at which point the task may have already been terminated
           if (aborter.abort) return null;
@@ -791,10 +808,13 @@ class AudioFrameFinder {
   #ts = 0;
   #decCusorIdx = 0;
   #decoding = false;
-  #pcmData: [Float32Array, Float32Array] = [
-    new Float32Array(0), // left chan
-    new Float32Array(0), // right chan
-  ];
+  #pcmData: {
+    frameCnt: number;
+    data: [Float32Array, Float32Array][];
+  } = {
+    frameCnt: 0,
+    data: [],
+  };
   #parseFrame = async (
     deltaTime: number,
     dec: ReturnType<typeof createAudioChunksDecoder> | null = null,
@@ -802,18 +822,12 @@ class AudioFrameFinder {
   ): Promise<Float32Array[]> => {
     if (dec == null || aborter.abort || dec.state === 'closed') return [];
 
-    const frameCnt = Math.ceil(deltaTime * (this.#sampleRate / 1e6));
-    if (frameCnt === 0) return [];
+    const emitFrameCnt = Math.ceil(deltaTime * (this.#sampleRate / 1e6));
+    if (emitFrameCnt === 0) return [];
 
     // 数据满足需要
-    if (this.#pcmData[0].length > frameCnt) {
-      const audio = [
-        this.#pcmData[0].slice(0, frameCnt),
-        this.#pcmData[1].slice(0, frameCnt),
-      ];
-      this.#pcmData[0] = this.#pcmData[0].slice(frameCnt);
-      this.#pcmData[1] = this.#pcmData[1].slice(frameCnt);
-      return audio;
+    if (this.#pcmData.frameCnt > emitFrameCnt) {
+      return emitAudioFrames(this.#pcmData, emitFrameCnt);
     }
 
     if (this.#decoding) {
@@ -825,20 +839,26 @@ class AudioFrameFinder {
     } else {
       // 启动解码任务
       const samples = [];
-      for (let i = this.#decCusorIdx; i < this.samples.length; i++) {
-        this.#decCusorIdx = i;
+      let i = this.#decCusorIdx;
+      while (i < this.samples.length) {
         const s = this.samples[i];
+        i += 1;
         if (s.deleted) continue;
-        if (samples.length >= 10) break;
         samples.push(s);
+        if (samples.length >= 10) break;
       }
+      this.#decCusorIdx = i;
 
       this.#decoding = true;
       dec.decode(
-        await Promise.all(
-          samples.map((s) =>
-            sample2Chunk(s, EncodedAudioChunk, this.localFileReader),
-          ),
+        samples.map(
+          (s) =>
+            new EncodedAudioChunk({
+              type: 'key',
+              timestamp: s.cts,
+              duration: s.duration,
+              data: s.data!,
+            }),
         ),
         (pcmArr, done) => {
           if (pcmArr.length === 0) return;
@@ -850,10 +870,8 @@ class AudioFrameFinder {
           // 补齐双声道
           if (pcmArr.length === 1) pcmArr = [pcmArr[0], pcmArr[0]];
 
-          this.#pcmData = concatPCMFragments([this.#pcmData, pcmArr]) as [
-            Float32Array,
-            Float32Array,
-          ];
+          this.#pcmData.data.push(pcmArr as [Float32Array, Float32Array]);
+          this.#pcmData.frameCnt += pcmArr[0].length;
           if (done) this.#decoding = false;
         },
       );
@@ -864,10 +882,10 @@ class AudioFrameFinder {
   reset = () => {
     this.#ts = 0;
     this.#decCusorIdx = 0;
-    this.#pcmData = [
-      new Float32Array(0), // left chan
-      new Float32Array(0), // right chan
-    ];
+    this.#pcmData = {
+      frameCnt: 0,
+      data: [],
+    };
     this.#dec?.close();
     this.#decoding = false;
     this.#dec = createAudioChunksDecoder(
@@ -883,16 +901,16 @@ class AudioFrameFinder {
     decQSize: this.#dec?.decodeQueueSize,
     decCusorIdx: this.#decCusorIdx,
     sampleLen: this.samples.length,
-    pcmLen: this.#pcmData[0]?.length,
+    pcmLen: this.#pcmData.frameCnt,
   });
 
   destroy = () => {
     this.#dec = null;
     this.#curAborter.abort = true;
-    this.#pcmData = [
-      new Float32Array(0), // left chan
-      new Float32Array(0), // right chan
-    ];
+    this.#pcmData = {
+      frameCnt: 0,
+      data: [],
+    };
     this.localFileReader.close();
   };
 }
@@ -1001,23 +1019,71 @@ function createPromiseQueue<T extends any>(onResult: (data: T) => void) {
   };
 }
 
-type Constructor<T> = {
-  new (...args: any[]): T;
-};
+function emitAudioFrames(
+  pcmData: { frameCnt: number; data: [Float32Array, Float32Array][] },
+  emitCnt: number,
+) {
+  const audio = [new Float32Array(emitCnt), new Float32Array(emitCnt)];
+  let offset = 0;
+  let i = 0;
+  for (; i < pcmData.data.length; ) {
+    const [chan0, chan1] = pcmData.data[i];
+    if (offset + chan0.length > emitCnt) {
+      const gapCnt = emitCnt - offset;
+      audio[0].set(chan0.subarray(0, gapCnt), offset);
+      audio[1].set(chan1.subarray(0, gapCnt), offset);
+      pcmData.data[i][0] = chan0.subarray(gapCnt, chan0.length);
+      pcmData.data[i][1] = chan1.subarray(gapCnt, chan1.length);
+      break;
+    } else {
+      audio[0].set(chan0, offset);
+      audio[1].set(chan1, offset);
+      offset += chan0.length;
+      i++;
+    }
+  }
+  pcmData.data = pcmData.data.slice(i);
+  pcmData.frameCnt -= emitCnt;
+  return audio;
+}
 
-async function sample2Chunk<T extends EncodedAudioChunk | EncodedVideoChunk>(
-  s: ExtMP4Sample,
-  clazz: Constructor<T>,
+async function videosamples2Chunks(
+  samples: ExtMP4Sample[],
   reader: Awaited<ReturnType<OPFSToolFile['createReader']>>,
-): Promise<T> {
-  // todo: perf
-  const data = await reader.read(s.size, { at: s.offset });
-  return new clazz(
-    // todo: perf
-    sample2ChunkOpts({
-      ...s,
-      data,
-    }),
+): Promise<EncodedVideoChunk[]> {
+  const first = samples[0];
+  const last = samples.at(-1);
+  if (last == null) return [];
+
+  const rangSize = last.offset + last.size - first.offset;
+  if (rangSize < 30e6) {
+    // 单次读取数据小于 30M，就一次性读取数据，降低 IO 频次
+    const data = new Uint8Array(
+      await reader.read(rangSize, { at: first.offset }),
+    );
+    return samples.map((s) => {
+      const offset = s.offset - first.offset;
+      return new EncodedVideoChunk({
+        type: s.is_sync ? 'key' : 'delta',
+        timestamp: s.cts,
+        duration: s.duration,
+        data: data.subarray(offset, offset + s.size),
+      });
+    });
+  }
+
+  return await Promise.all(
+    samples.map(
+      async (s) =>
+        new EncodedVideoChunk({
+          type: s.is_sync ? 'key' : 'delta',
+          timestamp: s.cts,
+          duration: s.duration,
+          data: await reader.read(s.size, {
+            at: s.offset,
+          }),
+        }),
+    ),
   );
 }
 
@@ -1072,9 +1138,15 @@ function splitVideoSampleByTime(videoSamples: ExtMP4Sample[], time: number) {
   const postSlice = videoSamples
     .slice(hitSample.is_sync ? gopEndIdx : gopStartIdx)
     .map((s) => ({ ...s, cts: s.cts - time }));
-  for (let i = 0; i < gopEndIdx - gopEndIdx; i++) {
-    const s = preSlice[i];
+
+  let postSyncCnt = 0;
+  for (const s of postSlice) {
+    // 遇到第二个关键帧结束循环
+    if (postSyncCnt > 0) break;
+    if (s.is_sync) postSyncCnt += 1;
+
     if (s.cts < 0) {
+      // 将第一个 GoP 中前半部分标记为 deleted
       s.deleted = true;
       s.cts = -1;
     }
@@ -1198,13 +1270,12 @@ async function thumbnailByKeyFrame(
     dec.close();
   });
 
-  const chunks = await Promise.all(
-    samples
-      .filter(
-        (s) =>
-          !s.deleted && s.is_sync && s.cts >= time.start && s.cts <= time.end,
-      )
-      .map((s) => sample2Chunk(s, EncodedVideoChunk, fileReader)),
+  const chunks = await videosamples2Chunks(
+    samples.filter(
+      (s) =>
+        !s.deleted && s.is_sync && s.cts >= time.start && s.cts <= time.end,
+    ),
+    fileReader,
   );
   if (chunks.length === 0 || abortSingl.aborted) return;
 
