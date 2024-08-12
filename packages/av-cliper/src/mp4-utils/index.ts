@@ -84,7 +84,7 @@ export function recodemux(opts: IRecodeMuxOpts): {
   /**
    * 返回队列长度（背压），用于控制生产视频的进度，队列过大会会占用大量显存
    */
-  getEecodeQueueSize: () => number;
+  getEncodeQueueSize: () => number;
 } {
   Log.info('recodemux opts:', opts);
   const mp4file = mp4box.createFile();
@@ -139,7 +139,7 @@ export function recodemux(opts: IRecodeMuxOpts): {
       aEncoder.encode(ad);
       ad.close();
     },
-    getEecodeQueueSize: () =>
+    getEncodeQueueSize: () =>
       vEncoder?.encodeQueueSize ?? aEncoder?.encodeQueueSize ?? 0,
     flush: async () => {
       await Promise.all([

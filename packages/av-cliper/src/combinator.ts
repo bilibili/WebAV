@@ -208,7 +208,7 @@ export class Combinator {
       duration,
       metaDataTags: metaDataTags,
     });
-    TOTAL_COM_ENCODE_QSIZE.set(this, recodeMuxer.getEecodeQueueSize);
+    TOTAL_COM_ENCODE_QSIZE.set(this, recodeMuxer.getEncodeQueueSize);
     return recodeMuxer;
   }
 
