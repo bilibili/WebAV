@@ -1,5 +1,11 @@
 # @webav/av-cliper
 
+## 0.14.6
+
+### Patch Changes
+
+- 8475ab0: perf: pre-decode and update calmdown strategy
+
 ## 0.14.5
 
 ### Patch Changes
