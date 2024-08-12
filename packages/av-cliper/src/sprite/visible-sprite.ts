@@ -63,6 +63,13 @@ export class VisibleSprite extends BaseSprite {
     this.#update(0);
   }
 
+  /**
+   * 提前准备指定 time 的帧
+   */
+  preFrame(time: number) {
+    this.#update(time);
+  }
+
   #lastTime = -1;
   /**
    * 绘制素材指定时刻的图像到 canvas 上下文，并返回对应的音频数据

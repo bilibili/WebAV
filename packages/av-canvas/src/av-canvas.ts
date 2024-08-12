@@ -250,9 +250,15 @@ export class AVCanvas {
     }
 
     this.#updateRenderTime(opts.start);
-    this.#spriteManager
-      .getSprites({ time: false })
-      .forEach((vs) => vs.preFirstFrame());
+    this.#spriteManager.getSprites({ time: false }).forEach((vs) => {
+      const { offset, duration } = vs.time;
+      const selfOffset = this.#renderTime - offset;
+      if (selfOffset > 0 && selfOffset < duration) {
+        vs.preFrame(selfOffset);
+      } else {
+        vs.preFirstFrame();
+      }
+    });
 
     this.#playState.start = opts.start;
     this.#playState.end = end;
