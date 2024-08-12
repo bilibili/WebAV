@@ -636,7 +636,7 @@ class VideoFrameFinder {
 
     // 缺少帧数据
     if (
-      this.#decdoing ||
+      this.#decoding ||
       (this.#outputFrameCnt < this.#inputChunkCnt && dec.decodeQueueSize > 0)
     ) {
       if (performance.now() - aborter.st > 3e3) {
@@ -655,10 +655,10 @@ class VideoFrameFinder {
     return this.#parseFrame(time, dec, aborter);
   };
 
-  #decdoing = false;
+  #decoding = false;
   #startDecode = async (dec: VideoDecoder) => {
-    if (this.#decdoing) return;
-    this.#decdoing = true;
+    if (this.#decoding) return;
+    this.#decoding = true;
 
     // 启动解码任务，然后重试
     let endIdx = this.#videoDecCusorIdx + 1;
@@ -699,7 +699,7 @@ class VideoFrameFinder {
       }
     }
     this.#videoDecCusorIdx = endIdx;
-    this.#decdoing = false;
+    this.#decoding = false;
   };
 
   reset = (time?: number) => {
