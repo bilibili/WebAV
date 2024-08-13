@@ -381,7 +381,7 @@ export class Combinator {
 
         ts += timeSlice;
 
-        await letEncoderCalmDown(remux.getEecodeQueueSize);
+        await letEncoderCalmDown(remux.getEncodeQueueSize);
       }
     };
 
