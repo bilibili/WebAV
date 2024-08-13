@@ -197,42 +197,10 @@ export class MP4Clip implements IClip {
       });
     }
 
-    let audioReady = false;
-    let videoReady = false;
-    let timeoutTimer = 0;
-    const [audio, video] = (await Promise.race([
-      Promise.all([
-        this.#audioFrameFinder?.find(time).then((rs) => {
-          audioReady = true;
-          return rs;
-        }) ?? [],
-        this.#videoFrameFinder?.find(time).then((rs) => {
-          videoReady = true;
-          return rs;
-        }),
-      ]),
-      new Promise<[]>((_, reject) => {
-        timeoutTimer = self.setTimeout(() => {
-          let errMsg = `MP4Clip.tick timeout, ${JSON.stringify({
-            videoReady,
-            audioReady,
-          })}, `;
-
-          const aFinder = this.#audioFrameFinder;
-          if (!audioReady && aFinder != null) {
-            errMsg += JSON.stringify(aFinder.getState());
-            aFinder?.reset();
-          }
-          const vFinder = this.#videoFrameFinder;
-          if (!videoReady && vFinder != null) {
-            errMsg += JSON.stringify(vFinder.getState());
-            vFinder.reset();
-          }
-          reject(Error(errMsg));
-        }, 3000);
-      }),
-    ])) as [Float32Array[], VideoFrame];
-    clearTimeout(timeoutTimer);
+    const [audio, video] = await Promise.all([
+      this.#audioFrameFinder?.find(time) ?? [],
+      this.#videoFrameFinder?.find(time),
+    ]);
 
     if (video == null) {
       return await this.tickInterceptor(time, {
@@ -622,16 +590,16 @@ class VideoFrameFinder {
   ) {}
 
   #ts = 0;
-  #curAborter = { abort: false };
+  #curAborter = { abort: false, st: performance.now() };
   find = async (time: number): Promise<VideoFrame | null> => {
     if (this.#dec == null || time <= this.#ts || time - this.#ts > 3e6) {
-      this.reset();
+      this.reset(time);
     }
 
     this.#curAborter.abort = true;
     this.#ts = time;
 
-    this.#curAborter = { abort: false };
+    this.#curAborter = { abort: false, st: performance.now() };
     return await this.#parseFrame(time, this.#dec, this.#curAborter);
   };
 
@@ -646,7 +614,7 @@ class VideoFrameFinder {
   #parseFrame = async (
     time: number,
     dec: VideoDecoder | null,
-    aborter: { abort: boolean },
+    aborter: { abort: boolean; st: number },
   ): Promise<VideoFrame | null> => {
     if (dec == null || dec.state === 'closed' || aborter.abort) return null;
 
@@ -660,68 +628,95 @@ class VideoFrameFinder {
         vf.close();
         return this.#parseFrame(time, dec, aborter);
       }
+
+      if (this.#videoFrames.length < 10) this.#startDecode(dec);
       // 符合期望
       return vf;
     }
 
     // 缺少帧数据
-    if (this.#outputFrameCnt < this.#inputChunkCnt && dec.decodeQueueSize > 0) {
+    if (
+      this.#decoding ||
+      (this.#outputFrameCnt < this.#inputChunkCnt && dec.decodeQueueSize > 0)
+    ) {
+      if (performance.now() - aborter.st > 3e3) {
+        throw Error(
+          `MP4Clip.tick video timeout, ${JSON.stringify(this.#getState())}`,
+        );
+      }
       // 解码中，等待，然后重试
       await sleep(15);
     } else if (this.#videoDecCusorIdx >= this.samples.length) {
       // decode completed
       return null;
     } else {
-      // 启动解码任务，然后重试
-      let endIdx = this.#videoDecCusorIdx + 1;
-      // 该 GoP 时间区间有时间匹配，且未被删除的帧
-      let hasValidFrame = false;
-      for (; endIdx < this.samples.length; endIdx++) {
-        const s = this.samples[endIdx];
-        if (!hasValidFrame && !s.deleted && time < s.cts + s.duration) {
-          hasValidFrame = true;
-        }
-        // 找一个 GoP，所以是下一个关键帧结束
-        if (s.is_sync) break;
-      }
-
-      if (hasValidFrame) {
-        const samples = this.samples.slice(this.#videoDecCusorIdx, endIdx);
-        if (samples[0]?.is_sync !== true) {
-          Log.warn('First sample not key frame');
-        } else {
-          const chunks = await videosamples2Chunks(
-            samples,
-            this.localFileReader,
-          );
-          // Wait for the previous asynchronous operation to complete, at which point the task may have already been terminated
-          if (aborter.abort) return null;
-
-          this.#lastVfDur = chunks[0]?.duration ?? 0;
-          decodeGoP(dec, chunks, {
-            onDecodingError: (err) => {
-              if (this.#downgradeSoftDecode) {
-                throw err;
-              } else {
-                this.#downgradeSoftDecode = true;
-                Log.warn('Downgrade to software decode');
-                this.reset();
-              }
-            },
-          });
-
-          this.#inputChunkCnt += chunks.length;
-        }
-      }
-      this.#videoDecCusorIdx = endIdx;
+      this.#startDecode(dec);
     }
     return this.#parseFrame(time, dec, aborter);
   };
 
-  reset = () => {
+  #decoding = false;
+  #startDecode = async (dec: VideoDecoder) => {
+    if (this.#decoding) return;
+    this.#decoding = true;
+
+    // 启动解码任务，然后重试
+    let endIdx = this.#videoDecCusorIdx + 1;
+    // 该 GoP 时间区间有时间匹配，且未被删除的帧
+    let hasValidFrame = false;
+    for (; endIdx < this.samples.length; endIdx++) {
+      const s = this.samples[endIdx];
+      if (!hasValidFrame && !s.deleted) {
+        hasValidFrame = true;
+      }
+      // 找一个 GoP，所以是下一个关键帧结束
+      if (s.is_sync) break;
+    }
+
+    if (hasValidFrame) {
+      const samples = this.samples.slice(this.#videoDecCusorIdx, endIdx);
+      if (samples[0]?.is_sync !== true) {
+        Log.warn('First sample not key frame');
+      } else {
+        const chunks = await videosamples2Chunks(samples, this.localFileReader);
+        // Wait for the previous asynchronous operation to complete, at which point the task may have already been terminated
+        if (dec.state === 'closed') return;
+
+        this.#lastVfDur = chunks[0]?.duration ?? 0;
+        decodeGoP(dec, chunks, {
+          onDecodingError: (err) => {
+            if (this.#downgradeSoftDecode) {
+              throw err;
+            } else {
+              this.#downgradeSoftDecode = true;
+              Log.warn('Downgrade to software decode');
+              this.reset();
+            }
+          },
+        });
+
+        this.#inputChunkCnt += chunks.length;
+      }
+    }
+    this.#videoDecCusorIdx = endIdx;
+    this.#decoding = false;
+  };
+
+  reset = (time?: number) => {
     this.#videoFrames.forEach((f) => f.close());
     this.#videoFrames = [];
-    this.#videoDecCusorIdx = 0;
+    if (time == null || time === 0) {
+      this.#videoDecCusorIdx = 0;
+    } else {
+      let keyIdx = 0;
+      for (let i = 0; i < this.samples.length; i++) {
+        const s = this.samples[i];
+        if (s.is_sync) keyIdx = i;
+        if (s.cts < time) continue;
+        this.#videoDecCusorIdx = keyIdx;
+        break;
+      }
+    }
     this.#inputChunkCnt = 0;
     this.#outputFrameCnt = 0;
     if (this.#dec?.state !== 'closed') this.#dec?.close();
@@ -747,7 +742,7 @@ class VideoFrameFinder {
     });
   };
 
-  getState = () => ({
+  #getState = () => ({
     time: this.#ts,
     decState: this.#dec?.state,
     decQSize: this.#dec?.decodeQueueSize,
@@ -783,7 +778,7 @@ class AudioFrameFinder {
   }
 
   #dec: ReturnType<typeof createAudioChunksDecoder> | null = null;
-  #curAborter = { abort: false };
+  #curAborter = { abort: false, st: performance.now() };
   find = async (time: number): Promise<Float32Array[]> => {
     // 前后获取音频数据差异不能超过 100ms
     if (this.#dec == null || time <= this.#ts || time - this.#ts > 0.1e6) {
@@ -801,13 +796,12 @@ class AudioFrameFinder {
     const deltaTime = time - this.#ts;
     this.#ts = time;
 
-    this.#curAborter = { abort: false };
+    this.#curAborter = { abort: false, st: performance.now() };
     return await this.#parseFrame(deltaTime, this.#dec, this.#curAborter);
   };
 
   #ts = 0;
   #decCusorIdx = 0;
-  #decoding = false;
   #pcmData: {
     frameCnt: number;
     data: [Float32Array, Float32Array][];
@@ -818,7 +812,7 @@ class AudioFrameFinder {
   #parseFrame = async (
     deltaTime: number,
     dec: ReturnType<typeof createAudioChunksDecoder> | null = null,
-    aborter: { abort: boolean },
+    aborter: { abort: boolean; st: number },
   ): Promise<Float32Array[]> => {
     if (dec == null || aborter.abort || dec.state === 'closed') return [];
 
@@ -826,57 +820,58 @@ class AudioFrameFinder {
     if (emitFrameCnt === 0) return [];
 
     // 数据满足需要
-    if (this.#pcmData.frameCnt > emitFrameCnt) {
+    const ramainFrameCnt = this.#pcmData.frameCnt - emitFrameCnt;
+    if (ramainFrameCnt > 0) {
+      // 剩余音频数据小于 100ms
+      if (ramainFrameCnt < DEFAULT_AUDIO_CONF.sampleRate / 10) {
+        this.#startDecode(dec);
+      }
       return emitAudioFrames(this.#pcmData, emitFrameCnt);
     }
 
-    if (this.#decoding) {
+    if (dec.decodeQueueSize > 10) {
+      if (performance.now() - aborter.st > 3e3) {
+        aborter.abort = true;
+        throw Error(
+          `MP4Clip.tick audio timeout, ${JSON.stringify(this.#getState())}`,
+        );
+      }
       // 解码中，等待
       await sleep(15);
     } else if (this.#decCusorIdx >= this.samples.length - 1) {
       // decode completed
       return [];
     } else {
-      // 启动解码任务
-      const samples = [];
-      let i = this.#decCusorIdx;
-      while (i < this.samples.length) {
-        const s = this.samples[i];
-        i += 1;
-        if (s.deleted) continue;
-        samples.push(s);
-        if (samples.length >= 10) break;
-      }
-      this.#decCusorIdx = i;
-
-      this.#decoding = true;
-      dec.decode(
-        samples.map(
-          (s) =>
-            new EncodedAudioChunk({
-              type: 'key',
-              timestamp: s.cts,
-              duration: s.duration,
-              data: s.data!,
-            }),
-        ),
-        (pcmArr, done) => {
-          if (pcmArr.length === 0) return;
-          // 音量调节
-          if (this.#volume !== 1) {
-            for (const pcm of pcmArr)
-              for (let i = 0; i < pcm.length; i++) pcm[i] *= this.#volume;
-          }
-          // 补齐双声道
-          if (pcmArr.length === 1) pcmArr = [pcmArr[0], pcmArr[0]];
-
-          this.#pcmData.data.push(pcmArr as [Float32Array, Float32Array]);
-          this.#pcmData.frameCnt += pcmArr[0].length;
-          if (done) this.#decoding = false;
-        },
-      );
+      this.#startDecode(dec);
     }
     return this.#parseFrame(deltaTime, dec, aborter);
+  };
+
+  #startDecode = (dec: ReturnType<typeof createAudioChunksDecoder>) => {
+    if (dec.decodeQueueSize > 100) return;
+    // 启动解码任务
+    const samples = [];
+    let i = this.#decCusorIdx;
+    while (i < this.samples.length) {
+      const s = this.samples[i];
+      i += 1;
+      if (s.deleted) continue;
+      samples.push(s);
+      if (samples.length >= 10) break;
+    }
+    this.#decCusorIdx = i;
+
+    dec.decode(
+      samples.map(
+        (s) =>
+          new EncodedAudioChunk({
+            type: 'key',
+            timestamp: s.cts,
+            duration: s.duration,
+            data: s.data!,
+          }),
+      ),
+    );
   };
 
   reset = () => {
@@ -887,17 +882,22 @@ class AudioFrameFinder {
       data: [],
     };
     this.#dec?.close();
-    this.#decoding = false;
     this.#dec = createAudioChunksDecoder(
       this.conf,
-      DEFAULT_AUDIO_CONF.sampleRate,
+      {
+        resampleRate: DEFAULT_AUDIO_CONF.sampleRate,
+        volume: this.#volume,
+      },
+      (pcmArr) => {
+        this.#pcmData.data.push(pcmArr as [Float32Array, Float32Array]);
+        this.#pcmData.frameCnt += pcmArr[0].length;
+      },
     );
   };
 
-  getState = () => ({
+  #getState = () => ({
     time: this.#ts,
     decState: this.#dec?.state,
-    decoding: this.#decoding,
     decQSize: this.#dec?.decodeQueueSize,
     decCusorIdx: this.#decCusorIdx,
     sampleLen: this.samples.length,
@@ -917,32 +917,37 @@ class AudioFrameFinder {
 
 function createAudioChunksDecoder(
   decoderConf: AudioDecoderConfig,
-  resampleRate: number,
+  opts: { resampleRate: number; volume: number },
+  outputCb: (pcm: Float32Array[]) => void,
 ) {
-  type OutputHandle = (pcm: Float32Array[], done: boolean) => void;
+  const outputHandler = (pcmArr: Float32Array[]) => {
+    if (pcmArr.length === 0) return;
+    // 音量调节
+    if (opts.volume !== 1) {
+      for (const pcm of pcmArr)
+        for (let i = 0; i < pcm.length; i++) pcm[i] *= opts.volume;
+    }
 
-  let curCb: ((pcm: Float32Array[], done: boolean) => void) | null = null;
-  const needResample = resampleRate !== decoderConf.sampleRate;
-  const resampleQ = createPromiseQueue<[Float32Array[], boolean]>(
-    ([resampedPCM, done]) => {
-      curCb?.(resampedPCM, done);
-    },
-  );
+    // 补齐双声道
+    if (pcmArr.length === 1) pcmArr = [pcmArr[0], pcmArr[0]];
 
+    outputCb(pcmArr);
+  };
+  const resampleQ = createPromiseQueue<Float32Array[]>(outputHandler);
+
+  const needResample = opts.resampleRate !== decoderConf.sampleRate;
   const adec = new AudioDecoder({
     output: (ad) => {
       const pcm = extractPCM4AudioData(ad);
-      const done = adec.decodeQueueSize === 0;
       if (needResample) {
-        resampleQ(async () => [
-          await audioResample(pcm, ad.sampleRate, {
-            rate: resampleRate,
+        resampleQ(() =>
+          audioResample(pcm, ad.sampleRate, {
+            rate: opts.resampleRate,
             chanCount: ad.numberOfChannels,
           }),
-          done,
-        ]);
+        );
       } else {
-        curCb?.(pcm, done);
+        outputHandler(pcm);
       }
       ad.close();
     },
@@ -950,35 +955,11 @@ function createAudioChunksDecoder(
   });
   adec.configure(decoderConf);
 
-  let tasks: Array<{ chunks: EncodedAudioChunk[]; cb: OutputHandle }> = [];
-  async function run() {
-    if (curCb != null || adec.state !== 'configured') return;
-
-    const t = tasks.shift();
-    if (t == null) return;
-    if (t.chunks.length <= 0) {
-      t.cb([], true);
-      run().catch(Log.error);
-      return;
-    }
-
-    curCb = (pcm, done) => {
-      t.cb(pcm, done);
-      if (done) {
-        curCb = null;
-        run().catch(Log.error);
-      }
-    };
-    for (const chunk of t.chunks) adec.decode(chunk);
-  }
-
   return {
-    decode(chunks: EncodedAudioChunk[], cb: OutputHandle) {
-      tasks.push({ chunks, cb });
-      run().catch(Log.error);
+    decode(chunks: EncodedAudioChunk[]) {
+      for (const chunk of chunks) adec.decode(chunk);
     },
     close() {
-      curCb = null;
       if (adec.state !== 'closed') adec.close();
     },
     get state() {

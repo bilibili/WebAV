@@ -29,10 +29,8 @@ let runCount = 1;
 const worker = createWorker();
 worker.onmessage = () => {
   runCount += 1;
-  for (const [k, v] of handlerMap.entries()) {
-    if (runCount % k === 0) {
-      v.forEach((fn) => fn());
-    }
+  for (const [k, v] of handlerMap) {
+    if (runCount % k === 0) for (const fn of v) fn();
   }
 };
 /**
