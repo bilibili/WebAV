@@ -1,5 +1,12 @@
 # @webav/av-cliper
 
+## 0.14.7
+
+### Patch Changes
+
+- b65cb58: fix: timeout when quick seeking
+- 42dc0fa: fix: fix the first render after seeking
+
 ## 0.14.6
 
 ### Patch Changes
