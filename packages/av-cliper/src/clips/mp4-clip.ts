@@ -703,6 +703,7 @@ class VideoFrameFinder {
   };
 
   reset = (time?: number) => {
+    this.#decoding = false;
     this.#videoFrames.forEach((f) => f.close());
     this.#videoFrames = [];
     if (time == null || time === 0) {
@@ -740,7 +741,6 @@ class VideoFrameFinder {
         ? { hardwareAcceleration: 'prefer-software' }
         : {}),
     });
-    this.#decoding = false;
   };
 
   #getState = () => ({
