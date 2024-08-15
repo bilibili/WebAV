@@ -92,7 +92,7 @@ declare module '@webav/mp4box.js' {
   export interface SampleOpts {
     duration: number;
     dts?: number;
-    cts?: number;
+    cts: number;
     sample_description_index?: number;
     is_sync: boolean;
     description?: MP4ABoxParser | AVC1BoxParser;
