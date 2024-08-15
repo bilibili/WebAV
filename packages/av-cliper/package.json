@@ -18,6 +18,13 @@
   "types": "dist/index.d.ts",
   "module": "dist/av-cliper.js",
   "main": "dist/av-cliper.umd.cjs",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/av-cliper.js",
+      "require": "./dist/av-cliper.umd.cjs"
+    }
+  },
   "scripts": {
     "dev": "vite demo --config demo-vite.config.ts",
     "test": "vitest --config test-vite.config.ts",

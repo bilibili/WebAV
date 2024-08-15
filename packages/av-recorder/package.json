@@ -18,6 +18,13 @@
   "types": "dist/av-recorder.d.ts",
   "module": "dist/av-recorder.js",
   "main": "dist/av-recorder.umd.cjs",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/av-recorder.js",
+      "require": "./dist/av-recorder.umd.cjs"
+    }
+  },
   "scripts": {
     "dev": "vite demo",
     "test": "vitest",
