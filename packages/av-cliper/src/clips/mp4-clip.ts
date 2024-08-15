@@ -740,6 +740,7 @@ class VideoFrameFinder {
         ? { hardwareAcceleration: 'prefer-software' }
         : {}),
     });
+    this.#decoding = false;
   };
 
   #getState = () => ({
