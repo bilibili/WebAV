@@ -281,7 +281,7 @@ function encodeVideoTrack(
     },
     close: () => {
       if (encoder0.state === 'configured') encoder0.close();
-      if (encoder1.state === 'configured') encoder1.flush();
+      if (encoder1.state === 'configured') encoder1.close();
     },
   };
 }
