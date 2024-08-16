@@ -290,16 +290,10 @@ function encodeVideoTrack(
 function fixChromeConstraintSetFlagsBug(desc: ArrayBuffer) {
   const u8 = new Uint8Array(desc);
   const constraintSetFlag = u8[2];
-  // 如果最高位是 0，最低位是 1，说明是 chrome 将这个值的二进制顺序搞反了
-  if (constraintSetFlag >> 7 === 0 && (constraintSetFlag & 1) === 1) {
-    let binaryString = constraintSetFlag
-      .toString(2)
-      .padStart(8, '0')
-      .split('')
-      .reverse()
-      .join('');
-
-    u8[2] = parseInt(binaryString, 2);
+  // 如果 constraint_set_flags 字节二进制 第0位或第1位值为1
+  // 说明取值错误，忽略该字段避免解码异常
+  if (constraintSetFlag.toString(2).slice(-2).includes('1')) {
+    u8[2] = 0;
   }
 }
 
