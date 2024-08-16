@@ -35,7 +35,7 @@ const videoList = assetsPrefix([
 const imgList = assetsPrefix(['img/bunny.png']);
 
 const chromakey = createChromakey({
-  similarity: 0.4,
+  similarity: 0.35,
   smoothness: 0.1,
   spill: 0.1,
 });
