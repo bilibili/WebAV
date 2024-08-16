@@ -1,5 +1,11 @@
 # @webav/av-cliper
 
+## 0.14.9
+
+### Patch Changes
+
+- b4635d5: perf: mutli encoder
+
 ## 0.14.8
 
 ### Patch Changes
