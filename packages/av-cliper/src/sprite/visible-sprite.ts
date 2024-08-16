@@ -32,6 +32,7 @@ export class VisibleSprite extends BaseSprite {
       this.rect.h = this.rect.h === 0 ? height : this.rect.h;
       this.time.duration =
         this.time.duration === 0 ? duration : this.time.duration;
+      this.preFrame(0);
     });
   }
 
