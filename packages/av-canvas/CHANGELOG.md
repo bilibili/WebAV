@@ -1,5 +1,12 @@
 # @webav/av-canvas
 
+## 0.14.10
+
+### Patch Changes
+
+- 47e1385: feat: auto ajust ctrl size when canvas resized
+  - @webav/av-cliper@0.14.10
+
 ## 0.14.9
 
 ### Patch Changes
