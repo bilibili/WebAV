@@ -557,6 +557,7 @@ async function parseMP4Stream(
         // 修复首帧黑帧
         const firstSample = videoSamples[0];
         if (firstSample != null && firstSample.cts < 200e3) {
+          firstSample.duration += firstSample.cts;
           firstSample.cts = 0;
         }
         Log.info('mp4 stream parsed');
