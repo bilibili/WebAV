@@ -138,6 +138,7 @@ function App() {
   const tlState = useRef<TimelineState>();
 
   const [playing, setPlaying] = useState(false);
+  const [clipSource, setClipSource] = useState('local');
 
   const [cvsWrapEl, setCvsWrapEl] = useState<HTMLDivElement | null>(null);
   const [tlData, setTLData] = useState<TimelineRow[]>([
@@ -229,12 +230,35 @@ function App() {
   return (
     <div className="canvas-wrap">
       <div ref={(el) => setCvsWrapEl(el)} className="mb-[10px]"></div>
+      <input
+        type="radio"
+        id="clip-source-remote"
+        name="clip-source"
+        defaultChecked={clipSource === 'remote'}
+        onChange={() => {
+          setClipSource('remote');
+        }}
+      />
+      <label htmlFor="clip-source-remote"> 示例素材</label>
+      <input
+        type="radio"
+        id="clip-source-local"
+        name="clip-source"
+        defaultChecked={clipSource === 'local'}
+        onChange={() => {
+          setClipSource('local');
+        }}
+      />
+      <label htmlFor="clip-source-local"> 本地素材</label>
+      <span className="mx-[10px]">|</span>
       <button
         className="mx-[10px]"
         onClick={async () => {
-          const spr = new VisibleSprite(
-            new MP4Clip((await fetch('./video/bunny_0.mp4')).body!),
-          );
+          const stream =
+            clipSource === 'local'
+              ? (await loadFile({ 'video/*': ['.mp4', '.mov'] })).stream()
+              : (await fetch('./video/bunny_0.mp4')).body!;
+          const spr = new VisibleSprite(new MP4Clip(stream));
           await avCvs?.addSprite(spr);
           addSprite2Track('1-video', spr, '视频');
         }}
@@ -388,4 +412,11 @@ async function createFileWriter(
     suggestedName: `WebAV-export-${Date.now()}.${extName}`,
   });
   return fileHandle.createWritable();
+}
+
+async function loadFile(accept: Record<string, string[]>) {
+  const [fileHandle] = await (window as any).showOpenFilePicker({
+    types: [{ accept }],
+  });
+  return (await fileHandle.getFile()) as File;
 }
