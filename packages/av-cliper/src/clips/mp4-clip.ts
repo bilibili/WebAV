@@ -1034,40 +1034,49 @@ async function videosamples2Chunks(
   samples: ExtMP4Sample[],
   reader: Awaited<ReturnType<OPFSToolFile['createReader']>>,
 ): Promise<EncodedVideoChunk[]> {
-  const first = samples[0];
   const last = samples.at(-1);
   if (last == null) return [];
 
-  const rangSize = last.offset + last.size - first.offset;
-  if (rangSize < 30e6) {
-    // 单次读取数据小于 30M，就一次性读取数据，降低 IO 频次
-    const data = new Uint8Array(
-      await reader.read(rangSize, { at: first.offset }),
-    );
-    return samples.map((s) => {
-      const offset = s.offset - first.offset;
-      return new EncodedVideoChunk({
-        type: s.is_sync ? 'key' : 'delta',
-        timestamp: s.cts,
-        duration: s.duration,
-        data: data.subarray(offset, offset + s.size),
-      });
-    });
+  const sampleChunks: ExtMP4Sample[][] = [];
+
+  // 将 samples 以 30MB 为单位分块
+  let sampleChunkStartIdx = 0;
+  let totalSampleChunkSize = 0;
+  for (let i = 0; i < samples.length; i++) {
+    const curSample = samples[i];
+    const nextSample = samples[i + 1];
+    if (!nextSample || totalSampleChunkSize + nextSample.size > 30e6) {
+      sampleChunks.push(samples.slice(sampleChunkStartIdx, i + 1));
+      sampleChunkStartIdx = i + 1;
+      totalSampleChunkSize = 0;
+    } else {
+      totalSampleChunkSize += curSample.size;
+    }
   }
 
-  return await Promise.all(
-    samples.map(
-      async (s) =>
-        new EncodedVideoChunk({
-          type: s.is_sync ? 'key' : 'delta',
-          timestamp: s.cts,
-          duration: s.duration,
-          data: await reader.read(s.size, {
-            at: s.offset,
+  return (
+    await Promise.all(
+      sampleChunks.map(async (samples) => {
+        const first = samples[0];
+        const last = samples.at(-1);
+        const rangSize = last!.offset + last!.size - first.offset;
+        const data = new Uint8Array(
+          await reader.read(rangSize, { at: first.offset }),
+        );
+        return await Promise.all(
+          samples.map(async (s) => {
+            const offset = s.offset - first.offset;
+            return new EncodedVideoChunk({
+              type: s.is_sync ? 'key' : 'delta',
+              timestamp: s.cts,
+              duration: s.duration,
+              data: data.subarray(offset, offset + s.size),
+            });
           }),
-        }),
-    ),
-  );
+        );
+      }),
+    )
+  ).flat();
 }
 
 function createVF2BlobConvtr(
