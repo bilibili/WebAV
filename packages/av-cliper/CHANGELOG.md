@@ -1,5 +1,12 @@
 # @webav/av-cliper
 
+## 0.14.11
+
+### Patch Changes
+
+- aff0d9f: fix: update the duration when the first sample is reset to 0.
+- d81f8e3: fix: decoding error when fist item not IDR frame
+
 ## 0.14.10
 
 ## 0.14.9
