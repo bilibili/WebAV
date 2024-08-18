@@ -1027,6 +1027,7 @@ function emitAudioFrames(
   pcmData: { frameCnt: number; data: [Float32Array, Float32Array][] },
   emitCnt: number,
 ) {
+  // todo: perf 重复利用内存空间
   const audio = [new Float32Array(emitCnt), new Float32Array(emitCnt)];
   let offset = 0;
   let i = 0;

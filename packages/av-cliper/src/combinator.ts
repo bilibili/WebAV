@@ -350,6 +350,7 @@ export class Combinator {
               ),
             );
           } else {
+            // todo: perf 重复利用内存空间
             const data = mixinPCM(audios);
             remux.encodeAudio(
               new AudioData({
