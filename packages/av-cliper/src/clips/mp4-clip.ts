@@ -1216,20 +1216,20 @@ function decodeGoP(
 
 // 当 IDR 帧前面携带其它数据（如 SEI）可能导致解码失败
 function removeSEIForIDR(u8buf: Uint8Array) {
-  const dw = new DataView(u8buf.buffer);
-  if ((dw.getUint8(4) & 0x1f) === 6) {
-    return u8buf.subarray(dw.getUint32(0) + 4);
+  const dv = new DataView(u8buf.buffer);
+  if ((dv.getUint8(4) & 0x1f) === 6) {
+    return u8buf.subarray(dv.getUint32(0) + 4);
   }
   return u8buf;
 }
 
 function isIDRFrame(u8Arr: Uint8Array) {
-  const dw = new DataView(u8Arr.buffer);
+  const dv = new DataView(u8Arr.buffer);
   let i = 0;
   for (; i < u8Arr.byteLength - 4; ) {
-    if ((dw.getUint8(i + 4) & 0x1f) === 5) return true;
+    if ((dv.getUint8(i + 4) & 0x1f) === 5) return true;
     // 跳至下一个 NALU 继续检查
-    i += dw.getUint32(i) + 4;
+    i += dv.getUint32(i) + 4;
   }
   return false;
 }
