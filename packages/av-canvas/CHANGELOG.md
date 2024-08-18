@@ -1,5 +1,14 @@
 # @webav/av-canvas
 
+## 0.14.11
+
+### Patch Changes
+
+- d81f8e3: fix: decoding error when fist item not IDR frame
+- Updated dependencies [aff0d9f]
+- Updated dependencies [d81f8e3]
+  - @webav/av-cliper@0.14.11
+
 ## 0.14.10
 
 ### Patch Changes
