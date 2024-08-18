@@ -600,7 +600,7 @@ class VideoFrameFinder {
   #curAborter = { abort: false, st: performance.now() };
   find = async (time: number): Promise<VideoFrame | null> => {
     if (this.#dec == null || time <= this.#ts || time - this.#ts > 3e6) {
-      this.reset(time);
+      this.#reset(time);
     }
 
     this.#curAborter.abort = true;
@@ -633,10 +633,16 @@ class VideoFrameFinder {
       // 第一帧过期，找下一帧
       if (time > vf.timestamp + (vf.duration ?? 0)) {
         vf.close();
-        return this.#parseFrame(time, dec, aborter);
+        return await this.#parseFrame(time, dec, aborter);
       }
 
-      if (this.#videoFrames.length < 10) this.#startDecode(dec);
+      if (this.#videoFrames.length < 10) {
+        // 预解码 避免等待
+        this.#startDecode(dec).catch((err) => {
+          this.#reset(time);
+          throw err;
+        });
+      }
       // 符合期望
       return vf;
     }
@@ -657,9 +663,14 @@ class VideoFrameFinder {
       // decode completed
       return null;
     } else {
-      this.#startDecode(dec);
+      try {
+        await this.#startDecode(dec);
+      } catch (err) {
+        this.#reset(time);
+        throw err;
+      }
     }
-    return this.#parseFrame(time, dec, aborter);
+    return await this.#parseFrame(time, dec, aborter);
   };
 
   #decoding = false;
@@ -676,7 +687,7 @@ class VideoFrameFinder {
       if (!hasValidFrame && !s.deleted) {
         hasValidFrame = true;
       }
-      // 找一个 GoP，所以是下一个关键帧结束
+      // 找一个 GoP，所以是下一个 IDR 帧结束
       if (s.is_idr) break;
     }
 
@@ -697,7 +708,7 @@ class VideoFrameFinder {
             } else {
               this.#downgradeSoftDecode = true;
               Log.warn('Downgrade to software decode');
-              this.reset();
+              this.#reset();
             }
           },
         });
@@ -709,7 +720,7 @@ class VideoFrameFinder {
     this.#decoding = false;
   };
 
-  reset = (time?: number) => {
+  #reset = (time?: number) => {
     this.#decoding = false;
     this.#videoFrames.forEach((f) => f.close());
     this.#videoFrames = [];
@@ -792,7 +803,7 @@ class AudioFrameFinder {
   find = async (time: number): Promise<Float32Array[]> => {
     // 前后获取音频数据差异不能超过 100ms
     if (this.#dec == null || time <= this.#ts || time - this.#ts > 0.1e6) {
-      this.reset();
+      this.#reset();
       this.#ts = time;
       for (let i = 0; i < this.samples.length; i++) {
         if (this.samples[i].cts < time) continue;
@@ -884,7 +895,7 @@ class AudioFrameFinder {
     );
   };
 
-  reset = () => {
+  #reset = () => {
     this.#ts = 0;
     this.#decCusorIdx = 0;
     this.#pcmData = {
@@ -1169,6 +1180,7 @@ function splitAudioSampleByTime(audioSamples: ExtMP4Sample[], time: number) {
 }
 
 // 兼容解码错误
+let iii = 0;
 function decodeGoP(
   dec: VideoDecoder,
   chunks: EncodedVideoChunk[],
@@ -1178,6 +1190,11 @@ function decodeGoP(
 ) {
   let i = 0;
   if (dec.state !== 'configured') return;
+  iii += 1;
+  if (iii > 2) {
+    console.log(5555);
+    throw Error('xxx');
+  }
   for (; i < chunks.length; i++) dec.decode(chunks[i]);
 
   // windows 某些设备 flush 可能不会被 resolved，所以不能 await flush
