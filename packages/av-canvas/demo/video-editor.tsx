@@ -138,7 +138,7 @@ function App() {
   const tlState = useRef<TimelineState>();
 
   const [playing, setPlaying] = useState(false);
-  const [clipSource, setClipSource] = useState('local');
+  const [clipSource, setClipSource] = useState('remote');
 
   const [cvsWrapEl, setCvsWrapEl] = useState<HTMLDivElement | null>(null);
   const [tlData, setTLData] = useState<TimelineRow[]>([
