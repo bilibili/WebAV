@@ -1181,7 +1181,6 @@ function splitAudioSampleByTime(audioSamples: ExtMP4Sample[], time: number) {
 }
 
 // 兼容解码错误
-let iii = 0;
 function decodeGoP(
   dec: VideoDecoder,
   chunks: EncodedVideoChunk[],
@@ -1191,11 +1190,6 @@ function decodeGoP(
 ) {
   let i = 0;
   if (dec.state !== 'configured') return;
-  iii += 1;
-  if (iii > 2) {
-    console.log(5555);
-    throw Error('xxx');
-  }
   for (; i < chunks.length; i++) dec.decode(chunks[i]);
 
   // windows 某些设备 flush 可能不会被 resolved，所以不能 await flush
