@@ -741,6 +741,11 @@ class VideoFrameFinder {
     if (this.#dec?.state !== 'closed') this.#dec?.close();
     this.#dec = new VideoDecoder({
       output: (vf) => {
+        this.#outputFrameCnt += 1;
+        if (vf.timestamp === -1) {
+          vf.close();
+          return;
+        }
         let rsVf = vf;
         if (vf.duration == null) {
           rsVf = new VideoFrame(vf, {
@@ -748,7 +753,6 @@ class VideoFrameFinder {
           });
           vf.close();
         }
-        this.#outputFrameCnt += 1;
         this.#videoFrames.push(rsVf);
       },
       error: (err) => {
@@ -1147,17 +1151,11 @@ function splitVideoSampleByTime(videoSamples: ExtMP4Sample[], time: number) {
     .slice(hitSample.is_idr ? gopEndIdx : gopStartIdx)
     .map((s) => ({ ...s, cts: s.cts - time }));
 
-  let postSyncCnt = 0;
   for (const s of postSlice) {
-    // 遇到第二个关键帧结束循环
-    if (postSyncCnt > 0) break;
-    if (s.is_idr) postSyncCnt += 1;
-
-    if (s.cts < 0) {
-      // 将第一个 GoP 中前半部分标记为 deleted
-      s.deleted = true;
-      s.cts = -1;
-    }
+    if (s.cts >= 0) break;
+    // 将第一个 GoP 中前半部分标记为 deleted
+    s.deleted = true;
+    s.cts = -1;
   }
 
   return [preSlice, postSlice];
