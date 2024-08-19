@@ -1,5 +1,11 @@
 # @webav/av-cliper
 
+## 0.14.14
+
+### Patch Changes
+
+- bd23942: chore: upgrade opfs-tools
+
 ## 0.14.13
 
 ### Patch Changes
