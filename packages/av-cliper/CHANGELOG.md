@@ -1,5 +1,11 @@
 # @webav/av-cliper
 
+## 0.14.12
+
+### Patch Changes
+
+- 9bc7c2a: fix: remove debug code
+
 ## 0.14.11
 
 ### Patch Changes
