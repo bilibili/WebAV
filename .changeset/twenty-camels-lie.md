@@ -3,4 +3,4 @@
 '@webav/av-cliper': patch
 ---
 
-fix: first frame incorrect when split MP4Clip #246
+fix: first frame incorrect when split MP4Clip #245
