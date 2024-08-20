@@ -9,6 +9,7 @@ interface ICombinatorOpts {
   width?: number;
   height?: number;
   bitrate?: number;
+  fps?: number;
   bgColor?: string;
   videoCodec?: string;
   /**
@@ -134,6 +135,7 @@ export class Combinator {
         videoCodec: 'avc1.42E032',
         audio: true,
         bitrate: 5e6,
+        fps: 30,
         metaDataTags: null,
       },
       opts,
@@ -164,14 +166,14 @@ export class Combinator {
   }
 
   #startRecodeMux(duration: number) {
-    const { width, height, videoCodec, bitrate, audio, metaDataTags } =
+    const { fps, width, height, videoCodec, bitrate, audio, metaDataTags } =
       this.#opts;
     const recodeMuxer = recodemux({
       video: this.#hasVideoTrack
         ? {
             width,
             height,
-            expectFPS: 30,
+            expectFPS: fps,
             codec: videoCodec,
             bitrate,
             __unsafe_hardwareAcceleration__:
@@ -281,21 +283,34 @@ export class Combinator {
     },
   ): () => void {
     let progress = 0;
-    let stoped = false;
+    const aborter = { aborted: false };
     let err: Error | null = null;
 
     const _run = async () => {
-      // 33ms ≈ 30FPS
-      const timeSlice = 33e3;
+      const { fps, bgColor, audio: outputAudio } = this.#opts;
+      const timeSlice = Math.round(1e6 / fps);
 
-      let frameCnt = 0;
-      const { width, height } = this.#cvs;
       const ctx = this.#ctx;
+      const sprRender = createSpritesRender({
+        ctx,
+        bgColor,
+        sprites: this.#sprites,
+        aborter,
+      });
+      const encodeData = createAVEncoder({
+        remux,
+        ctx,
+        cvs: this.#cvs,
+        outputAudio,
+        hasVideoTrack: this.#hasVideoTrack,
+        timeSlice,
+      });
+
       let ts = 0;
       while (true) {
         if (err != null) return;
         if (
-          stoped ||
+          aborter.aborted ||
           (maxTime === -1 ? false : ts > maxTime) ||
           this.#sprites.length === 0
         ) {
@@ -305,80 +320,16 @@ export class Combinator {
         }
         progress = ts / maxTime;
 
-        ctx.fillStyle = this.#opts.bgColor;
-        ctx.fillRect(0, 0, width, height);
-
-        const audios: Float32Array[][] = [];
-        for (const s of this.#sprites) {
-          if (stoped) break;
-          if (ts < s.time.offset || s.expired) continue;
-
-          ctx.save();
-          const { audio, done } = await s.offscreenRender(
-            ctx,
-            ts - s.time.offset,
-          );
-          audios.push(audio);
-          ctx.restore();
-
-          // 超过设定时间主动掐断，或资源结束
-          if (
-            (s.time.duration > 0 && ts > s.time.offset + s.time.duration) ||
-            done
-          ) {
-            if (s.main) {
-              exit();
-              await onEnded();
-              return;
-            }
-
-            s.destroy();
-            s.expired = true;
-          }
+        const { audios, mainSprDone } = await sprRender(ts);
+        if (mainSprDone) {
+          exit();
+          await onEnded();
+          return;
         }
 
-        if (stoped) return;
+        if (aborter.aborted) return;
 
-        if (this.#opts.audio !== false) {
-          if (audios.flat().every((a) => a.length === 0)) {
-            // 当前时刻无音频时，使用无声音频占位，否则会导致后续音频播放时间偏差
-            remux.encodeAudio(
-              createAudioPlaceholder(
-                ts,
-                timeSlice,
-                DEFAULT_AUDIO_CONF.sampleRate,
-              ),
-            );
-          } else {
-            // todo: perf 重复利用内存空间
-            const data = mixinPCM(audios);
-            remux.encodeAudio(
-              new AudioData({
-                timestamp: ts,
-                numberOfChannels: DEFAULT_AUDIO_CONF.channelCount,
-                numberOfFrames: data.length / DEFAULT_AUDIO_CONF.channelCount,
-                sampleRate: DEFAULT_AUDIO_CONF.sampleRate,
-                format: 'f32-planar',
-                data,
-              }),
-            );
-          }
-        }
-
-        if (this.#hasVideoTrack) {
-          const vf = new VideoFrame(this.#cvs, {
-            duration: timeSlice,
-            timestamp: ts,
-          });
-
-          remux.encodeVideo(vf, {
-            keyFrame: frameCnt % 150 === 0,
-          });
-          ctx.resetTransform();
-          ctx.clearRect(0, 0, width, height);
-
-          frameCnt += 1;
-        }
+        encodeData(ts, audios);
 
         ts += timeSlice;
 
@@ -398,14 +349,108 @@ export class Combinator {
     }, 500);
 
     const exit = () => {
-      if (stoped) return;
-      stoped = true;
+      if (aborter.aborted) return;
+      aborter.aborted = true;
       clearInterval(outProgTimer);
       this.#sprites.forEach((it) => it.destroy());
     };
 
     return exit;
   }
+}
+
+function createSpritesRender(opts: {
+  ctx: OffscreenCanvasRenderingContext2D;
+  bgColor: string;
+  sprites: Array<OffscreenSprite & { main: boolean; expired: boolean }>;
+  aborter: { aborted: boolean };
+}) {
+  const { ctx, bgColor, sprites, aborter } = opts;
+  const { width, height } = ctx.canvas;
+  return async (ts: number) => {
+    ctx.fillStyle = bgColor;
+    ctx.fillRect(0, 0, width, height);
+
+    const audios: Float32Array[][] = [];
+    let mainSprDone = false;
+    for (const s of sprites) {
+      if (aborter.aborted) break;
+      if (ts < s.time.offset || s.expired) continue;
+
+      ctx.save();
+      const { audio, done } = await s.offscreenRender(ctx, ts - s.time.offset);
+      audios.push(audio);
+      ctx.restore();
+
+      // 超过设定时间主动掐断，或资源结束
+      if (
+        (s.time.duration > 0 && ts > s.time.offset + s.time.duration) ||
+        done
+      ) {
+        if (s.main) mainSprDone = true;
+
+        s.destroy();
+        s.expired = true;
+      }
+    }
+    return {
+      audios,
+      mainSprDone,
+    };
+  };
+}
+
+function createAVEncoder(opts: {
+  remux: ReturnType<typeof recodemux>;
+  ctx: OffscreenCanvasRenderingContext2D;
+  cvs: OffscreenCanvas;
+  outputAudio?: boolean;
+  hasVideoTrack: boolean;
+  timeSlice: number;
+}) {
+  const { ctx, cvs, outputAudio, remux, hasVideoTrack, timeSlice } = opts;
+  const { width, height } = cvs;
+  let frameCnt = 0;
+
+  return (ts: number, audios: Float32Array[][]) => {
+    if (outputAudio !== false) {
+      if (audios.flat().every((a) => a.length === 0)) {
+        // 当前时刻无音频时，使用无声音频占位，否则会导致后续音频播放时间偏差
+        remux.encodeAudio(
+          createAudioPlaceholder(ts, timeSlice, DEFAULT_AUDIO_CONF.sampleRate),
+        );
+      } else {
+        // todo: perf 重复利用内存空间
+        const data = mixinPCM(audios);
+        remux.encodeAudio(
+          new AudioData({
+            timestamp: ts,
+            numberOfChannels: DEFAULT_AUDIO_CONF.channelCount,
+            numberOfFrames: data.length / DEFAULT_AUDIO_CONF.channelCount,
+            sampleRate: DEFAULT_AUDIO_CONF.sampleRate,
+            format: 'f32-planar',
+            data,
+          }),
+        );
+      }
+    }
+
+    if (hasVideoTrack) {
+      const vf = new VideoFrame(cvs, {
+        duration: timeSlice,
+        timestamp: ts,
+      });
+
+      remux.encodeVideo(vf, {
+        // todo: 3s 1 GoP
+        keyFrame: frameCnt % 150 === 0,
+      });
+      ctx.resetTransform();
+      ctx.clearRect(0, 0, width, height);
+
+      frameCnt += 1;
+    }
+  };
 }
 
 function createAudioPlaceholder(
