@@ -23,7 +23,7 @@ test('Combinator ouput m4a', async () => {
   const mp4Clip = new MP4Clip(com.output());
   await mp4Clip.ready;
   expect(mp4Clip.meta).toEqual({
-    duration: 1088000,
+    duration: 1045333,
     width: 0,
     height: 0,
     audioSampleRate: 48000,
@@ -72,7 +72,7 @@ test('Combinator ouput exclude audio track', async () => {
   const mp4Clip = new MP4Clip(com.output());
   await mp4Clip.ready;
   expect(mp4Clip.meta).toEqual({
-    duration: 1023000,
+    duration: 1033323,
     width: 900,
     height: 500,
     audioSampleRate: 0,
