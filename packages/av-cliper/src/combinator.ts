@@ -1,7 +1,7 @@
 import { OffscreenSprite } from './sprite/offscreen-sprite';
 import { file2stream, recodemux } from './mp4-utils';
 import { Log } from './log';
-import { mixinPCM, sleep } from './av-utils';
+import { sleep } from './av-utils';
 import { EventTool } from './event-tool';
 import { DEFAULT_AUDIO_CONF } from './clips';
 
