@@ -1,0 +1,10 @@
+{
+  "mode": "pre",
+  "tag": "beta",
+  "initialVersions": {
+    "@webav/av-canvas": "0.14.14",
+    "@webav/av-cliper": "0.14.14",
+    "@webav/av-recorder": "0.14.14"
+  },
+  "changesets": ["selfish-dolphins-jog"]
+}

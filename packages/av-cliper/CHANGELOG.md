@@ -1,5 +1,11 @@
 # @webav/av-cliper
 
+## 0.15.0-beta.0
+
+### Minor Changes
+
+- feat: custom fps for Combinator
+
 ## 0.14.14
 
 ### Patch Changes
