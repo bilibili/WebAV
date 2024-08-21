@@ -1212,7 +1212,7 @@ function decodeGoP(
 
 // 当 IDR 帧前面携带其它数据（如 SEI）可能导致解码失败
 function removeSEIForIDR(u8buf: Uint8Array) {
-  const dv = new DataView(u8buf.buffer);
+  const dv = new DataView(u8buf.buffer, u8buf.byteOffset, u8buf.byteLength);
   if ((dv.getUint8(4) & 0x1f) === 6) {
     return u8buf.subarray(dv.getUint32(0) + 4);
   }
