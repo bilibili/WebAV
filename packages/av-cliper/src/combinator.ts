@@ -412,27 +412,11 @@ function createAVEncoder(opts: {
   const { width, height } = cvs;
   let frameCnt = 0;
 
+  const audioTrackBuf = createAudioTrackBuf(1024);
+
   return (ts: number, audios: Float32Array[][]) => {
     if (outputAudio !== false) {
-      if (audios.flat().every((a) => a.length === 0)) {
-        // 当前时刻无音频时，使用无声音频占位，否则会导致后续音频播放时间偏差
-        remux.encodeAudio(
-          createAudioPlaceholder(ts, timeSlice, DEFAULT_AUDIO_CONF.sampleRate),
-        );
-      } else {
-        // todo: perf 重复利用内存空间
-        const data = mixinPCM(audios);
-        remux.encodeAudio(
-          new AudioData({
-            timestamp: ts,
-            numberOfChannels: DEFAULT_AUDIO_CONF.channelCount,
-            numberOfFrames: data.length / DEFAULT_AUDIO_CONF.channelCount,
-            sampleRate: DEFAULT_AUDIO_CONF.sampleRate,
-            format: 'f32-planar',
-            data,
-          }),
-        );
-      }
+      for (const ad of audioTrackBuf(ts, audios)) remux.encodeAudio(ad);
     }
 
     if (hasVideoTrack) {
@@ -453,18 +437,75 @@ function createAVEncoder(opts: {
   };
 }
 
-function createAudioPlaceholder(
-  ts: number,
-  duration: number,
-  sampleRate: number,
-): AudioData {
-  const frameCnt = Math.floor((sampleRate * duration) / 1e6);
-  return new AudioData({
-    timestamp: ts,
-    numberOfChannels: DEFAULT_AUDIO_CONF.channelCount,
-    numberOfFrames: frameCnt,
-    sampleRate: sampleRate,
-    format: 'f32-planar',
-    data: new Float32Array(frameCnt * 2),
-  });
+/**
+ * 缓冲输入的数据，转换成固定帧数的 AudioData
+ * @param adFrames 一个 AudioData 实例的音频帧数
+ */
+export function createAudioTrackBuf(adFrames: number) {
+  const adDataSize = adFrames * DEFAULT_AUDIO_CONF.channelCount;
+  const chanBuf = new Float32Array(adDataSize * 3);
+  let putOffset = 0;
+
+  let audioTs = 0;
+  const adDuration = (adFrames / DEFAULT_AUDIO_CONF.sampleRate) * 1e6;
+
+  // 缺少音频数据是占位
+  const placeholderData = new Float32Array(adDataSize);
+
+  const getAudioData = (ts: number) => {
+    let readOffset = 0;
+    const adCnt = Math.floor(putOffset / adDataSize);
+    const rs: AudioData[] = [];
+    for (let i = 0; i < adCnt; i++) {
+      rs.push(
+        new AudioData({
+          timestamp: audioTs,
+          numberOfChannels: DEFAULT_AUDIO_CONF.channelCount,
+          numberOfFrames: adFrames,
+          sampleRate: DEFAULT_AUDIO_CONF.sampleRate,
+          format: 'f32',
+          data: chanBuf.subarray(readOffset, readOffset + adDataSize),
+        }),
+      );
+      readOffset += adDataSize;
+      audioTs += adDuration;
+    }
+    chanBuf.set(chanBuf.subarray(readOffset, putOffset), 0);
+    putOffset -= readOffset;
+
+    if (ts - audioTs > adDuration) {
+      rs.push(
+        new AudioData({
+          timestamp: audioTs,
+          numberOfChannels: DEFAULT_AUDIO_CONF.channelCount,
+          numberOfFrames: adFrames,
+          sampleRate: DEFAULT_AUDIO_CONF.sampleRate,
+          format: 'f32',
+          data: placeholderData,
+        }),
+      );
+      audioTs += adDuration;
+    }
+    return rs;
+  };
+
+  return (ts: number, trackAudios: Float32Array[][]) => {
+    const maxLen = Math.max(...trackAudios.map((a) => a[0]?.length ?? 0));
+    for (let bufIdx = 0; bufIdx < maxLen; bufIdx++) {
+      let chan0 = 0;
+      let chan1 = 0;
+      for (let trackIdx = 0; trackIdx < trackAudios.length; trackIdx++) {
+        const _c0 = trackAudios[trackIdx][0]?.[bufIdx] ?? 0;
+        // 如果是单声道 PCM，第二声道复用第一声道数据
+        const _c1 = trackAudios[trackIdx][1]?.[bufIdx] ?? _c0;
+        chan0 += _c0;
+        chan1 += _c1;
+      }
+      chanBuf[putOffset] = chan0;
+      chanBuf[putOffset + 1] = chan1;
+      putOffset += 2;
+    }
+    // console.log(1111, { putOffset });
+    return getAudioData(ts);
+  };
 }
