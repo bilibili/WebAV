@@ -95,7 +95,7 @@ declare module '@webav/mp4box.js' {
     cts: number;
     sample_description_index?: number;
     is_sync: boolean;
-    description?: MP4ABoxParser | AVC1BoxParser;
+    description?: MP4ABoxParser | AVC1BoxParser | HVCBoxParser;
   }
 
   export interface MP4Sample {
