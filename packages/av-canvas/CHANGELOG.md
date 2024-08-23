@@ -1,5 +1,13 @@
 # @webav/av-canvas
 
+## 0.15.0-beta.1
+
+### Patch Changes
+
+- chore: merge bugfix
+- Updated dependencies
+  - @webav/av-cliper@0.15.0-beta.1
+
 ## 0.15.0-beta.0
 
 ### Patch Changes

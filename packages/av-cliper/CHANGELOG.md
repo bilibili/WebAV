@@ -1,5 +1,11 @@
 # @webav/av-cliper
 
+## 0.15.0-beta.1
+
+### Patch Changes
+
+- chore: merge bugfix
+
 ## 0.15.0-beta.0
 
 ### Minor Changes
