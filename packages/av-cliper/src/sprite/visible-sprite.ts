@@ -43,7 +43,7 @@ export class VisibleSprite extends BaseSprite {
     if (this.#ticking) return;
     this.#ticking = true;
     this.#clip
-      .tick(time)
+      .tick(time * this.time.playbackRate)
       .then(({ video, audio }) => {
         if (video != null) {
           this.#lastVf?.close();

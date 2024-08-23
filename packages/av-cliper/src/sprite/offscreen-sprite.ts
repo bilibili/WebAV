@@ -47,10 +47,11 @@ export class OffscreenSprite extends BaseSprite {
     audio: Float32Array[];
     done: boolean;
   }> {
-    this.animate(time);
+    const ts = time * this.time.playbackRate;
+    this.animate(ts);
     super._render(ctx);
     const { w, h } = this.rect;
-    const { video, audio, state } = await this.#clip.tick(time);
+    const { video, audio, state } = await this.#clip.tick(ts);
     if (state === 'done') {
       return {
         audio: audio ?? [],

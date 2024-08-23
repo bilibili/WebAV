@@ -32,10 +32,17 @@ export abstract class BaseSprite {
    *
    * duration 不能大于引用 {@link IClip} 的时长，单位 微秒
    */
-  time = {
+  #time = {
     offset: 0,
     duration: 0,
+    playbackRate: 1,
   };
+  get time(): { offset: number; duration: number; playbackRate: number } {
+    return this.#time;
+  }
+  set time(v: { offset: number; duration: number; playbackRate?: number }) {
+    Object.assign(this.#time, v);
+  }
 
   /**
    * 元素是否可见，用于不想删除，期望临时隐藏 Sprite 的场景
