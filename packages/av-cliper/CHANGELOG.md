@@ -6,6 +6,13 @@
 
 - feat: custom fps for Combinator
 
+## 0.14.15
+
+### Patch Changes
+
+- 7980ebd: fix: unable to recognize HEVC IDR frames #258
+- a9d810a: fix: thumbnailByKeyFrame throw decoder error
+
 ## 0.14.14
 
 ### Patch Changes
