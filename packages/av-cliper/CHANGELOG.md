@@ -1,5 +1,11 @@
 # @webav/av-cliper
 
+## 0.0.0-playback-rate-20240823090827
+
+### Patch Changes
+
+- feat: custom palybackRate for sprite
+
 ## 0.14.15
 
 ### Patch Changes
