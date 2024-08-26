@@ -42,9 +42,12 @@ document.querySelector('#decode-img')?.addEventListener('click', () => {
       if (vf == null) return;
       ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
       ctx.drawImage(vf, 0, 0);
-      const timer = setTimeout(() => {
-        render(frames[++i]);
-      }, (vf.duration ?? 0) / 1000);
+      const timer = setTimeout(
+        () => {
+          render(frames[++i]);
+        },
+        (vf.duration ?? 0) / 1000,
+      );
       stopImg = () => {
         clearTimeout(timer);
       };
@@ -65,7 +68,7 @@ document.querySelector('#decode-audio')?.addEventListener('click', () => {
     stopAudio();
     const audioType = (
       document.querySelector(
-        'input[name=audio-type]:checked'
+        'input[name=audio-type]:checked',
       ) as HTMLInputElement
     ).value;
     // @ts-expect-error
@@ -113,16 +116,19 @@ document.querySelector('#decode-audio')?.addEventListener('click', () => {
 const videos = {
   'bunny.mp4': './video/bunny_0.mp4',
   'bear.mp4': './video/bear-vp9.mp4',
+  'travel.mp4': './video/travel.mp4',
+  'moov-ahead.mp4': './video/moov-ahead.mp4',
+  'moov-behind.mp4': './video/moov-behind.mp4',
 };
 document.querySelector('#decode-video')?.addEventListener('click', () => {
   (async () => {
     const videoType = (
       document.querySelector(
-        'input[name=video-type]:checked'
+        'input[name=video-type]:checked',
       ) as HTMLInputElement
     ).value;
     const speed = document.querySelector(
-      'input[name=playrate]:checked'
+      'input[name=playrate]:checked',
     ) as HTMLInputElement;
 
     // @ts-expect-error
@@ -138,8 +144,11 @@ document.querySelector('#decode-video')?.addEventListener('click', () => {
 
     async function fastestDecode() {
       let time = 0;
+      let videoFrameCount = 0;
       while (true) {
         const { state, video } = await clip.tick(time);
+        videoFrameCount++;
+        console.log('videoFrameCount: ', videoFrameCount);
         if (state === 'done') break;
         if (video != null && state === 'success') {
           ctx.clearRect(0, 0, cvs.width, cvs.height);
@@ -156,7 +165,7 @@ document.querySelector('#decode-video')?.addEventListener('click', () => {
 
       const timer = setInterval(async () => {
         const { state, video } = await clip.tick(
-          Math.round((performance.now() - startTime) * 1000) * times
+          Math.round((performance.now() - startTime) * 1000) * times,
         );
         if (state === 'done') {
           clearInterval(timer);
@@ -181,7 +190,7 @@ document.querySelector('#decode-subtitles')?.addEventListener('click', () => {
     stopImg();
     const subtitlesType = (
       document.querySelector(
-        'input[name=subtitles-type]:checked'
+        'input[name=subtitles-type]:checked',
       ) as HTMLInputElement
     ).value;
 

@@ -26,6 +26,7 @@ type MPClipCloneArgs = Awaited<ReturnType<typeof parseMP4Stream>> & {
 interface MP4DecoderConf {
   video: VideoDecoderConfig | null;
   audio: AudioDecoderConfig | null;
+  mp4Info?: MP4Info | null;
 }
 
 interface MP4ClipOpts {
@@ -48,6 +49,12 @@ type ThumbnailOpts = {
   start: number;
   end: number;
   step: number;
+};
+
+const trackTypeMap: Record<string, string> = {
+  vide: 'video',
+  soun: 'audio',
+  hint: 'hint',
 };
 
 /**
@@ -98,9 +105,11 @@ export class MP4Clip implements IClip {
   #decoderConf: {
     video: VideoDecoderConfig | null;
     audio: AudioDecoderConfig | null;
+    mp4Info?: MP4Info | null;
   } = {
     video: null,
     audio: null,
+    mp4Info: null,
   };
 
   #opts: MP4ClipOpts = { audio: true };
@@ -136,9 +145,13 @@ export class MP4Clip implements IClip {
 
     this.ready = (
       source instanceof ReadableStream
-        ? initByStream(source).then((s) => parseMP4Stream(s, this.#opts))
+        ? initByStream(source).then((s) =>
+            parseMP4Stream(s, this.#opts, this.#localFile),
+          )
         : isOTFile(source)
-          ? source.stream().then((s) => parseMP4Stream(s, this.#opts))
+          ? source
+              .stream()
+              .then((s) => parseMP4Stream(s, this.#opts, this.#localFile))
           : Promise.resolve(source)
     ).then(async ({ videoSamples, audioSamples, decoderConf }) => {
       this.#videoSamples = videoSamples;
@@ -197,12 +210,11 @@ export class MP4Clip implements IClip {
         state: 'done',
       });
     }
-
     const [audio, video] = await Promise.all([
-      this.#audioFrameFinder?.find(time) ?? [],
+      // this.#audioFrameFinder?.find(time) ?? [],
+      [],
       this.#videoFrameFinder?.find(time),
     ]);
-
     if (video == null) {
       return await this.tickInterceptor(time, {
         audio,
@@ -431,9 +443,12 @@ function genMeta(
     audioSampleRate: 0,
     audioChanCount: 0,
   };
-  if (decoderConf.video != null && videoSamples.length > 0) {
-    meta.width = decoderConf.video.codedWidth ?? 0;
-    meta.height = decoderConf.video.codedHeight ?? 0;
+  if (decoderConf.video != null) {
+    // && videoSamples.length > 0
+    // meta.width = decoderConf.video.codedWidth ?? 0;
+    // meta.height = decoderConf.video.codedHeight ?? 0;
+    meta.width = decoderConf?.mp4Info?.videoTracks[0]?.video.width ?? 0;
+    meta.height = decoderConf?.mp4Info?.videoTracks[0]?.video.height ?? 0;
   }
   if (decoderConf.audio != null && audioSamples.length > 0) {
     meta.audioSampleRate = DEFAULT_AUDIO_CONF.sampleRate;
@@ -455,7 +470,6 @@ function genMeta(
     aDuration = lastSampele.cts + lastSampele.duration;
   }
   meta.duration = Math.max(vDuration, aDuration);
-
   return meta;
 }
 
@@ -493,9 +507,14 @@ function genDecoder(
 async function parseMP4Stream(
   source: ReadableStream<Uint8Array>,
   opts: MP4ClipOpts = {},
+  localFile: OPFSToolFile,
 ) {
   let mp4Info: MP4Info;
-  const decoderConf: MP4DecoderConf = { video: null, audio: null };
+  const decoderConf: MP4DecoderConf = {
+    video: null,
+    audio: null,
+    mp4Info: null,
+  };
   let videoSamples: ExtMP4Sample[] = [];
   let audioSamples: ExtMP4Sample[] = [];
 
@@ -509,18 +528,39 @@ async function parseMP4Stream(
     const stopRead = autoReadStream(source.pipeThrough(new SampleTransform()), {
       onChunk: async ({ chunkType, data }) => {
         if (chunkType === 'ready') {
-          // mp4File = data.file;
           mp4Info = data.info;
           let { videoDecoderConf: vc, audioDecoderConf: ac } =
             extractFileConfig(data.file, data.info);
           decoderConf.video = vc ?? null;
           decoderConf.audio = ac ?? null;
+          decoderConf.mp4Info = data.info;
           if (vc == null && ac == null) {
             stopRead();
             reject(
               Error('MP4Clip must contain at least one video or audio track'),
             );
           }
+          const reader = await localFile.createReader();
+          for (const trak of data.file?.moov?.traks || []) {
+            const trackType =
+              trackTypeMap[trak?.mdia?.hdlr?.handler.toLowerCase() || 'vide'];
+            if (trackType == 'video') {
+              if (videoDeltaTS === -1) videoDeltaTS = trak.samples[0].dts;
+              for (const s of trak.samples) {
+                videoSamples.push(
+                  await normalizeTimescale(reader, s, videoDeltaTS, 'video'),
+                );
+              }
+            } else if (trackType == 'audio' && opts.audio) {
+              if (audioDeltaTS === -1) audioDeltaTS = trak.samples[0].dts;
+              for (const s of trak.samples) {
+                videoSamples.push(
+                  await normalizeTimescale(reader, s, videoDeltaTS, 'audio'),
+                );
+              }
+            }
+          }
+
           Log.info(
             'mp4BoxFile moov ready',
             {
@@ -531,18 +571,6 @@ async function parseMP4Stream(
             },
             decoderConf,
           );
-        } else if (chunkType === 'samples') {
-          if (data.type === 'video') {
-            if (videoDeltaTS === -1) videoDeltaTS = data.samples[0].dts;
-            for (const s of data.samples) {
-              videoSamples.push(normalizeTimescale(s, videoDeltaTS, 'video'));
-            }
-          } else if (data.type === 'audio' && opts.audio) {
-            if (audioDeltaTS === -1) audioDeltaTS = data.samples[0].dts;
-            for (const s of data.samples) {
-              audioSamples.push(normalizeTimescale(s, audioDeltaTS, 'audio'));
-            }
-          }
         }
       },
       onDone: () => {
@@ -570,7 +598,8 @@ async function parseMP4Stream(
     });
   });
 
-  function normalizeTimescale(
+  async function normalizeTimescale(
+    reader: LocalFileReader,
     s: MP4Sample,
     delta = 0,
     sampleType: 'video' | 'audio',
@@ -578,15 +607,13 @@ async function parseMP4Stream(
     return {
       ...s,
       is_idr:
-        sampleType === 'video' &&
-        s.is_sync &&
-        isIDRFrame(s.data, s.description.type),
+        sampleType === 'video' && s.is_sync && (await isIDRFrame(reader, s)),
       cts: ((s.cts - delta) / s.timescale) * 1e6,
       dts: ((s.dts - delta) / s.timescale) * 1e6,
       duration: (s.duration / s.timescale) * 1e6,
       timescale: 1e6,
-      // 音频数据量可控，直接保存在内存中
-      data: sampleType === 'video' ? null : s.data,
+      // 不存储源文件数据
+      data: null,
     };
   }
 }
@@ -699,7 +726,7 @@ class VideoFrameFinder {
       if (samples[0]?.is_idr !== true) {
         Log.warn('First sample not idr frame');
       } else {
-        const chunks = await videosamples2Chunks(samples, this.localFileReader);
+        const chunks = await videoSamples2Chunks(samples, this.localFileReader);
         // Wait for the previous asynchronous operation to complete, at which point the task may have already been terminated
         if (dec.state === 'closed') return;
 
@@ -875,7 +902,7 @@ class AudioFrameFinder {
     return this.#parseFrame(deltaTime, dec, aborter);
   };
 
-  #startDecode = (dec: ReturnType<typeof createAudioChunksDecoder>) => {
+  #startDecode = async (dec: ReturnType<typeof createAudioChunksDecoder>) => {
     if (dec.decodeQueueSize > 100) return;
     // 启动解码任务
     const samples = [];
@@ -888,18 +915,8 @@ class AudioFrameFinder {
       if (samples.length >= 10) break;
     }
     this.#decCusorIdx = i;
-
-    dec.decode(
-      samples.map(
-        (s) =>
-          new EncodedAudioChunk({
-            type: 'key',
-            timestamp: s.cts,
-            duration: s.duration,
-            data: s.data!,
-          }),
-      ),
-    );
+    const chunks = await audioSamples2Chunks(samples, this.localFileReader);
+    dec.decode(chunks);
   };
 
   #reset = () => {
@@ -1059,7 +1076,7 @@ function emitAudioFrames(
   return audio;
 }
 
-async function videosamples2Chunks(
+async function videoSamples2Chunks(
   samples: ExtMP4Sample[],
   reader: Awaited<ReturnType<OPFSToolFile['createReader']>>,
 ): Promise<EncodedVideoChunk[]> {
@@ -1068,6 +1085,13 @@ async function videosamples2Chunks(
   if (last == null) return [];
 
   const rangSize = last.offset + last.size - first.offset;
+  console.log(`read ${samples.length} samples, rangSize: ${rangSize}`);
+
+  if (rangSize < 0) {
+    console.log('sample range size is less than 0');
+    return [];
+  }
+
   if (rangSize < 30e6) {
     // 单次读取数据小于 30M，就一次性读取数据，降低 IO 频次
     const data = new Uint8Array(
@@ -1094,6 +1118,47 @@ async function videosamples2Chunks(
       if (s.is_idr) sData = removeSEIForIDR(new Uint8Array(sData));
       return new EncodedVideoChunk({
         type: s.is_sync ? 'key' : 'delta',
+        timestamp: s.cts,
+        duration: s.duration,
+        data: sData,
+      });
+    }),
+  );
+}
+
+async function audioSamples2Chunks(
+  samples: ExtMP4Sample[],
+  reader: Awaited<ReturnType<OPFSToolFile['createReader']>>,
+): Promise<EncodedAudioChunk[]> {
+  const first = samples[0];
+  const last = samples.at(-1);
+  if (last == null) return [];
+
+  const rangSize = last.offset + last.size - first.offset;
+  if (rangSize < 30e6) {
+    // 单次读取数据小于 30M，就一次性读取数据，降低 IO 频次
+    const data = new Uint8Array(
+      await reader.read(rangSize, { at: first.offset }),
+    );
+    return samples.map((s) => {
+      const offset = s.offset - first.offset;
+      let sData = data.subarray(offset, offset + s.size);
+      return new EncodedAudioChunk({
+        type: s.is_sync ? 'key' : 'delta',
+        timestamp: s.cts,
+        duration: s.duration,
+        data: sData,
+      });
+    });
+  }
+
+  return await Promise.all(
+    samples.map(async (s) => {
+      let sData = await reader.read(s.size, {
+        at: s.offset,
+      });
+      return new EncodedAudioChunk({
+        type: 'key',
         timestamp: s.cts,
         duration: s.duration,
         data: sData,
@@ -1212,19 +1277,22 @@ function decodeGoP(
 
 // 当 IDR 帧前面携带其它数据（如 SEI）可能导致解码失败
 function removeSEIForIDR(u8buf: Uint8Array) {
-  const dv = new DataView(u8buf.buffer, u8buf.byteOffset, u8buf.byteLength);
+  const dv = new DataView(u8buf.buffer);
   if ((dv.getUint8(4) & 0x1f) === 6) {
     return u8buf.subarray(dv.getUint32(0) + 4);
   }
   return u8buf;
 }
 
-function isIDRFrame(u8Arr: Uint8Array, type: MP4Sample['description']['type']) {
+async function isIDRFrame(reader: LocalFileReader, sample: MP4Sample) {
+  const type = sample.description.type;
   if (type !== 'avc1' && type !== 'hvc1') return false;
-
-  const dv = new DataView(u8Arr.buffer);
+  const data = new Uint8Array(
+    await reader.read(sample.size, { at: sample.offset }),
+  );
+  const dv = new DataView(data.buffer);
   let i = 0;
-  for (; i < u8Arr.byteLength - 4; ) {
+  for (; i < dv.byteLength - 4; ) {
     if (type === 'avc1') {
       if ((dv.getUint8(i + 4) & 0x1f) === 5) return true;
     } else if (type === 'hvc1') {
@@ -1260,7 +1328,7 @@ async function thumbnailByKeyFrame(
     dec.close();
   });
 
-  const chunks = await videosamples2Chunks(
+  const chunks = await videoSamples2Chunks(
     samples.filter(
       (s) =>
         !s.deleted && s.is_sync && s.cts >= time.start && s.cts <= time.end,

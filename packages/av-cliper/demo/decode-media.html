@@ -1,69 +1,125 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AVCliper Decode Media</title>
 
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>AVCliper Decode Media</title>
+    <style>
+      #app {
+        width: 900px;
+        height: 500px;
+        margin: 50px 50px;
+        overflow: hidden;
+        position: relative;
+      }
 
-  <style>
-    #app {
-      width: 900px;
-      height: 500px;
-      margin: 50px 50px;
-      overflow: hidden;
-      position: relative;
-    }
+      canvas {
+        width: 900px;
+        height: 500px;
+      }
+    </style>
+  </head>
 
-    canvas {
-      width: 900px;
-      height: 500px;
-    }
-  </style>
-</head>
+  <body>
+    <canvas id="canvas" width="1280" height="720"></canvas>
+    <br />
+    <button id="decode-img">image decode</button>
+    <input id="avif" type="radio" name="img-type" value="image/avif" checked />
+    <label for="avif">avif</label>
+    <input id="webp" type="radio" name="img-type" value="image/webp" />
+    <label for="webp">webp</label>
+    <input id="png" type="radio" name="img-type" value="image/png" />
+    <label for="png">png</label>
+    <input id="gif" type="radio" name="img-type" value="image/gif" />
+    <label for="gif">gif</label>
+    <hr />
+    <button id="decode-audio">audio decode</button>
+    <input
+      id="44.1kHz-2chan.m4a"
+      type="radio"
+      name="audio-type"
+      value="44.1kHz-2chan.m4a"
+      checked
+    />
+    <label for="44.1kHz-2chan.m4a">44.1kHz-2chan.m4a</label>
+    <input
+      id="44.1kHz-2chan.mp3"
+      type="radio"
+      name="audio-type"
+      value="44.1kHz-2chan.mp3"
+    />
+    <label for="44.1kHz-2chan.mp3">44.1kHz-2chan.mp3</label>
+    <input
+      id="16kHz-1chan.mp3"
+      type="radio"
+      name="audio-type"
+      value="16kHz-1chan.mp3"
+    />
+    <label for="16kHz-1chan.mp3">16kHz-1chan.mp3</label>
+    <hr />
+    <button id="decode-video">video decode</button>
 
-<body>
-  <canvas id="canvas" width="1280" height="720"></canvas>
-  <br>
-  <button id="decode-img">image decode</button>
-  <input id="avif" type="radio" name="img-type" value="image/avif" checked>
-  <label for="avif">avif</label>
-  <input id="webp" type="radio" name="img-type" value="image/webp">
-  <label for="webp">webp</label>
-  <input id="png" type="radio" name="img-type" value="image/png">
-  <label for="png">png</label>
-  <input id="gif" type="radio" name="img-type" value="image/gif">
-  <label for="gif">gif</label>
-  <hr>
-  <button id="decode-audio">audio decode</button>
-  <input id="44.1kHz-2chan.m4a" type="radio" name="audio-type" value="44.1kHz-2chan.m4a" checked>
-  <label for="44.1kHz-2chan.m4a">44.1kHz-2chan.m4a</label>
-  <input id="44.1kHz-2chan.mp3" type="radio" name="audio-type" value="44.1kHz-2chan.mp3">
-  <label for="44.1kHz-2chan.mp3">44.1kHz-2chan.mp3</label>
-  <input id="16kHz-1chan.mp3" type="radio" name="audio-type" value="16kHz-1chan.mp3">
-  <label for="16kHz-1chan.mp3">16kHz-1chan.mp3</label>
-  <hr>
-  <button id="decode-video">video decode</button>
-  <input id="bunny.mp4" type="radio" name="video-type" value="bunny.mp4" checked>
-  <label for="bunny.mp4">bunny.mp4</label>
-  <input id="bear.mp4" type="radio" name="video-type" value="bear.mp4">
-  <label for="bear.mp4">bear.mp4</label> |
-  <input id="max-rate" type="radio" name="playrate" value="fastest" checked>
-  <label for="max-rate">Fastest decode</label>
-  <input id="playrate-3" type="radio" name="playrate" value="3">
-  <label for="playrate-3">x3</label>
-  <input id="playrate-1" type="radio" name="playrate" value="1">
-  <label for="playrate-1">x1</label>
-  <input id="playrate-0.5" type="radio" name="playrate" value="0.5">
-  <label for="playrate-0.5">x0.5</label>
-  <hr>
-  <button id="decode-subtitles">subtitles decode</button>
-  <input id="test-sample.srt" type="radio" name="subtitles-type" value="test-sample.srt" checked>
-  <label for="test-sample.srt">test-sample.srt</label>
-  <hr>
-  <button id="chromakey">chromakey</button>
+    <input
+      id="bunny.mp4"
+      type="radio"
+      name="video-type"
+      value="bunny.mp4"
+      checked
+    />
+    <label for="bunny.mp4">bunny.mp4</label>
 
-  <script type="module" src="decode-media.ts"></script>
-</body>
+    <input
+      id="moov-ahead.mp4"
+      type="radio"
+      name="video-type"
+      value="moov-ahead.mp4"
+      checked
+    />
+    <label for="moov-ahead.mp4">moov-ahead.mp4</label>
 
+    <input
+      id="moov-behind.mp4"
+      type="radio"
+      name="video-type"
+      value="moov-behind.mp4"
+      checked
+    />
+    <label for="moov-behind.mp4">moov-behind.mp4</label>
+
+    <input
+      id="travel.mp4"
+      type="radio"
+      name="video-type"
+      value="travel.mp4"
+      checked
+    />
+    <label for="moov-behind.mp4">travel.mp4</label>
+
+    <input id="bear.mp4" type="radio" name="video-type" value="bear.mp4" />
+    <label for="bear.mp4">bear.mp4</label> |
+
+    <input id="max-rate" type="radio" name="playrate" value="fastest" checked />
+    <label for="max-rate">Fastest decode</label>
+    <input id="playrate-3" type="radio" name="playrate" value="3" />
+    <label for="playrate-3">x3</label>
+    <input id="playrate-1" type="radio" name="playrate" value="1" />
+    <label for="playrate-1">x1</label>
+    <input id="playrate-0.5" type="radio" name="playrate" value="0.5" />
+    <label for="playrate-0.5">x0.5</label>
+    <hr />
+    <button id="decode-subtitles">subtitles decode</button>
+    <input
+      id="test-sample.srt"
+      type="radio"
+      name="subtitles-type"
+      value="test-sample.srt"
+      checked
+    />
+    <label for="test-sample.srt">test-sample.srt</label>
+    <hr />
+    <button id="chromakey">chromakey</button>
+
+    <script type="module" src="decode-media.ts"></script>
+  </body>
 </html>

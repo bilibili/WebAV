@@ -126,3 +126,105 @@ export function unsafeReleaseMP4BoxFile(file: MP4File) {
   file.mdats = [];
   file.moofs = [];
 }
+
+type IBox = {
+  type: string;
+  offset: number;
+  size: number;
+};
+
+function addZero(str: string, targetNum = 8): string {
+  let len = str.length;
+  if (len < targetNum) {
+    return '0'.repeat(targetNum - len) + str;
+  }
+  return str;
+}
+
+// 解析一次box，判断是否是以box header 开头的数据
+export function isStartBox(dataArr: Uint8Array) {
+  try {
+    getAllBoxes(dataArr, 1, 0, false);
+    return true;
+  } catch (e) {
+    return false;
+  }
+}
+
+function isAlphabetOnly(str: string) {
+  const regex = /^[A-Za-z]+$/;
+  return regex.test(str);
+}
+
+/**
+ * 读取mp4 uint8 数据流的所有最外层的box
+ * @param dataArr
+ * @param maxParseNum 最多解析次数，防止非mp4文件造成过多次读取
+ * @param offset 初始的读取offset
+ * @param checkNum 是否检查解析出的box数量
+ * @returns IBox[]
+ */
+export function getAllBoxes(
+  dataArr: Uint8Array,
+  maxParseNum: number = 2000,
+  offset: number = 0,
+  checkNum: boolean = true,
+): IBox[] {
+  const HEADER_META_SIZE = 8; // byte box size + box type
+  const HEADER_LARGER_SIZE = 8;
+  const commonTypes = ['moov', 'ftyp', 'uuid', 'mdat', 'free', 'moof', 'mfra'];
+  let currentOffset = offset;
+  let currentParseTimes = 0;
+  const boxes: IBox[] = [];
+  while (currentOffset < dataArr.length && currentParseTimes++ < maxParseNum) {
+    let uint8a = dataArr.slice(currentOffset, currentOffset + HEADER_META_SIZE);
+    // 读取前四位
+    let boxSizeBinary = [0, 1, 2, 3].reduce((prev, cur) => {
+      return prev + addZero(uint8a[cur].toString(2));
+    }, '');
+    let boxSize = parseInt(boxSizeBinary, 2);
+    // 读取后四位
+    let boxType = [4, 5, 6, 7].reduce((prev, cur) => {
+      return prev + String.fromCharCode(uint8a[cur]);
+    }, '');
+    if (!commonTypes.includes(boxType)) {
+      console.warn(`未知box类型: ${boxType}`);
+    }
+    if (!isAlphabetOnly(boxType)) {
+      // 非法字符直接报错
+      throw new Error('not mp4 box');
+    }
+    if (boxSize === 1) {
+      uint8a = dataArr.slice(
+        currentOffset + HEADER_META_SIZE,
+        currentOffset + HEADER_META_SIZE + HEADER_LARGER_SIZE,
+      );
+      let boxSizeBinary = [0, 1, 2, 3, 4, 5, 6, 7].reduce((prev, cur) => {
+        return prev + addZero(uint8a[cur].toString(2));
+      }, '');
+      boxSize = parseInt(boxSizeBinary, 2);
+    }
+    boxes.push({
+      type: boxType,
+      offset: currentOffset,
+      size: boxSize,
+    });
+    currentOffset += boxSize;
+  }
+  if (boxes.length >= maxParseNum && checkNum) {
+    throw new Error('too many boxes');
+  }
+  // let ftypFlag = false;
+  // boxes.find((box) => {
+  //   if (box.type === 'ftyp') {
+  //     ftypFlag = true;
+  //     return true;
+  //   } else {
+  //     return false;
+  //   }
+  // });
+  // if (!ftypFlag) {
+  //   throw new Error('boxes incomplete, no ftyp');
+  // }
+  return boxes;
+}
