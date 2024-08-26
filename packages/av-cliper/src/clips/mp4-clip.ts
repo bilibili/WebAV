@@ -211,8 +211,7 @@ export class MP4Clip implements IClip {
       });
     }
     const [audio, video] = await Promise.all([
-      // this.#audioFrameFinder?.find(time) ?? [],
-      [],
+      this.#audioFrameFinder?.find(time) ?? [],
       this.#videoFrameFinder?.find(time),
     ]);
     if (video == null) {
