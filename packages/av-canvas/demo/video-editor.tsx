@@ -22,7 +22,7 @@ const TimelineEditor = ({
   timelineData: tlData,
   onPreviewTime,
   onOffsetChange,
-  onDuraionChange,
+  onDurationChange,
   onDeleteAction,
   timelineState,
   onSplitAction,
@@ -31,7 +31,7 @@ const TimelineEditor = ({
   timelineState: React.MutableRefObject<TimelineState | undefined>;
   onPreviewTime: (time: number) => void;
   onOffsetChange: (action: TimelineAction) => void;
-  onDuraionChange: (args: {
+  onDurationChange: (args: {
     action: TimelineAction;
     start: number;
     end: number;
@@ -48,13 +48,13 @@ const TimelineEditor = ({
       <div>
         <span className="ml-[10px]">缩放：</span>
         <button
-          onClick={() => setScale(scale + 10)}
+          onClick={() => setScale(scale + 5)}
           className="border rounded-full"
         >
           -
         </button>
         <button
-          onClick={() => setScale(scale - 1 > 1 ? scale - 1 : 1)}
+          onClick={() => setScale(scale - 5 > 1 ? scale - 5 : 1)}
           className="border rounded-full"
         >
           +
@@ -101,7 +101,7 @@ const TimelineEditor = ({
         }}
         onActionResizing={({ dir, action, start, end }) => {
           if (dir === 'left') return false;
-          return onDuraionChange({ action, start, end });
+          return onDurationChange({ action, start, end });
         }}
         onActionMoveEnd={({ action }) => {
           onOffsetChange(action);
@@ -138,6 +138,7 @@ function App() {
   const tlState = useRef<TimelineState>();
 
   const [playing, setPlaying] = useState(false);
+  const [clipSource, setClipSource] = useState('remote');
 
   const [cvsWrapEl, setCvsWrapEl] = useState<HTMLDivElement | null>(null);
   const [tlData, setTLData] = useState<TimelineRow[]>([
@@ -186,12 +187,17 @@ function App() {
     };
   }, [cvsWrapEl]);
 
-  function addSprite2Track(trackId: string, spr: VisibleSprite, name = '') {
+  function addSprite2Track(
+    trackId: string,
+    spr: VisibleSprite,
+    name = '',
+    autoSetStartTime = true,
+  ) {
     const track = tlData.find(({ id }) => id === trackId);
     if (track == null) return null;
 
     const start =
-      spr.time.offset === 0
+      autoSetStartTime && spr.time.offset === 0
         ? Math.max(...track.actions.map((a) => a.end), 0) * 1e6
         : spr.time.offset;
 
@@ -224,12 +230,35 @@ function App() {
   return (
     <div className="canvas-wrap">
       <div ref={(el) => setCvsWrapEl(el)} className="mb-[10px]"></div>
+      <input
+        type="radio"
+        id="clip-source-remote"
+        name="clip-source"
+        defaultChecked={clipSource === 'remote'}
+        onChange={() => {
+          setClipSource('remote');
+        }}
+      />
+      <label htmlFor="clip-source-remote"> 示例素材</label>
+      <input
+        type="radio"
+        id="clip-source-local"
+        name="clip-source"
+        defaultChecked={clipSource === 'local'}
+        onChange={() => {
+          setClipSource('local');
+        }}
+      />
+      <label htmlFor="clip-source-local"> 本地素材</label>
+      <span className="mx-[10px]">|</span>
       <button
         className="mx-[10px]"
         onClick={async () => {
-          const spr = new VisibleSprite(
-            new MP4Clip((await fetch('./video/bunny_0.mp4')).body!),
-          );
+          const stream =
+            clipSource === 'local'
+              ? (await loadFile({ 'video/*': ['.mp4', '.mov'] })).stream()
+              : (await fetch('./video/bunny_0.mp4')).body!;
+          const spr = new VisibleSprite(new MP4Clip(stream));
           await avCvs?.addSprite(spr);
           addSprite2Track('1-video', spr, '视频');
         }}
@@ -314,7 +343,7 @@ function App() {
           if (spr == null) return;
           spr.time.offset = action.start * 1e6;
         }}
-        onDuraionChange={({ action, start, end }) => {
+        onDurationChange={({ action, start, end }) => {
           const spr = actionSpriteMap.get(action);
           if (spr == null) return false;
           const duration = (end - start) * 1e6;
@@ -365,7 +394,7 @@ function App() {
             }
             newSpr.time.offset = sprsOffset[i];
             await avCvs.addSprite(newSpr);
-            addSprite2Track(track.id, newSpr, action.name);
+            addSprite2Track(track.id, newSpr, action.name, false);
           }
         }}
       ></TimelineEditor>
@@ -383,4 +412,11 @@ async function createFileWriter(
     suggestedName: `WebAV-export-${Date.now()}.${extName}`,
   });
   return fileHandle.createWritable();
+}
+
+async function loadFile(accept: Record<string, string[]>) {
+  const [fileHandle] = await (window as any).showOpenFilePicker({
+    types: [{ accept }],
+  });
+  return (await fileHandle.getFile()) as File;
 }

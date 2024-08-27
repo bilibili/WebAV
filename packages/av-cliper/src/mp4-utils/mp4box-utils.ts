@@ -94,21 +94,6 @@ function getESDSBoxFromMP4File(file: MP4File, codec = 'mp4a') {
   return mp4aBox?.esds;
 }
 
-export function sample2ChunkOpts(s: {
-  is_sync: boolean;
-  cts: number;
-  timescale: number;
-  duration: number;
-  data: ArrayBuffer;
-}): EncodedAudioChunkInit | EncodedVideoChunkInit {
-  return {
-    type: (s.is_sync ? 'key' : 'delta') as EncodedVideoChunkType,
-    timestamp: (1e6 * s.cts) / s.timescale,
-    duration: (1e6 * s.duration) / s.timescale,
-    data: s.data,
-  };
-}
-
 // 解决封装层音频信息标识错误，导致解码异常
 function parseAudioInfo4ESDSBox(esds: ESDSBoxParser) {
   const decoderConf = esds.esd.descs[0]?.descs[0];

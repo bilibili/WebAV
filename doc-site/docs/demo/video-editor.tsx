@@ -30,7 +30,7 @@ const TimelineEditor = ({
   timelineData: tlData,
   onPreviewTime,
   onOffsetChange,
-  onDuraionChange,
+  onDurationChange,
   onDeleteAction,
   timelineState,
   onSplitAction,
@@ -39,7 +39,7 @@ const TimelineEditor = ({
   timelineState: React.MutableRefObject<TimelineState | undefined>;
   onPreviewTime: (time: number) => void;
   onOffsetChange: (action: TimelineAction) => void;
-  onDuraionChange: (args: {
+  onDurationChange: (args: {
     action: TimelineAction;
     start: number;
     end: number;
@@ -109,7 +109,7 @@ const TimelineEditor = ({
         }}
         onActionResizing={({ dir, action, start, end }) => {
           if (dir === 'left') return false;
-          return onDuraionChange({ action, start, end });
+          return onDurationChange({ action, start, end });
         }}
         onActionMoveEnd={({ action }) => {
           onOffsetChange(action);
@@ -356,7 +356,7 @@ export default function App() {
           if (spr == null) return;
           spr.time.offset = action.start * 1e6;
         }}
-        onDuraionChange={({ action, start, end }) => {
+        onDurationChange={({ action, start, end }) => {
           const spr = actionSpriteMap.get(action);
           if (spr == null) return false;
           const duration = (end - start) * 1e6;

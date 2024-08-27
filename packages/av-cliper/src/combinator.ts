@@ -1,7 +1,7 @@
 import { OffscreenSprite } from './sprite/offscreen-sprite';
 import { file2stream, recodemux } from './mp4-utils';
 import { Log } from './log';
-import { mixinPCM, sleep, throttle } from './av-utils';
+import { mixinPCM, sleep } from './av-utils';
 import { EventTool } from './event-tool';
 import { DEFAULT_AUDIO_CONF } from './clips';
 
@@ -27,34 +27,15 @@ interface ICombinatorOpts {
 
 let COM_ID = 0;
 
-let TOTAL_COM_ENCODE_QSIZE = new Map<Combinator, () => number>();
 /**
- * 控制全局 encode queue size
- * 避免多个 Combinator 并行，导致显存溢出
+ * 避免 VideoEncoder 队列中的 VideoFrame 过多，打爆显存
  */
-const encoderIdle = (() => {
-  let totalQSize = 0;
-
-  const updateQS = throttle(() => {
-    let ts = 0;
-    for (const getQSize of TOTAL_COM_ENCODE_QSIZE.values()) {
-      ts += getQSize();
-    }
-    totalQSize = ts;
-  }, 10);
-
-  return async function encoderIdle() {
-    updateQS();
-    if (totalQSize > 100) {
-      // VideoFrame 非常占用 GPU 显存，避免显存压力过大，稍等一下整体性能更优
-      await sleep(totalQSize);
-      updateQS();
-      if (totalQSize < 50) return;
-
-      await encoderIdle();
-    }
-  };
-})();
+async function letEncoderCalmDown(getQSize: () => number) {
+  if (getQSize() > 50) {
+    await sleep(15);
+    await letEncoderCalmDown(getQSize);
+  }
+}
 
 /**
  * 视频合成器；能添加多个 {@link VisibleSprite}，根据它们位置、层级、时间偏移等信息，合成输出为视频文件
@@ -208,7 +189,6 @@ export class Combinator {
       duration,
       metaDataTags: metaDataTags,
     });
-    TOTAL_COM_ENCODE_QSIZE.set(this, recodeMuxer.getEecodeQueueSize);
     return recodeMuxer;
   }
 
@@ -283,7 +263,6 @@ export class Combinator {
     if (this.#destroyed) return;
     this.#destroyed = true;
 
-    TOTAL_COM_ENCODE_QSIZE.delete(this);
     this.#stopOutput?.();
     this.#evtTool.destroy();
   }
@@ -301,7 +280,7 @@ export class Combinator {
       onError: (err: Error) => void;
     },
   ): () => void {
-    let inputProgress = 0;
+    let progress = 0;
     let stoped = false;
     let err: Error | null = null;
 
@@ -324,7 +303,7 @@ export class Combinator {
           await onEnded();
           return;
         }
-        inputProgress = ts / maxTime;
+        progress = ts / maxTime;
 
         ctx.fillStyle = this.#opts.bgColor;
         ctx.fillRect(0, 0, width, height);
@@ -371,6 +350,7 @@ export class Combinator {
               ),
             );
           } else {
+            // todo: perf 重复利用内存空间
             const data = mixinPCM(audios);
             remux.encodeAudio(
               new AudioData({
@@ -402,7 +382,7 @@ export class Combinator {
 
         ts += timeSlice;
 
-        await encoderIdle();
+        await letEncoderCalmDown(remux.getEncodeQueueSize);
       }
     };
 
@@ -413,17 +393,8 @@ export class Combinator {
       onError(e);
     });
 
-    // 初始 1 避免 NaN
-    let maxEncodeQSize = 1;
-    let outProgress = 0;
-    // 避免 进度值 回退
-    let lastProg = 0;
     const outProgTimer = setInterval(() => {
-      const s = remux.getEecodeQueueSize();
-      maxEncodeQSize = Math.max(maxEncodeQSize, s);
-      outProgress = s / maxEncodeQSize;
-      lastProg = Math.max(outProgress * 0.5 + inputProgress * 0.5, lastProg);
-      onProgress(lastProg);
+      onProgress(progress);
     }, 500);
 
     const exit = () => {
