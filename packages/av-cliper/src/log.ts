@@ -91,7 +91,7 @@ map.set(Log.info, 1);
 map.set(Log.warn, 2);
 map.set(Log.error, 3);
 
-const initPromise = (async function init() {
+async function init() {
   try {
     writer = await localFile.createWriter();
     Log.info(navigator.userAgent);
@@ -104,7 +104,10 @@ const initPromise = (async function init() {
       throw err;
     }
   }
-})();
+}
+
+// 如果是浏览器环境，再进行初始化，避免 node（SSR） 环境 import 时报错
+const initPromise = globalThis.navigator == null ? null : init();
 
 if (import.meta.env?.DEV) {
   Log.setLogLevel(Log.debug);

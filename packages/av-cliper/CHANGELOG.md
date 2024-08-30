@@ -1,5 +1,70 @@
 # @webav/av-cliper
 
+## 0.14.15
+
+### Patch Changes
+
+- 7980ebd: fix: unable to recognize HEVC IDR frames #258
+- a9d810a: fix: thumbnailByKeyFrame throw decoder error
+
+## 0.14.14
+
+### Patch Changes
+
+- bd23942: chore: upgrade opfs-tools
+
+## 0.14.13
+
+### Patch Changes
+
+- 95c37f8: fix: first frame incorrect when split MP4Clip #245
+
+## 0.14.12
+
+### Patch Changes
+
+- 9bc7c2a: fix: remove debug code
+
+## 0.14.11
+
+### Patch Changes
+
+- aff0d9f: fix: update the duration when the first sample is reset to 0.
+- d81f8e3: fix: decoding error when fist item not IDR frame
+
+## 0.14.10
+
+## 0.14.9
+
+### Patch Changes
+
+- b4635d5: perf: mutli encoder
+
+## 0.14.8
+
+### Patch Changes
+
+- 35f6811: fix: throw error when import sdk on node.js
+
+## 0.14.7
+
+### Patch Changes
+
+- b65cb58: fix: timeout when quick seeking
+- 42dc0fa: fix: fix the first render after seeking
+
+## 0.14.6
+
+### Patch Changes
+
+- 8475ab0: perf: pre-decode and update calmdown strategy
+
+## 0.14.5
+
+### Patch Changes
+
+- b77bd86: fix: VideoEncoder bug #203
+
 ## 0.14.4
 
 ### Patch Changes

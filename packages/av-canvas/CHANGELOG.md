@@ -1,5 +1,88 @@
 # @webav/av-canvas
 
+## 0.14.15
+
+### Patch Changes
+
+- Updated dependencies [7980ebd]
+- Updated dependencies [a9d810a]
+  - @webav/av-cliper@0.14.15
+
+## 0.14.14
+
+### Patch Changes
+
+- Updated dependencies [bd23942]
+  - @webav/av-cliper@0.14.14
+
+## 0.14.13
+
+### Patch Changes
+
+- 95c37f8: fix: first frame incorrect when split MP4Clip #245
+- Updated dependencies [95c37f8]
+  - @webav/av-cliper@0.14.13
+
+## 0.14.12
+
+### Patch Changes
+
+- Updated dependencies [9bc7c2a]
+  - @webav/av-cliper@0.14.12
+
+## 0.14.11
+
+### Patch Changes
+
+- d81f8e3: fix: decoding error when fist item not IDR frame
+- Updated dependencies [aff0d9f]
+- Updated dependencies [d81f8e3]
+  - @webav/av-cliper@0.14.11
+
+## 0.14.10
+
+### Patch Changes
+
+- 47e1385: feat: auto ajust ctrl size when canvas resized
+  - @webav/av-cliper@0.14.10
+
+## 0.14.9
+
+### Patch Changes
+
+- Updated dependencies [b4635d5]
+  - @webav/av-cliper@0.14.9
+
+## 0.14.8
+
+### Patch Changes
+
+- Updated dependencies [35f6811]
+  - @webav/av-cliper@0.14.8
+
+## 0.14.7
+
+### Patch Changes
+
+- 42dc0fa: fix: fix the first render after seeking
+- Updated dependencies [b65cb58]
+- Updated dependencies [42dc0fa]
+  - @webav/av-cliper@0.14.7
+
+## 0.14.6
+
+### Patch Changes
+
+- Updated dependencies [8475ab0]
+  - @webav/av-cliper@0.14.6
+
+## 0.14.5
+
+### Patch Changes
+
+- Updated dependencies [b77bd86]
+  - @webav/av-cliper@0.14.5
+
 ## 0.14.4
 
 ### Patch Changes

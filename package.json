@@ -23,11 +23,11 @@
     "prettier": "^3.2.5"
   },
   "scripts": {
-    "build": "pnpm -F '@webav/*' run build",
-    "ci:test": "pnpm -F '@webav/*' run ci:test",
+    "build": "pnpm -F @webav/* run build",
+    "ci:test": "pnpm -F @webav/* run ci:test",
     "publish:all": "pnpm publish -r",
     "publish:all:next": "pnpm publish -r --tag next",
-    "build:api": "pnpm -F '@webav/*' run build:api",
+    "build:api": "pnpm -F @webav/* run build:api",
     "changelog": "conventional-changelog -p angular -i CHANGELOG.md -s",
     "upver": "pnpm changeset version",
     "postinstall": "simple-git-hooks"

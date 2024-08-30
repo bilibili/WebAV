@@ -26,15 +26,17 @@ const createWorker = (): Worker => {
 const handlerMap = new Map<number, Set<() => void>>();
 let runCount = 1;
 
-const worker = createWorker();
-worker.onmessage = () => {
-  runCount += 1;
-  for (const [k, v] of handlerMap.entries()) {
-    if (runCount % k === 0) {
-      v.forEach((fn) => fn());
+let worker: Worker | null = null;
+if (globalThis.Worker != null) {
+  worker = createWorker();
+  worker.onmessage = () => {
+    runCount += 1;
+    for (const [k, v] of handlerMap) {
+      if (runCount % k === 0) for (const fn of v) fn();
     }
-  }
-};
+  };
+}
+
 /**
  * 专门解决页面长时间处于后台时，定时器不（或延迟）执行的问题
  *
@@ -52,7 +54,7 @@ export const workerTimer = (
   handlerMap.set(groupId, fns);
 
   if (handlerMap.size === 1 && fns.size === 1) {
-    worker.postMessage({ event: 'start' });
+    worker?.postMessage({ event: 'start' });
   }
 
   return () => {
@@ -60,7 +62,7 @@ export const workerTimer = (
     if (fns.size === 0) handlerMap.delete(groupId);
     if (handlerMap.size === 0) {
       runCount = 0;
-      worker.postMessage({ event: 'stop' });
+      worker?.postMessage({ event: 'stop' });
     }
   };
 };

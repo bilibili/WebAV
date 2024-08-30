@@ -37,6 +37,7 @@ interface MP4ClipOpts {
 }
 
 type ExtMP4Sample = Omit<MP4Sample, 'data'> & {
+  is_idr: boolean;
   deleted?: boolean;
   data: null | Uint8Array;
 };
@@ -197,42 +198,10 @@ export class MP4Clip implements IClip {
       });
     }
 
-    let audioReady = false;
-    let videoReady = false;
-    let timeoutTimer = 0;
-    const [audio, video] = (await Promise.race([
-      Promise.all([
-        this.#audioFrameFinder?.find(time).then((rs) => {
-          audioReady = true;
-          return rs;
-        }) ?? [],
-        this.#videoFrameFinder?.find(time).then((rs) => {
-          videoReady = true;
-          return rs;
-        }),
-      ]),
-      new Promise<[]>((_, reject) => {
-        timeoutTimer = self.setTimeout(() => {
-          let errMsg = `MP4Clip.tick timeout, ${JSON.stringify({
-            videoReady,
-            audioReady,
-          })}, `;
-
-          const aFinder = this.#audioFrameFinder;
-          if (!audioReady && aFinder != null) {
-            errMsg += JSON.stringify(aFinder.getState());
-            aFinder?.reset();
-          }
-          const vFinder = this.#videoFrameFinder;
-          if (!videoReady && vFinder != null) {
-            errMsg += JSON.stringify(vFinder.getState());
-            vFinder.reset();
-          }
-          reject(Error(errMsg));
-        }, 3000);
-      }),
-    ])) as [Float32Array[], VideoFrame];
-    clearTimeout(timeoutTimer);
+    const [audio, video] = await Promise.all([
+      this.#audioFrameFinder?.find(time) ?? [],
+      this.#videoFrameFinder?.find(time),
+    ]);
 
     if (video == null) {
       return await this.tickInterceptor(time, {
@@ -566,13 +535,12 @@ async function parseMP4Stream(
           if (data.type === 'video') {
             if (videoDeltaTS === -1) videoDeltaTS = data.samples[0].dts;
             for (const s of data.samples) {
-              videoSamples.push(normalizeTimescale(s, videoDeltaTS));
+              videoSamples.push(normalizeTimescale(s, videoDeltaTS, 'video'));
             }
           } else if (data.type === 'audio' && opts.audio) {
             if (audioDeltaTS === -1) audioDeltaTS = data.samples[0].dts;
             for (const s of data.samples) {
-              // 音频数据量可控，直接保存在内存中
-              audioSamples.push(normalizeTimescale(s, audioDeltaTS, false));
+              audioSamples.push(normalizeTimescale(s, audioDeltaTS, 'audio'));
             }
           }
         }
@@ -589,6 +557,7 @@ async function parseMP4Stream(
         // 修复首帧黑帧
         const firstSample = videoSamples[0];
         if (firstSample != null && firstSample.cts < 200e3) {
+          firstSample.duration += firstSample.cts;
           firstSample.cts = 0;
         }
         Log.info('mp4 stream parsed');
@@ -601,14 +570,23 @@ async function parseMP4Stream(
     });
   });
 
-  function normalizeTimescale(s: MP4Sample, delta = 0, releaseData = true) {
+  function normalizeTimescale(
+    s: MP4Sample,
+    delta = 0,
+    sampleType: 'video' | 'audio',
+  ) {
     return {
       ...s,
+      is_idr:
+        sampleType === 'video' &&
+        s.is_sync &&
+        isIDRFrame(s.data, s.description.type),
       cts: ((s.cts - delta) / s.timescale) * 1e6,
       dts: ((s.dts - delta) / s.timescale) * 1e6,
       duration: (s.duration / s.timescale) * 1e6,
       timescale: 1e6,
-      data: releaseData ? null : s.data,
+      // 音频数据量可控，直接保存在内存中
+      data: sampleType === 'video' ? null : s.data,
     };
   }
 }
@@ -622,16 +600,16 @@ class VideoFrameFinder {
   ) {}
 
   #ts = 0;
-  #curAborter = { abort: false };
+  #curAborter = { abort: false, st: performance.now() };
   find = async (time: number): Promise<VideoFrame | null> => {
     if (this.#dec == null || time <= this.#ts || time - this.#ts > 3e6) {
-      this.reset();
+      this.#reset(time);
     }
 
     this.#curAborter.abort = true;
     this.#ts = time;
 
-    this.#curAborter = { abort: false };
+    this.#curAborter = { abort: false, st: performance.now() };
     return await this.#parseFrame(time, this.#dec, this.#curAborter);
   };
 
@@ -646,7 +624,7 @@ class VideoFrameFinder {
   #parseFrame = async (
     time: number,
     dec: VideoDecoder | null,
-    aborter: { abort: boolean },
+    aborter: { abort: boolean; st: number },
   ): Promise<VideoFrame | null> => {
     if (dec == null || dec.state === 'closed' || aborter.abort) return null;
 
@@ -658,75 +636,119 @@ class VideoFrameFinder {
       // 第一帧过期，找下一帧
       if (time > vf.timestamp + (vf.duration ?? 0)) {
         vf.close();
-        return this.#parseFrame(time, dec, aborter);
+        return await this.#parseFrame(time, dec, aborter);
+      }
+
+      if (this.#videoFrames.length < 10) {
+        // 预解码 避免等待
+        this.#startDecode(dec).catch((err) => {
+          this.#reset(time);
+          throw err;
+        });
       }
       // 符合期望
       return vf;
     }
 
     // 缺少帧数据
-    if (this.#outputFrameCnt < this.#inputChunkCnt && dec.decodeQueueSize > 0) {
+    if (
+      this.#decoding ||
+      (this.#outputFrameCnt < this.#inputChunkCnt && dec.decodeQueueSize > 0)
+    ) {
+      if (performance.now() - aborter.st > 3e3) {
+        throw Error(
+          `MP4Clip.tick video timeout, ${JSON.stringify(this.#getState())}`,
+        );
+      }
       // 解码中，等待，然后重试
       await sleep(15);
     } else if (this.#videoDecCusorIdx >= this.samples.length) {
       // decode completed
       return null;
     } else {
-      // 启动解码任务，然后重试
-      let endIdx = this.#videoDecCusorIdx + 1;
-      // 该 GoP 时间区间有时间匹配，且未被删除的帧
-      let hasValidFrame = false;
-      for (; endIdx < this.samples.length; endIdx++) {
-        const s = this.samples[endIdx];
-        if (!hasValidFrame && !s.deleted && time < s.cts + s.duration) {
-          hasValidFrame = true;
-        }
-        // 找一个 GoP，所以是下一个关键帧结束
-        if (s.is_sync) break;
+      try {
+        await this.#startDecode(dec);
+      } catch (err) {
+        this.#reset(time);
+        throw err;
       }
-
-      if (hasValidFrame) {
-        const samples = this.samples.slice(this.#videoDecCusorIdx, endIdx);
-        if (samples[0]?.is_sync !== true) {
-          Log.warn('First sample not key frame');
-        } else {
-          const chunks = await videosamples2Chunks(
-            samples,
-            this.localFileReader,
-          );
-          // Wait for the previous asynchronous operation to complete, at which point the task may have already been terminated
-          if (aborter.abort) return null;
-
-          this.#lastVfDur = chunks[0]?.duration ?? 0;
-          decodeGoP(dec, chunks, {
-            onDecodingError: (err) => {
-              if (this.#downgradeSoftDecode) {
-                throw err;
-              } else {
-                this.#downgradeSoftDecode = true;
-                Log.warn('Downgrade to software decode');
-                this.reset();
-              }
-            },
-          });
-
-          this.#inputChunkCnt += chunks.length;
-        }
-      }
-      this.#videoDecCusorIdx = endIdx;
     }
-    return this.#parseFrame(time, dec, aborter);
+    return await this.#parseFrame(time, dec, aborter);
   };
 
-  reset = () => {
+  #decoding = false;
+  #startDecode = async (dec: VideoDecoder) => {
+    if (this.#decoding) return;
+    this.#decoding = true;
+
+    // 启动解码任务，然后重试
+    let endIdx = this.#videoDecCusorIdx + 1;
+    // 该 GoP 时间区间有时间匹配，且未被删除的帧
+    let hasValidFrame = false;
+    for (; endIdx < this.samples.length; endIdx++) {
+      const s = this.samples[endIdx];
+      if (!hasValidFrame && !s.deleted) {
+        hasValidFrame = true;
+      }
+      // 找一个 GoP，所以是下一个 IDR 帧结束
+      if (s.is_idr) break;
+    }
+
+    if (hasValidFrame) {
+      const samples = this.samples.slice(this.#videoDecCusorIdx, endIdx);
+      if (samples[0]?.is_idr !== true) {
+        Log.warn('First sample not idr frame');
+      } else {
+        const chunks = await videosamples2Chunks(samples, this.localFileReader);
+        // Wait for the previous asynchronous operation to complete, at which point the task may have already been terminated
+        if (dec.state === 'closed') return;
+
+        this.#lastVfDur = chunks[0]?.duration ?? 0;
+        decodeGoP(dec, chunks, {
+          onDecodingError: (err) => {
+            if (this.#downgradeSoftDecode) {
+              throw err;
+            } else {
+              this.#downgradeSoftDecode = true;
+              Log.warn('Downgrade to software decode');
+              this.#reset();
+            }
+          },
+        });
+
+        this.#inputChunkCnt += chunks.length;
+      }
+    }
+    this.#videoDecCusorIdx = endIdx;
+    this.#decoding = false;
+  };
+
+  #reset = (time?: number) => {
+    this.#decoding = false;
     this.#videoFrames.forEach((f) => f.close());
     this.#videoFrames = [];
-    this.#videoDecCusorIdx = 0;
+    if (time == null || time === 0) {
+      this.#videoDecCusorIdx = 0;
+    } else {
+      let keyIdx = 0;
+      for (let i = 0; i < this.samples.length; i++) {
+        const s = this.samples[i];
+        if (s.is_idr) keyIdx = i;
+        if (s.cts < time) continue;
+        this.#videoDecCusorIdx = keyIdx;
+        break;
+      }
+    }
     this.#inputChunkCnt = 0;
     this.#outputFrameCnt = 0;
     if (this.#dec?.state !== 'closed') this.#dec?.close();
     this.#dec = new VideoDecoder({
       output: (vf) => {
+        this.#outputFrameCnt += 1;
+        if (vf.timestamp === -1) {
+          vf.close();
+          return;
+        }
         let rsVf = vf;
         if (vf.duration == null) {
           rsVf = new VideoFrame(vf, {
@@ -734,10 +756,11 @@ class VideoFrameFinder {
           });
           vf.close();
         }
-        this.#outputFrameCnt += 1;
         this.#videoFrames.push(rsVf);
       },
-      error: Log.error,
+      error: (err) => {
+        Log.error(`MP4Clip VideoDecoder err: ${err.message}`);
+      },
     });
     this.#dec.configure({
       ...this.conf,
@@ -747,7 +770,7 @@ class VideoFrameFinder {
     });
   };
 
-  getState = () => ({
+  #getState = () => ({
     time: this.#ts,
     decState: this.#dec?.state,
     decQSize: this.#dec?.decodeQueueSize,
@@ -783,11 +806,11 @@ class AudioFrameFinder {
   }
 
   #dec: ReturnType<typeof createAudioChunksDecoder> | null = null;
-  #curAborter = { abort: false };
+  #curAborter = { abort: false, st: performance.now() };
   find = async (time: number): Promise<Float32Array[]> => {
     // 前后获取音频数据差异不能超过 100ms
     if (this.#dec == null || time <= this.#ts || time - this.#ts > 0.1e6) {
-      this.reset();
+      this.#reset();
       this.#ts = time;
       for (let i = 0; i < this.samples.length; i++) {
         if (this.samples[i].cts < time) continue;
@@ -801,13 +824,12 @@ class AudioFrameFinder {
     const deltaTime = time - this.#ts;
     this.#ts = time;
 
-    this.#curAborter = { abort: false };
+    this.#curAborter = { abort: false, st: performance.now() };
     return await this.#parseFrame(deltaTime, this.#dec, this.#curAborter);
   };
 
   #ts = 0;
   #decCusorIdx = 0;
-  #decoding = false;
   #pcmData: {
     frameCnt: number;
     data: [Float32Array, Float32Array][];
@@ -818,7 +840,7 @@ class AudioFrameFinder {
   #parseFrame = async (
     deltaTime: number,
     dec: ReturnType<typeof createAudioChunksDecoder> | null = null,
-    aborter: { abort: boolean },
+    aborter: { abort: boolean; st: number },
   ): Promise<Float32Array[]> => {
     if (dec == null || aborter.abort || dec.state === 'closed') return [];
 
@@ -826,60 +848,61 @@ class AudioFrameFinder {
     if (emitFrameCnt === 0) return [];
 
     // 数据满足需要
-    if (this.#pcmData.frameCnt > emitFrameCnt) {
+    const ramainFrameCnt = this.#pcmData.frameCnt - emitFrameCnt;
+    if (ramainFrameCnt > 0) {
+      // 剩余音频数据小于 100ms
+      if (ramainFrameCnt < DEFAULT_AUDIO_CONF.sampleRate / 10) {
+        this.#startDecode(dec);
+      }
       return emitAudioFrames(this.#pcmData, emitFrameCnt);
     }
 
-    if (this.#decoding) {
+    if (dec.decodeQueueSize > 10) {
+      if (performance.now() - aborter.st > 3e3) {
+        aborter.abort = true;
+        throw Error(
+          `MP4Clip.tick audio timeout, ${JSON.stringify(this.#getState())}`,
+        );
+      }
       // 解码中，等待
       await sleep(15);
     } else if (this.#decCusorIdx >= this.samples.length - 1) {
       // decode completed
       return [];
     } else {
-      // 启动解码任务
-      const samples = [];
-      let i = this.#decCusorIdx;
-      while (i < this.samples.length) {
-        const s = this.samples[i];
-        i += 1;
-        if (s.deleted) continue;
-        samples.push(s);
-        if (samples.length >= 10) break;
-      }
-      this.#decCusorIdx = i;
-
-      this.#decoding = true;
-      dec.decode(
-        samples.map(
-          (s) =>
-            new EncodedAudioChunk({
-              type: 'key',
-              timestamp: s.cts,
-              duration: s.duration,
-              data: s.data!,
-            }),
-        ),
-        (pcmArr, done) => {
-          if (pcmArr.length === 0) return;
-          // 音量调节
-          if (this.#volume !== 1) {
-            for (const pcm of pcmArr)
-              for (let i = 0; i < pcm.length; i++) pcm[i] *= this.#volume;
-          }
-          // 补齐双声道
-          if (pcmArr.length === 1) pcmArr = [pcmArr[0], pcmArr[0]];
-
-          this.#pcmData.data.push(pcmArr as [Float32Array, Float32Array]);
-          this.#pcmData.frameCnt += pcmArr[0].length;
-          if (done) this.#decoding = false;
-        },
-      );
+      this.#startDecode(dec);
     }
     return this.#parseFrame(deltaTime, dec, aborter);
   };
 
-  reset = () => {
+  #startDecode = (dec: ReturnType<typeof createAudioChunksDecoder>) => {
+    if (dec.decodeQueueSize > 100) return;
+    // 启动解码任务
+    const samples = [];
+    let i = this.#decCusorIdx;
+    while (i < this.samples.length) {
+      const s = this.samples[i];
+      i += 1;
+      if (s.deleted) continue;
+      samples.push(s);
+      if (samples.length >= 10) break;
+    }
+    this.#decCusorIdx = i;
+
+    dec.decode(
+      samples.map(
+        (s) =>
+          new EncodedAudioChunk({
+            type: 'key',
+            timestamp: s.cts,
+            duration: s.duration,
+            data: s.data!,
+          }),
+      ),
+    );
+  };
+
+  #reset = () => {
     this.#ts = 0;
     this.#decCusorIdx = 0;
     this.#pcmData = {
@@ -887,17 +910,22 @@ class AudioFrameFinder {
       data: [],
     };
     this.#dec?.close();
-    this.#decoding = false;
     this.#dec = createAudioChunksDecoder(
       this.conf,
-      DEFAULT_AUDIO_CONF.sampleRate,
+      {
+        resampleRate: DEFAULT_AUDIO_CONF.sampleRate,
+        volume: this.#volume,
+      },
+      (pcmArr) => {
+        this.#pcmData.data.push(pcmArr as [Float32Array, Float32Array]);
+        this.#pcmData.frameCnt += pcmArr[0].length;
+      },
     );
   };
 
-  getState = () => ({
+  #getState = () => ({
     time: this.#ts,
     decState: this.#dec?.state,
-    decoding: this.#decoding,
     decQSize: this.#dec?.decodeQueueSize,
     decCusorIdx: this.#decCusorIdx,
     sampleLen: this.samples.length,
@@ -917,68 +945,51 @@ class AudioFrameFinder {
 
 function createAudioChunksDecoder(
   decoderConf: AudioDecoderConfig,
-  resampleRate: number,
+  opts: { resampleRate: number; volume: number },
+  outputCb: (pcm: Float32Array[]) => void,
 ) {
-  type OutputHandle = (pcm: Float32Array[], done: boolean) => void;
+  const outputHandler = (pcmArr: Float32Array[]) => {
+    if (pcmArr.length === 0) return;
+    // 音量调节
+    if (opts.volume !== 1) {
+      for (const pcm of pcmArr)
+        for (let i = 0; i < pcm.length; i++) pcm[i] *= opts.volume;
+    }
 
-  let curCb: ((pcm: Float32Array[], done: boolean) => void) | null = null;
-  const needResample = resampleRate !== decoderConf.sampleRate;
-  const resampleQ = createPromiseQueue<[Float32Array[], boolean]>(
-    ([resampedPCM, done]) => {
-      curCb?.(resampedPCM, done);
-    },
-  );
+    // 补齐双声道
+    if (pcmArr.length === 1) pcmArr = [pcmArr[0], pcmArr[0]];
 
+    outputCb(pcmArr);
+  };
+  const resampleQ = createPromiseQueue<Float32Array[]>(outputHandler);
+
+  const needResample = opts.resampleRate !== decoderConf.sampleRate;
   const adec = new AudioDecoder({
     output: (ad) => {
       const pcm = extractPCM4AudioData(ad);
-      const done = adec.decodeQueueSize === 0;
       if (needResample) {
-        resampleQ(async () => [
-          await audioResample(pcm, ad.sampleRate, {
-            rate: resampleRate,
+        resampleQ(() =>
+          audioResample(pcm, ad.sampleRate, {
+            rate: opts.resampleRate,
             chanCount: ad.numberOfChannels,
           }),
-          done,
-        ]);
+        );
       } else {
-        curCb?.(pcm, done);
+        outputHandler(pcm);
       }
       ad.close();
     },
-    error: Log.error,
+    error: (err) => {
+      Log.error(`MP4Clip AudioDecoder err: ${err.message}`);
+    },
   });
   adec.configure(decoderConf);
 
-  let tasks: Array<{ chunks: EncodedAudioChunk[]; cb: OutputHandle }> = [];
-  async function run() {
-    if (curCb != null || adec.state !== 'configured') return;
-
-    const t = tasks.shift();
-    if (t == null) return;
-    if (t.chunks.length <= 0) {
-      t.cb([], true);
-      run().catch(Log.error);
-      return;
-    }
-
-    curCb = (pcm, done) => {
-      t.cb(pcm, done);
-      if (done) {
-        curCb = null;
-        run().catch(Log.error);
-      }
-    };
-    for (const chunk of t.chunks) adec.decode(chunk);
-  }
-
   return {
-    decode(chunks: EncodedAudioChunk[], cb: OutputHandle) {
-      tasks.push({ chunks, cb });
-      run().catch(Log.error);
+    decode(chunks: EncodedAudioChunk[]) {
+      for (const chunk of chunks) adec.decode(chunk);
     },
     close() {
-      curCb = null;
       if (adec.state !== 'closed') adec.close();
     },
     get state() {
@@ -1023,6 +1034,7 @@ function emitAudioFrames(
   pcmData: { frameCnt: number; data: [Float32Array, Float32Array][] },
   emitCnt: number,
 ) {
+  // todo: perf 重复利用内存空间
   const audio = [new Float32Array(emitCnt), new Float32Array(emitCnt)];
   let offset = 0;
   let i = 0;
@@ -1063,27 +1075,30 @@ async function videosamples2Chunks(
     );
     return samples.map((s) => {
       const offset = s.offset - first.offset;
+      let sData = data.subarray(offset, offset + s.size);
+      if (s.is_idr) sData = removeSEIForIDR(sData);
       return new EncodedVideoChunk({
         type: s.is_sync ? 'key' : 'delta',
         timestamp: s.cts,
         duration: s.duration,
-        data: data.subarray(offset, offset + s.size),
+        data: sData,
       });
     });
   }
 
   return await Promise.all(
-    samples.map(
-      async (s) =>
-        new EncodedVideoChunk({
-          type: s.is_sync ? 'key' : 'delta',
-          timestamp: s.cts,
-          duration: s.duration,
-          data: await reader.read(s.size, {
-            at: s.offset,
-          }),
-        }),
-    ),
+    samples.map(async (s) => {
+      let sData = await reader.read(s.size, {
+        at: s.offset,
+      });
+      if (s.is_idr) sData = removeSEIForIDR(new Uint8Array(sData));
+      return new EncodedVideoChunk({
+        type: s.is_sync ? 'key' : 'delta',
+        timestamp: s.cts,
+        duration: s.duration,
+        data: sData,
+      });
+    }),
   );
 }
 
@@ -1111,7 +1126,7 @@ function splitVideoSampleByTime(videoSamples: ExtMP4Sample[], time: number) {
   for (let i = 0; i < videoSamples.length; i++) {
     const s = videoSamples[i];
     if (hitIdx === -1 && time < s.cts) hitIdx = i - 1;
-    if (s.is_sync) {
+    if (s.is_idr) {
       if (hitIdx === -1) {
         gopStartIdx = i;
       } else {
@@ -1136,20 +1151,14 @@ function splitVideoSampleByTime(videoSamples: ExtMP4Sample[], time: number) {
   }
 
   const postSlice = videoSamples
-    .slice(hitSample.is_sync ? gopEndIdx : gopStartIdx)
+    .slice(hitSample.is_idr ? gopEndIdx : gopStartIdx)
     .map((s) => ({ ...s, cts: s.cts - time }));
 
-  let postSyncCnt = 0;
   for (const s of postSlice) {
-    // 遇到第二个关键帧结束循环
-    if (postSyncCnt > 0) break;
-    if (s.is_sync) postSyncCnt += 1;
-
-    if (s.cts < 0) {
-      // 将第一个 GoP 中前半部分标记为 deleted
-      s.deleted = true;
-      s.cts = -1;
-    }
+    if (s.cts >= 0) break;
+    // 将第一个 GoP 中前半部分标记为 deleted
+    s.deleted = true;
+    s.cts = -1;
   }
 
   return [preSlice, postSlice];
@@ -1177,34 +1186,12 @@ function decodeGoP(
   dec: VideoDecoder,
   chunks: EncodedVideoChunk[],
   opts: {
-    idrFrameDowngrade?: boolean;
     onDecodingError?: (err: Error) => void;
   },
 ) {
   let i = 0;
-  try {
-    if (dec.state !== 'configured') return;
-    for (; i < chunks.length; i++) dec.decode(chunks[i]);
-  } catch (err) {
-    if (opts.idrFrameDowngrade || !(err instanceof Error)) throw err;
-    if (
-      i === 0 &&
-      err.message.includes('A key frame is required after configure')
-    ) {
-      // 第一帧携带 SEI 信息会导致解码失败
-      const newChunk = removeNonIDRData(chunks[0]);
-      if (newChunk == null) throw err;
-
-      Log.warn('remove non IDR data, retry decode');
-      chunks[0] = newChunk;
-      decodeGoP(dec, chunks, {
-        ...opts,
-        idrFrameDowngrade: true,
-      });
-    } else {
-      throw err;
-    }
-  }
+  if (dec.state !== 'configured') return;
+  for (; i < chunks.length; i++) dec.decode(chunks[i]);
 
   // windows 某些设备 flush 可能不会被 resolved，所以不能 await flush
   dec.flush().catch((err) => {
@@ -1224,26 +1211,29 @@ function decodeGoP(
 }
 
 // 当 IDR 帧前面携带其它数据（如 SEI）可能导致解码失败
-function removeNonIDRData(chunk: EncodedVideoChunk) {
-  const buf = new ArrayBuffer(chunk.byteLength);
-  chunk.copyTo(buf);
-  const u8 = new Uint8Array(buf);
-  let i = 0;
-  for (; i < chunk.byteLength - 4; ) {
-    if ((u8[i + 4] & 0x1f) === 5) break;
-    // 跳至下一个 NALU 继续检查
-    i += (u8[i] << 24) + (u8[i + 1] << 16) + (u8[i + 2] << 8) + u8[i + 3] + 4;
+function removeSEIForIDR(u8buf: Uint8Array) {
+  const dv = new DataView(u8buf.buffer, u8buf.byteOffset, u8buf.byteLength);
+  if ((dv.getUint8(4) & 0x1f) === 6) {
+    return u8buf.subarray(dv.getUint32(0) + 4);
   }
+  return u8buf;
+}
 
-  if (i < buf.byteLength) {
-    return new EncodedVideoChunk({
-      type: chunk.type,
-      timestamp: chunk.timestamp,
-      duration: chunk.duration ?? 0,
-      data: buf.slice(i),
-    });
+function isIDRFrame(u8Arr: Uint8Array, type: MP4Sample['description']['type']) {
+  if (type !== 'avc1' && type !== 'hvc1') return false;
+
+  const dv = new DataView(u8Arr.buffer);
+  let i = 0;
+  for (; i < u8Arr.byteLength - 4; ) {
+    if (type === 'avc1') {
+      if ((dv.getUint8(i + 4) & 0x1f) === 5) return true;
+    } else if (type === 'hvc1') {
+      if (((dv.getUint8(i + 4) >> 1) & 0x3f) === 20) return true;
+    }
+    // 跳至下一个 NALU 继续检查
+    i += dv.getUint32(i) + 4;
   }
-  return null;
+  return false;
 }
 
 async function thumbnailByKeyFrame(

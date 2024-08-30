@@ -57,10 +57,10 @@ export class VisibleSprite extends BaseSprite {
   }
 
   /**
-   * 提前准备首帧，避免初次绘制时缺少帧导致闪烁
+   * 提前准备指定 time 的帧
    */
-  preFirstFrame() {
-    this.#update(0);
+  preFrame(time: number) {
+    this.#update(time);
   }
 
   #lastTime = -1;

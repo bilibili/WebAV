@@ -103,10 +103,17 @@ export class AVCanvas {
 
     createEmptyOscillatorNode(this.#audioCtx).connect(this.#captureAudioDest);
 
-    Rect.CTRL_SIZE = 12 / (900 / this.#cvsEl.width);
+    const cvsResizeOb = new ResizeObserver((entries) => {
+      const fisrtEntry = entries[0];
+      if (fisrtEntry == null) return;
+      Rect.CTRL_SIZE = 10 / (fisrtEntry.contentRect.width / this.#cvsEl.width);
+    });
+    cvsResizeOb.observe(this.#cvsEl);
+
     this.#spriteManager = new SpriteManager();
 
     this.#clears.push(
+      () => cvsResizeOb.disconnect(),
       // 鼠标样式、控制 sprite 依赖 activeSprite，
       // activeSprite 需要在他们之前监听到 mousedown 事件 (代码顺序需要靠前)
       activeSprite(this.#cvsEl, this.#spriteManager),
@@ -250,9 +257,11 @@ export class AVCanvas {
     }
 
     this.#updateRenderTime(opts.start);
-    this.#spriteManager
-      .getSprites({ time: false })
-      .forEach((vs) => vs.preFirstFrame());
+    this.#spriteManager.getSprites({ time: false }).forEach((vs) => {
+      const { offset, duration } = vs.time;
+      const selfOffset = this.#renderTime - offset;
+      vs.preFrame(selfOffset > 0 && selfOffset < duration ? selfOffset : 0);
+    });
 
     this.#playState.start = opts.start;
     this.#playState.end = end;
