@@ -146,6 +146,8 @@ function App() {
     { id: '3-img', actions: [] },
     { id: '4-text', actions: [] },
   ]);
+  const [capture, setCapture] = useState(null);
+  const [captureWidth, setCaptureWidth] = useState(30);
 
   useEffect(() => {
     if (cvsWrapEl == null) return;
@@ -241,6 +243,22 @@ function App() {
       >
         + 视频
       </button>
+
+      <button
+        className="mx-[10px]"
+        onClick={async () => {
+          const clipSource = (
+            await loadFile({ 'video/*': ['.mp4', '.mov'] })
+          ).stream();
+
+          const spr = new VisibleSprite(new MP4Clip(clipSource));
+          await avCvs?.addSprite(spr);
+          addSprite2Track('1-video', spr, '视频');
+        }}
+      >
+        + 本地视频
+      </button>
+
       <button
         className="mx-[10px]"
         onClick={async () => {
@@ -307,6 +325,26 @@ function App() {
       >
         导出视频
       </button>
+      <button
+        className="mx-[10px]"
+        onClick={async () => {
+          if (avCvs == null) return;
+          const b64 = avCvs.captureImage();
+          setCapture(b64);
+          alert('截图成功');
+        }}
+      >
+        截图
+      </button>
+      <img
+        className="mx-[10px]"
+        width={captureWidth}
+        height={'100%'}
+        src={capture}
+        onClick={() => {
+          setCaptureWidth(captureWidth === 30 ? 200 : 30);
+        }}
+      />
       <p></p>
       <TimelineEditor
         timelineData={tlData}
@@ -388,4 +426,11 @@ async function createFileWriter(
     suggestedName: `WebAV-export-${Date.now()}.${extName}`,
   });
   return fileHandle.createWritable();
+}
+
+async function loadFile(accept: Record<string, string[]>) {
+  const [fileHandle] = await (window as any).showOpenFilePicker({
+    types: [{ accept }],
+  });
+  return (await fileHandle.getFile()) as File;
 }
