@@ -114,7 +114,7 @@ document.querySelector('#decode-audio')?.addEventListener('click', () => {
 });
 
 const videos = {
-  'bunny.mp4': './video/bunny_0.mp4',
+  'bunny.mp4': './video/bunny.mp4',
   'bear.mp4': './video/bear-vp9.mp4',
   'travel.mp4': './video/travel.mp4',
   'moov-ahead.mp4': './video/moov-ahead.mp4',
@@ -148,7 +148,6 @@ document.querySelector('#decode-video')?.addEventListener('click', () => {
       while (true) {
         const { state, video } = await clip.tick(time);
         videoFrameCount++;
-        console.log('videoFrameCount: ', videoFrameCount);
         if (state === 'done') break;
         if (video != null && state === 'success') {
           ctx.clearRect(0, 0, cvs.width, cvs.height);

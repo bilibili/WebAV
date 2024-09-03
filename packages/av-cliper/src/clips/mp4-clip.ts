@@ -1,4 +1,10 @@
-import { MP4Info, MP4Sample } from '@webav/mp4box.js';
+// import { MP4Info, MP4Sample } from '@webav/mp4box.js';
+import {
+  MP4ArrayBuffer,
+  MP4Info,
+  MP4Sample,
+  createFile,
+} from '@webav/mp4box.js';
 import {
   audioResample,
   autoReadStream,
@@ -6,7 +12,7 @@ import {
   sleep,
 } from '../av-utils';
 import { Log } from '../log';
-import { extractFileConfig } from '../mp4-utils/mp4box-utils';
+import { extractFileConfig, getFileBoxes } from '../mp4-utils/mp4box-utils';
 import { SampleTransform } from '../mp4-utils/sample-transform';
 import { DEFAULT_AUDIO_CONF, IClip } from './iclip';
 import { file, tmpfile, write } from 'opfs-tools';
@@ -142,16 +148,15 @@ export class MP4Clip implements IClip {
       : 'localFile' in source
         ? source.localFile // from clone
         : tmpfile();
-
     this.ready = (
       source instanceof ReadableStream
         ? initByStream(source).then((s) =>
-            parseMP4Stream(s, this.#opts, this.#localFile),
+            parseMP4File(this.#localFile, this.#opts),
           )
         : isOTFile(source)
           ? source
               .stream()
-              .then((s) => parseMP4Stream(s, this.#opts, this.#localFile))
+              .then((s) => parseMP4File(this.#localFile, this.#opts))
           : Promise.resolve(source)
     ).then(async ({ videoSamples, audioSamples, decoderConf }) => {
       this.#videoSamples = videoSamples;
@@ -460,7 +465,7 @@ function genMeta(
     for (let i = videoSamples.length - 1; i >= 0; i--) {
       const s = videoSamples[i];
       if (s.deleted) continue;
-      vDuration = s.cts + s.duration;
+      vDuration = Math.max(s.dts + s.duration, vDuration);
       break;
     }
   }
@@ -596,25 +601,126 @@ async function parseMP4Stream(
       },
     });
   });
+}
+async function normalizeTimescale(
+  reader: LocalFileReader,
+  s: MP4Sample,
+  delta = 0,
+  sampleType: 'video' | 'audio',
+) {
+  return {
+    ...s,
+    is_idr:
+      sampleType === 'video' && s.is_sync && (await isIDRFrame(reader, s)),
+    cts: ((s.cts - delta) / s.timescale) * 1e6,
+    dts: ((s.dts - delta) / s.timescale) * 1e6,
+    duration: (s.duration / s.timescale) * 1e6,
+    timescale: 1e6,
+    // 不存储源文件数据
+    data: null,
+  };
+}
 
-  async function normalizeTimescale(
-    reader: LocalFileReader,
-    s: MP4Sample,
-    delta = 0,
-    sampleType: 'video' | 'audio',
-  ) {
-    return {
-      ...s,
-      is_idr:
-        sampleType === 'video' && s.is_sync && (await isIDRFrame(reader, s)),
-      cts: ((s.cts - delta) / s.timescale) * 1e6,
-      dts: ((s.dts - delta) / s.timescale) * 1e6,
-      duration: (s.duration / s.timescale) * 1e6,
-      timescale: 1e6,
-      // 不存储源文件数据
-      data: null,
-    };
+async function parseMP4File(
+  localFile: OPFSToolFile,
+  opts: MP4ClipOpts = {},
+): Promise<{
+  videoSamples: ExtMP4Sample[];
+  audioSamples: ExtMP4Sample[];
+  decoderConf: MP4DecoderConf;
+}> {
+  const decoderConf: MP4DecoderConf = {
+    video: null,
+    audio: null,
+    mp4Info: null,
+  };
+  let videoSamples: ExtMP4Sample[] = [];
+  let audioSamples: ExtMP4Sample[] = [];
+  let videoDeltaTS = -1;
+  let audioDeltaTS = -1;
+  const boxes = await getFileBoxes(localFile);
+  const mp4bxoFile = createFile();
+  const reader = await localFile.createReader();
+  let _resolve: (value: any) => void;
+  let _reject: (reason: any) => void;
+  const resPromise: Promise<{
+    videoSamples: typeof videoSamples;
+    audioSamples: typeof audioSamples;
+    decoderConf: typeof decoderConf;
+  }> = new Promise((resolve, reject) => {
+    _resolve = resolve;
+    _reject = reject;
+  });
+
+  mp4bxoFile.onReady = async (info) => {
+    Log.info('mp4BoxFile moov ready', info, decoderConf);
+    let { videoDecoderConf: vc, audioDecoderConf: ac } = extractFileConfig(
+      mp4bxoFile,
+      info,
+    );
+    decoderConf.video = vc ?? null;
+    decoderConf.audio = ac ?? null;
+    decoderConf.mp4Info = info;
+    if (vc == null && ac == null) {
+      _reject('MP4Clip must contain at least one video or audio track');
+    }
+    const reader = await localFile.createReader();
+    for (const trak of mp4bxoFile?.moov?.traks || []) {
+      const trackType =
+        trackTypeMap[trak?.mdia?.hdlr?.handler.toLowerCase() || 'vide'];
+      if (trackType == 'video') {
+        if (videoDeltaTS === -1) videoDeltaTS = trak.samples[0].dts;
+
+        let dts_with_timebase = 0;
+        let max_dts_with_timebase = -Infinity;
+        let min_dts_with_timebase = Infinity;
+        for (const s of trak.samples) {
+          videoSamples.push(
+            await normalizeTimescale(reader, s, videoDeltaTS, 'video'),
+          );
+          dts_with_timebase = s.dts / s.timescale;
+          min_dts_with_timebase = Math.min(
+            dts_with_timebase,
+            min_dts_with_timebase,
+          );
+          max_dts_with_timebase = Math.max(
+            dts_with_timebase,
+            max_dts_with_timebase,
+          );
+        }
+      } else if (trackType == 'audio' && opts.audio) {
+        if (audioDeltaTS === -1) audioDeltaTS = trak.samples[0].dts;
+        for (const s of trak.samples) {
+          videoSamples.push(
+            await normalizeTimescale(reader, s, videoDeltaTS, 'audio'),
+          );
+        }
+      }
+    }
+    const lastSampele = videoSamples.at(-1) ?? audioSamples.at(-1);
+    if (lastSampele == null) {
+      throw Error('MP4Clip stream not contain any sample');
+    }
+    const firstSample = videoSamples[0];
+    if (firstSample != null && firstSample.cts < 200e3) {
+      firstSample.duration += firstSample.cts;
+      firstSample.cts = 0;
+    }
+    Log.info('mp4 stream parsed');
+    _resolve({
+      videoSamples,
+      audioSamples,
+      decoderConf,
+    });
+  };
+  for (const box of boxes) {
+    const tmpBuf = (await reader.read(box.size, {
+      at: box.offset,
+    })) as MP4ArrayBuffer;
+    tmpBuf.fileStart = box.offset;
+    mp4bxoFile.appendBuffer(tmpBuf);
   }
+  return resPromise;
 }
 
 class VideoFrameFinder {
@@ -1276,7 +1382,7 @@ function decodeGoP(
 
 // 当 IDR 帧前面携带其它数据（如 SEI）可能导致解码失败
 function removeSEIForIDR(u8buf: Uint8Array) {
-  const dv = new DataView(u8buf.buffer);
+  const dv = new DataView(u8buf.buffer, u8buf.byteOffset, u8buf.byteLength);
   if ((dv.getUint8(4) & 0x1f) === 6) {
     return u8buf.subarray(dv.getUint32(0) + 4);
   }

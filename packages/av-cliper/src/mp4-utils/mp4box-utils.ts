@@ -8,6 +8,8 @@ import mp4box, {
   VideoTrackOpts,
 } from '@webav/mp4box.js';
 import { DEFAULT_AUDIO_CONF } from '../clips';
+import { file } from 'opfs-tools';
+type OPFSToolFile = ReturnType<typeof file>;
 
 export function extractFileConfig(file: MP4File, info: MP4Info) {
   const vTrack = info.videoTracks[0];
@@ -141,16 +143,6 @@ function addZero(str: string, targetNum = 8): string {
   return str;
 }
 
-// 解析一次box，判断是否是以box header 开头的数据
-export function isStartBox(dataArr: Uint8Array) {
-  try {
-    getAllBoxes(dataArr, 1, 0, false);
-    return true;
-  } catch (e) {
-    return false;
-  }
-}
-
 function isAlphabetOnly(str: string) {
   const regex = /^[A-Za-z]+$/;
   return regex.test(str);
@@ -226,5 +218,88 @@ export function getAllBoxes(
   // if (!ftypFlag) {
   //   throw new Error('boxes incomplete, no ftyp');
   // }
+  return boxes;
+}
+
+/**
+ * 读取mp4 uint8 数据流的所有最外层的box
+ * @param dataArr
+ * @param maxParseNum 最多解析次数，防止非mp4文件造成过多次读取
+ * @param offset 初始的读取offset
+ * @param checkNum 是否检查解析出的box数量
+ * @returns IBox[]
+ */
+export async function getFileBoxes(
+  localFile: OPFSToolFile,
+  maxParseNum: number = 2000,
+  offset: number = 0,
+  checkNum: boolean = true,
+): Promise<IBox[]> {
+  const HEADER_META_SIZE = 8; // byte box size + box type
+  const HEADER_LARGER_SIZE = 8;
+  const commonTypes = ['moov', 'ftyp', 'uuid', 'mdat', 'free', 'moof', 'mfra'];
+  let currentOffset = offset;
+  let currentParseTimes = 0;
+  const boxes: IBox[] = [];
+  const reader = await localFile.createReader();
+  const fSize = await localFile.getSize();
+  while (currentOffset < fSize && currentParseTimes++ < maxParseNum) {
+    let uint8a = new Uint8Array(
+      await reader.read(currentOffset + HEADER_META_SIZE, {
+        at: currentOffset,
+      }),
+    );
+    // 读取前四位
+    let boxSizeBinary = [0, 1, 2, 3].reduce((prev, cur) => {
+      return prev + addZero(uint8a[cur].toString(2));
+    }, '');
+    let boxSize = parseInt(boxSizeBinary, 2);
+    // 读取后四位
+    let boxType = [4, 5, 6, 7].reduce((prev, cur) => {
+      return prev + String.fromCharCode(uint8a[cur]);
+    }, '');
+    if (!commonTypes.includes(boxType)) {
+      console.warn(`未知box类型: ${boxType}`);
+    }
+    if (!isAlphabetOnly(boxType)) {
+      // 非法字符直接报错
+      throw new Error('not mp4 box');
+    }
+    if (boxSize === 1) {
+      uint8a = new Uint8Array(
+        await reader.read(
+          currentOffset + HEADER_META_SIZE + HEADER_LARGER_SIZE,
+          {
+            at: currentOffset + HEADER_META_SIZE,
+          },
+        ),
+      );
+      let boxSizeBinary = [0, 1, 2, 3, 4, 5, 6, 7].reduce((prev, cur) => {
+        return prev + addZero(uint8a[cur].toString(2));
+      }, '');
+      boxSize = parseInt(boxSizeBinary, 2);
+    }
+    boxes.push({
+      type: boxType,
+      offset: currentOffset,
+      size: boxSize,
+    });
+    currentOffset += boxSize;
+  }
+  if (boxes.length >= maxParseNum && checkNum) {
+    throw new Error('too many boxes');
+  }
+  let ftypFlag = false;
+  boxes.find((box) => {
+    if (box.type === 'ftyp') {
+      ftypFlag = true;
+      return true;
+    } else {
+      return false;
+    }
+  });
+  if (!ftypFlag) {
+    throw new Error('boxes incomplete, no ftyp');
+  }
   return boxes;
 }
