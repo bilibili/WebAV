@@ -1,5 +1,11 @@
 # @webav/av-cliper
 
+## 0.15.1
+
+### Patch Changes
+
+- bd37284: fix: not has video frame when recode usermedia
+
 ## 0.15.0
 
 ### Minor Changes
