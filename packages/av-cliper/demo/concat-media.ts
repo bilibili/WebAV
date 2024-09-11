@@ -67,6 +67,7 @@ document.querySelector('#mp4-img')?.addEventListener('click', () => {
     const com = new Combinator({
       width: 1280,
       height: 720,
+      fps: 60,
       videoCodec: 'avc1.42E032',
       bgColor: 'white',
       // audio: false,

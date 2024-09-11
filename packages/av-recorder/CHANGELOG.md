@@ -1,5 +1,29 @@
 # @webav/av-recorder
 
+## 0.15.0
+
+### Patch Changes
+
+- 8d76376: chore: merge bugfix
+- Updated dependencies [8d76376]
+- Updated dependencies [d935bdc]
+  - @webav/av-cliper@0.15.0
+
+## 0.15.0-beta.1
+
+### Patch Changes
+
+- chore: merge bugfix
+- Updated dependencies
+  - @webav/av-cliper@0.15.0-beta.1
+
+## 0.15.0-beta.0
+
+### Patch Changes
+
+- Updated dependencies
+  - @webav/av-cliper@0.15.0-beta.0
+
 ## 0.14.15
 
 ### Patch Changes

@@ -1,5 +1,27 @@
 # @webav/av-cliper
 
+## 0.15.0
+
+### Minor Changes
+
+- d935bdc: feat: custom fps for Combinator
+
+### Patch Changes
+
+- 8d76376: chore: merge bugfix
+
+## 0.15.0-beta.1
+
+### Patch Changes
+
+- chore: merge bugfix
+
+## 0.15.0-beta.0
+
+### Minor Changes
+
+- feat: custom fps for Combinator
+
 ## 0.14.15
 
 ### Patch Changes
