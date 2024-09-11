@@ -209,8 +209,9 @@ function encodeVideoTrack(
 
   let curEncId: 'encoder0' | 'encoder1' = 'encoder1';
   let lastAddedSampleTime = 0;
-  // 小于 10 ms 的帧判定为连续的
-  const deltaTime = 10e3;
+  // 双编码器交替消费，保证帧的顺序
+  // 小于期望帧间隔帧判定为连续的
+  const deltaTime = Math.floor((1000 / opts.expectFPS) * 1e6);
   function checkCache() {
     if (!audioReady) return;
     const nextEncId = curEncId === 'encoder1' ? 'encoder0' : 'encoder1';
@@ -220,9 +221,11 @@ function encodeVideoTrack(
     if (curCache.length === 0 && nextCache.length === 0) return;
 
     let curFirst = curCache[0];
-    if (curFirst != null && curFirst.cts - lastAddedSampleTime < deltaTime) {
-      const lastTs = addSampleToFile(curCache);
-      if (lastTs > lastAddedSampleTime) lastAddedSampleTime = lastTs;
+    if (curFirst != null) {
+      if (!curFirst.is_sync || curFirst.cts - lastAddedSampleTime < deltaTime) {
+        const lastTs = addSampleToFile(curCache);
+        if (lastTs > lastAddedSampleTime) lastAddedSampleTime = lastTs;
+      }
     }
 
     // 检测是否需要切换消费队列
