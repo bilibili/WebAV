@@ -1,6 +1,6 @@
 {
   "name": "@webav/av-canvas",
-  "version": "0.14.6",
+  "version": "0.15.2",
   "private": false,
   "repository": "https://github.com/bilibili/WebAV",
   "keywords": [
@@ -18,6 +18,13 @@
   "types": "dist/index.d.ts",
   "module": "dist/av-canvas.js",
   "main": "dist/av-canvas.umd.cjs",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/av-canvas.js",
+      "require": "./dist/av-canvas.umd.cjs"
+    }
+  },
   "scripts": {
     "dev": "vite demo --config demo/demo-vite.config.ts",
     "test": "vitest --config test-vite.config.ts",

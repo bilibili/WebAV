@@ -20,6 +20,7 @@ import { SampleTransform } from './sample-transform';
 import { extractFileConfig, unsafeReleaseMP4BoxFile } from './mp4box-utils';
 import { tmpfile, write } from 'opfs-tools';
 import { createMetaBox } from './meta-box';
+import { workerTimer } from '../worker-timer';
 
 type TCleanFn = () => void;
 
@@ -64,7 +65,11 @@ export function recodemux(opts: IRecodeMuxOpts): {
   /**
    * 编码视频帧
    */
-  encodeVideo: (frame: VideoFrame, options?: VideoEncoderEncodeOptions) => void;
+  encodeVideo: (
+    frame: VideoFrame,
+    options: VideoEncoderEncodeOptions,
+    gopId?: number,
+  ) => void;
   /**
    * 编码音频数据
    */
@@ -143,14 +148,14 @@ export function recodemux(opts: IRecodeMuxOpts): {
       vEncoder?.encodeQueueSize ?? aEncoder?.encodeQueueSize ?? 0,
     flush: async () => {
       await Promise.all([
-        vEncoder?.state === 'configured' ? vEncoder.flush() : null,
+        vEncoder?.flush(),
         aEncoder?.state === 'configured' ? aEncoder.flush() : null,
       ]);
       return;
     },
     close: () => {
       avSyncEvtTool.destroy();
-      if (vEncoder?.state === 'configured') vEncoder.close();
+      vEncoder?.close();
       if (aEncoder?.state === 'configured') aEncoder.close();
     },
     mp4file,
@@ -161,7 +166,7 @@ function encodeVideoTrack(
   opts: NonNullable<IRecodeMuxOpts['video']>,
   mp4File: MP4File,
   avSyncEvtTool: EventTool<Record<'VideoReady' | 'AudioReady', () => void>>,
-): VideoEncoder {
+) {
   const videoTrackOpts = {
     // 微秒
     timescale: 1e6,
@@ -173,18 +178,23 @@ function encodeVideoTrack(
   };
 
   let trackId = -1;
-  let cache: EncodedVideoChunk[] = [];
   let audioReady = false;
   avSyncEvtTool.once('AudioReady', () => {
     audioReady = true;
-    cache.forEach((c) => {
-      const s = chunk2MP4SampleOpts(c);
-      mp4File.addSample(trackId, s.data, s);
-    });
-    cache = [];
   });
-  // todo: perf
-  const encoder = createVideoEncoder(opts, (chunk, meta) => {
+
+  const samplesCache: Record<
+    'encoder0' | 'encoder1',
+    Array<ReturnType<typeof chunk2MP4SampleOpts>>
+  > = {
+    encoder0: [],
+    encoder1: [],
+  };
+  const outputHandler = (
+    encId: 'encoder0' | 'encoder1',
+    chunk: EncodedVideoChunk,
+    meta?: EncodedVideoChunkMetadata,
+  ) => {
     if (trackId === -1 && meta != null) {
       const desc = meta.decoderConfig?.description as ArrayBuffer;
       fixChromeConstraintSetFlagsBug(desc);
@@ -194,31 +204,103 @@ function encodeVideoTrack(
       Log.info('VideoEncoder, video track ready, trackId:', trackId);
     }
 
-    if (audioReady) {
-      const s = chunk2MP4SampleOpts(chunk);
-      mp4File.addSample(trackId, s.data, s);
-    } else {
-      cache.push(chunk);
-    }
-  });
+    samplesCache[encId].push(chunk2MP4SampleOpts(chunk));
+  };
 
-  return encoder;
+  let curEncId: 'encoder0' | 'encoder1' = 'encoder1';
+  let lastAddedSampleTime = 0;
+  // 双编码器交替消费，保证帧的顺序
+  // 小于期望帧间隔帧判定为连续的
+  const deltaTime = Math.floor((1000 / opts.expectFPS) * 1e3);
+  function checkCache() {
+    if (!audioReady) return;
+    const nextEncId = curEncId === 'encoder1' ? 'encoder0' : 'encoder1';
+    const curCache = samplesCache[curEncId];
+    const nextCache = samplesCache[nextEncId];
+    // 无数据
+    if (curCache.length === 0 && nextCache.length === 0) return;
+
+    let curFirst = curCache[0];
+    if (curFirst != null) {
+      if (!curFirst.is_sync || curFirst.cts - lastAddedSampleTime < deltaTime) {
+        const lastTs = addSampleToFile(curCache);
+        if (lastTs > lastAddedSampleTime) lastAddedSampleTime = lastTs;
+      }
+    }
+
+    // 检测是否需要切换消费队列
+    const nextFirst = nextCache[0];
+    // 另一个队列跟已消费的最后一帧是连续的，则需要切换
+    if (
+      nextFirst != null &&
+      nextFirst.is_sync &&
+      nextFirst.cts - lastAddedSampleTime < deltaTime
+    ) {
+      curEncId = nextEncId;
+      // 说明另一个队列有数据，尽快消费
+      checkCache();
+    }
+  }
+
+  function addSampleToFile(
+    chunks: Array<ReturnType<typeof chunk2MP4SampleOpts>>,
+  ) {
+    let lastTime = -1;
+    let i = 0;
+    for (; i < chunks.length; i++) {
+      const c = chunks[i];
+      // 每次消费到下一个关键帧结束，可能需要切换队列
+      if (i > 0 && c.is_sync) break;
+
+      mp4File.addSample(trackId, c.data, c);
+      lastTime = c.cts + c.duration;
+    }
+    chunks.splice(0, i);
+    return lastTime;
+  }
+
+  const stopTimer = workerTimer(checkCache, 15);
+
+  const encoder0 = createVideoEncoder(opts, (chunk, meta) =>
+    outputHandler('encoder0', chunk, meta),
+  );
+  const encoder1 = createVideoEncoder(opts, (chunk, meta) =>
+    outputHandler('encoder1', chunk, meta),
+  );
+
+  let gopId = 0;
+  return {
+    get encodeQueueSize() {
+      return encoder0.encodeQueueSize + encoder1.encodeQueueSize;
+    },
+    encode: (vf: VideoFrame, opts: VideoEncoderEncodeOptions) => {
+      if (opts.keyFrame) gopId += 1;
+      const encoder = gopId % 2 === 0 ? encoder0 : encoder1;
+      encoder.encode(vf, opts);
+    },
+    flush: async () => {
+      await Promise.all([
+        encoder0.state === 'configured' ? await encoder0.flush() : null,
+        encoder1.state === 'configured' ? await encoder1.flush() : null,
+      ]);
+      stopTimer();
+      checkCache();
+    },
+    close: () => {
+      if (encoder0.state === 'configured') encoder0.close();
+      if (encoder1.state === 'configured') encoder1.close();
+    },
+  };
 }
 
 // https://github.com/bilibili/WebAV/issues/203
 function fixChromeConstraintSetFlagsBug(desc: ArrayBuffer) {
   const u8 = new Uint8Array(desc);
   const constraintSetFlag = u8[2];
-  // 如果最高位是 0，最低位是 1，说明是 chrome 将这个值的二进制顺序搞反了
-  if (constraintSetFlag >> 7 === 0 && (constraintSetFlag & 1) === 1) {
-    let binaryString = constraintSetFlag
-      .toString(2)
-      .padStart(8, '0')
-      .split('')
-      .reverse()
-      .join('');
-
-    u8[2] = parseInt(binaryString, 2);
+  // 如果 constraint_set_flags 字节二进制 第0位或第1位值为1
+  // 说明取值错误，忽略该字段避免解码异常
+  if (constraintSetFlag.toString(2).slice(-2).includes('1')) {
+    u8[2] = 0;
   }
 }
 

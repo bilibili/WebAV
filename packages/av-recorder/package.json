@@ -1,6 +1,6 @@
 {
   "name": "@webav/av-recorder",
-  "version": "0.14.6",
+  "version": "0.15.2",
   "private": false,
   "repository": "https://github.com/bilibili/WebAV",
   "keywords": [
@@ -18,8 +18,15 @@
   "types": "dist/av-recorder.d.ts",
   "module": "dist/av-recorder.js",
   "main": "dist/av-recorder.umd.cjs",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/av-recorder.js",
+      "require": "./dist/av-recorder.umd.cjs"
+    }
+  },
   "scripts": {
-    "dev": "vite demo",
+    "dev": "vite demo --port 6067 --host 0.0.0.0",
     "test": "vitest",
     "test:coverage": "vitest run --coverage",
     "build": "vite build && tsc -p build.tsconfig.json --outDir dist",

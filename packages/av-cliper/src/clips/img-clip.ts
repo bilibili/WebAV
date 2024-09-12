@@ -130,7 +130,6 @@ export class ImgClip implements IClip {
       };
     }
     const tt = time % this.#meta.duration;
-    // console.log(55555, time, tt, this.#meta);
     return {
       video: (
         this.#frames.find(
