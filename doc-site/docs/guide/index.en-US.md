@@ -12,12 +12,12 @@ WebAV is an SDK for creating/editing video files on the Web platform, built on W
 
 ## Features
 
-- 📱Cross-platform, Runs in Edge, Chrome, and Electron
-- 💰Zero cost, Completely client-side computation without server cost
-- 🔏Privacy security, No data of the user is uploaded
-- 🚀High performance,10 ~ 20 times that of ffmpeg.wasm
-- 🍳Easy to extend,it is very friendly to Web developers, and can easily cooperate with Canvas and WebAudio to realize custom functions
-- 🤏Small size,~ 50kb (MINIFIED + GZIPPED, not tree-shaking)
+- 💻 Cross-platform, Runs in Edge, Chrome, and Electron
+- 💰 Zero cost, Completely client-side computation without server cost
+- 🔏 Privacy security, No data of the user is uploaded
+- 🚀 High performance,10 ~ 20 times that of ffmpeg.wasm
+- 🧩 Easy to extend,it is very friendly to Web developers, and can easily cooperate with Canvas and WebAudio to realize custom functions
+- 🤏 Small size,~ 50kb (MINIFIED + GZIPPED, not tree-shaking)
 
 ## Application Scenarios
 

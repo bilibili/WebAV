@@ -10,7 +10,7 @@ hero:
       link: /demo/
 features:
   - title: '跨平台'
-    image: 📱
+    image: 💻
     description: '支持在 Edge、Chrome 浏览器以及 Electron 中运行'
   - title: '零成本'
     image: 💰

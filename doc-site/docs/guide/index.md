@@ -12,12 +12,12 @@ WebAV 是一个在 Web 平台上创建/编辑视频文件的 SDK，基于 WebCod
 
 ## 优势
 
-- 📱跨平台：支持在 Edge、Chrome 浏览器，以及 Electron 中运行
-- 💰零成本：完全使用客户端计算，无需服务器成本
-- 🔏隐私安全：不会上传用户的任何数据
-- 🚀高性能：是 ffmpeg.wasm 的 10～20 倍
-- 🍳易扩展：对 Web 开发者非常友好，能轻松与 Canvas、WebAudio 配合，实现自定义功能
-- 🤏体积小：约 50kb（MINIFIED + GZIPPED, 未 tree-shaking）
+- 💻 跨平台：支持在 Edge、Chrome 浏览器，以及 Electron 中运行
+- 💰 零成本：完全使用客户端计算，无需服务器成本
+- 🔏 隐私安全：不会上传用户的任何数据
+- 🚀 高性能：是 ffmpeg.wasm 的 10～20 倍
+- 🧩 易扩展：对 Web 开发者非常友好，能轻松与 Canvas、WebAudio 配合，实现自定义功能
+- 🤏 体积小：约 50kb（MINIFIED + GZIPPED, 未 tree-shaking）
 
 ## 应用场景
 

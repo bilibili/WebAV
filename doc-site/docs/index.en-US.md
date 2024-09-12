@@ -10,7 +10,7 @@ hero:
       link: /demo/
 features:
   - title: 'Cross-Platform'
-    image: 📱
+    image: 💻
     description: 'It runs on Edge, Chrome, and Electron'
   - title: 'Zero Cost'
     image: 💰
