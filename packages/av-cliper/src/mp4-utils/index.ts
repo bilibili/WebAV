@@ -211,7 +211,7 @@ function encodeVideoTrack(
   let lastAddedSampleTime = 0;
   // 双编码器交替消费，保证帧的顺序
   // 小于期望帧间隔帧判定为连续的
-  const deltaTime = Math.floor((1000 / opts.expectFPS) * 1e6);
+  const deltaTime = Math.floor((1000 / opts.expectFPS) * 1e3);
   function checkCache() {
     if (!audioReady) return;
     const nextEncId = curEncId === 'encoder1' ? 'encoder0' : 'encoder1';
@@ -231,7 +231,11 @@ function encodeVideoTrack(
     // 检测是否需要切换消费队列
     const nextFirst = nextCache[0];
     // 另一个队列跟已消费的最后一帧是连续的，则需要切换
-    if (nextFirst != null && nextFirst.cts - lastAddedSampleTime < deltaTime) {
+    if (
+      nextFirst != null &&
+      nextFirst.is_sync &&
+      nextFirst.cts - lastAddedSampleTime < deltaTime
+    ) {
       curEncId = nextEncId;
       // 说明另一个队列有数据，尽快消费
       checkCache();
