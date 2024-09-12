@@ -1,7 +1,7 @@
 ---
 nav:
   title: DEMO
-  order: 2
+  order: 1
 group:
   title: 解码
   order: 1
