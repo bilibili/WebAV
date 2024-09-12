@@ -28,8 +28,9 @@ export default defineConfig({
     },
     footer: ' ',
     footerConfig: {
-      bottom: 'Open-source MIT License',
-      copyright: 'Copyright (c) 2023 风痕',
+      bottom:
+        '<div>Copyright (c) 2023 风痕</div><div class="flex" style="justify-content: center;"><a href="https://github.com/bilibili/WebAV"><img src="https://img.shields.io/github/stars/bilibili/WebAV"></a></div>',
+      copyright: ' ',
       columns: [],
     },
     apiHeader: false,
@@ -44,6 +45,7 @@ export default defineConfig({
         publicPath: '/WebAV/',
       }),
   targets: { chrome: 102 },
+  mfsu: false,
   legacy: { nodeModulesTransform: false },
   locales: [
     { id: 'zh-CN', name: '简体中文' },
