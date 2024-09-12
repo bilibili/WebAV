@@ -1,5 +1,11 @@
 # @webav/av-cliper
 
+## 0.15.2
+
+### Patch Changes
+
+- 21ffb44: fix: The output video has a corrupted image (artifacting)
+
 ## 0.15.1
 
 ### Patch Changes
