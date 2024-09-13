@@ -1,5 +1,11 @@
 # @webav/av-cliper
 
+## 0.15.3
+
+### Patch Changes
+
+- e9b5351: fix: recoder ouput vdieo cant play
+
 ## 0.15.2
 
 ### Patch Changes
