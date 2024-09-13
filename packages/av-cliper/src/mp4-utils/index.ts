@@ -221,6 +221,7 @@ function encodeVideoTrack(
     if (curCache.length === 0 && nextCache.length === 0) return;
 
     let curFirst = curCache[0];
+    // 当前队列正在进行中（非关键帧 或 时间连续），继续消费
     if (curFirst != null) {
       if (!curFirst.is_sync || curFirst.cts - lastAddedSampleTime < deltaTime) {
         const lastTs = addSampleToFile(curCache);
@@ -228,17 +229,27 @@ function encodeVideoTrack(
       }
     }
 
-    // 检测是否需要切换消费队列
     const nextFirst = nextCache[0];
+
     // 另一个队列跟已消费的最后一帧是连续的，则需要切换
-    if (
-      nextFirst != null &&
-      nextFirst.is_sync &&
-      nextFirst.cts - lastAddedSampleTime < deltaTime
-    ) {
+    if (nextFirst?.is_sync && nextFirst.cts - lastAddedSampleTime < deltaTime) {
       curEncId = nextEncId;
       // 说明另一个队列有数据，尽快消费
       checkCache();
+      return;
+    }
+
+    // 如果时间不连续，但两个队列都有数据，且都是关键帧，消费时间较早的队列
+    if (curFirst?.is_sync && nextFirst?.is_sync) {
+      if (curFirst.cts <= nextFirst.cts) {
+        const lastTs = addSampleToFile(curCache);
+        if (lastTs > lastAddedSampleTime) lastAddedSampleTime = lastTs;
+      } else {
+        curEncId = nextEncId;
+        // 说明另一个队列有数据，尽快消费
+        checkCache();
+        return;
+      }
     }
   }
 
