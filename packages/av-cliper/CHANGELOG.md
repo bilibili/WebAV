@@ -1,5 +1,45 @@
 # @webav/av-cliper
 
+## 0.15.3
+
+### Patch Changes
+
+- e9b5351: fix: recoder ouput vdieo cant play
+
+## 0.15.2
+
+### Patch Changes
+
+- 21ffb44: fix: The output video has a corrupted image (artifacting)
+
+## 0.15.1
+
+### Patch Changes
+
+- bd37284: fix: not has video frame when recode usermedia
+
+## 0.15.0
+
+### Minor Changes
+
+- d935bdc: feat: custom fps for Combinator
+
+### Patch Changes
+
+- 8d76376: chore: merge bugfix
+
+## 0.15.0-beta.1
+
+### Patch Changes
+
+- chore: merge bugfix
+
+## 0.15.0-beta.0
+
+### Minor Changes
+
+- feat: custom fps for Combinator
+
 ## 0.14.15
 
 ### Patch Changes
