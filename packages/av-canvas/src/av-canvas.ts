@@ -290,25 +290,10 @@ export class AVCanvas {
   }
 
   /**
-   * 导出画布，返回一个 HTMLCanvasElement
-   */
-  exportCanvas(): HTMLCanvasElement {
-    return this.#cvsEl;
-  }
-
-  /**
    * 获取当前帧的截图图像 返回的是一个base64
    */
   captureImage(): string {
     return this.#cvsEl.toDataURL();
-  }
-
-  /**
-   * 预览 `AVCanvas` 指定时间的图像帧，并返回截图图像
-   */
-  previewAndCapture(time: number) {
-    this.previewFrame(time);
-    return this.captureImage();
   }
 
   get activeSprite() {

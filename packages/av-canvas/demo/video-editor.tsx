@@ -148,7 +148,6 @@ function App() {
     { id: '4-text', actions: [] },
   ]);
   const [capture, setCapture] = useState(null);
-  const [captureWidth, setCaptureWidth] = useState(30);
 
   useEffect(() => {
     if (cvsWrapEl == null) return;
@@ -271,21 +270,6 @@ function App() {
       <button
         className="mx-[10px]"
         onClick={async () => {
-          const clipSource = (
-            await loadFile({ 'video/*': ['.mp4', '.mov'] })
-          ).stream();
-
-          const spr = new VisibleSprite(new MP4Clip(clipSource));
-          await avCvs?.addSprite(spr);
-          addSprite2Track('1-video', spr, '视频');
-        }}
-      >
-        + 本地视频
-      </button>
-
-      <button
-        className="mx-[10px]"
-        onClick={async () => {
           const spr = new VisibleSprite(
             new AudioClip((await fetch('./audio/16kHz-1chan.mp3')).body!),
           );
@@ -355,20 +339,11 @@ function App() {
           if (avCvs == null) return;
           const b64 = avCvs.captureImage();
           setCapture(b64);
-          alert('截图成功');
         }}
       >
         截图
       </button>
-      <img
-        className="mx-[10px]"
-        width={captureWidth}
-        height={'100%'}
-        src={capture}
-        onClick={() => {
-          setCaptureWidth(captureWidth === 30 ? 200 : 30);
-        }}
-      />
+
       <p></p>
       <TimelineEditor
         timelineData={tlData}
@@ -436,6 +411,43 @@ function App() {
           }
         }}
       ></TimelineEditor>
+
+      {capture && (
+        <CaptureModal capture={capture} onClose={() => setCapture(null)} />
+      )}
+    </div>
+  );
+}
+
+// Add this new component after the App component
+function CaptureModal({
+  capture,
+  onClose,
+}: {
+  capture: string;
+  onClose: () => void;
+}) {
+  return (
+    <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
+      <div className="bg-white p-4 rounded-lg relative max-w-[90vw] max-h-[90vh]">
+        <div className="flex justify-between items-center">
+          <h2 className="text-xl font-bold text-black m-0 mb-1 p-0">
+            截图预览
+          </h2>
+          <button
+            className="px-2 py-1 bg-red-500 text-white border-none cursor-pointer rounded hover:bg-red-600"
+            onClick={onClose}
+            title="关闭"
+          >
+            关闭
+          </button>
+        </div>
+        <img
+          src={capture}
+          alt="Captured screenshot"
+          className="max-w-full max-h-[calc(90vh-80px)]"
+        />
+      </div>
     </div>
   );
 }
