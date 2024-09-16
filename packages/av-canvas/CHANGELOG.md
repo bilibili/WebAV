@@ -1,5 +1,12 @@
 # @webav/av-canvas
 
+## 0.15.4
+
+### Patch Changes
+
+- b50da15: feat: support captureImage for AVCanvas
+  - @webav/av-cliper@0.15.4
+
 ## 0.15.3
 
 ### Patch Changes
