@@ -147,7 +147,7 @@ function App() {
     { id: '3-img', actions: [] },
     { id: '4-text', actions: [] },
   ]);
-  const [capture, setCapture] = useState(null);
+  const [capture, setCapture] = useState<string | null>(null);
 
   useEffect(() => {
     if (cvsWrapEl == null) return;
