@@ -1,5 +1,7 @@
 # @webav/av-cliper
 
+## 0.15.4
+
 ## 0.15.3
 
 ### Patch Changes
