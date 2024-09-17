@@ -655,7 +655,7 @@ class VideoFrameFinder {
       this.#decoding ||
       (this.#outputFrameCnt < this.#inputChunkCnt && dec.decodeQueueSize > 0)
     ) {
-      if (performance.now() - aborter.st > 3e3) {
+      if (performance.now() - aborter.st > 6e3) {
         throw Error(
           `MP4Clip.tick video timeout, ${JSON.stringify(this.#getState())}`,
         );
@@ -708,7 +708,7 @@ class VideoFrameFinder {
           onDecodingError: (err) => {
             if (this.#downgradeSoftDecode) {
               throw err;
-            } else {
+            } else if (this.#outputFrameCnt === 0) {
               this.#downgradeSoftDecode = true;
               Log.warn('Downgrade to software decode');
               this.#reset();
