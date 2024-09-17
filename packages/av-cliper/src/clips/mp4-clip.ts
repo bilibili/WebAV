@@ -107,7 +107,7 @@ export class MP4Clip implements IClip {
 
   constructor(
     source: OPFSToolFile | ReadableStream<Uint8Array> | MPClipCloneArgs,
-    opts: MP4ClipOpts = { audio: true },
+    opts: MP4ClipOpts = {},
   ) {
     if (
       !(source instanceof ReadableStream) &&
@@ -117,7 +117,7 @@ export class MP4Clip implements IClip {
       throw Error('Illegal argument');
     }
 
-    this.#opts = { ...opts };
+    this.#opts = { audio: true, ...opts };
     this.#volume =
       typeof opts.audio === 'object' && 'volume' in opts.audio
         ? opts.audio.volume
@@ -159,7 +159,7 @@ export class MP4Clip implements IClip {
         await this.#localFile.createReader(),
         videoSamples,
         audioSamples,
-        this.#opts.audio !== false ? this.#volume : null,
+        this.#opts.audio !== false ? this.#volume : 0,
       );
       this.#videoFrameFinder = videoFrameFinder;
       this.#audioFrameFinder = audioFrameFinder;
@@ -464,11 +464,11 @@ function genDecoder(
   localFileReader: LocalFileReader,
   videoSamples: ExtMP4Sample[],
   audioSamples: ExtMP4Sample[],
-  volume: number | null,
+  volume: number,
 ) {
   return {
     audioFrameFinder:
-      volume == null || decoderConf.audio == null || audioSamples.length === 0
+      volume === 0 || decoderConf.audio == null || audioSamples.length === 0
         ? null
         : new AudioFrameFinder(
             localFileReader,
