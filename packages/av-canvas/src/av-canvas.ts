@@ -289,6 +289,13 @@ export class AVCanvas {
     this.#pause();
   }
 
+  /**
+   * 获取当前帧的截图图像 返回的是一个base64
+   */
+  captureImage(): string {
+    return this.#cvsEl.toDataURL();
+  }
+
   get activeSprite() {
     return this.#spriteManager.activeSprite;
   }

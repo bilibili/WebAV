@@ -54,6 +54,10 @@ export function extractPCM4AudioData(ad: AudioData): Float32Array[] {
       rs.push(new Float32Array(chanBuf));
     }
     return rs;
+  } else if (ad.format === 'f32') {
+    const buf = new ArrayBuffer(ad.allocationSize({ planeIndex: 0 }));
+    ad.copyTo(buf, { planeIndex: 0 });
+    return convertF32ToPlanar(new Float32Array(buf), ad.numberOfChannels);
   } else if (ad.format === 's16') {
     const buf = new ArrayBuffer(ad.allocationSize({ planeIndex: 0 }));
     ad.copyTo(buf, { planeIndex: 0 });
@@ -79,6 +83,22 @@ function convertS16ToF32Planar(pcmS16Data: Int16Array, numChannels: number) {
     for (let channel = 0; channel < numChannels; channel++) {
       const sample = pcmS16Data[i * numChannels + channel];
       planarData[channel][i] = sample / 32768; // Normalize to range [-1.0, 1.0]
+    }
+  }
+
+  return planarData;
+}
+
+function convertF32ToPlanar(pcmF32Data: Float32Array, numChannels: number) {
+  const numSamples = pcmF32Data.length / numChannels;
+  const planarData = Array.from(
+    { length: numChannels },
+    () => new Float32Array(numSamples),
+  );
+
+  for (let i = 0; i < numSamples; i++) {
+    for (let channel = 0; channel < numChannels; channel++) {
+      planarData[channel][i] = pcmF32Data[i * numChannels + channel];
     }
   }
 

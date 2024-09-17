@@ -107,7 +107,7 @@ export class MP4Clip implements IClip {
 
   constructor(
     source: OPFSToolFile | ReadableStream<Uint8Array> | MPClipCloneArgs,
-    opts: MP4ClipOpts = { audio: true },
+    opts: MP4ClipOpts = {},
   ) {
     if (
       !(source instanceof ReadableStream) &&
@@ -117,7 +117,7 @@ export class MP4Clip implements IClip {
       throw Error('Illegal argument');
     }
 
-    this.#opts = { ...opts };
+    this.#opts = { audio: true, ...opts };
     this.#volume =
       typeof opts.audio === 'object' && 'volume' in opts.audio
         ? opts.audio.volume
@@ -159,7 +159,7 @@ export class MP4Clip implements IClip {
         await this.#localFile.createReader(),
         videoSamples,
         audioSamples,
-        this.#opts.audio !== false ? this.#volume : null,
+        this.#opts.audio !== false ? this.#volume : 0,
       );
       this.#videoFrameFinder = videoFrameFinder;
       this.#audioFrameFinder = audioFrameFinder;
@@ -302,7 +302,7 @@ export class MP4Clip implements IClip {
             aborterSignal,
             { start, end },
             (vf, done) => {
-              pushPngPromise(vf);
+              if (vf != null) pushPngPromise(vf);
               if (done) resolver();
             },
           );
@@ -464,11 +464,11 @@ function genDecoder(
   localFileReader: LocalFileReader,
   videoSamples: ExtMP4Sample[],
   audioSamples: ExtMP4Sample[],
-  volume: number | null,
+  volume: number,
 ) {
   return {
     audioFrameFinder:
-      volume == null || decoderConf.audio == null || audioSamples.length === 0
+      volume === 0 || decoderConf.audio == null || audioSamples.length === 0
         ? null
         : new AudioFrameFinder(
             localFileReader,
@@ -655,7 +655,7 @@ class VideoFrameFinder {
       this.#decoding ||
       (this.#outputFrameCnt < this.#inputChunkCnt && dec.decodeQueueSize > 0)
     ) {
-      if (performance.now() - aborter.st > 3e3) {
+      if (performance.now() - aborter.st > 6e3) {
         throw Error(
           `MP4Clip.tick video timeout, ${JSON.stringify(this.#getState())}`,
         );
@@ -708,7 +708,7 @@ class VideoFrameFinder {
           onDecodingError: (err) => {
             if (this.#downgradeSoftDecode) {
               throw err;
-            } else {
+            } else if (this.#outputFrameCnt === 0) {
               this.#downgradeSoftDecode = true;
               Log.warn('Downgrade to software decode');
               this.#reset();
@@ -1242,23 +1242,9 @@ async function thumbnailByKeyFrame(
   decConf: VideoDecoderConfig,
   abortSingl: AbortSignal,
   time: { start: number; end: number },
-  onOutput: (vf: VideoFrame, done: boolean) => void,
+  onOutput: (vf: VideoFrame | null, done: boolean) => void,
 ) {
   const fileReader = await localFile.createReader();
-  let cnt = 0;
-  const dec = new VideoDecoder({
-    output: (vf) => {
-      cnt += 1;
-      const done = cnt === chunks.length;
-      onOutput(vf, done);
-      if (done) fileReader.close();
-    },
-    error: Log.error,
-  });
-  abortSingl.addEventListener('abort', () => {
-    fileReader.close();
-    dec.close();
-  });
 
   const chunks = await videosamples2Chunks(
     samples.filter(
@@ -1269,6 +1255,46 @@ async function thumbnailByKeyFrame(
   );
   if (chunks.length === 0 || abortSingl.aborted) return;
 
-  dec.configure(decConf);
-  decodeGoP(dec, chunks, {});
+  let outputCnt = 0;
+  const dec = createVideoDec();
+  decodeGoP(dec, chunks, {
+    onDecodingError: (err) => {
+      Log.warn('thumbnailsByKeyFrame', err);
+      // 尝试降级一次
+      if (outputCnt === 0) {
+        decodeGoP(createVideoDec(true), chunks, {
+          onDecodingError: (err) => {
+            fileReader.close();
+            Log.error('thumbnailsByKeyFrame retry soft deocde', err);
+          },
+        });
+      } else {
+        onOutput(null, true);
+        fileReader.close();
+      }
+    },
+  });
+
+  function createVideoDec(downgrade = false) {
+    const dec = new VideoDecoder({
+      output: (vf) => {
+        outputCnt += 1;
+        const done = outputCnt === chunks.length;
+        onOutput(vf, done);
+        if (done) fileReader.close();
+      },
+      error: (err) => {
+        Log.error(`thumbnails decoder error: ${err.message}`);
+      },
+    });
+    abortSingl.addEventListener('abort', () => {
+      fileReader.close();
+      dec.close();
+    });
+    dec.configure({
+      ...decConf,
+      ...(downgrade ? { hardwareAcceleration: 'prefer-software' } : {}),
+    });
+    return dec;
+  }
 }

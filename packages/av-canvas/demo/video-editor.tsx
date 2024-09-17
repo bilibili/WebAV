@@ -147,6 +147,7 @@ function App() {
     { id: '3-img', actions: [] },
     { id: '4-text', actions: [] },
   ]);
+  const [capture, setCapture] = useState<string | null>(null);
 
   useEffect(() => {
     if (cvsWrapEl == null) return;
@@ -265,6 +266,7 @@ function App() {
       >
         + 视频
       </button>
+
       <button
         className="mx-[10px]"
         onClick={async () => {
@@ -331,6 +333,17 @@ function App() {
       >
         导出视频
       </button>
+      <button
+        className="mx-[10px]"
+        onClick={async () => {
+          if (avCvs == null) return;
+          const b64 = avCvs.captureImage();
+          setCapture(b64);
+        }}
+      >
+        截图
+      </button>
+
       <p></p>
       <TimelineEditor
         timelineData={tlData}
@@ -398,6 +411,43 @@ function App() {
           }
         }}
       ></TimelineEditor>
+
+      {capture && (
+        <CaptureModal capture={capture} onClose={() => setCapture(null)} />
+      )}
+    </div>
+  );
+}
+
+// Add this new component after the App component
+function CaptureModal({
+  capture,
+  onClose,
+}: {
+  capture: string;
+  onClose: () => void;
+}) {
+  return (
+    <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
+      <div className="bg-white p-4 rounded-lg relative max-w-[90vw] max-h-[90vh]">
+        <div className="flex justify-between items-center">
+          <h2 className="text-xl font-bold text-black m-0 mb-1 p-0">
+            截图预览
+          </h2>
+          <button
+            className="px-2 py-1 bg-red-500 text-white border-none cursor-pointer rounded hover:bg-red-600"
+            onClick={onClose}
+            title="关闭"
+          >
+            关闭
+          </button>
+        </div>
+        <img
+          src={capture}
+          alt="Captured screenshot"
+          className="max-w-full max-h-[calc(90vh-80px)]"
+        />
+      </div>
     </div>
   );
 }

@@ -1,7 +1,7 @@
 import { OffscreenSprite } from './sprite/offscreen-sprite';
 import { file2stream, recodemux } from './mp4-utils';
 import { Log } from './log';
-import { mixinPCM, sleep } from './av-utils';
+import { sleep } from './av-utils';
 import { EventTool } from './event-tool';
 import { DEFAULT_AUDIO_CONF } from './clips';
 
@@ -9,6 +9,7 @@ interface ICombinatorOpts {
   width?: number;
   height?: number;
   bitrate?: number;
+  fps?: number;
   bgColor?: string;
   videoCodec?: string;
   /**
@@ -134,6 +135,7 @@ export class Combinator {
         videoCodec: 'avc1.42E032',
         audio: true,
         bitrate: 5e6,
+        fps: 30,
         metaDataTags: null,
       },
       opts,
@@ -164,14 +166,14 @@ export class Combinator {
   }
 
   #startRecodeMux(duration: number) {
-    const { width, height, videoCodec, bitrate, audio, metaDataTags } =
+    const { fps, width, height, videoCodec, bitrate, audio, metaDataTags } =
       this.#opts;
     const recodeMuxer = recodemux({
       video: this.#hasVideoTrack
         ? {
             width,
             height,
-            expectFPS: 30,
+            expectFPS: fps,
             codec: videoCodec,
             bitrate,
             __unsafe_hardwareAcceleration__:
@@ -281,21 +283,34 @@ export class Combinator {
     },
   ): () => void {
     let progress = 0;
-    let stoped = false;
+    const aborter = { aborted: false };
     let err: Error | null = null;
 
     const _run = async () => {
-      // 33ms ≈ 30FPS
-      const timeSlice = 33e3;
+      const { fps, bgColor, audio: outputAudio } = this.#opts;
+      const timeSlice = Math.round(1e6 / fps);
 
-      let frameCnt = 0;
-      const { width, height } = this.#cvs;
       const ctx = this.#ctx;
+      const sprRender = createSpritesRender({
+        ctx,
+        bgColor,
+        sprites: this.#sprites,
+        aborter,
+      });
+      const encodeData = createAVEncoder({
+        remux,
+        ctx,
+        cvs: this.#cvs,
+        outputAudio,
+        hasVideoTrack: this.#hasVideoTrack,
+        timeSlice,
+      });
+
       let ts = 0;
       while (true) {
         if (err != null) return;
         if (
-          stoped ||
+          aborter.aborted ||
           (maxTime === -1 ? false : ts > maxTime) ||
           this.#sprites.length === 0
         ) {
@@ -305,80 +320,16 @@ export class Combinator {
         }
         progress = ts / maxTime;
 
-        ctx.fillStyle = this.#opts.bgColor;
-        ctx.fillRect(0, 0, width, height);
-
-        const audios: Float32Array[][] = [];
-        for (const s of this.#sprites) {
-          if (stoped) break;
-          if (ts < s.time.offset || s.expired) continue;
-
-          ctx.save();
-          const { audio, done } = await s.offscreenRender(
-            ctx,
-            ts - s.time.offset,
-          );
-          audios.push(audio);
-          ctx.restore();
-
-          // 超过设定时间主动掐断，或资源结束
-          if (
-            (s.time.duration > 0 && ts > s.time.offset + s.time.duration) ||
-            done
-          ) {
-            if (s.main) {
-              exit();
-              await onEnded();
-              return;
-            }
-
-            s.destroy();
-            s.expired = true;
-          }
+        const { audios, mainSprDone } = await sprRender(ts);
+        if (mainSprDone) {
+          exit();
+          await onEnded();
+          return;
         }
 
-        if (stoped) return;
+        if (aborter.aborted) return;
 
-        if (this.#opts.audio !== false) {
-          if (audios.flat().every((a) => a.length === 0)) {
-            // 当前时刻无音频时，使用无声音频占位，否则会导致后续音频播放时间偏差
-            remux.encodeAudio(
-              createAudioPlaceholder(
-                ts,
-                timeSlice,
-                DEFAULT_AUDIO_CONF.sampleRate,
-              ),
-            );
-          } else {
-            // todo: perf 重复利用内存空间
-            const data = mixinPCM(audios);
-            remux.encodeAudio(
-              new AudioData({
-                timestamp: ts,
-                numberOfChannels: DEFAULT_AUDIO_CONF.channelCount,
-                numberOfFrames: data.length / DEFAULT_AUDIO_CONF.channelCount,
-                sampleRate: DEFAULT_AUDIO_CONF.sampleRate,
-                format: 'f32-planar',
-                data,
-              }),
-            );
-          }
-        }
-
-        if (this.#hasVideoTrack) {
-          const vf = new VideoFrame(this.#cvs, {
-            duration: timeSlice,
-            timestamp: ts,
-          });
-
-          remux.encodeVideo(vf, {
-            keyFrame: frameCnt % 150 === 0,
-          });
-          ctx.resetTransform();
-          ctx.clearRect(0, 0, width, height);
-
-          frameCnt += 1;
-        }
+        encodeData(ts, audios);
 
         ts += timeSlice;
 
@@ -398,8 +349,8 @@ export class Combinator {
     }, 500);
 
     const exit = () => {
-      if (stoped) return;
-      stoped = true;
+      if (aborter.aborted) return;
+      aborter.aborted = true;
       clearInterval(outProgTimer);
       this.#sprites.forEach((it) => it.destroy());
     };
@@ -408,18 +359,153 @@ export class Combinator {
   }
 }
 
-function createAudioPlaceholder(
-  ts: number,
-  duration: number,
-  sampleRate: number,
-): AudioData {
-  const frameCnt = Math.floor((sampleRate * duration) / 1e6);
-  return new AudioData({
-    timestamp: ts,
-    numberOfChannels: DEFAULT_AUDIO_CONF.channelCount,
-    numberOfFrames: frameCnt,
-    sampleRate: sampleRate,
-    format: 'f32-planar',
-    data: new Float32Array(frameCnt * 2),
-  });
+function createSpritesRender(opts: {
+  ctx: OffscreenCanvasRenderingContext2D;
+  bgColor: string;
+  sprites: Array<OffscreenSprite & { main: boolean; expired: boolean }>;
+  aborter: { aborted: boolean };
+}) {
+  const { ctx, bgColor, sprites, aborter } = opts;
+  const { width, height } = ctx.canvas;
+  return async (ts: number) => {
+    ctx.fillStyle = bgColor;
+    ctx.fillRect(0, 0, width, height);
+
+    const audios: Float32Array[][] = [];
+    let mainSprDone = false;
+    for (const s of sprites) {
+      if (aborter.aborted) break;
+      if (ts < s.time.offset || s.expired) continue;
+
+      ctx.save();
+      const { audio, done } = await s.offscreenRender(ctx, ts - s.time.offset);
+      audios.push(audio);
+      ctx.restore();
+
+      // 超过设定时间主动掐断，或资源结束
+      if (
+        (s.time.duration > 0 && ts > s.time.offset + s.time.duration) ||
+        done
+      ) {
+        if (s.main) mainSprDone = true;
+
+        s.destroy();
+        s.expired = true;
+      }
+    }
+    return {
+      audios,
+      mainSprDone,
+    };
+  };
+}
+
+function createAVEncoder(opts: {
+  remux: ReturnType<typeof recodemux>;
+  ctx: OffscreenCanvasRenderingContext2D;
+  cvs: OffscreenCanvas;
+  outputAudio?: boolean;
+  hasVideoTrack: boolean;
+  timeSlice: number;
+}) {
+  const { ctx, cvs, outputAudio, remux, hasVideoTrack, timeSlice } = opts;
+  const { width, height } = cvs;
+  let frameCnt = 0;
+
+  const audioTrackBuf = createAudioTrackBuf(1024);
+
+  return (ts: number, audios: Float32Array[][]) => {
+    if (outputAudio !== false) {
+      for (const ad of audioTrackBuf(ts, audios)) remux.encodeAudio(ad);
+    }
+
+    if (hasVideoTrack) {
+      const vf = new VideoFrame(cvs, {
+        duration: timeSlice,
+        timestamp: ts,
+      });
+
+      remux.encodeVideo(vf, {
+        // todo: 3s 1 GoP
+        keyFrame: frameCnt % 150 === 0,
+      });
+      ctx.resetTransform();
+      ctx.clearRect(0, 0, width, height);
+
+      frameCnt += 1;
+    }
+  };
+}
+
+/**
+ * 缓冲输入的数据，转换成固定帧数的 AudioData
+ * @param adFrames 一个 AudioData 实例的音频帧数
+ */
+export function createAudioTrackBuf(adFrames: number) {
+  const adDataSize = adFrames * DEFAULT_AUDIO_CONF.channelCount;
+  const chanBuf = new Float32Array(adDataSize * 3);
+  let putOffset = 0;
+
+  let audioTs = 0;
+  const adDuration = (adFrames / DEFAULT_AUDIO_CONF.sampleRate) * 1e6;
+
+  // 缺少音频数据是占位
+  const placeholderData = new Float32Array(adDataSize);
+
+  const getAudioData = (ts: number) => {
+    let readOffset = 0;
+    const adCnt = Math.floor(putOffset / adDataSize);
+    const rs: AudioData[] = [];
+    for (let i = 0; i < adCnt; i++) {
+      rs.push(
+        new AudioData({
+          timestamp: audioTs,
+          numberOfChannels: DEFAULT_AUDIO_CONF.channelCount,
+          numberOfFrames: adFrames,
+          sampleRate: DEFAULT_AUDIO_CONF.sampleRate,
+          format: 'f32',
+          data: chanBuf.subarray(readOffset, readOffset + adDataSize),
+        }),
+      );
+      readOffset += adDataSize;
+      audioTs += adDuration;
+    }
+    chanBuf.set(chanBuf.subarray(readOffset, putOffset), 0);
+    putOffset -= readOffset;
+
+    if (ts - audioTs > adDuration) {
+      rs.push(
+        new AudioData({
+          timestamp: audioTs,
+          numberOfChannels: DEFAULT_AUDIO_CONF.channelCount,
+          numberOfFrames: adFrames,
+          sampleRate: DEFAULT_AUDIO_CONF.sampleRate,
+          format: 'f32',
+          data: placeholderData,
+        }),
+      );
+      audioTs += adDuration;
+    }
+    return rs;
+  };
+
+  return (ts: number, trackAudios: Float32Array[][]) => {
+    const maxLen = Math.max(...trackAudios.map((a) => a[0]?.length ?? 0));
+    for (let bufIdx = 0; bufIdx < maxLen; bufIdx++) {
+      let chan0 = 0;
+      let chan1 = 0;
+      for (let trackIdx = 0; trackIdx < trackAudios.length; trackIdx++) {
+        const _c0 = trackAudios[trackIdx][0]?.[bufIdx] ?? 0;
+        // 如果是单声道 PCM，第二声道复用第一声道数据
+        const _c1 = trackAudios[trackIdx][1]?.[bufIdx] ?? _c0;
+        chan0 += _c0;
+        chan1 += _c1;
+      }
+      chanBuf[putOffset] = chan0;
+      chanBuf[putOffset + 1] = chan1;
+      putOffset += 2;
+    }
+    // console.log(1111, { putOffset });
+    return getAudioData(ts);
+  };
 }
