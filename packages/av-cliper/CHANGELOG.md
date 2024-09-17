@@ -1,5 +1,11 @@
 # @webav/av-cliper
 
+## 0.15.5
+
+### Patch Changes
+
+- e3b9a74: fix: thumbnails error #265
+
 ## 0.15.4
 
 ## 0.15.3
