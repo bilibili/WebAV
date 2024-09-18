@@ -1,5 +1,11 @@
 # @webav/av-cliper
 
+## 0.16.0
+
+### Minor Changes
+
+- e2a1387: feat: support change playbackRate for Sprite
+
 ## 0.15.5
 
 ### Patch Changes
