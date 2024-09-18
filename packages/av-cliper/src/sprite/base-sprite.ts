@@ -28,14 +28,26 @@ export abstract class BaseSprite {
   rect = new Rect();
 
   /**
-   * 控制素材在视频中的时间偏移与时长，常用于剪辑场景时间轴（轨道）模块
-   *
+   * 控制素材在的时间偏移、时长、播放速率，常用于剪辑场景时间轴（轨道）模块
    * duration 不能大于引用 {@link IClip} 的时长，单位 微秒
+   *
+   * playbackRate 控制当前素材的播放速率，1 表示正常播放；
+   * **注意**
+   *    1. 设置 playbackRate 时需要主动修正 duration
+   *    2. 音频使用最简单的插值算法来改变速率，所以改变速率后音调会产生变化，自定义算法请使用 {@link MP4Clip.tickInterceptor} 配合实现
+   *
    */
-  time = {
+  #time = {
     offset: 0,
     duration: 0,
+    playbackRate: 1,
   };
+  get time(): { offset: number; duration: number; playbackRate: number } {
+    return this.#time;
+  }
+  set time(v: { offset: number; duration: number; playbackRate?: number }) {
+    Object.assign(this.#time, v);
+  }
 
   /**
    * 元素是否可见，用于不想删除，期望临时隐藏 Sprite 的场景

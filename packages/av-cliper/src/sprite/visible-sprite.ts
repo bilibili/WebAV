@@ -1,6 +1,7 @@
 import { BaseSprite } from './base-sprite';
 import { IClip } from '../clips';
 import { Log } from '../log';
+import { changePCMPlaybackRate } from '../av-utils';
 
 /**
  * 包装 {@link IClip} 给素材扩展坐标、层级、透明度等信息，用于 {@link [AVCanvas](../../av-canvas/classes/AVCanvas.html)} 响应用户交互
@@ -43,13 +44,18 @@ export class VisibleSprite extends BaseSprite {
     if (this.#ticking) return;
     this.#ticking = true;
     this.#clip
-      .tick(time)
+      .tick(time * this.time.playbackRate)
       .then(({ video, audio }) => {
         if (video != null) {
           this.#lastVf?.close();
           this.#lastVf = video ?? null;
         }
         this.#lastAudio = audio ?? [];
+        if (audio != null && this.time.playbackRate !== 1) {
+          this.#lastAudio = audio.map((pcm) =>
+            changePCMPlaybackRate(pcm, this.time.playbackRate),
+          );
+        }
       })
       .finally(() => {
         this.#ticking = false;

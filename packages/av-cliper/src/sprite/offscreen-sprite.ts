@@ -1,6 +1,7 @@
 import { BaseSprite } from './base-sprite';
 import { IClip } from '../clips';
 import { Log } from '../log';
+import { changePCMPlaybackRate } from '../av-utils';
 
 /**
  * 包装 {@link IClip} 给素材扩展坐标、层级、透明度等信息，用于 {@link Combinator} 在后台合成视频
@@ -47,13 +48,21 @@ export class OffscreenSprite extends BaseSprite {
     audio: Float32Array[];
     done: boolean;
   }> {
-    this.animate(time);
+    const ts = time * this.time.playbackRate;
+    this.animate(ts);
     super._render(ctx);
     const { w, h } = this.rect;
-    const { video, audio, state } = await this.#clip.tick(time);
+    const { video, audio, state } = await this.#clip.tick(ts);
+    let outAudio = audio ?? [];
+    if (audio != null && this.time.playbackRate !== 1) {
+      outAudio = audio.map((pcm) =>
+        changePCMPlaybackRate(pcm, this.time.playbackRate),
+      );
+    }
+
     if (state === 'done') {
       return {
-        audio: audio ?? [],
+        audio: outAudio,
         done: true,
       };
     }
@@ -69,7 +78,7 @@ export class OffscreenSprite extends BaseSprite {
     }
 
     return {
-      audio: audio ?? [],
+      audio: outAudio,
       done: false,
     };
   }

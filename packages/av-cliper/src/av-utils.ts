@@ -436,3 +436,33 @@ export function createGoPVideoDecoder(conf: VideoDecoderConfig) {
     },
   };
 }
+
+/**
+ * 改变 PCM 数据的播放速率，1 表示正常播放，0.5 表示播放速率减半，2 表示播放速率加倍
+ */
+export function changePCMPlaybackRate(
+  pcmData: Float32Array,
+  playbackRate: number,
+) {
+  // 计算新的采样率
+  const newLength = Math.floor(pcmData.length / playbackRate);
+  const newPcmData = new Float32Array(newLength);
+
+  // 线性插值
+  for (let i = 0; i < newLength; i++) {
+    // 原始数据中的位置
+    const originalIndex = i * playbackRate;
+    const intIndex = Math.floor(originalIndex);
+    const frac = originalIndex - intIndex;
+
+    // 边界检查
+    if (intIndex + 1 < pcmData.length) {
+      newPcmData[i] =
+        pcmData[intIndex] * (1 - frac) + pcmData[intIndex + 1] * frac;
+    } else {
+      newPcmData[i] = pcmData[intIndex]; // 最后一个样本
+    }
+  }
+
+  return newPcmData;
+}
