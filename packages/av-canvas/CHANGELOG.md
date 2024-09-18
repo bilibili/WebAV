@@ -1,12 +1,5 @@
 # @webav/av-canvas
 
-## 0.0.0-playback-rate-20240823090827
-
-### Patch Changes
-
-- Updated dependencies
-  - @webav/av-cliper@0.0.0-playback-rate-20240823090827
-
 ## 0.15.5
 
 ## 0.14.15

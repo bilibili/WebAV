@@ -1,7 +1,5 @@
 # @webav/av-recorder
 
-## 0.0.0-playback-rate-20240823090827
-
 ## 0.15.5
 
 ### Patch Changes
@@ -58,10 +56,7 @@
 ### Patch Changes
 
 - Updated dependencies
-  <<<<<<< HEAD
-  - # @webav/av-cliper@0.0.0-playback-rate-20240823090827
   - @webav/av-cliper@0.15.0-beta.0
-    > > > > > > > origin/main
 
 ## 0.14.15
 
