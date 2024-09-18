@@ -449,7 +449,7 @@ export function createAudioTrackBuf(adFrames: number) {
   let audioTs = 0;
   const adDuration = (adFrames / DEFAULT_AUDIO_CONF.sampleRate) * 1e6;
 
-  // 缺少音频数据是占位
+  // 缺少音频数据时占位
   const placeholderData = new Float32Array(adDataSize);
 
   const getAudioData = (ts: number) => {

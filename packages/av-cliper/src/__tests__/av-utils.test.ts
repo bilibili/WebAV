@@ -1,6 +1,11 @@
 import { test, expect } from 'vitest';
 // import './mock';
-import { concatFloat32Array, concatPCMFragments, mixinPCM } from '../av-utils';
+import {
+  changePCMPlaybackRate,
+  concatFloat32Array,
+  concatPCMFragments,
+  mixinPCM,
+} from '../av-utils';
 
 test('concatArrayBuffer', () => {
   expect(
@@ -45,4 +50,12 @@ test('concatFragmentPCM', () => {
     new Float32Array([...chan0, ...chan0]),
     new Float32Array([...chan1, ...chan1]),
   ]);
+});
+
+test('changePCMPlaybackRate', () => {
+  const pcm = new Float32Array([1, 2, 3, 4, 5]);
+  expect(changePCMPlaybackRate(pcm, 0.5)).toEqual(
+    new Float32Array([1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5, 5]),
+  );
+  expect(changePCMPlaybackRate(pcm, 2)).toEqual(new Float32Array([1, 3]));
 });
