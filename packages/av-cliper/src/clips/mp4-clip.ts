@@ -1190,10 +1190,8 @@ async function videoSamples2Chunks(
   if (last == null) return [];
 
   const rangSize = last.offset + last.size - first.offset;
-  console.log(`read ${samples.length} samples, rangSize: ${rangSize}`);
 
   if (rangSize < 0) {
-    console.log('sample range size is less than 0');
     return [];
   }
 
