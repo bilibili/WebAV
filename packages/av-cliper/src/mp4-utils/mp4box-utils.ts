@@ -135,14 +135,6 @@ type IBox = {
   size: number;
 };
 
-function addZero(str: string, targetNum = 8): string {
-  let len = str.length;
-  if (len < targetNum) {
-    return '0'.repeat(targetNum - len) + str;
-  }
-  return str;
-}
-
 function isAlphabetOnly(str: string) {
   const regex = /^[A-Za-z]+$/;
   return regex.test(str);
@@ -172,7 +164,7 @@ export function getAllBoxes(
     let uint8a = dataArr.slice(currentOffset, currentOffset + HEADER_META_SIZE);
     // 读取前四位
     let boxSizeBinary = [0, 1, 2, 3].reduce((prev, cur) => {
-      return prev + addZero(uint8a[cur].toString(2));
+      return prev + uint8a[cur].toString(2).padStart(8, '0');
     }, '');
     let boxSize = parseInt(boxSizeBinary, 2);
     // 读取后四位
@@ -192,7 +184,7 @@ export function getAllBoxes(
         currentOffset + HEADER_META_SIZE + HEADER_LARGER_SIZE,
       );
       let boxSizeBinary = [0, 1, 2, 3, 4, 5, 6, 7].reduce((prev, cur) => {
-        return prev + addZero(uint8a[cur].toString(2));
+        return prev + uint8a[cur].toString(2).padStart(8, '0');
       }, '');
       boxSize = parseInt(boxSizeBinary, 2);
     }
@@ -251,7 +243,7 @@ export async function getFileBoxes(
     );
     // 读取前四位
     let boxSizeBinary = [0, 1, 2, 3].reduce((prev, cur) => {
-      return prev + addZero(uint8a[cur].toString(2));
+      return prev + uint8a[cur].toString(2).padStart(8, '0');
     }, '');
     let boxSize = parseInt(boxSizeBinary, 2);
     // 读取后四位
@@ -275,7 +267,7 @@ export async function getFileBoxes(
         ),
       );
       let boxSizeBinary = [0, 1, 2, 3, 4, 5, 6, 7].reduce((prev, cur) => {
-        return prev + addZero(uint8a[cur].toString(2));
+        return prev + uint8a[cur].toString(2).padStart(8, '0');
       }, '');
       boxSize = parseInt(boxSizeBinary, 2);
     }
