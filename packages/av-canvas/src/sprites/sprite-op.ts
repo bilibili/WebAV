@@ -156,7 +156,6 @@ function scaleRect({
   cvsEl: HTMLCanvasElement;
 }): void {
   const startRect = sprRect.clone();
-
   const onMouseMove = (evt: MouseEvent): void => {
     const { clientX, clientY } = evt;
     const deltaX = (clientX - startX) / cvsRatio.w;
@@ -167,7 +166,7 @@ function scaleRect({
     const { x, y, w, h } = startRect;
     // rect 对角线角度
     const diagonalAngle = Math.atan2(h, w);
-    const { incW, incH, incS, rotateAngle } = scaler({
+    const { incW, incH } = scaler({
       deltaX,
       deltaY,
       angle: sprRect.angle,
@@ -177,16 +176,61 @@ function scaleRect({
 
     // 最小缩放限定
     const minSize = 10;
-    let newW = w + incW;
-    newW = newW < minSize ? minSize : newW;
-    let newH = h + incH;
-    newH = newH < minSize ? minSize : newH;
+    // 根据缩放模式调整，如固定点为中心点则计算两倍的增量
+    let newW = startRect.scaleFixedCenter ? w + incW * 2 : w + incW;
+    let newH = startRect.scaleFixedCenter ? h + incH * 2 : h + incH;
+    let ratio = w / h;
+    // 检查是否有维度达到最小值，并根据比例调整另一个维度
+    if (ctrlKey.length === 1) {
+      if (newW < minSize || newH < minSize) {
+        if (newW < minSize) {
+          newW = minSize;
+        }
+        if (newH < minSize) {
+          newH = minSize;
+        }
+      }
+    } else {
+      if (newW < minSize) {
+        newW = minSize;
+        newH = newW / ratio;
+      }
+    }
 
-    const newCntX = (incS / 2) * Math.cos(rotateAngle) + x + w / 2;
-    const newCntY = (incS / 2) * Math.sin(rotateAngle) + y + h / 2;
+    let newX, newY;
+    if (startRect.scaleFixedCenter) {
+      newX = x + w / 2 - newW / 2;
+      newY = y + h / 2 - newH / 2;
+    } else {
+      switch (ctrlKey) {
+        case 'lt':
+          newX = x + w - newW;
+          newY = y + h - newH;
+          break;
 
-    const newX = newCntX - newW / 2;
-    const newY = newCntY - newH / 2;
+        case 'lb':
+        case 'l':
+          newX = x + w - newW;
+          newY = y;
+          break;
+
+        case 'rt':
+        case 't':
+          newX = x;
+          newY = y + h - newH;
+          break;
+
+        case 'rb':
+        case 'r':
+        case 'b':
+          newX = x;
+          newY = y;
+          break;
+
+        default:
+          break;
+      }
+    }
 
     updateRectWithSafeMargin(sprRect, cvsEl, {
       x: newX,
