@@ -3,7 +3,7 @@ nav:
   title: 指南
   order: 2
 group:
-  title: 基础
+  title: 开始
   order: 3
 order: 1
 ---

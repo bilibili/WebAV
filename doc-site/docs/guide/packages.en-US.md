@@ -3,7 +3,7 @@ nav:
   title: Guide
   order: 2
 group:
-  title: Basics
+  title: Start
   order: 3
 order: 1
 ---

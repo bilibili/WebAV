@@ -24,7 +24,7 @@ order: 1
 
 请阅读 [WebCodecs 性能表现及优化思路](https://hughfenghen.github.io/posts/2024/07/27/webcodecs-performance-benchmark/)
 
-总结：部分设备接近 Native 方案性能，总体上还有一点差距，后续在考虑优化。
+总结：部分设备接近 Native 方案性能，总体上还有一点差距，后续再考虑优化。
 
 ### WebAV 兼容性
 

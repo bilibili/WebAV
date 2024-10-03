@@ -10,74 +10,43 @@ order: 1
 
 # 贡献指南
 
-## 我可以贡献什么？
+如果你愿意帮助改进 WebAV 项目，在此先向勇士致以崇高的敬意。
 
-- features 新增/修改功能特性
-- unitest 新增/修改单测
-- bugfix 修复现有 issue 的问题
-- doc 文档改进
-- other 其他
+## 贡献之前
 
-## 如何贡献？
+新增 API、改动 API 或有大量代码改动的 BugFix，开始前务必先与项目维护者在 issue 中讨论，浪费勇士们的时间是莫大的罪过。
 
-#### 拉取仓库
+## 运行项目
 
-- 原始仓库：https://github.com/bilibili/WebAV.git
-- 目标仓库：fork 到自己的 github 上
-  ![img](../../public/img/fork.jpg)
+1. clone 当前项目到本地
+2. 在根目录下执行 `pnpm install && pnpm build`
+3. cd 跳转到特定 package (假设为 av-cliper)，运行 `pnpm dev`
+4. path 为 DEMO 目录下的文件名，如 `concat-media.html`
+5. 在浏览器中打开 DEMO URL，如 `http://localhost:6066/concat-media.html`
+6. `pnpm test` 运行该 package 的单元测试
 
-#### 拉取分支
+## 运行 WebAV 站点
 
-原始分支是 bilibili/WebAV main，拉取后的分支应该是 `你的git帐户名`/WebAV main
+1. clone 当前项目到本地
+2. 在根目录下执行 `pnpm install && pnpm build`
+3. cd 跳转到 `doc-site` 目录，执行 `pnpm dev`
+4. 根据终端提示，访问指定 URL
 
-#### 提交代码
+启动本地站点能更流畅地体验 DEMO，站点还包含更多的示例可用于测试功能是否正常。
 
-非特殊说明，请切勿在代码中附带任何与 console 相关的方法及 debugger。开发完成后，在自己 fork 出来的仓库提交 pull request。
+## Commit 规范
 
-#### PR 规范
+Commit message 格式规范请了解 [Angular's commit convention](https://github.com/conventional-changelog/conventional-changelog/tree/master/packages/conventional-changelog-angular)。
 
-- 格式：`<type>(<scope>): <subject>` 举例：feat(doc): change video doc
-- 内容：罗列本次改动的具体内容
-- 要求：增加的 feat 内容，尽量做到注释清晰，相应的单测覆盖要尽可能覆盖
-- BUGFIX 要求：如果修改的问题和 issues 相关，请在内容中附上相关的 issueID。
+## 代码规范
 
-#### 审核与合并
+1. 本项目使用 prettier 格式化代码，请安装 prettier 插件，避免代码样式冲突，或格式化对 PR 代码产生干扰。
+2. 提交 PR 前务必运行单元测试（后续会在工作流中加入自动校验）
 
-#### 同步源仓库变更到 fork 后的仓库
+## 项目工作流
 
-```zsh
-# 首先在自己的分支增加一个 upstream，即原仓库
-$ git remote add upstream https://github.com/bilibili/WebAV.git
-# 获取原仓库最新的变更
-$ git fetch upstream
-# 同步原仓库的改动到本地分支
-$ git pull upstream master [当前本地目标分支，不填默认就是当前分支]
-```
+本项目使用 [changesets](https://github.com/changesets/changesets) 管理并自动发布版本；
 
-#### 项目开发
+创建 PR 后需使用 `pnpm changeset add` 命令添加该 PR 的描述，以便自动生成 changelog、更新 package 的版本号；
 
-```zsh
-# clone 当前项目到本地
-$ git clone https://github.com/bilibili/WebAV.git
-```
-
-<br/>
-
-```zsh
-# 进入项目目录
-$ npm install && pnpm build
-```
-
-<br/>
-
-```zsh
-# cd 到 `packages/xxx` 目录下
-$ pnpm dev
-```
-
-在浏览器中打开 DEMO URL，如 http://localhost:6066/concat-media.html
-
-```zsh
-# 运行该package的单元测试
-$ pnpm test
-```
+否则 PR 下会有机器人提醒，详情请阅读 changesets 文档。
