@@ -22,10 +22,6 @@ order: 1
 
 #### Pull Repository
 
-- Original repository：https://github.com/bilibili/WebAV.git
-- Target repository：fork to your own github
-  ![img](../../public/img/fork.jpg)
-
 #### Pull Branch
 
 The original branch is bilibili/WebAV main，The branch after pulling should be `your git username`/WebAV main

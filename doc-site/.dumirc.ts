@@ -29,7 +29,7 @@ export default defineConfig({
     footer: ' ',
     footerConfig: {
       bottom:
-        '<div>Copyright (c) 2023 风痕</div><div class="flex" style="justify-content: center;"><a href="https://github.com/bilibili/WebAV"><img src="https://img.shields.io/github/stars/bilibili/WebAV"></a></div>',
+        '<div>碰到问题请去 <a href="https://github.com/bilibili/WebAV/issues" >WebAV Issues</a> 中反馈</div><div class="flex" style="justify-content: center;"><a href="https://github.com/bilibili/WebAV"><img src="https://img.shields.io/github/stars/bilibili/WebAV"></a></div>',
       copyright: ' ',
       columns: [],
     },

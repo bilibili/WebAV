@@ -6,7 +6,7 @@
 
 [English](./README.md) | 中文
 
-WebAV 是一个在 Web 平台上**创建/编辑**视频文件的 SDK，基于 WebCodecs 构建。
+WebAV 是 Web 平台上**创建/编辑**视频文件的 SDK，基于 WebCodecs 构建。
 
 ### 优势
 
