@@ -75,13 +75,24 @@ describe('file2stream', () => {
   });
 });
 
-const mp4_123 = `//${location.host}/video/pri-bunny_avc_frag.mp4`;
+const mp4_123 = `//${location.host}/video/123.mp4`;
 test('quickParseMP4File', async () => {
   const f = file('/unit-test/123.mp4');
   await write(f, (await fetch(mp4_123)).body!);
   const reader = await f.createReader();
-  await quickParseMP4File(reader, (info) => {
-    // console.log(111, info);
-  });
+  let sampleCount = 0;
+  await quickParseMP4File(
+    reader,
+    (info) => {
+      expect(info.timescale).toBe(1000);
+      expect(info.duration).toBe(1024);
+      expect(info.isFragmented).toBe(false);
+      expect(info.tracks.length).toBe(2);
+    },
+    (_, __, samples) => {
+      sampleCount += samples.length;
+    },
+  );
+  expect(sampleCount).toBe(40);
   await reader.close();
 });

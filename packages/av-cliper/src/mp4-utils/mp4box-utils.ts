@@ -213,15 +213,19 @@ function isAlphabetOnly(str: string) {
 //   return boxes;
 // }
 
+/**
+ * 快速解析 mp4 文件，如果是非 fMP4 格式，会优先解析 moov box（略过 mdat）避免占用过多内存
+ */
 export async function quickParseMP4File(
   reader: Awaited<ReturnType<ReturnType<typeof file>['createReader']>>,
   onReady: (info: MP4Info) => void,
+  onSamples: (
+    id: number,
+    sampleType: 'video' | 'audio',
+    samples: MP4ArrayBuffer[],
+  ) => void,
 ) {
   const fileSize = await reader.getSize();
-  const boxType = ['moov', 'ftyp', 'uuid', 'mdat', 'free', 'moof', 'mfra'];
-  const boxTypeBin = boxType.map(
-    (str) => new Uint8Array(str.split('').map((char) => char.charCodeAt(0))),
-  );
 
   const mp4boxFile = mp4box.createFile(false);
   mp4boxFile.onReady = (info) => {
@@ -234,44 +238,50 @@ export async function quickParseMP4File(
     if (aTrackId != null)
       mp4boxFile.setExtractionOptions(aTrackId, 'audio', { nbSamples: 100 });
 
-    console.log(111111, { vTrackId, aTrackId });
     mp4boxFile.start();
   };
-  mp4boxFile.onSamples = (id, type, samples) => {
-    // console.log(222222, id, type, samples.length);
-  };
+  // @ts-expect-error
+  mp4boxFile.onSamples = onSamples;
 
   await parse();
 
   async function parse() {
     let cursor = 0;
-    let skipMdat = true;
+    let isFMP4 = false;
     const mdatBoxes = [];
     while (true) {
-      const box = await getNextBox(cursor, skipMdat);
-      if (box == null) break;
+      if (isFMP4) {
+        const data = (await reader.read(30 * 1024 * 1024, {
+          at: cursor,
+        })) as MP4ArrayBuffer;
+        if (data.byteLength === 0) break;
 
-      if (box.name === 'moof') skipMdat = false;
-
-      if (box.name === 'mdat' && box.data == null) {
-        mdatBoxes.push(box);
+        data.fileStart = cursor;
+        mp4boxFile.appendBuffer(data);
+        cursor += data.byteLength;
       } else {
-        const boxData = box.data as MP4ArrayBuffer;
-        boxData.fileStart = box.offset;
-        mp4boxFile.appendBuffer(boxData);
-      }
+        const box = await getNextBox(cursor);
+        if (box == null) break;
 
-      cursor = box.offset + box.size;
+        if (box.name === 'moof') isFMP4 = true;
+        if (box.name === 'mdat' && box.data == null) {
+          mdatBoxes.push(box);
+        }
+        if (box.data != null) {
+          const boxData = box.data as MP4ArrayBuffer;
+          boxData.fileStart = box.offset;
+          mp4boxFile.appendBuffer(boxData);
+        }
+        cursor = box.offset + box.size;
+      }
     }
 
-    console.log(444, mdatBoxes);
     for (const box of mdatBoxes) {
       let remainSize = box.size;
       while (remainSize > 0) {
         // 一次最多读取 30MB，避免内存占用过大
         const chunkSize = Math.min(remainSize, 30 * 1024 * 1024);
         const chunkOffset = box.offset + box.size - remainSize;
-        // console.log(444444, { chunkSize, chunkOffset });
         const chunkData = (await reader.read(chunkSize, {
           at: chunkOffset,
         })) as MP4ArrayBuffer;
@@ -283,7 +293,7 @@ export async function quickParseMP4File(
     mp4boxFile.stop();
   }
 
-  async function getNextBox(offset: number, skipMdat: boolean) {
+  async function getNextBox(offset: number) {
     if (offset >= fileSize) return null;
     const buf = new Uint8Array(await reader.read(8, { at: offset }));
     const boxSize = new DataView(buf.buffer).getUint32(0);
@@ -293,13 +303,9 @@ export async function quickParseMP4File(
       offset,
       size: boxSize,
       data:
-        skipMdat && boxName === 'mdat'
-          ? null
-          : await reader.read(boxSize, { at: offset }),
+        boxName === 'mdat' ? null : await reader.read(boxSize, { at: offset }),
     };
   }
-
-  async function readBySeq() {}
 }
 
 // /**
