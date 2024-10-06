@@ -10,70 +10,52 @@ order: 1
 
 # Contribution Guide
 
-## What can I contribute?
+If you're willing to help improve the WebAV project, first, a big salute to the warrior 🫡.
 
-- features Add/change features
-- unitest adds/modifies single tests
-- bugfix Fixes existing issues
-- doc documentation improvements
-- other
+All contributions that help the project grow are welcome, including but not limited to:
 
-## How to contribute?
+- Assisting the community by answering Issues
+- Documentation: improving the project site, API documentation, translations
+- Code: Bugfixes, new features, unit tests
+- Financial sponsorships
 
-#### Pull Repository
+For new APIs, changes to existing APIs, or large bugfixes with significant code changes, it's crucial to discuss them with the project maintainers in an issue before starting. Wasting warriors' time is a grave offense.
 
-#### Pull Branch
+---
 
-The original branch is bilibili/WebAV main，The branch after pulling should be `your git username`/WebAV main
+**For documentation and code** contributions, please read the following:
 
-#### Submit Code
+## Running the Project
 
-Do not include any `console-related methods` or `debugger` in your code unless otherwise noted. When you're done, submit the pull request in the repository you forked.
+1. Clone the project locally
+2. Run `pnpm install && pnpm build` in the root directory
+3. Navigate to the specific package (let's assume it's `av-cliper`), and run `pnpm dev`
+4. The path refers to the file name in the DEMO directory, such as `concat-media.html`
+5. Open the DEMO URL in the browser, such as `http://localhost:6066/concat-media.html`
+6. Run `pnpm test` to execute the unit tests of that package
 
-#### PR Specification
+## Running the WebAV Site
 
-- Format: '<type>(<scope>): <subject>' Example: feat(doc): change video doc
-- Content: Lists the changes
-- Requirements: the added feat content should be clearly annotated, and the corresponding single-test coverage should be covered as much as possible
-- BUGFIX requirement: if the modified issue is related to the issues, please attach the relevant issueID to the content.
+1. Clone the project locally
+2. Run `pnpm install && pnpm build` in the root directory
+3. Navigate to the `doc-site` directory, and run `pnpm dev`
+4. Follow the terminal instructions to visit the specified URL
 
-#### Review&Merge
+Starting the local site allows a smoother experience with the DEMO. The site also contains more examples for testing if the features are functioning correctly.
 
-#### Synchronize source repository changes to repository after fork
+## Commit Guidelines
 
-```zsh
-# First, add "upstream" to your branch, that is, the source repository
-$ git remote add upstream https://github.com/bilibili/WebAV.git
-# Get the latest changes to the source repository
-$ git fetch upstream
-# Synchronize the changes of the source repository to the local branch
-$ git pull upstream master [The current local target branch, if not filled in, the current branch will be]
-```
+Please follow the [Angular's commit convention](https://github.com/conventional-changelog/conventional-changelog/tree/master/packages/conventional-changelog-angular) for commit message format.
 
-#### Project Development
+## Code Guidelines
 
-```zsh
-# clone the current project locally
-$ git clone https://github.com/bilibili/WebAV.git
-```
+1. This project uses Prettier to format code. Please install the Prettier plugin to avoid style conflicts and prevent formatting issues from interfering with the PR code.
+2. Make sure to run unit tests before submitting a PR (automatic validation will be added to the workflow in the future).
 
-<br/>
+## Project Workflow
 
-```zsh
-# go to the project directory
-$ npm install && pnpm build
-```
+This project uses [changesets](https://github.com/changesets/changesets) to manage and automatically release versions.
 
-<br/>
+After creating a PR, use the `pnpm changeset add` command to add a description of the PR. This helps auto-generate the changelog and update the package's version number.
 
-```zsh
-# cd to 'packages/xxx'
-$ pnpm dev
-```
-
-Open the DEMO URL in the browser, such as http://localhost:6066/concat-media.html
-
-```zsh
-# Run the unit tests for the package
-$ pnpm test
-```
+Otherwise, a bot will remind you in the PR. For more details, please refer to the changesets documentation.

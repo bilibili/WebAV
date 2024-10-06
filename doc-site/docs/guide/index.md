@@ -28,7 +28,7 @@ WebAV 是 Web 平台上创建/编辑视频文件的 SDK，基于 WebCodecs 构�
 
 如果该项目对你有帮助，扫描二维码请作者喝奶茶 :
 
-<img src="https://github.com/bilibili/WebAV/assets/3307051/4b25836a-3f85-4160-b0bf-6c8360fad9a4" width=200 />
-<img src="https://github.com/bilibili/WebAV/assets/3307051/b0d8ff07-71c9-46c1-af33-019420d17c06" width=200 />
+<img src="../../public/img/alipay-qcode.png" width="200" alt="alipay" />
+<img src="../../public/img/wechat-qcode.png" width="200" alt="wechat-pay" />
 
 加微信 `liujun_fenghen` 备注 WebAV，邀请进入 WebAV 音视频技术交流 微信群

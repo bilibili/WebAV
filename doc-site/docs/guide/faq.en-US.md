@@ -1,6 +1,6 @@
 ---
 nav:
-  title: 指南
+  title: Guide
   order: 2
 group:
   title: 其他

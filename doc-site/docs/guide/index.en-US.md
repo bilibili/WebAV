@@ -28,8 +28,8 @@ WebAV is an SDK for creating/editing video files on the Web platform, built on W
 
 If this project helped you, scan the QR code and ask the author to drink milk tea:
 
-<img src="https://github.com/bilibili/WebAV/assets/3307051/4b25836a-3f85-4160-b0bf-6c8360fad9a4" width=200 />
-<img src="https://github.com/bilibili/WebAV/assets/3307051/b0d8ff07-71c9-46c1-af33-019420d17c06" width=200 />
+[Paypal.me](https://paypal.me/hughfenghen)  
 <img src="../../public/img/alipay-qcode.png" width="200" alt="alipay" />
+<img src="../../public/img/wechat-qcode.png" width="200" alt="wechat-pay" />
 
 Add wechat `liujun_fenghen` note WebAV, invite to join WebAV audio and video technology communication wechat group.

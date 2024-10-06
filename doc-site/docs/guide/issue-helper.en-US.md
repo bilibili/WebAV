@@ -10,7 +10,7 @@ order: 1
 
 # Issue Helper
 
-You should view creating an issue as a contribution to the community, not just a way for project maintainers to help you solve problems.
-Therefore, when submitting an issue for the first time, please carefully read How to Ask Questions.
+You should regard submitting an Issue as **a contribution to the community**;  
+Therefore, for your first Issue submission, be sure to carefully read [How To Ask Questions The Smart Way](https://github.com/bilibili/WebAV/issues/60).
 
-The community welcomes well-crafted issues that help make the project more robust and stable, but issues that clearly do not meet the standards may be closed immediately.
+The community welcomes high-quality Issues to make the project more mature and stable, but Issues that clearly do not meet the standards may be closed immediately.
