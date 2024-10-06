@@ -3,9 +3,9 @@ nav:
   title: Guide
   order: 2
 group:
-  title: 其他
+  title: other
   order: 4
-order: 1
+order: 3
 ---
 
 # FAQ

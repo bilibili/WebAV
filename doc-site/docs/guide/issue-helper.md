@@ -5,7 +5,7 @@ nav:
 group:
   title: 其他
   order: 3
-order: 1
+order: 2
 ---
 
 # 问题反馈

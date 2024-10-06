@@ -5,7 +5,7 @@ nav:
 group:
   title: other
   order: 3
-order: 1
+order: 2
 ---
 
 # Issue Helper
