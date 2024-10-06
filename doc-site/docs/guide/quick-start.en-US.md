@@ -30,10 +30,13 @@ If your project relies on multiple packages under `@webav/*`, be sure to keep th
 
 ```
 - doc-site                   // Documentation site
+  - docs
+    *.md
 - packages                   // Monorepo managed by pnpm, refer to the module introduction section for more details
   - av-cliper
   - av-canvas
-  - av-recorder package.json
+  - av-recorder
+package.json
 
 ```
 

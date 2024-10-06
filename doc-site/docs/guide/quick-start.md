@@ -34,6 +34,8 @@ pnpm add @webav/av-canvas
 
 ```
 - doc-site              // 文档站点
+  - docs
+    *.md
 - packages              // pnpm 管理的 monorepo，阅读模块介绍章节了解更多
   - av-cliper
   - av-canvas
