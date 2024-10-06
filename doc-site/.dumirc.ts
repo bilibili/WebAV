@@ -23,11 +23,18 @@ export default defineConfig({
   themeConfig: {
     name: 'WebAV',
     logo: false,
+    hideHomeNav: true,
     socialLinks: {
       github: 'https://github.com/bilibili/WebAV',
     },
-    footer:
-      '<div>碰到问题请去 <a href="https://github.com/bilibili/WebAV/issues/">WebAV Issues</a> 中反馈</div><div class="flex" style="justify-content: center;"><a href="https://github.com/bilibili/WebAV"><img src="https://img.shields.io/github/stars/bilibili/WebAV"></a></div>',
+    footer: ' ',
+    footerConfig: {
+      bottom:
+        '<div>碰到问题请去 <a href="https://github.com/bilibili/WebAV/issues" >WebAV Issues</a> 中反馈</div><div class="flex" style="justify-content: center;"><a href="https://github.com/bilibili/WebAV"><img src="https://img.shields.io/github/stars/bilibili/WebAV"></a></div>',
+      copyright: ' ',
+      columns: [],
+    },
+    apiHeader: false,
   },
   ...(process.env.NODE_ENV === 'development'
     ? {
@@ -39,5 +46,10 @@ export default defineConfig({
         publicPath: '/WebAV/',
       }),
   targets: { chrome: 102 },
+  mfsu: false,
   legacy: { nodeModulesTransform: false },
+  locales: [
+    { id: 'zh-CN', name: '简体中文' },
+    { id: 'en-US', name: 'English' },
+  ],
 });

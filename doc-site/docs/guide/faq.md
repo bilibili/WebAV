@@ -1,0 +1,36 @@
+---
+nav:
+  title: 指南
+  order: 2
+group:
+  title: 其他
+  order: 4
+order: 1
+---
+
+# FAQ
+
+### 支持哪些视频格式
+
+- MP4Clip 支持的视频格式有：mp4、mov、m4a
+- AudioClip 支持流行音频格式（mp3、wav、m4a...），具体参考 WebAudio API 支持的格式
+- 视频编码格式支持：AVC(H264)、HEVC(H265)
+  - 暂注意不支持 AV1
+  - 是否支持 HEVC(H265) 还取决于你的设备
+
+可阅读文章：[Webcodecs 编解码对视频格式的兼容性（支持性）检测](https://github.com/hughfenghen/hughfenghen.github.io/issues/129)
+
+### WebAV 性能表现怎么样
+
+请阅读 [WebCodecs 性能表现及优化思路](https://hughfenghen.github.io/posts/2024/07/27/webcodecs-performance-benchmark/)
+
+总结：部分设备接近 Native 方案性能，总体上还有一点差距，后续再考虑优化。
+
+### WebAV 兼容性
+
+Chrome/Edge 102+，不支持 Safari，不支持 Firefox
+
+**且网页必须是 HTTPS 协议或 localhost**，否则
+
+- WebCodecs API 检测将返回不兼容
+- 控制台报错 `Cannot read properties of undefined (reading 'getDirectory')`

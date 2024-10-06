@@ -1,32 +1,31 @@
 ---
 nav: DEMO
 group:
-  title: 解码
+  title: decode
   order: 2
-
 order: 4
 ---
 
-# 解码播放
+# Decode and Play
 
-使用 `WebCodecs + canvas + Web Audio` 来解码播放视频，能获取到视频原始图像、音频数据。
+Using `WebCodecs + canvas + Web Audio` to decode and play video, the original image and audio data of the video can be obtained.
 
-该方案拥有最完整的播放控制能力，是原生 `video` 标签无法实现的，比如：
+This gives you the most complete playback control you can get with a native `video` tag, such as:
 
-- 低延迟场景的 buffer 控制
-- 根据设备压力状况丢帧
-- 解码异常时自动恢复
-- 逐帧播放、超快倍速播放
-- 倍速播放音频不变调
-- 自定义播放 FPS
+- buffer control for low-latency scenarios.
+- Drop frames based on device pressure conditions.
+- Automatic recovery when decoding exception.
+- Play frame by frame, super fast double speed play.
+- Play audio at double speed without scaling
+- Custom playback FPS.
 
-该方案的**代价**是增加了复杂度，应优先考虑使用 `video` 播放，除非无法满足诉求。
+The **cost** of this solution is complexity, and using `video` should be preferred unless you can't meet your needs.
 
-### 播放 MP4
+### Play MP4
 
 <code src="./play-mp4.tsx"></code>
 
-### 播放 HLS（fmp4） 流
+### Play HLS（fmp4）Stream
 
 ```tsx
 import React, { useState, useEffect } from 'react';

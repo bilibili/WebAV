@@ -1,48 +1,14 @@
----
-nav: DEMO
-group:
-  title: 解码
-  order: 2
-
-order: 4
----
-
-# 解码播放
-
-使用 `WebCodecs + canvas + Web Audio` 来解码播放视频，能获取到视频原始图像、音频数据。
-
-该方案拥有最完整的播放控制能力，是原生 `video` 标签无法实现的，比如：
-
-- 低延迟场景的 buffer 控制
-- 根据设备压力状况丢帧
-- 解码异常时自动恢复
-- 逐帧播放、超快倍速播放
-- 倍速播放音频不变调
-- 自定义播放 FPS
-
-该方案的**代价**是增加了复杂度，应优先考虑使用 `video` 播放，除非无法满足诉求。
-
-### 播放 MP4
-
-<code src="./play-mp4.tsx"></code>
-
-### 播放 HLS（fmp4） 流
-
-```tsx
 import React, { useState, useEffect } from 'react';
 import { Slider, Button } from 'antd';
-import { MP4Clip, createHLSLoader } from '@webav/av-cliper';
+import { MP4Clip } from '@webav/av-cliper';
 import { assetsPrefix } from './utils';
 
-const videoSrc = assetsPrefix(['video/m3u8/bunny.m3u8']);
+const videoSrc = assetsPrefix(['video/bunny_0.mp4']);
 
 let clip;
 let mp4Dur;
 async function start() {
-  const hlsLoader = await createHLSLoader(videoSrc[0]);
-
-  const [{ stream }] = hlsLoader.load();
-  clip = new MP4Clip(stream);
+  clip = new MP4Clip((await fetch(videoSrc)).body!);
   const { duration, width, height } = await clip.ready;
   mp4Dur = Math.round(duration / 1e6);
 }
@@ -170,4 +136,3 @@ export default function UI() {
     </div>
   );
 }
-```
