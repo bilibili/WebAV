@@ -5,9 +5,9 @@ hero:
   description: 'WebAV is an SDK for creating/editing video files on the Web platform, built on WebCodecs.'
   actions:
     - text: Quick start
-      link: /guide/
+      link: './en-US/guide/'
     - text: DEMO
-      link: /demo/
+      link: './en-US/demo/'
 features:
   - title: 'Cross-Platform'
     image: 💻

@@ -5,9 +5,9 @@ hero:
   description: 'WebAV 是 Web 平台上创建/编辑视频文件的 SDK，基于 WebCodecs 构建。'
   actions:
     - text: 快速开始
-      link: /guide/
+      link: './guide'
     - text: 体验
-      link: /demo/
+      link: './demo/'
 features:
   - title: '跨平台'
     image: 💻

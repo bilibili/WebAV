@@ -23,6 +23,7 @@ export default defineConfig({
   themeConfig: {
     name: 'WebAV',
     logo: false,
+    hideHomeNav: true,
     socialLinks: {
       github: 'https://github.com/bilibili/WebAV',
     },
