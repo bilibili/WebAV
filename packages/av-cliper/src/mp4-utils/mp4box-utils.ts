@@ -5,6 +5,7 @@ import mp4box, {
   MP4ArrayBuffer,
   MP4File,
   MP4Info,
+  MP4Sample,
   TrakBoxParser,
   VideoTrackOpts,
 } from '@webav/mp4box.js';
@@ -218,18 +219,18 @@ function isAlphabetOnly(str: string) {
  */
 export async function quickParseMP4File(
   reader: Awaited<ReturnType<ReturnType<typeof file>['createReader']>>,
-  onReady: (info: MP4Info) => void,
+  onReady: (data: { mp4boxFile: MP4File; info: MP4Info }) => void,
   onSamples: (
     id: number,
     sampleType: 'video' | 'audio',
-    samples: MP4ArrayBuffer[],
+    samples: MP4Sample[],
   ) => void,
 ) {
   const fileSize = await reader.getSize();
 
   const mp4boxFile = mp4box.createFile(false);
   mp4boxFile.onReady = (info) => {
-    onReady(info);
+    onReady({ mp4boxFile, info });
     const vTrackId = info.videoTracks[0]?.id;
     if (vTrackId != null)
       mp4boxFile.setExtractionOptions(vTrackId, 'video', { nbSamples: 100 });
@@ -240,7 +241,6 @@ export async function quickParseMP4File(
 
     mp4boxFile.start();
   };
-  // @ts-expect-error
   mp4boxFile.onSamples = onSamples;
 
   await parse();

@@ -83,7 +83,7 @@ test('quickParseMP4File', async () => {
   let sampleCount = 0;
   await quickParseMP4File(
     reader,
-    (info) => {
+    ({ info }) => {
       expect(info.timescale).toBe(1000);
       expect(info.duration).toBe(1024);
       expect(info.isFragmented).toBe(false);
