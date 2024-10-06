@@ -2,12 +2,14 @@ import mp4box, {
   AudioTrackOpts,
   ESDSBoxParser,
   MP4ABoxParser,
+  MP4ArrayBuffer,
   MP4File,
   MP4Info,
   TrakBoxParser,
   VideoTrackOpts,
 } from '@webav/mp4box.js';
 import { DEFAULT_AUDIO_CONF } from '../clips';
+import { file } from 'opfs-tools';
 
 export function extractFileConfig(file: MP4File, info: MP4Info) {
   const vTrack = info.videoTracks[0];
@@ -126,3 +128,259 @@ export function unsafeReleaseMP4BoxFile(file: MP4File) {
   file.mdats = [];
   file.moofs = [];
 }
+
+type IBox = {
+  type: string;
+  offset: number;
+  size: number;
+};
+
+function isAlphabetOnly(str: string) {
+  const regex = /^[A-Za-z]+$/;
+  return regex.test(str);
+}
+
+// /**
+//  * 读取mp4 uint8 数据流的所有最外层的box
+//  * @param dataArr
+//  * @param maxParseNum 最多解析次数，防止非mp4文件造成过多次读取
+//  * @param offset 初始的读取offset
+//  * @param checkNum 是否检查解析出的box数量
+//  * @returns IBox[]
+//  */
+// export function getAllBoxes(
+//   dataArr: Uint8Array,
+//   maxParseNum: number = 2000,
+//   offset: number = 0,
+//   checkNum: boolean = true,
+// ): IBox[] {
+//   const HEADER_META_SIZE = 8; // byte box size + box type
+//   const HEADER_LARGER_SIZE = 8;
+//   const commonTypes = ['moov', 'ftyp', 'uuid', 'mdat', 'free', 'moof', 'mfra'];
+//   let currentOffset = offset;
+//   let currentParseTimes = 0;
+//   const boxes: IBox[] = [];
+//   while (currentOffset < dataArr.length && currentParseTimes++ < maxParseNum) {
+//     let uint8a = dataArr.slice(currentOffset, currentOffset + HEADER_META_SIZE);
+//     // 读取前四位
+//     let boxSizeBinary = [0, 1, 2, 3].reduce((prev, cur) => {
+//       return prev + uint8a[cur].toString(2).padStart(8, '0');
+//     }, '');
+//     let boxSize = parseInt(boxSizeBinary, 2);
+//     // 读取后四位
+//     let boxType = [4, 5, 6, 7].reduce((prev, cur) => {
+//       return prev + String.fromCharCode(uint8a[cur]);
+//     }, '');
+//     if (!commonTypes.includes(boxType)) {
+//       console.warn(`未知box类型: ${boxType}`);
+//     }
+//     if (!isAlphabetOnly(boxType)) {
+//       // 非法字符直接报错
+//       throw new Error('not mp4 box');
+//     }
+//     if (boxSize === 1) {
+//       uint8a = dataArr.slice(
+//         currentOffset + HEADER_META_SIZE,
+//         currentOffset + HEADER_META_SIZE + HEADER_LARGER_SIZE,
+//       );
+//       let boxSizeBinary = [0, 1, 2, 3, 4, 5, 6, 7].reduce((prev, cur) => {
+//         return prev + uint8a[cur].toString(2).padStart(8, '0');
+//       }, '');
+//       boxSize = parseInt(boxSizeBinary, 2);
+//     }
+//     boxes.push({
+//       type: boxType,
+//       offset: currentOffset,
+//       size: boxSize,
+//     });
+//     currentOffset += boxSize;
+//   }
+//   if (boxes.length >= maxParseNum && checkNum) {
+//     throw new Error('too many boxes');
+//   }
+//   // let ftypFlag = false;
+//   // boxes.find((box) => {
+//   //   if (box.type === 'ftyp') {
+//   //     ftypFlag = true;
+//   //     return true;
+//   //   } else {
+//   //     return false;
+//   //   }
+//   // });
+//   // if (!ftypFlag) {
+//   //   throw new Error('boxes incomplete, no ftyp');
+//   // }
+//   return boxes;
+// }
+
+export async function quickParseMP4File(
+  reader: Awaited<ReturnType<ReturnType<typeof file>['createReader']>>,
+  onReady: (info: MP4Info) => void,
+) {
+  const fileSize = await reader.getSize();
+  const boxType = ['moov', 'ftyp', 'uuid', 'mdat', 'free', 'moof', 'mfra'];
+  const boxTypeBin = boxType.map(
+    (str) => new Uint8Array(str.split('').map((char) => char.charCodeAt(0))),
+  );
+
+  const mp4boxFile = mp4box.createFile(false);
+  mp4boxFile.onReady = (info) => {
+    onReady(info);
+    const vTrackId = info.videoTracks[0]?.id;
+    if (vTrackId != null)
+      mp4boxFile.setExtractionOptions(vTrackId, 'video', { nbSamples: 100 });
+
+    const aTrackId = info.audioTracks[0]?.id;
+    if (aTrackId != null)
+      mp4boxFile.setExtractionOptions(aTrackId, 'audio', { nbSamples: 100 });
+
+    console.log(111111, { vTrackId, aTrackId });
+    mp4boxFile.start();
+  };
+  mp4boxFile.onSamples = (id, type, samples) => {
+    // console.log(222222, id, type, samples.length);
+  };
+
+  await parse();
+
+  async function parse() {
+    let cursor = 0;
+    let skipMdat = true;
+    const mdatBoxes = [];
+    while (true) {
+      const box = await getNextBox(cursor, skipMdat);
+      if (box == null) break;
+
+      if (box.name === 'moof') skipMdat = false;
+
+      if (box.name === 'mdat' && box.data == null) {
+        mdatBoxes.push(box);
+      } else {
+        const boxData = box.data as MP4ArrayBuffer;
+        boxData.fileStart = box.offset;
+        mp4boxFile.appendBuffer(boxData);
+      }
+
+      cursor = box.offset + box.size;
+    }
+
+    console.log(444, mdatBoxes);
+    for (const box of mdatBoxes) {
+      let remainSize = box.size;
+      while (remainSize > 0) {
+        // 一次最多读取 30MB，避免内存占用过大
+        const chunkSize = Math.min(remainSize, 30 * 1024 * 1024);
+        const chunkOffset = box.offset + box.size - remainSize;
+        // console.log(444444, { chunkSize, chunkOffset });
+        const chunkData = (await reader.read(chunkSize, {
+          at: chunkOffset,
+        })) as MP4ArrayBuffer;
+        chunkData.fileStart = chunkOffset;
+        mp4boxFile.appendBuffer(chunkData);
+        remainSize -= chunkSize;
+      }
+    }
+    mp4boxFile.stop();
+  }
+
+  async function getNextBox(offset: number, skipMdat: boolean) {
+    if (offset >= fileSize) return null;
+    const buf = new Uint8Array(await reader.read(8, { at: offset }));
+    const boxSize = new DataView(buf.buffer).getUint32(0);
+    const boxName = String.fromCharCode(...buf.subarray(4, 8));
+    return {
+      name: boxName,
+      offset,
+      size: boxSize,
+      data:
+        skipMdat && boxName === 'mdat'
+          ? null
+          : await reader.read(boxSize, { at: offset }),
+    };
+  }
+
+  async function readBySeq() {}
+}
+
+// /**
+//  * 读取mp4 uint8 数据流的所有最外层的box
+//  * @param dataArr
+//  * @param maxParseNum 最多解析次数，防止非mp4文件造成过多次读取
+//  * @param offset 初始的读取offset
+//  * @param checkNum 是否检查解析出的box数量
+//  * @returns IBox[]
+//  */
+// export async function getFileBoxes(
+//   localFile: OPFSToolFile,
+//   maxParseNum: number = 2000,
+//   offset: number = 0,
+//   checkNum: boolean = true,
+// ): Promise<IBox[]> {
+//   const HEADER_META_SIZE = 8; // byte box size + box type
+//   const HEADER_LARGER_SIZE = 8;
+//   const commonTypes = ['moov', 'ftyp', 'uuid', 'mdat', 'free', 'moof', 'mfra'];
+//   let currentOffset = offset;
+//   let currentParseTimes = 0;
+//   const boxes: IBox[] = [];
+//   const reader = await localFile.createReader();
+//   const fSize = await localFile.getSize();
+//   while (currentOffset < fSize && currentParseTimes++ < maxParseNum) {
+//     let uint8a = new Uint8Array(
+//       await reader.read(currentOffset + HEADER_META_SIZE, {
+//         at: currentOffset,
+//       }),
+//     );
+//     // 读取前四位
+//     let boxSizeBinary = [0, 1, 2, 3].reduce((prev, cur) => {
+//       return prev + uint8a[cur].toString(2).padStart(8, '0');
+//     }, '');
+//     let boxSize = parseInt(boxSizeBinary, 2);
+//     // 读取后四位
+//     let boxType = [4, 5, 6, 7].reduce((prev, cur) => {
+//       return prev + String.fromCharCode(uint8a[cur]);
+//     }, '');
+//     if (!commonTypes.includes(boxType)) {
+//       console.warn(`未知box类型: ${boxType}`);
+//     }
+//     if (!isAlphabetOnly(boxType)) {
+//       // 非法字符直接报错
+//       throw new Error('not mp4 box');
+//     }
+//     if (boxSize === 1) {
+//       uint8a = new Uint8Array(
+//         await reader.read(
+//           currentOffset + HEADER_META_SIZE + HEADER_LARGER_SIZE,
+//           {
+//             at: currentOffset + HEADER_META_SIZE,
+//           },
+//         ),
+//       );
+//       let boxSizeBinary = [0, 1, 2, 3, 4, 5, 6, 7].reduce((prev, cur) => {
+//         return prev + uint8a[cur].toString(2).padStart(8, '0');
+//       }, '');
+//       boxSize = parseInt(boxSizeBinary, 2);
+//     }
+//     boxes.push({
+//       type: boxType,
+//       offset: currentOffset,
+//       size: boxSize,
+//     });
+//     currentOffset += boxSize;
+//   }
+//   if (boxes.length >= maxParseNum && checkNum) {
+//     throw new Error('too many boxes');
+//   }
+//   let ftypFlag = false;
+//   boxes.find((box) => {
+//     if (box.type === 'ftyp') {
+//       ftypFlag = true;
+//       return true;
+//     } else {
+//       return false;
+//     }
+//   });
+//   if (!ftypFlag) {
+//     throw new Error('boxes incomplete, no ftyp');
+//   }
+//   return boxes;
+// }

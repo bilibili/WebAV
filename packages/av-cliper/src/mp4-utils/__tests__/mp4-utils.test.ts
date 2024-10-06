@@ -2,6 +2,8 @@ import { beforeAll, describe, expect, test, vi } from 'vitest';
 import mp4box from '@webav/mp4box.js';
 import { file2stream } from '..';
 import { autoReadStream } from '../../av-utils';
+import { file, write } from 'opfs-tools';
+import { quickParseMP4File } from '../mp4box-utils';
 
 beforeAll(() => {
   vi.useFakeTimers();
@@ -71,4 +73,15 @@ describe('file2stream', () => {
     expect(globalThis.clearInterval).toBeCalled();
     expect(spyCancel).toBeCalled();
   });
+});
+
+const mp4_123 = `//${location.host}/video/pri-bunny_avc_frag.mp4`;
+test('quickParseMP4File', async () => {
+  const f = file('/unit-test/123.mp4');
+  await write(f, (await fetch(mp4_123)).body!);
+  const reader = await f.createReader();
+  await quickParseMP4File(reader, (info) => {
+    // console.log(111, info);
+  });
+  await reader.close();
 });

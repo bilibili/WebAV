@@ -575,6 +575,7 @@ async function parseMP4Stream(
     delta = 0,
     sampleType: 'video' | 'audio',
   ) {
+    // todo: perf 丢弃多余字段，小尺寸对象性能更好
     return {
       ...s,
       is_idr:

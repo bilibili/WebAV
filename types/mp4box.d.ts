@@ -300,7 +300,7 @@ declare module '@webav/mp4box.js' {
 
   const DefExp: {
     MP4File: MP4File;
-    createFile: () => MP4File;
+    createFile: (keepMdta?: boolean) => MP4File;
     BoxParser: {
       esdsBox: ESDSBoxParser;
     };
