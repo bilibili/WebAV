@@ -134,8 +134,8 @@ importers:
   packages/av-cliper:
     dependencies:
       '@webav/mp4box.js':
-        specifier: 0.5.3-fenghen
-        version: 0.5.3-fenghen
+        specifier: 0.5.4-fenghen
+        version: 0.5.4-fenghen
       m3u8-parser:
         specifier: ^7.1.0
         version: 7.1.0
@@ -2409,8 +2409,8 @@ packages:
   '@webassemblyjs/wast-printer@1.12.1':
     resolution: {integrity: sha512-+X4WAlOisVWQMikjbcvY2e0rwPsKQ9F688lksZhBcPycBBuii3O7m8FACbDMWDojpAqvjIncrG8J0XHKyQfVeA==}
 
-  '@webav/mp4box.js@0.5.3-fenghen':
-    resolution: {integrity: sha512-jAN15I3Po1Z6Ns02iknb6KGbird9rd1h9TGldzbwsar+88ZlHd+oVjOQnFavBdNDc5vmULUnldcWGDdKc02npw==}
+  '@webav/mp4box.js@0.5.4-fenghen':
+    resolution: {integrity: sha512-1NDZyNcB4Eu52tWhrRPGRTXpXUzWzh1xJE6jA0owj/Tlh8d9Bhsu2nsl9Dyheg1IhiFm3FfFoz0aK5dkCadqow==}
 
   '@xtuc/ieee754@1.2.0':
     resolution: {integrity: sha512-DX8nKgqcGwsc0eJSqYt5lwP4DH5FlHnmuWWBRy7X0NcaGR0ZtuyeESgMwTYVEtxmsNGY+qit4QYT/MIYTOTPeA==}
@@ -12481,7 +12481,7 @@ snapshots:
       '@webassemblyjs/ast': 1.12.1
       '@xtuc/long': 4.2.2
 
-  '@webav/mp4box.js@0.5.3-fenghen': {}
+  '@webav/mp4box.js@0.5.4-fenghen': {}
 
   '@xtuc/ieee754@1.2.0': {}
 

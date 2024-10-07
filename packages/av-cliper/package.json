@@ -40,7 +40,7 @@
     "dist"
   ],
   "dependencies": {
-    "@webav/mp4box.js": "0.5.3-fenghen",
+    "@webav/mp4box.js": "0.5.4-fenghen",
     "m3u8-parser": "^7.1.0",
     "opfs-tools": "^0.6.1",
     "wave-resampler": "^1.0.0"
