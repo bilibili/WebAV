@@ -167,6 +167,7 @@ export async function quickParseMP4File(
     const mdatBoxes = [];
     while (true) {
       if (isFMP4) {
+        // fMP4 中 moof mdat 交替存储，且 mdat 提交较小，顺序读取即可
         const data = (await reader.read(30 * 1024 * 1024, {
           at: cursor,
         })) as MP4ArrayBuffer;
@@ -195,7 +196,7 @@ export async function quickParseMP4File(
     for (const box of mdatBoxes) {
       let remainSize = box.size;
       while (remainSize > 0) {
-        // 一次最多读取 30MB，避免内存占用过大
+        // 非 fMP4 文件的 mdat box 非常大，一次最多读取 30MB，避免内存占用过大
         const chunkSize = Math.min(remainSize, 30 * 1024 * 1024);
         const chunkOffset = box.offset + box.size - remainSize;
         const chunkData = (await reader.read(chunkSize, {
