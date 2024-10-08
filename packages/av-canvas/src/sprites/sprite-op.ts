@@ -178,12 +178,33 @@ function scaleRect({
     // 最小缩放限定
     const minSize = 10;
     let newW = w + incW;
-    newW = newW < minSize ? minSize : newW;
     let newH = h + incH;
-    newH = newH < minSize ? minSize : newH;
-
-    const newCntX = (incS / 2) * Math.cos(rotateAngle) + x + w / 2;
-    const newCntY = (incS / 2) * Math.sin(rotateAngle) + y + h / 2;
+    let newIncS = incS;
+    if (ctrlKey.length === 1) {
+      // 非等比例缩放时，根据缩放方向限定最小值，并固定对角线增量
+      if (newW <= minSize && (ctrlKey === 'l' || ctrlKey === 'r')) {
+        newW = minSize;
+        newIncS = ctrlKey === 'l' ? w - minSize : minSize - w;
+      }
+      if (newH <= minSize && (ctrlKey === 't' || ctrlKey === 'b')) {
+        newH = minSize;
+        newIncS = ctrlKey === 'b' ? h - minSize : minSize - h;
+      }
+    } else {
+      // 等比例缩放时，限定宽度最小值，并固定对角线增量
+      if (newW <= minSize) {
+        let minIncS = Math.sqrt((minSize * (h / w)) ** 2 + minSize ** 2);
+        let startIncS = Math.sqrt(h ** 2 + w ** 2);
+        newW = minSize;
+        newH = (h / w) * newW;
+        newIncS =
+          ctrlKey === 'lt' || ctrlKey === 'lb'
+            ? startIncS - minIncS
+            : minIncS - startIncS;
+      }
+    }
+    const newCntX = (newIncS / 2) * Math.cos(rotateAngle) + x + w / 2;
+    const newCntY = (newIncS / 2) * Math.sin(rotateAngle) + y + h / 2;
 
     const newX = newCntX - newW / 2;
     const newY = newCntY - newH / 2;

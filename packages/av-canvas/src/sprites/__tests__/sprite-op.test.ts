@@ -140,7 +140,7 @@ describe('scale sprite', () => {
     expect(sprMng.activeSprite).toBe(vs);
 
     window.dispatchEvent(new MouseEvent('mouseup'));
-    // 命中 right ctrl
+    // 命中 bottom right ctrl
     cvsEl.dispatchEvent(
       crtMSEvt4Offset('mousedown', 100 * cvsRatio.w, 100 * cvsRatio.h),
     );
@@ -152,6 +152,101 @@ describe('scale sprite', () => {
     );
     expect(vs.rect).toMatchSnapshot();
 
+    clear();
+  });
+
+  test('drag right ctrl below min size', async () => {
+    const vs = new MockVisibleSprite();
+    await sprMng.addSprite(vs);
+    sprMng.activeSprite = vs;
+    vs.rect.x = 100;
+    vs.rect.y = 100;
+    vs.rect.w = 100;
+    vs.rect.h = 100;
+    vs.rect.angle = 30 * (Math.PI / 180);
+    // 激活 sprite
+    const clear = draggabelSprite(cvsEl, sprMng, document.body);
+    cvsEl.dispatchEvent(crtMSEvt4Offset('mousedown', 150, 150));
+    expect(sprMng.activeSprite).toBe(vs);
+
+    window.dispatchEvent(new MouseEvent('mouseup'));
+    // 命中 right ctrl
+    cvsEl.dispatchEvent(
+      crtMSEvt4Offset(
+        'mousedown',
+        100 + 50 * cvsRatio.w + Math.cos(30 * (Math.PI / 180)) * 50,
+        100 + 50 * cvsRatio.h + 25,
+      ),
+    );
+    window.dispatchEvent(
+      new MouseEvent('mousemove', {
+        clientX: -100,
+        clientY: -100,
+      }),
+    );
+    // 拖拽 right ctrl 缩放 rect 的宽度
+    expect(vs.rect.w).toBe(10);
+    expect(Math.round(vs.rect.x)).toBe(106);
+    expect(Math.round(vs.rect.y)).toBe(78);
+    clear();
+  });
+
+  test('drag top ctrl below min size', async () => {
+    const vs = new MockVisibleSprite();
+    await sprMng.addSprite(vs);
+    sprMng.activeSprite = vs;
+    vs.rect.w = 100;
+    vs.rect.h = 100;
+    vs.rect.angle = 90 * (Math.PI / 180);
+    // 激活 sprite
+    const clear = draggabelSprite(cvsEl, sprMng, document.body);
+    cvsEl.dispatchEvent(crtMSEvt4Offset('mousedown', 50, 50));
+    expect(sprMng.activeSprite).toBe(vs);
+
+    window.dispatchEvent(new MouseEvent('mouseup'));
+    // 命中 top ctrl
+    cvsEl.dispatchEvent(crtMSEvt4Offset('mousedown', 0, 50));
+    window.dispatchEvent(
+      new MouseEvent('mousemove', {
+        clientX: 300,
+        clientY: 0,
+      }),
+    );
+    // 拖拽 top ctrl 缩放 rect 的高度
+    expect(vs.rect.h).toBe(10);
+    expect(Math.round(vs.rect.x)).toBe(45);
+    expect(Math.round(vs.rect.y)).toBe(45);
+    clear();
+  });
+
+  test('drag rb(bottom right) ctrl below min size', async () => {
+    const vs = new MockVisibleSprite();
+    await sprMng.addSprite(vs);
+    sprMng.activeSprite = vs;
+    vs.rect.x = 100;
+    vs.rect.y = 100;
+    vs.rect.w = 100;
+    vs.rect.h = 100;
+    vs.rect.angle = 90 * (Math.PI / 180);
+    // 激活 sprite
+    const clear = draggabelSprite(cvsEl, sprMng, document.body);
+    cvsEl.dispatchEvent(crtMSEvt4Offset('mousedown', 150, 150));
+    expect(sprMng.activeSprite).toBe(vs);
+
+    window.dispatchEvent(new MouseEvent('mouseup'));
+    // 命中 bottom right ctrl
+    cvsEl.dispatchEvent(crtMSEvt4Offset('mousedown', 100, 200));
+    window.dispatchEvent(
+      new MouseEvent('mousemove', {
+        clientX: 100,
+        clientY: -100,
+      }),
+    );
+    // 拖拽 bottom right ctrl 缩放 rect 的宽度和高度
+    expect(vs.rect.w).toBe(10);
+    expect(vs.rect.h).toBe(10);
+    expect(Math.round(vs.rect.x)).toBe(190);
+    expect(Math.round(vs.rect.y)).toBe(100);
     clear();
   });
 });
