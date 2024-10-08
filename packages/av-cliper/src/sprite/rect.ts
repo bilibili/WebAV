@@ -184,13 +184,6 @@ export class Rect implements IRectBaseProps {
   fixedAspectRatio = false;
 
   /**
-   * 是否固定中心点进行缩放
-   * 值为 true 时，将固定中心点不变进行缩放
-   * 值为 false 时，将固定对角点不变进行缩放
-   */
-  scaleFixedCenter = false;
-
-  /**
    * 根据坐标、宽高计算出来的矩形控制点
    *
    * {@link Rect.fixedAspectRatio} = `true` 时，将缺少上下左右(`t,b,l,r`)四个控制点
@@ -230,7 +223,6 @@ export class Rect implements IRectBaseProps {
     const rect = new Rect(x, y, w, h, master);
     rect.angle = this.angle;
     rect.fixedAspectRatio = this.fixedAspectRatio;
-    rect.scaleFixedCenter = this.scaleFixedCenter;
     return rect;
   }
 
