@@ -16,7 +16,7 @@ function isOTFile(obj: any): obj is OPFSToolFile {
 }
 
 // 用于内部创建 MP4Clip 实例
-type MPClipCloneArgs = Awaited<ReturnType<typeof parseMP4Stream>> & {
+type MPClipCloneArgs = Awaited<ReturnType<typeof mp4FileToSamples>> & {
   localFile: OPFSToolFile;
 };
 
@@ -134,10 +134,10 @@ export class MP4Clip implements IClip {
     this.ready = (
       source instanceof ReadableStream
         ? initByStream(source).then((otFile) =>
-            parseMP4Stream(otFile, this.#opts),
+            mp4FileToSamples(otFile, this.#opts),
           )
         : isOTFile(source)
-          ? parseMP4Stream(source, this.#opts)
+          ? mp4FileToSamples(source, this.#opts)
           : Promise.resolve(source)
     ).then(async ({ videoSamples, audioSamples, decoderConf }) => {
       this.#videoSamples = videoSamples;
@@ -489,7 +489,7 @@ function genDecoder(
   };
 }
 
-async function parseMP4Stream(otFile: OPFSToolFile, opts: MP4ClipOpts = {}) {
+async function mp4FileToSamples(otFile: OPFSToolFile, opts: MP4ClipOpts = {}) {
   let mp4Info: MP4Info | null = null;
   const decoderConf: MP4DecoderConf = { video: null, audio: null };
   let videoSamples: ExtMP4Sample[] = [];

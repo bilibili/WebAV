@@ -3,7 +3,7 @@ import { Combinator } from '../src/combinator';
 import { Log } from '../src/log';
 import { OffscreenSprite } from '../src/sprite/offscreen-sprite';
 import { renderTxt2ImgBitmap } from '../src/dom-utils';
-import { file, write } from 'opfs-tools';
+import { file, tmpfile, write } from 'opfs-tools';
 
 const progressEl = document.querySelector('#progress')!;
 const startTimeEl = document.querySelector('#startTime')!;
@@ -69,5 +69,22 @@ document.querySelector('#frag-10min')?.addEventListener('click', () => {
       com.output(),
     );
     // com.output().pipeTo(await createFileWriter());
+  })().catch(Log.error);
+});
+
+document.querySelector('#parse-larage-file')?.addEventListener('click', () => {
+  (async () => {
+    const f = tmpfile();
+    await write(f, (await fetch('./video/pri-sintel-2048-surround.mp4')).body!);
+    const st = performance.now();
+    const clips = Array(5)
+      .fill(0)
+      .map(() => new MP4Clip(f));
+    await Promise.all(clips.map((clip) => clip.ready));
+    document.querySelector('#parse-time-cost')!.textContent = String(
+      Math.round(performance.now() - st),
+    );
+    clips.forEach((clip) => clip.destroy());
+    await f.remove();
   })().catch(Log.error);
 });
