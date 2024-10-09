@@ -9,19 +9,22 @@ const progressEl = document.querySelector('#progress')!;
 const startTimeEl = document.querySelector('#startTime')!;
 const costEl = document.querySelector('#cost')!;
 
+async function loadFile(path: string) {
+  const otFile = file(path);
+
+  if (!(await otFile.exists())) {
+    await write(otFile, (await fetch(path)).body!);
+  }
+  return otFile;
+}
+
 document.querySelector('#frag-10min')?.addEventListener('click', () => {
   (async () => {
     const resPath = '/video/pri-bunny_1080p_avc-frag.mp4';
     // const resPath = '/video/pri-cut-5.mp4';
     // const resPath = '/video/bunny_0.mp4';
 
-    const otFile = file(resPath);
-
-    if (!(await otFile.exists())) {
-      await write(otFile, (await fetch(resPath)).body!);
-    }
-
-    const spr1 = new OffscreenSprite(new MP4Clip(otFile));
+    const spr1 = new OffscreenSprite(new MP4Clip(await loadFile(resPath)));
     await spr1.ready;
     const width = 1920;
     const height = 1080;
@@ -69,5 +72,18 @@ document.querySelector('#frag-10min')?.addEventListener('click', () => {
       com.output(),
     );
     // com.output().pipeTo(await createFileWriter());
+  })().catch(Log.error);
+});
+
+document.querySelector('#parse-larage-file')?.addEventListener('click', () => {
+  (async () => {
+    const resPath = '/video/pri-Interstellar.mp4';
+    const st = performance.now();
+    const clip = new MP4Clip(await loadFile(resPath));
+    await clip.ready;
+    document.querySelector('#parse-time-cost')!.textContent = String(
+      Math.round(performance.now() - st),
+    );
+    clip.destroy();
   })().catch(Log.error);
 });
