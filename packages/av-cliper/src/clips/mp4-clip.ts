@@ -1,13 +1,10 @@
 import { MP4Info, MP4Sample } from '@webav/mp4box.js';
-import {
-  audioResample,
-  autoReadStream,
-  extractPCM4AudioData,
-  sleep,
-} from '../av-utils';
+import { audioResample, extractPCM4AudioData, sleep } from '../av-utils';
 import { Log } from '../log';
-import { extractFileConfig } from '../mp4-utils/mp4box-utils';
-import { SampleTransform } from '../mp4-utils/sample-transform';
+import {
+  extractFileConfig,
+  quickParseMP4File,
+} from '../mp4-utils/mp4box-utils';
 import { DEFAULT_AUDIO_CONF, IClip } from './iclip';
 import { file, tmpfile, write } from 'opfs-tools';
 
@@ -19,7 +16,7 @@ function isOTFile(obj: any): obj is OPFSToolFile {
 }
 
 // 用于内部创建 MP4Clip 实例
-type MPClipCloneArgs = Awaited<ReturnType<typeof parseMP4Stream>> & {
+type MPClipCloneArgs = Awaited<ReturnType<typeof mp4FileToSamples>> & {
   localFile: OPFSToolFile;
 };
 
@@ -125,7 +122,7 @@ export class MP4Clip implements IClip {
 
     const initByStream = async (s: ReadableStream) => {
       await write(this.#localFile, s);
-      return await this.#localFile.stream();
+      return this.#localFile;
     };
 
     this.#localFile = isOTFile(source)
@@ -136,9 +133,11 @@ export class MP4Clip implements IClip {
 
     this.ready = (
       source instanceof ReadableStream
-        ? initByStream(source).then((s) => parseMP4Stream(s, this.#opts))
+        ? initByStream(source).then((otFile) =>
+            mp4FileToSamples(otFile, this.#opts),
+          )
         : isOTFile(source)
-          ? source.stream().then((s) => parseMP4Stream(s, this.#opts))
+          ? mp4FileToSamples(source, this.#opts)
           : Promise.resolve(source)
     ).then(async ({ videoSamples, audioSamples, decoderConf }) => {
       this.#videoSamples = videoSamples;
@@ -490,91 +489,80 @@ function genDecoder(
   };
 }
 
-async function parseMP4Stream(
-  source: ReadableStream<Uint8Array>,
-  opts: MP4ClipOpts = {},
-) {
-  let mp4Info: MP4Info;
+async function mp4FileToSamples(otFile: OPFSToolFile, opts: MP4ClipOpts = {}) {
+  let mp4Info: MP4Info | null = null;
   const decoderConf: MP4DecoderConf = { video: null, audio: null };
   let videoSamples: ExtMP4Sample[] = [];
   let audioSamples: ExtMP4Sample[] = [];
 
-  return new Promise<{
-    videoSamples: typeof videoSamples;
-    audioSamples: typeof audioSamples;
-    decoderConf: typeof decoderConf;
-  }>(async (resolve, reject) => {
-    let videoDeltaTS = -1;
-    let audioDeltaTS = -1;
-    const stopRead = autoReadStream(source.pipeThrough(new SampleTransform()), {
-      onChunk: async ({ chunkType, data }) => {
-        if (chunkType === 'ready') {
-          // mp4File = data.file;
-          mp4Info = data.info;
-          let { videoDecoderConf: vc, audioDecoderConf: ac } =
-            extractFileConfig(data.file, data.info);
-          decoderConf.video = vc ?? null;
-          decoderConf.audio = ac ?? null;
-          if (vc == null && ac == null) {
-            stopRead();
-            reject(
-              Error('MP4Clip must contain at least one video or audio track'),
-            );
-          }
-          Log.info(
-            'mp4BoxFile moov ready',
-            {
-              ...data.info,
-              tracks: null,
-              videoTracks: null,
-              audioTracks: null,
-            },
-            decoderConf,
-          );
-        } else if (chunkType === 'samples') {
-          if (data.type === 'video') {
-            if (videoDeltaTS === -1) videoDeltaTS = data.samples[0].dts;
-            for (const s of data.samples) {
-              videoSamples.push(normalizeTimescale(s, videoDeltaTS, 'video'));
-            }
-          } else if (data.type === 'audio' && opts.audio) {
-            if (audioDeltaTS === -1) audioDeltaTS = data.samples[0].dts;
-            for (const s of data.samples) {
-              audioSamples.push(normalizeTimescale(s, audioDeltaTS, 'audio'));
-            }
-          }
+  let videoDeltaTS = -1;
+  let audioDeltaTS = -1;
+  const reader = await otFile.createReader();
+  await quickParseMP4File(
+    reader,
+    (data) => {
+      mp4Info = data.info;
+      let { videoDecoderConf: vc, audioDecoderConf: ac } = extractFileConfig(
+        data.mp4boxFile,
+        data.info,
+      );
+      decoderConf.video = vc ?? null;
+      decoderConf.audio = ac ?? null;
+      if (vc == null && ac == null) {
+        Log.error('MP4Clip no video and audio track');
+      }
+      Log.info(
+        'mp4BoxFile moov ready',
+        {
+          ...data.info,
+          tracks: null,
+          videoTracks: null,
+          audioTracks: null,
+        },
+        decoderConf,
+      );
+    },
+    (_, type, samples) => {
+      if (type === 'video') {
+        if (videoDeltaTS === -1) videoDeltaTS = samples[0].dts;
+        for (const s of samples) {
+          videoSamples.push(normalizeTimescale(s, videoDeltaTS, 'video'));
         }
-      },
-      onDone: () => {
-        const lastSampele = videoSamples.at(-1) ?? audioSamples.at(-1);
-        if (mp4Info == null) {
-          reject(Error('MP4Clip stream is done, but not emit ready'));
-          return;
-        } else if (lastSampele == null) {
-          reject(Error('MP4Clip stream not contain any sample'));
-          return;
+      } else if (type === 'audio' && opts.audio) {
+        if (audioDeltaTS === -1) audioDeltaTS = samples[0].dts;
+        for (const s of samples) {
+          audioSamples.push(normalizeTimescale(s, audioDeltaTS, 'audio'));
         }
-        // 修复首帧黑帧
-        const firstSample = videoSamples[0];
-        if (firstSample != null && firstSample.cts < 200e3) {
-          firstSample.duration += firstSample.cts;
-          firstSample.cts = 0;
-        }
-        Log.info('mp4 stream parsed');
-        resolve({
-          videoSamples,
-          audioSamples,
-          decoderConf,
-        });
-      },
-    });
-  });
+      }
+    },
+  );
+  await reader.close();
+
+  const lastSampele = videoSamples.at(-1) ?? audioSamples.at(-1);
+  if (mp4Info == null) {
+    throw Error('MP4Clip stream is done, but not emit ready');
+  } else if (lastSampele == null) {
+    throw Error('MP4Clip stream not contain any sample');
+  }
+  // 修复首帧黑帧
+  const firstSample = videoSamples[0];
+  if (firstSample != null && firstSample.cts < 200e3) {
+    firstSample.duration += firstSample.cts;
+    firstSample.cts = 0;
+  }
+  Log.info('mp4 stream parsed');
+  return {
+    videoSamples,
+    audioSamples,
+    decoderConf,
+  };
 
   function normalizeTimescale(
     s: MP4Sample,
     delta = 0,
     sampleType: 'video' | 'audio',
   ) {
+    // todo: perf 丢弃多余字段，小尺寸对象性能更好
     return {
       ...s,
       is_idr:

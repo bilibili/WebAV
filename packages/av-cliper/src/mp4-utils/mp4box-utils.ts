@@ -2,12 +2,15 @@ import mp4box, {
   AudioTrackOpts,
   ESDSBoxParser,
   MP4ABoxParser,
+  MP4ArrayBuffer,
   MP4File,
   MP4Info,
+  MP4Sample,
   TrakBoxParser,
   VideoTrackOpts,
 } from '@webav/mp4box.js';
 import { DEFAULT_AUDIO_CONF } from '../clips';
+import { file } from 'opfs-tools';
 
 export function extractFileConfig(file: MP4File, info: MP4Info) {
   const vTrack = info.videoTracks[0];
@@ -71,7 +74,7 @@ export function extractFileConfig(file: MP4File, info: MP4Info) {
 function parseVideoCodecDesc(track: TrakBoxParser): Uint8Array {
   for (const entry of track.mdia.minf.stbl.stsd.entries) {
     // @ts-expect-error
-    const box = entry.avcC ?? entry.hvcC ?? entry.vpcC;
+    const box = entry.avcC ?? entry.hvcC ?? entry.av1C ?? entry.vpcC;
     if (box != null) {
       const stream = new mp4box.DataStream(
         undefined,
@@ -82,7 +85,7 @@ function parseVideoCodecDesc(track: TrakBoxParser): Uint8Array {
       return new Uint8Array(stream.buffer.slice(8)); // Remove the box header.
     }
   }
-  throw Error('avcC, hvcC or VPX not found');
+  throw Error('avcC, hvcC, av1C or VPX not found');
 }
 
 function getESDSBoxFromMP4File(file: MP4File, codec = 'mp4a') {
@@ -125,4 +128,51 @@ export function unsafeReleaseMP4BoxFile(file: MP4File) {
   }
   file.mdats = [];
   file.moofs = [];
+}
+
+/**
+ * 快速解析 mp4 文件，如果是非 fMP4 格式，会优先解析 moov box（略过 mdat）避免占用过多内存
+ */
+export async function quickParseMP4File(
+  reader: Awaited<ReturnType<ReturnType<typeof file>['createReader']>>,
+  onReady: (data: { mp4boxFile: MP4File; info: MP4Info }) => void,
+  onSamples: (
+    id: number,
+    sampleType: 'video' | 'audio',
+    samples: MP4Sample[],
+  ) => void,
+) {
+  const mp4boxFile = mp4box.createFile(false);
+  mp4boxFile.onReady = (info) => {
+    onReady({ mp4boxFile, info });
+    const vTrackId = info.videoTracks[0]?.id;
+    if (vTrackId != null)
+      mp4boxFile.setExtractionOptions(vTrackId, 'video', { nbSamples: 100 });
+
+    const aTrackId = info.audioTracks[0]?.id;
+    if (aTrackId != null)
+      mp4boxFile.setExtractionOptions(aTrackId, 'audio', { nbSamples: 100 });
+
+    mp4boxFile.start();
+  };
+  mp4boxFile.onSamples = onSamples;
+
+  await parse();
+
+  async function parse() {
+    let cursor = 0;
+    const maxReadSize = 30 * 1024 * 1024;
+    while (true) {
+      const data = (await reader.read(maxReadSize, {
+        at: cursor,
+      })) as MP4ArrayBuffer;
+      if (data.byteLength === 0) break;
+      data.fileStart = cursor;
+      const nextPos = mp4boxFile.appendBuffer(data);
+      if (nextPos == null) break;
+      cursor = nextPos;
+    }
+
+    mp4boxFile.stop();
+  }
 }
