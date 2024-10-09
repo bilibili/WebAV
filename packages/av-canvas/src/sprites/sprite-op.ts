@@ -175,39 +175,46 @@ function scaleRect({
       diagonalAngle,
     });
 
-    // 最小缩放限定
+    // 最小宽高缩放限定
     const minSize = 10;
-    let newW = w + incW;
-    let newH = h + incH;
-    let newIncS = incS;
-    if (ctrlKey.length === 1) {
-      // 非等比例缩放时，根据缩放方向限定最小值，并固定对角线增量
-      if (newW <= minSize && (ctrlKey === 'l' || ctrlKey === 'r')) {
-        newW = minSize;
-        newIncS = ctrlKey === 'l' ? w - minSize : minSize - w;
-      }
-      if (newH <= minSize && (ctrlKey === 't' || ctrlKey === 'b')) {
-        newH = minSize;
-        newIncS = ctrlKey === 'b' ? h - minSize : minSize - h;
-      }
-    } else {
-      // 等比例缩放时，限定宽度最小值，并固定对角线增量
-      if (newW <= minSize) {
-        let minIncS = Math.sqrt((minSize * (h / w)) ** 2 + minSize ** 2);
-        let startIncS = Math.sqrt(h ** 2 + w ** 2);
-        newW = minSize;
-        newH = (h / w) * newW;
-        newIncS =
-          ctrlKey === 'lt' || ctrlKey === 'lb'
-            ? startIncS - minIncS
-            : minIncS - startIncS;
-      }
-    }
-    const newCntX = (newIncS / 2) * Math.cos(rotateAngle) + x + w / 2;
-    const newCntY = (newIncS / 2) * Math.sin(rotateAngle) + y + h / 2;
+    let newW = Math.max(w + incW, minSize);
+    let newH = Math.max(h + incH, minSize);
 
-    const newX = newCntX - newW / 2;
-    const newY = newCntY - newH / 2;
+    // 最小长度缩放限定
+    let newIncS = incS;
+    // 起始对角线长度
+    const startS = Math.sqrt(h ** 2 + w ** 2);
+    // 最小对角线长度
+    const minS = Math.sqrt((minSize * (h / w)) ** 2 + minSize ** 2);
+    switch (ctrlKey) {
+      // 非等比例缩放时，变化的增量范围 由原宽高跟 minSize 的差值决定
+      case 'l':
+        newIncS = Math.min(incS, w - minSize);
+        break;
+      case 'r':
+        newIncS = Math.max(incS, minSize - w);
+        break;
+      case 'b':
+        newIncS = Math.min(incS, h - minSize);
+        break;
+      case 't':
+        newIncS = Math.max(incS, minSize - h);
+        break;
+      // 等比例缩放时，变化（对角线长度）的增量范围由原对角线长度跟 minSize 对角线的差值决定
+      case 'lt':
+      case 'lb':
+        newIncS = Math.min(incS, startS - minS);
+        break;
+      case 'rt':
+      case 'rb':
+        newIncS = Math.max(incS, minS - startS);
+        break;
+    }
+
+    const newCenterX = (newIncS / 2) * Math.cos(rotateAngle) + x + w / 2;
+    const newCenterY = (newIncS / 2) * Math.sin(rotateAngle) + y + h / 2;
+    const newX = newCenterX - newW / 2;
+    const newY = newCenterY - newH / 2;
 
     updateRectWithSafeMargin(sprRect, cvsEl, {
       x: newX,
