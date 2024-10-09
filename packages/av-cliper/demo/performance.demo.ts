@@ -3,11 +3,20 @@ import { Combinator } from '../src/combinator';
 import { Log } from '../src/log';
 import { OffscreenSprite } from '../src/sprite/offscreen-sprite';
 import { renderTxt2ImgBitmap } from '../src/dom-utils';
-import { file, tmpfile, write } from 'opfs-tools';
+import { file, write } from 'opfs-tools';
 
 const progressEl = document.querySelector('#progress')!;
 const startTimeEl = document.querySelector('#startTime')!;
 const costEl = document.querySelector('#cost')!;
+
+async function loadFile(path: string) {
+  const otFile = file(path);
+
+  if (!(await otFile.exists())) {
+    await write(otFile, (await fetch(path)).body!);
+  }
+  return otFile;
+}
 
 document.querySelector('#frag-10min')?.addEventListener('click', () => {
   (async () => {
@@ -15,13 +24,7 @@ document.querySelector('#frag-10min')?.addEventListener('click', () => {
     // const resPath = '/video/pri-cut-5.mp4';
     // const resPath = '/video/bunny_0.mp4';
 
-    const otFile = file(resPath);
-
-    if (!(await otFile.exists())) {
-      await write(otFile, (await fetch(resPath)).body!);
-    }
-
-    const spr1 = new OffscreenSprite(new MP4Clip(otFile));
+    const spr1 = new OffscreenSprite(new MP4Clip(await loadFile(resPath)));
     await spr1.ready;
     const width = 1920;
     const height = 1080;
@@ -74,17 +77,13 @@ document.querySelector('#frag-10min')?.addEventListener('click', () => {
 
 document.querySelector('#parse-larage-file')?.addEventListener('click', () => {
   (async () => {
-    const f = tmpfile();
-    await write(f, (await fetch('./video/pri-sintel-2048-surround.mp4')).body!);
+    const resPath = '/video/pri-Interstellar.mp4';
     const st = performance.now();
-    const clips = Array(5)
-      .fill(0)
-      .map(() => new MP4Clip(f));
-    await Promise.all(clips.map((clip) => clip.ready));
+    const clip = new MP4Clip(await loadFile(resPath));
+    await clip.ready;
     document.querySelector('#parse-time-cost')!.textContent = String(
       Math.round(performance.now() - st),
     );
-    clips.forEach((clip) => clip.destroy());
-    await f.remove();
+    clip.destroy();
   })().catch(Log.error);
 });
