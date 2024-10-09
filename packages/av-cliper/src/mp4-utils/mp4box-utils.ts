@@ -142,8 +142,6 @@ export async function quickParseMP4File(
     samples: MP4Sample[],
   ) => void,
 ) {
-  const fileSize = await reader.getSize();
-
   const mp4boxFile = mp4box.createFile(false);
   mp4boxFile.onReady = (info) => {
     onReady({ mp4boxFile, info });
@@ -163,7 +161,7 @@ export async function quickParseMP4File(
 
   async function parse() {
     let cursor = 0;
-    const maxReadSize = 3 * 1024 * 1024;
+    const maxReadSize = 30 * 1024 * 1024;
     while (true) {
       const data = (await reader.read(maxReadSize, {
         at: cursor,
@@ -176,70 +174,5 @@ export async function quickParseMP4File(
     }
 
     mp4boxFile.stop();
-  }
-
-  // async function parse() {
-  //   let cursor = 0;
-  //   let isFMP4 = false;
-  //   const mdatBoxes = [];
-  //   // 一次文件 IO 最多读取 30MB，避免内存占用过大
-  //   const maxReadSize = 30 * 1024 * 1024;
-  //   while (true) {
-  //     if (isFMP4) {
-  //       // fMP4 中 moof mdat 交替存储，且 mdat 提交较小，顺序读取即可
-  //       const data = (await reader.read(maxReadSize, {
-  //         at: cursor,
-  //       })) as MP4ArrayBuffer;
-  //       if (data.byteLength === 0) break;
-
-  //       data.fileStart = cursor;
-  //       mp4boxFile.appendBuffer(data);
-  //       cursor += data.byteLength;
-  //     } else {
-  //       const box = await getNextBox(cursor);
-  //       if (box == null) break;
-
-  //       if (box.name === 'moof') isFMP4 = true;
-  //       if (box.name === 'mdat' && box.data == null) {
-  //         mdatBoxes.push(box);
-  //       }
-  //       if (box.data != null) {
-  //         const boxData = box.data as MP4ArrayBuffer;
-  //         boxData.fileStart = box.offset;
-  //         mp4boxFile.appendBuffer(boxData);
-  //       }
-  //       cursor = box.offset + box.size;
-  //     }
-  //   }
-
-  //   for (const box of mdatBoxes) {
-  //     let remainSize = box.size;
-  //     while (remainSize > 0) {
-  //       // 非 fMP4 文件的 mdat box 非常大，分片读取
-  //       const chunkSize = Math.min(remainSize, maxReadSize);
-  //       const chunkOffset = box.offset + box.size - remainSize;
-  //       const chunkData = (await reader.read(chunkSize, {
-  //         at: chunkOffset,
-  //       })) as MP4ArrayBuffer;
-  //       chunkData.fileStart = chunkOffset;
-  //       mp4boxFile.appendBuffer(chunkData);
-  //       remainSize -= chunkSize;
-  //     }
-  //   }
-  //   mp4boxFile.stop();
-  // }
-
-  async function getNextBox(offset: number) {
-    if (offset >= fileSize) return null;
-    const buf = new Uint8Array(await reader.read(8, { at: offset }));
-    const boxSize = new DataView(buf.buffer).getUint32(0);
-    const boxName = String.fromCharCode(...buf.subarray(4, 8));
-    return {
-      name: boxName,
-      offset,
-      size: boxSize,
-      data:
-        boxName === 'mdat' ? null : await reader.read(boxSize, { at: offset }),
-    };
   }
 }
