@@ -71,7 +71,7 @@ export function extractFileConfig(file: MP4File, info: MP4Info) {
 function parseVideoCodecDesc(track: TrakBoxParser): Uint8Array {
   for (const entry of track.mdia.minf.stbl.stsd.entries) {
     // @ts-expect-error
-    const box = entry.avcC ?? entry.hvcC ?? entry.vpcC;
+    const box = entry.avcC ?? entry.hvcC ?? entry.av1C ?? entry.vpcC;
     if (box != null) {
       const stream = new mp4box.DataStream(
         undefined,
@@ -82,7 +82,7 @@ function parseVideoCodecDesc(track: TrakBoxParser): Uint8Array {
       return new Uint8Array(stream.buffer.slice(8)); // Remove the box header.
     }
   }
-  throw Error('avcC, hvcC or VPX not found');
+  throw Error('avcC, hvcC, av1C or VPX not found');
 }
 
 function getESDSBoxFromMP4File(file: MP4File, codec = 'mp4a') {
