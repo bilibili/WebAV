@@ -1,5 +1,11 @@
 # @webav/av-cliper
 
+## 0.16.1
+
+### Patch Changes
+
+- ef8605b: refactor: optimize the parsing of large MP4 files.
+
 ## 0.16.0
 
 ### Minor Changes
