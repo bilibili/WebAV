@@ -222,13 +222,14 @@ function scaleRect({
         newIncS = Math.max(incS, minS - startS);
         break;
     }
-    const newCenterX = (newIncS / 2) * Math.cos(rotateAngle) + x + w / 2;
-    const newCenterY = (newIncS / 2) * Math.sin(rotateAngle) + y + h / 2;
-    let newX, newY;
+    let newX = x;
+    let newY = y;
     if (startRect.fixedScaleCenter) {
       newX = x + w / 2 - newW / 2;
       newY = y + h / 2 - newH / 2;
     } else {
+      const newCenterX = (newIncS / 2) * Math.cos(rotateAngle) + x + w / 2;
+      const newCenterY = (newIncS / 2) * Math.sin(rotateAngle) + y + h / 2;
       newX = newCenterX - newW / 2;
       newY = newCenterY - newH / 2;
     }
