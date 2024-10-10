@@ -1,5 +1,12 @@
 # @webav/av-canvas
 
+## 0.16.2
+
+### Patch Changes
+
+- 14e2aed: fix: x,y in rect changed when sprite scale to a minimum size
+  - @webav/av-cliper@0.16.2
+
 ## 0.16.1
 
 ### Patch Changes

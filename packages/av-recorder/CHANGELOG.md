@@ -1,5 +1,11 @@
 # @webav/av-recorder
 
+## 0.16.2
+
+### Patch Changes
+
+- @webav/av-cliper@0.16.2
+
 ## 0.16.1
 
 ### Patch Changes
