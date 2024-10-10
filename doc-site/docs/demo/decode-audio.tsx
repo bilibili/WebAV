@@ -1,6 +1,6 @@
 import { AudioClip, DEFAULT_AUDIO_CONF } from '@webav/av-cliper';
 import { Button, Radio } from 'antd';
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { assetsPrefix } from './utils';
 
 const audios = assetsPrefix({
@@ -55,6 +55,10 @@ export default createUI(start);
 function createUI(start: Function) {
   return () => {
     const [value, setValue] = useState('44.1kHz-2chan.m4a');
+
+    useEffect(() => {
+      return () => stopAudio();
+    }, [stopAudio]);
 
     return (
       <div>
