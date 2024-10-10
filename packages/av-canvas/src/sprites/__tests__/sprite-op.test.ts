@@ -251,6 +251,66 @@ describe('scale sprite', () => {
     expect(Math.round(vs.rect.y)).toBe(100);
     clear();
   });
+
+  test('drag left ctrl with fixedScaleCenter', async () => {
+    const vs = new MockVisibleSprite();
+    await sprMng.addSprite(vs);
+    sprMng.activeSprite = vs;
+    vs.rect.w = 100;
+    vs.rect.h = 100;
+    vs.rect.fixedScaleCenter = true;
+
+    // 激活 sprite
+    const clear = draggabelSprite(cvsEl, sprMng, document.body);
+    cvsEl.dispatchEvent(crtMSEvt4Offset('mousedown', 0, 0));
+    expect(sprMng.activeSprite).toBe(vs);
+
+    window.dispatchEvent(new MouseEvent('mouseup'));
+    // 命中 left ctrl
+    cvsEl.dispatchEvent(crtMSEvt4Offset('mousedown', 0, 50));
+    window.dispatchEvent(
+      new MouseEvent('mousemove', {
+        clientX: 10,
+        clientY: 0,
+      }),
+    );
+    // 拖拽 left ctrl 缩放 rect 的宽度和高度
+    expect(vs.rect.x).toBe(10);
+    expect(vs.rect.w).toBe(80);
+    expect(vs.rect.h).toBe(100);
+
+    clear();
+  });
+
+  test('drag bottom ctrl with fixedScaleCenter', async () => {
+    const vs = new MockVisibleSprite();
+    await sprMng.addSprite(vs);
+    sprMng.activeSprite = vs;
+    vs.rect.w = 100;
+    vs.rect.h = 100;
+    vs.rect.fixedScaleCenter = true;
+
+    // 激活 sprite
+    const clear = draggabelSprite(cvsEl, sprMng, document.body);
+    cvsEl.dispatchEvent(crtMSEvt4Offset('mousedown', 0, 0));
+    expect(sprMng.activeSprite).toBe(vs);
+
+    window.dispatchEvent(new MouseEvent('mouseup'));
+    // 命中 bottom ctrl
+    cvsEl.dispatchEvent(crtMSEvt4Offset('mousedown', 50, 100));
+    window.dispatchEvent(
+      new MouseEvent('mousemove', {
+        clientX: 0,
+        clientY: -10,
+      }),
+    );
+    // 拖拽 bottom ctrl 缩放 rect 的宽度和高度
+    expect(vs.rect.y).toBe(10);
+    expect(vs.rect.w).toBe(100);
+    expect(vs.rect.h).toBe(80);
+
+    clear();
+  });
 });
 
 describe('rotate sprite', () => {
