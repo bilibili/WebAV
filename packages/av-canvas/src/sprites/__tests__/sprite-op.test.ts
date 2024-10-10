@@ -186,6 +186,7 @@ describe('scale sprite', () => {
     );
     // 拖拽 right ctrl 缩放 rect 的宽度
     expect(vs.rect.w).toBe(10);
+    expect(vs.rect.h).toBe(100);
     expect(Math.round(vs.rect.x)).toBe(106);
     expect(Math.round(vs.rect.y)).toBe(78);
     clear();
@@ -213,6 +214,7 @@ describe('scale sprite', () => {
       }),
     );
     // 拖拽 top ctrl 缩放 rect 的高度
+    expect(vs.rect.w).toBe(100);
     expect(vs.rect.h).toBe(10);
     expect(Math.round(vs.rect.x)).toBe(45);
     expect(Math.round(vs.rect.y)).toBe(45);

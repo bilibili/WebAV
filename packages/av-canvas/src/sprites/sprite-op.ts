@@ -177,8 +177,7 @@ function scaleRect({
 
     // 最小宽高缩放限定
     const minSize = 10;
-    let newW = Math.max(w + incW, minSize);
-    let newH = Math.max(h + incH, minSize);
+    let newW, newH;
 
     // 最小长度缩放限定
     let newIncS = incS;
@@ -188,29 +187,42 @@ function scaleRect({
     const minS = Math.sqrt((minSize * (h / w)) ** 2 + minSize ** 2);
     switch (ctrlKey) {
       // 非等比例缩放时，变化的增量范围 由原宽高跟 minSize 的差值决定
+      // 非等比例缩放时，根据ctrlKey的不同，固定宽高中的一个，另一个根据增量计算，并考虑最小值限定
       case 'l':
+        newH = h;
+        newW = Math.max(w + incW, minSize);
         newIncS = Math.min(incS, w - minSize);
         break;
       case 'r':
+        newH = h;
+        newW = Math.max(w + incW, minSize);
         newIncS = Math.max(incS, minSize - w);
         break;
       case 'b':
+        newW = w;
+        newH = Math.max(h + incH, minSize);
         newIncS = Math.min(incS, h - minSize);
         break;
       case 't':
+        newW = w;
+        newH = Math.max(h + incH, minSize);
         newIncS = Math.max(incS, minSize - h);
         break;
       // 等比例缩放时，变化（对角线长度）的增量范围由原对角线长度跟 minSize 对角线的差值决定
+      // 等比例缩放时，某一边达到最小值时保持宽高比例不变
       case 'lt':
       case 'lb':
+        newW = Math.max(w + incW, minSize);
+        newH = newW === minSize ? (h / w) * newW : h + incH;
         newIncS = Math.min(incS, startS - minS);
         break;
       case 'rt':
       case 'rb':
+        newW = Math.max(w + incW, minSize);
+        newH = newW === minSize ? (h / w) * newW : h + incH;
         newIncS = Math.max(incS, minS - startS);
         break;
     }
-
     const newCenterX = (newIncS / 2) * Math.cos(rotateAngle) + x + w / 2;
     const newCenterY = (newIncS / 2) * Math.sin(rotateAngle) + y + h / 2;
     const newX = newCenterX - newW / 2;
