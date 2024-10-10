@@ -177,7 +177,8 @@ function scaleRect({
 
     // 最小宽高缩放限定
     const minSize = 10;
-    let newW, newH;
+    let newW = w;
+    let newH = h;
 
     // 最小长度缩放限定
     let newIncS = incS;
@@ -189,22 +190,18 @@ function scaleRect({
       // 非等比例缩放时，变化的增量范围 由原宽高跟 minSize 的差值决定
       // 非等比例缩放时，根据ctrlKey的不同，固定宽高中的一个，另一个根据增量计算，并考虑最小值限定
       case 'l':
-        newH = h;
         newW = Math.max(w + incW, minSize);
         newIncS = Math.min(incS, w - minSize);
         break;
       case 'r':
-        newH = h;
         newW = Math.max(w + incW, minSize);
         newIncS = Math.max(incS, minSize - w);
         break;
       case 'b':
-        newW = w;
         newH = Math.max(h + incH, minSize);
         newIncS = Math.min(incS, h - minSize);
         break;
       case 't':
-        newW = w;
         newH = Math.max(h + incH, minSize);
         newIncS = Math.max(incS, minSize - h);
         break;
