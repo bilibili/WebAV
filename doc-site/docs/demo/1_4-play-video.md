@@ -104,6 +104,10 @@ export default function UI() {
   const [playing, setPlaying] = useState(false);
 
   useEffect(() => {
+    return () => stop();
+  }, [stop]);
+
+  useEffect(() => {
     (async () => {
       if (ctx == null) return;
       await start();
