@@ -1,5 +1,13 @@
 # @webav/av-canvas
 
+## 0.16.3
+
+### Patch Changes
+
+- a67e569: Feature: add fixedScaleCenter mode in rect
+- Updated dependencies [a67e569]
+  - @webav/av-cliper@0.16.3
+
 ## 0.16.2
 
 ### Patch Changes
