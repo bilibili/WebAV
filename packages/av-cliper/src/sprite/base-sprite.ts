@@ -154,8 +154,8 @@ export abstract class BaseSprite {
       return [numK / 100, val];
     }) as TAnimationKeyFrame;
     this.#animatOpts = Object.assign({}, this.#animatOpts, {
-      duration: opts.duration * 1e6,
-      delay: (opts.delay ?? 0) * 1e6,
+      duration: opts.duration,
+      delay: opts.delay ?? 0,
       iterCount: opts.iterCount ?? Infinity,
     });
   }
@@ -217,11 +217,12 @@ export function linearTimeFn(
   kf: TAnimationKeyFrame,
   opts: Required<IAnimationOpts>,
 ): Partial<TAnimateProps> {
-  if (time / opts.duration >= opts.iterCount) return {};
+  const offsetTime = time - opts.delay;
+  if (offsetTime / opts.duration >= opts.iterCount) return {};
 
-  const t = time % opts.duration;
+  const t = offsetTime % opts.duration;
 
-  const process = time === opts.duration ? 1 : t / opts.duration;
+  const process = offsetTime === opts.duration ? 1 : t / opts.duration;
   const idx = kf.findIndex((it) => it[0] >= process);
   if (idx === -1) return {};
 
