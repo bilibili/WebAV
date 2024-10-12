@@ -29,9 +29,8 @@ test('dump log', async () => {
   Log.warn('log warn');
   Log.error('log error');
 
-  for (const s of spys) s.mockRestore();
-
   expect((await Log.dump()).replace(historyStr, '')).toMatchSnapshot();
+  for (const s of spys) s.mockRestore();
 });
 
 test('log threshold', () => {

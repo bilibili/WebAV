@@ -1,9 +1,7 @@
 import {
-  workerTimer,
   Log,
   Rect,
   TCtrlKey,
-  EventTool,
   Combinator,
   OffscreenSprite,
   VisibleSprite,
@@ -15,6 +13,7 @@ import { ESpriteManagerEvt, SpriteManager } from './sprites/sprite-manager';
 import { activeSprite, draggabelSprite } from './sprites/sprite-op';
 import { IResolution } from './types';
 import { createEl } from './utils';
+import { workerTimer, EventTool } from '@webav/internal-utils';
 
 function createInitCvsEl(resolution: IResolution): HTMLCanvasElement {
   const cvsEl = createEl('canvas') as HTMLCanvasElement;

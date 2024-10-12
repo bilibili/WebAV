@@ -33,7 +33,7 @@ async function start() {
       '75%': { x: 0, y: 680 },
       '100%': { x: 0, y: 0 },
     },
-    { duration: 4, iterCount: 1 },
+    { duration: 4e6, iterCount: 1 },
   );
   spr2.zIndex = 10;
   spr2.opacity = 0.5;

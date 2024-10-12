@@ -118,19 +118,6 @@ function parseAudioInfo4ESDSBox(esds: ESDSBoxParser) {
 }
 
 /**
- * 强行回收 mp4boxfile 尽量降低内存占用，会破坏 file 导致无法正常使用
- * 仅用于获取二进制后，不再需要任何 file 功能的场景
- */
-export function unsafeReleaseMP4BoxFile(file: MP4File) {
-  if (file.moov == null) return;
-  for (var j = 0; j < file.moov.traks.length; j++) {
-    file.moov.traks[j].samples = [];
-  }
-  file.mdats = [];
-  file.moofs = [];
-}
-
-/**
  * 快速解析 mp4 文件，如果是非 fMP4 格式，会优先解析 moov box（略过 mdat）避免占用过多内存
  */
 export async function quickParseMP4File(

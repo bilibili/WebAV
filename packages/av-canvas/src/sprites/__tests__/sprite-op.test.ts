@@ -150,7 +150,13 @@ describe('scale sprite', () => {
         clientY: 100,
       }),
     );
-    expect(vs.rect).toMatchSnapshot();
+    const { x, y, w, h } = vs.rect;
+    expect({ x, y, w, h }).toEqual({
+      x: 0,
+      y: 0,
+      w: 200,
+      h: 200,
+    });
 
     clear();
   });
@@ -345,7 +351,7 @@ describe('rotate sprite', () => {
         clientY: 100,
       }),
     );
-    expect(vs.rect.angle).toMatchSnapshot();
+    expect(vs.rect.angle.toFixed(2)).toBe('2.36');
 
     window.dispatchEvent(
       new MouseEvent('mousemove', {
@@ -353,7 +359,7 @@ describe('rotate sprite', () => {
         clientY: 200,
       }),
     );
-    expect(vs.rect.angle).toMatchSnapshot();
+    expect(vs.rect.angle.toFixed(2)).toBe('2.82');
 
     clear();
   });

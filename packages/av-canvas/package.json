@@ -53,6 +53,7 @@
     "tailwindcss": "^3.4.3"
   },
   "dependencies": {
-    "@webav/av-cliper": "workspace:*"
+    "@webav/av-cliper": "workspace:*",
+    "@webav/internal-utils": "link:../internal-utils"
   }
 }
