@@ -3,6 +3,13 @@
   "version": "0.16.2",
   "private": true,
   "repository": "https://github.com/bilibili/WebAV",
+  "type": "module",
+  "types": "src/index.ts",
+  "module": "src/index.js",
+  "scripts": {
+    "test": "vitest --config test-vite.config.ts",
+    "ci:test": "vitest --config test-vite.config.ts run"
+  },
   "dependencies": {
     "@webav/mp4box.js": "0.5.4-fenghen",
     "opfs-tools": "^0.6.1"

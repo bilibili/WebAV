@@ -61,5 +61,7 @@ recodemux
 ## todo
 
 - 移除 Log 的 opfs-tools
-- 重构 Rect
+- Log 打印当前版本号
+- 重构 Rect 全局状态
+- 重构 AudioClip 默认设置
 - 中英文 demo 页面复用代码

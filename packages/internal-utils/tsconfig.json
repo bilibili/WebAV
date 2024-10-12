@@ -3,6 +3,7 @@
     "types": ["@types/dom-webcodecs"],
     "target": "ESNext",
     "module": "ESNext",
+    "moduleResolution": "Node",
     "lib": ["ESNext", "DOM"]
   },
   "type": "module",
