@@ -1,5 +1,6 @@
 {
   "compilerOptions": {
+    "types": ["@types/dom-webcodecs"],
     "target": "ESNext",
     "module": "ESNext",
     "lib": ["ESNext", "DOM"]

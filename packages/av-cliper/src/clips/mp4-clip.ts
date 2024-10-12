@@ -1,6 +1,6 @@
 import { MP4Info, MP4Sample } from '@webav/mp4box.js';
 import { audioResample, extractPCM4AudioData, sleep } from '../av-utils';
-import { Log } from '../log';
+import { Log } from '@webav/internal-utils';
 import {
   extractFileConfig,
   quickParseMP4File,

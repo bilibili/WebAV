@@ -47,7 +47,6 @@
     "wave-resampler": "^1.0.0"
   },
   "devDependencies": {
-    "@types/dom-mediacapture-transform": "^0.1.5",
-    "@types/dom-webcodecs": "^0.1.11"
+    "@types/dom-mediacapture-transform": "^0.1.5"
   }
 }

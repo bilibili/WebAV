@@ -1,10 +1,5 @@
 export { renderTxt2ImgBitmap } from './dom-utils';
-export {
-  recodemux,
-  fastConcatMP4,
-  fixFMP4Duration,
-  mixinMP4AndAudio,
-} from './mp4-utils';
+export { fastConcatMP4, fixFMP4Duration, mixinMP4AndAudio } from './mp4-utils';
 export { createChromakey } from './chromakey';
 
 export {
@@ -22,4 +17,4 @@ export { Rect } from './sprite/rect';
 export type { TCtrlKey } from './sprite/rect';
 export { Combinator } from './combinator';
 
-export { Log } from './log';
+export { Log } from '@webav/internal-utils';

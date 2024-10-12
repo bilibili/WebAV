@@ -4,6 +4,7 @@
   "private": true,
   "repository": "https://github.com/bilibili/WebAV",
   "dependencies": {
-    "@webav/mp4box.js": "0.5.4-fenghen"
+    "@webav/mp4box.js": "0.5.4-fenghen",
+    "opfs-tools": "^0.6.1"
   }
 }

@@ -11,6 +11,9 @@ importers:
       '@changesets/cli':
         specifier: ^2.27.5
         version: 2.27.5
+      '@types/dom-webcodecs':
+        specifier: ^0.1.13
+        version: 0.1.13
       '@vitest/browser':
         specifier: ^1.6.0
         version: 1.6.0(vitest@1.6.0)(webdriverio@8.39.0(encoding@0.1.13)(typescript@5.5.2))
@@ -155,18 +158,12 @@ importers:
       '@types/dom-mediacapture-transform':
         specifier: ^0.1.5
         version: 0.1.9
-      '@types/dom-webcodecs':
-        specifier: ^0.1.11
-        version: 0.1.11
 
   packages/av-recorder:
     dependencies:
       '@types/dom-mediacapture-transform':
         specifier: ^0.1.5
         version: 0.1.9
-      '@types/dom-webcodecs':
-        specifier: ^0.1.7
-        version: 0.1.11
       '@types/wicg-file-system-access':
         specifier: ^2020.9.6
         version: 2020.9.8
@@ -189,6 +186,9 @@ importers:
       '@webav/mp4box.js':
         specifier: 0.5.4-fenghen
         version: 0.5.4-fenghen
+      opfs-tools:
+        specifier: ^0.6.1
+        version: 0.6.1
 
 packages:
 
@@ -1873,8 +1873,8 @@ packages:
   '@types/dom-mediacapture-transform@0.1.9':
     resolution: {integrity: sha512-/K96dASG23bqF+VAftybbI5SUj9qSsdsSKZglm7Bq/sIaEve5z8I+GdClARcSQMAAVkH7bc83UI1jiH/qc5LMw==}
 
-  '@types/dom-webcodecs@0.1.11':
-    resolution: {integrity: sha512-yPEZ3z7EohrmOxbk/QTAa0yonMFkNkjnVXqbGb7D4rMr+F1dGQ8ZUFxXkyLLJuiICPejZ0AZE9Rrk9wUCczx4A==}
+  '@types/dom-webcodecs@0.1.13':
+    resolution: {integrity: sha512-O5hkiFIcjjszPIYyUSyvScyvrBoV3NOEEZx/pMlsu44TKzWNkLVBBxnxJz42in5n3QIolYOcBYFCPZZ0h8SkwQ==}
 
   '@types/eslint-scope@3.7.7':
     resolution: {integrity: sha512-MzMFlSLBqNF2gcHWO0G1vP/YQyfvrxZ0bF+u7mzUdZ1/xK4A4sru+nraZz5i3iEIk1l1uyicaDVTB4QbbEkAYg==}
@@ -11600,9 +11600,9 @@ snapshots:
 
   '@types/dom-mediacapture-transform@0.1.9':
     dependencies:
-      '@types/dom-webcodecs': 0.1.11
+      '@types/dom-webcodecs': 0.1.13
 
-  '@types/dom-webcodecs@0.1.11': {}
+  '@types/dom-webcodecs@0.1.13': {}
 
   '@types/eslint-scope@3.7.7':
     dependencies:
