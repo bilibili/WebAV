@@ -1,0 +1,17 @@
+{
+  "compilerOptions": {
+    "target": "ESNext",
+    "module": "ESNext",
+    "lib": ["ESNext", "DOM"]
+  },
+  "type": "module",
+  "types": "index.ts",
+  "module": "index.ts",
+  "exports": {
+    ".": {
+      "types": "index.ts",
+      "import": "index.ts"
+    }
+  },
+  "include": ["../../types/mp4box.d.ts", "."]
+}

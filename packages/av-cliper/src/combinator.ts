@@ -1,6 +1,6 @@
-import { EventTool } from '@webav/internal-utils';
+import { EventTool, file2stream } from '@webav/internal-utils';
 import { OffscreenSprite } from './sprite/offscreen-sprite';
-import { file2stream, recodemux } from './mp4-utils';
+import { recodemux } from './mp4-utils';
 import { Log } from './log';
 import { sleep } from './av-utils';
 import { DEFAULT_AUDIO_CONF } from './clips';

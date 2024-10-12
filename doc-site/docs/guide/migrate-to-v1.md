@@ -48,6 +48,8 @@ renderTxt2Img
 createEl
 createHLSLoader
 workerTimer
+autoReadStream
+EventTool
 ```
 
 如果社区有需要这些能力，可考虑在新 package 中开放出来，跟 av-cliper 隔离。

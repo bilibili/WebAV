@@ -1,4 +1,4 @@
-import { autoReadStream } from '@webav/internal-utils/auto-readstream';
+import { autoReadStream } from '@webav/internal-utils';
 import { IClip } from './iclip';
 
 /**

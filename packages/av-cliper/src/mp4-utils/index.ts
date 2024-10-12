@@ -5,6 +5,12 @@ import mp4box, {
   SampleOpts,
   TrakBoxParser,
 } from '@webav/mp4box.js';
+import {
+  autoReadStream,
+  workerTimer,
+  EventTool,
+  file2stream,
+} from '@webav/internal-utils';
 import { Log } from '../log';
 import {
   extractPCM4AudioData,
@@ -15,10 +21,9 @@ import {
 } from '../av-utils';
 import { DEFAULT_AUDIO_CONF } from '../clips';
 import { SampleTransform } from './sample-transform';
-import { extractFileConfig, unsafeReleaseMP4BoxFile } from './mp4box-utils';
+import { extractFileConfig } from './mp4box-utils';
 import { tmpfile, write } from 'opfs-tools';
 import { createMetaBox } from './meta-box';
-import { autoReadStream, workerTimer, EventTool } from '@webav/internal-utils';
 
 type TCleanFn = () => void;
 
@@ -430,113 +435,6 @@ export function _deprecated_stream2file(stream: ReadableStream<Uint8Array>): {
     file,
     stop: () => {
       stoped = true;
-    },
-  };
-}
-
-/**
- * 将 mp4box file 转换为文件流，用于上传服务器或存储到本地
- * @param file - MP4 文件实例 {@link MP4File}。
- * @param timeSlice - 时间片，用于控制流的发送速度。
- * @param onCancel - 当返回的流被取消时触发该回调函数
- */
-export function file2stream(
-  file: MP4File,
-  timeSlice: number,
-  onCancel?: TCleanFn,
-): {
-  /**
-   * 可读流，流的数据是 `Uint8Array`
-   */
-  stream: ReadableStream<Uint8Array>;
-  /**
-   * 流的生产者主动停止向流中输出数据，可向消费者传递错误信息
-   */
-  stop: (err?: Error) => void;
-} {
-  let timerId = 0;
-
-  let sendedBoxIdx = 0;
-  const boxes = file.boxes;
-
-  let firstMoofReady = false;
-  const deltaBuf = (): Uint8Array | null => {
-    // 避免 moov 未完成时写入文件，导致文件无法被识别
-    if (!firstMoofReady) {
-      if (boxes.find((box) => box.type === 'moof') != null) {
-        firstMoofReady = true;
-      } else {
-        return null;
-      }
-    }
-    if (sendedBoxIdx >= boxes.length) return null;
-
-    const ds = new mp4box.DataStream();
-    ds.endianness = mp4box.DataStream.BIG_ENDIAN;
-
-    let i = sendedBoxIdx;
-    try {
-      for (; i < boxes.length; ) {
-        boxes[i].write(ds);
-        delete boxes[i];
-        i += 1;
-      }
-    } catch (err) {
-      const errBox = boxes[i];
-      if (err instanceof Error && errBox != null) {
-        throw Error(
-          `${err.message} | deltaBuf( boxType: ${errBox.type}, boxSize: ${errBox.size}, boxDataLen: ${errBox.data?.length ?? -1})`,
-        );
-      }
-      throw err;
-    }
-
-    unsafeReleaseMP4BoxFile(file);
-
-    sendedBoxIdx = boxes.length;
-    return new Uint8Array(ds.buffer);
-  };
-
-  let stoped = false;
-  let canceled = false;
-  let exit: ((err?: Error) => void) | null = null;
-  const stream = new ReadableStream({
-    start(ctrl) {
-      timerId = self.setInterval(() => {
-        const d = deltaBuf();
-        if (d != null && !canceled) ctrl.enqueue(d);
-      }, timeSlice);
-
-      exit = (err) => {
-        clearInterval(timerId);
-        file.flush();
-        if (err != null) {
-          ctrl.error(err);
-          return;
-        }
-
-        const d = deltaBuf();
-        if (d != null && !canceled) ctrl.enqueue(d);
-
-        if (!canceled) ctrl.close();
-      };
-
-      // 安全起见，检测如果start触发时已经 stoped
-      if (stoped) exit();
-    },
-    cancel() {
-      canceled = true;
-      clearInterval(timerId);
-      onCancel?.();
-    },
-  });
-
-  return {
-    stream,
-    stop: (err) => {
-      if (stoped) return;
-      stoped = true;
-      exit?.(err);
     },
   };
 }

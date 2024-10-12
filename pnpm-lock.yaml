@@ -184,7 +184,11 @@ importers:
         specifier: npm:@types/web
         version: '@types/web@0.0.149'
 
-  packages/internal-utils: {}
+  packages/internal-utils:
+    dependencies:
+      '@webav/mp4box.js':
+        specifier: 0.5.4-fenghen
+        version: 0.5.4-fenghen
 
 packages:
 

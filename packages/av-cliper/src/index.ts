@@ -1,7 +1,6 @@
 export { renderTxt2ImgBitmap } from './dom-utils';
 export {
   recodemux,
-  file2stream,
   fastConcatMP4,
   fixFMP4Duration,
   mixinMP4AndAudio,

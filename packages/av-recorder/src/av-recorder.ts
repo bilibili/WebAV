@@ -1,11 +1,11 @@
-import { Log, file2stream, recodemux } from '@webav/av-cliper';
+import { Log, recodemux } from '@webav/av-cliper';
 import {
   AVRecorderConf,
   IStream,
   IRecordeOpts as IRecordOpts,
   TClearFn,
 } from './types';
-import { autoReadStream, EventTool } from '@webav/internal-utils';
+import { autoReadStream, EventTool, file2stream } from '@webav/internal-utils';
 
 type TState = 'inactive' | 'recording' | 'paused' | 'stopped';
 
