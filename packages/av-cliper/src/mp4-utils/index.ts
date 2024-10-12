@@ -7,7 +7,6 @@ import mp4box, {
 } from '@webav/mp4box.js';
 import { Log } from '../log';
 import {
-  autoReadStream,
   extractPCM4AudioData,
   extractPCM4AudioBuffer,
   mixinPCM,
@@ -15,12 +14,11 @@ import {
   concatPCMFragments,
 } from '../av-utils';
 import { DEFAULT_AUDIO_CONF } from '../clips';
-import { EventTool } from '../event-tool';
 import { SampleTransform } from './sample-transform';
 import { extractFileConfig, unsafeReleaseMP4BoxFile } from './mp4box-utils';
 import { tmpfile, write } from 'opfs-tools';
 import { createMetaBox } from './meta-box';
-import { workerTimer } from '../../../internal-utils/worker-timer';
+import { autoReadStream, workerTimer, EventTool } from '@webav/internal-utils';
 
 type TCleanFn = () => void;
 

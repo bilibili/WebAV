@@ -1,0 +1,6 @@
+{
+  "name": "@webav/internal-utils",
+  "version": "0.16.2",
+  "private": true,
+  "repository": "https://github.com/bilibili/WebAV"
+}

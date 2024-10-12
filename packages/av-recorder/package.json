@@ -46,6 +46,7 @@
     "@types/dom-webcodecs": "^0.1.7",
     "@types/wicg-file-system-access": "^2020.9.6",
     "@webav/av-cliper": "workspace:*",
+    "@webav/internal-utils": "link:../internal-utils",
     "fix-webm-duration": "^1.0.5"
   }
 }

@@ -96,6 +96,9 @@ importers:
       '@webav/av-cliper':
         specifier: workspace:*
         version: link:../av-cliper
+      '@webav/internal-utils':
+        specifier: link:../internal-utils
+        version: link:../internal-utils
     devDependencies:
       '@types/react':
         specifier: ^18.3.1
@@ -133,6 +136,9 @@ importers:
 
   packages/av-cliper:
     dependencies:
+      '@webav/internal-utils':
+        specifier: link:../internal-utils
+        version: link:../internal-utils
       '@webav/mp4box.js':
         specifier: 0.5.4-fenghen
         version: 0.5.4-fenghen
@@ -167,6 +173,9 @@ importers:
       '@webav/av-cliper':
         specifier: workspace:*
         version: link:../av-cliper
+      '@webav/internal-utils':
+        specifier: link:../internal-utils
+        version: link:../internal-utils
       fix-webm-duration:
         specifier: ^1.0.5
         version: 1.0.5
@@ -174,6 +183,8 @@ importers:
       '@typescript/lib-dom':
         specifier: npm:@types/web
         version: '@types/web@0.0.149'
+
+  packages/internal-utils: {}
 
 packages:
 
@@ -4175,6 +4186,7 @@ packages:
   eslint@8.57.0:
     resolution: {integrity: sha512-dZ6+mexnaTIbSBZWgou51U6OmzIhYM2VcNdtiTtI7qPNZm35Akpr0f6vtw3w1Kmn5PYo+tZVfh13WrhpS6oLqQ==}
     engines: {node: ^12.22.0 || ^14.17.0 || >=16.0.0}
+    deprecated: This version is no longer supported. Please see https://eslint.org/version-support for other options.
     hasBin: true
 
   esniff@2.0.1:

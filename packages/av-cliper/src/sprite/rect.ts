@@ -1,4 +1,4 @@
-import { EventTool } from '../event-tool';
+import { EventTool } from '@webav/internal-utils';
 
 interface IPoint {
   x: number;

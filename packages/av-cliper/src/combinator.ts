@@ -1,8 +1,8 @@
+import { EventTool } from '@webav/internal-utils';
 import { OffscreenSprite } from './sprite/offscreen-sprite';
 import { file2stream, recodemux } from './mp4-utils';
 import { Log } from './log';
 import { sleep } from './av-utils';
-import { EventTool } from './event-tool';
 import { DEFAULT_AUDIO_CONF } from './clips';
 
 interface ICombinatorOpts {
