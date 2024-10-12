@@ -140,7 +140,7 @@ export abstract class BaseSprite {
    *     '75%': { x: 0, y: 680 },
    *     '100%': { x: 0, y: 0 },
    *   },
-   *   { duration: 4, iterCount: 1 },
+   *   { duration: 4e6, iterCount: 1 },
    * );
    *
    * @see [视频水印动画](https://bilibili.github.io/WebAV/demo/2_1-concat-video)
