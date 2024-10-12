@@ -183,9 +183,6 @@ importers:
       '@webav/mp4box.js':
         specifier: 0.5.4-fenghen
         version: 0.5.4-fenghen
-      opfs-tools:
-        specifier: ^0.6.1
-        version: 0.6.1
 
 packages:
 

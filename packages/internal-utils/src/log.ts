@@ -1,5 +1,3 @@
-import { tmpfile } from 'opfs-tools';
-
 /**
  * 将任意对象转换成String，如果包含Error，则将Error转换为err.toString()
  * @param val any
@@ -18,22 +16,18 @@ function getTimeStr() {
 
 let THRESHOLD = 1;
 
-const localFile = tmpfile();
-
-let writer: Awaited<ReturnType<typeof localFile.createWriter>> | null = null;
-
 type LvName = 'debug' | 'info' | 'warn' | 'error';
+const history: Array<{ lvName: string; args: any[] }> = [];
 const lvHandler = ['debug', 'info', 'warn', 'error'].reduce(
   (acc, lvName, lvThres) =>
     Object.assign(acc, {
       [lvName]: (...args: any[]) => {
         if (THRESHOLD <= lvThres) {
           console[lvName as LvName](...args);
-          writer?.write(
-            `[${lvName}][${getTimeStr()}]  ${args
-              .map((a) => any2Str(a))
-              .join(' ')}\n`,
-          );
+          history.push({
+            lvName,
+            args,
+          });
         }
       },
     }),
@@ -80,9 +74,14 @@ export const Log = {
    *
    */
   async dump() {
-    await initPromise;
-    await writer?.flush();
-    return await localFile.text();
+    return history.reduce(
+      (acc, { lvName, args }) =>
+        acc +
+        `[${lvName}][${getTimeStr()}]  ${args
+          .map((a) => any2Str(a))
+          .join(' ')}\n`,
+      '',
+    );
   },
 };
 
@@ -91,23 +90,11 @@ map.set(Log.info, 1);
 map.set(Log.warn, 2);
 map.set(Log.error, 3);
 
-async function init() {
-  try {
-    writer = await localFile.createWriter();
-    Log.info(navigator.userAgent);
-    Log.info('date: ' + new Date().toLocaleDateString());
-  } catch (err) {
-    if (!(err instanceof Error)) throw err;
-    if (err.message.includes('createSyncAccessHandle is not a function')) {
-      console.warn(err);
-    } else {
-      throw err;
-    }
-  }
-}
-
-// 如果是浏览器环境，再进行初始化，避免 node（SSR） 环境 import 时报错
-const initPromise = globalThis.navigator == null ? null : init();
+(function init() {
+  if (globalThis.navigator == null) return;
+  Log.info(globalThis.navigator.userAgent);
+  Log.info('date: ' + new Date().toLocaleDateString());
+})();
 
 if (import.meta.env?.DEV) {
   Log.setLogLevel(Log.debug);

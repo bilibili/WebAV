@@ -1,8 +1,0 @@
-// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
-
-exports[`dump log 1`] = `
-"[info][0:0:0.0]  log info
-[warn][0:0:0.0]  log warn
-[error][0:0:0.0]  log error
-"
-`;
