@@ -20,7 +20,7 @@ import { SampleTransform } from './sample-transform';
 import { extractFileConfig, unsafeReleaseMP4BoxFile } from './mp4box-utils';
 import { tmpfile, write } from 'opfs-tools';
 import { createMetaBox } from './meta-box';
-import { workerTimer } from '../worker-timer';
+import { workerTimer } from '../../../internal-utils/worker-timer';
 
 type TCleanFn = () => void;
 

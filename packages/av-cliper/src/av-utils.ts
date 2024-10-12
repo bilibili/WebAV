@@ -1,7 +1,7 @@
 // 能同时在 worker 和主线程中运行的工具函数
 
 import { Log } from './log';
-import { workerTimer } from './worker-timer';
+import { workerTimer } from '../../internal-utils/worker-timer';
 import { resample } from 'wave-resampler';
 
 /**

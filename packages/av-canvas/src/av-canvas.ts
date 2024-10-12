@@ -1,5 +1,4 @@
 import {
-  workerTimer,
   Log,
   Rect,
   TCtrlKey,
@@ -15,6 +14,7 @@ import { ESpriteManagerEvt, SpriteManager } from './sprites/sprite-manager';
 import { activeSprite, draggabelSprite } from './sprites/sprite-op';
 import { IResolution } from './types';
 import { createEl } from './utils';
+import { workerTimer } from '../../internal-utils/worker-timer';
 
 function createInitCvsEl(resolution: IResolution): HTMLCanvasElement {
   const cvsEl = createEl('canvas') as HTMLCanvasElement;

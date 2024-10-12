@@ -8,7 +8,6 @@ export {
   mixinMP4AndAudio,
 } from './mp4-utils';
 export { createChromakey } from './chromakey';
-export { workerTimer } from './worker-timer';
 
 export { MP4Clip } from './clips';
 export type {
