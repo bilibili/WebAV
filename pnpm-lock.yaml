@@ -17,6 +17,9 @@ importers:
       '@types/dom-webcodecs':
         specifier: ^0.1.13
         version: 0.1.13
+      '@types/wicg-file-system-access':
+        specifier: ^2020.9.6
+        version: 2020.9.8
       '@vitest/browser':
         specifier: ^1.6.0
         version: 1.6.0(vitest@1.6.0)(webdriverio@8.39.0(encoding@0.1.13)(typescript@5.5.2))
@@ -118,9 +121,6 @@ importers:
       '@types/react-dom':
         specifier: ^18.3.0
         version: 18.3.0
-      '@types/wicg-file-system-access':
-        specifier: ^2020.9.6
-        version: 2020.9.8
       '@webav/av-recorder':
         specifier: workspace:*
         version: link:../av-recorder
@@ -144,7 +144,7 @@ importers:
         version: 18.3.1(react@18.3.1)
       tailwindcss:
         specifier: ^3.4.3
-        version: 3.4.4(ts-node@10.9.2(@types/node@20.14.8)(typescript@5.5.2))
+        version: 3.4.4(ts-node@10.9.2)
 
   packages/av-cliper:
     dependencies:
@@ -163,9 +163,6 @@ importers:
 
   packages/av-recorder:
     dependencies:
-      '@types/wicg-file-system-access':
-        specifier: ^2020.9.6
-        version: 2020.9.8
       '@webav/av-cliper':
         specifier: workspace:*
         version: link:../av-cliper
@@ -11344,7 +11341,7 @@ snapshots:
   '@jridgewell/trace-mapping@0.3.9':
     dependencies:
       '@jridgewell/resolve-uri': 3.1.2
-      '@jridgewell/sourcemap-codec': 1.4.15
+      '@jridgewell/sourcemap-codec': 1.5.0
 
   '@loadable/component@5.15.2(react@18.3.1)':
     dependencies:
@@ -18567,13 +18564,13 @@ snapshots:
       postcss: 8.4.38
       ts-node: 10.9.2(@swc/core@1.4.2(@swc/helpers@0.5.1))(@types/node@20.5.1)(typescript@5.5.2)
 
-  postcss-load-config@4.0.2(postcss@8.4.38)(ts-node@10.9.2(@types/node@20.14.8)(typescript@5.5.2)):
+  postcss-load-config@4.0.2(postcss@8.4.38)(ts-node@10.9.2):
     dependencies:
       lilconfig: 3.1.2
       yaml: 2.4.5
     optionalDependencies:
       postcss: 8.4.38
-      ts-node: 10.9.2(@types/node@20.14.8)(typescript@5.5.2)
+      ts-node: 10.9.2
 
   postcss-logical@5.0.4(postcss@8.4.38):
     dependencies:
@@ -20647,7 +20644,7 @@ snapshots:
     transitivePeerDependencies:
       - ts-node
 
-  tailwindcss@3.4.4(ts-node@10.9.2(@types/node@20.14.8)(typescript@5.5.2)):
+  tailwindcss@3.4.4(ts-node@10.9.2):
     dependencies:
       '@alloc/quick-lru': 5.2.0
       arg: 5.0.2
@@ -20666,7 +20663,7 @@ snapshots:
       postcss: 8.4.38
       postcss-import: 15.1.0(postcss@8.4.38)
       postcss-js: 4.0.1(postcss@8.4.38)
-      postcss-load-config: 4.0.2(postcss@8.4.38)(ts-node@10.9.2(@types/node@20.14.8)(typescript@5.5.2))
+      postcss-load-config: 4.0.2(postcss@8.4.38)(ts-node@10.9.2)
       postcss-nested: 6.0.1(postcss@8.4.38)
       postcss-selector-parser: 6.1.0
       resolve: 1.22.8
@@ -20862,6 +20859,23 @@ snapshots:
 
   ts-interface-checker@0.1.13: {}
 
+  ts-node@10.9.2:
+    dependencies:
+      '@cspotcode/source-map-support': 0.8.1
+      '@tsconfig/node10': 1.0.11
+      '@tsconfig/node12': 1.0.11
+      '@tsconfig/node14': 1.0.3
+      '@tsconfig/node16': 1.0.4
+      acorn: 8.12.0
+      acorn-walk: 8.3.3
+      arg: 4.1.3
+      create-require: 1.1.1
+      diff: 4.0.2
+      make-error: 1.3.6
+      v8-compile-cache-lib: 3.0.1
+      yn: 3.1.1
+    optional: true
+
   ts-node@10.9.2(@swc/core@1.4.2(@swc/helpers@0.5.1))(@types/node@20.5.1)(typescript@5.5.2):
     dependencies:
       '@cspotcode/source-map-support': 0.8.1
@@ -20881,25 +20895,6 @@ snapshots:
       yn: 3.1.1
     optionalDependencies:
       '@swc/core': 1.4.2(@swc/helpers@0.5.1)
-
-  ts-node@10.9.2(@types/node@20.14.8)(typescript@5.5.2):
-    dependencies:
-      '@cspotcode/source-map-support': 0.8.1
-      '@tsconfig/node10': 1.0.11
-      '@tsconfig/node12': 1.0.11
-      '@tsconfig/node14': 1.0.3
-      '@tsconfig/node16': 1.0.4
-      '@types/node': 20.14.8
-      acorn: 8.12.0
-      acorn-walk: 8.3.3
-      arg: 4.1.3
-      create-require: 1.1.1
-      diff: 4.0.2
-      make-error: 1.3.6
-      typescript: 5.5.2
-      v8-compile-cache-lib: 3.0.1
-      yn: 3.1.1
-    optional: true
 
   ts-toolbelt@9.6.0: {}
 

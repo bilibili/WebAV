@@ -3,12 +3,15 @@ import {
   ImgClip,
   MediaStreamClip,
   VisibleSprite,
-  createEl,
   renderTxt2ImgBitmap,
 } from '@webav/av-cliper';
 import { AVRecorder } from '@webav/av-recorder';
 import { Button } from 'antd';
 import React, { useEffect, useState } from 'react';
+
+function createEl(tagName: string): HTMLElement {
+  return document.createElement(tagName);
+}
 
 let avCvs: AVCanvas | null = null;
 function initCvs(attchEl: HTMLDivElement | null) {
@@ -180,7 +183,7 @@ export default function UI() {
 }
 
 async function loadFile(accept: Record<string, string[]>) {
-  const [fileHandle] = await (window as any).showOpenFilePicker({
+  const [fileHandle] = await window.showOpenFilePicker({
     types: [{ accept }],
   });
   return (await fileHandle.getFile()) as File;

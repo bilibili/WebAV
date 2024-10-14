@@ -1,6 +1,10 @@
 {
   "compilerOptions": {
-    "types": ["@types/dom-mediacapture-transform", "@types/dom-webcodecs"],
+    "types": [
+      "@types/dom-mediacapture-transform",
+      "@types/dom-webcodecs",
+      "@types/wicg-file-system-access"
+    ],
     "target": "ESNext",
     "useDefineForClassFields": true,
     "module": "ESNext",

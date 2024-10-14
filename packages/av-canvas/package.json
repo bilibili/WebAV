@@ -42,7 +42,6 @@
   "devDependencies": {
     "@types/react": "^18.3.1",
     "@types/react-dom": "^18.3.0",
-    "@types/wicg-file-system-access": "^2020.9.6",
     "@webav/av-recorder": "workspace:*",
     "@xzdarcy/react-timeline-editor": "^0.1.9",
     "autoprefixer": "^10.4.19",

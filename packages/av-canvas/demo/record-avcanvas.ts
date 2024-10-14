@@ -46,7 +46,7 @@ document.querySelector('#display')?.addEventListener('click', () => {
 
 document.querySelector('#localImg')?.addEventListener('click', () => {
   // (async () => {
-  //   const [imgFH] = await (window as any).showOpenFilePicker({
+  //   const [imgFH] = await window.showOpenFilePicker({
   //     types: [
   //       {
   //         description: 'Images',
@@ -89,7 +89,7 @@ document.querySelector('#localVideo')?.addEventListener('click', () => {
 
 document.querySelector('#localAudio')?.addEventListener('click', () => {
   // (async () => {
-  //   const [imgFH] = await (window as any).showOpenFilePicker({
+  //   const [imgFH] = await window.showOpenFilePicker({
   //     types: [
   //       {
   //         description: 'Audio',

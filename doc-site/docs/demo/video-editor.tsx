@@ -416,7 +416,7 @@ export default function App() {
 }
 
 async function loadFile(accept: Record<string, string[]>) {
-  const [fileHandle] = await (window as any).showOpenFilePicker({
+  const [fileHandle] = await window.showOpenFilePicker({
     types: [{ accept }],
   });
   return (await fileHandle.getFile()) as File;

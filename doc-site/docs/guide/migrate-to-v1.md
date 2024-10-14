@@ -54,7 +54,7 @@ file2stream
 recodemux
 ```
 
-如果社区有需要这些能力，可考虑在新 package 中开放出来，跟 av-cliper 隔离。
+如果社区有需要这些能力，可考虑在新 package 中开放出来，跟 av-cliper 保持隔离。
 
 如果能的项目依赖了其中部分 API，可以考虑从 WebAV 源码中 copy 一份到自己的项目中。
 

@@ -6,6 +6,7 @@
     "@changesets/cli": "^2.27.5",
     "@types/dom-mediacapture-transform": "^0.1.5",
     "@types/dom-webcodecs": "^0.1.13",
+    "@types/wicg-file-system-access": "^2020.9.6",
     "@vitest/browser": "^1.6.0",
     "@vitest/coverage-istanbul": "^1.6.0",
     "conventional-changelog-cli": "^4.1.0",

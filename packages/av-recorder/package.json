@@ -42,7 +42,6 @@
     "@typescript/lib-dom": "npm:@types/web"
   },
   "dependencies": {
-    "@types/wicg-file-system-access": "^2020.9.6",
     "@webav/av-cliper": "workspace:*",
     "@webav/internal-utils": "workspace:*"
   }
