@@ -26,9 +26,9 @@
     }
   },
   "scripts": {
-    "dev": "vite demo --config demo-vite.config.ts",
-    "test": "vitest --config test-vite.config.ts",
-    "ci:test": "vitest --config test-vite.config.ts run",
+    "dev": "vite demo --config vite.config.ts",
+    "test": "vitest",
+    "ci:test": "vitest run",
     "test:coverage": "vitest run --coverage",
     "build": "vite build && tsc -p build.tsconfig.json --outDir dist",
     "build:dev": "vite build --watch --emptyOutDir false & tsc -p build.tsconfig.json --outDir dist --watch",
@@ -44,8 +44,5 @@
     "@webav/mp4box.js": "0.5.4-fenghen",
     "opfs-tools": "^0.6.1",
     "wave-resampler": "^1.0.0"
-  },
-  "devDependencies": {
-    "@types/dom-mediacapture-transform": "^0.1.5"
   }
 }

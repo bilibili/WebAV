@@ -1,6 +1,7 @@
-import { VisibleSprite, MediaStreamClip, createEl } from '@webav/av-cliper';
+import { VisibleSprite, MediaStreamClip } from '@webav/av-cliper';
 import { AVCanvas } from '../src/index';
 import { AVRecorder } from '@webav/av-recorder';
+import { createEl } from '../src/utils';
 
 const avCvs = new AVCanvas(document.querySelector('#app') as HTMLElement, {
   bgColor: '#333',

@@ -1,5 +1,5 @@
 {
   "extends": "./tsconfig.json",
-  "include": ["../../types/mp4box.d.ts", "src/**/*"],
+  "include": ["src/**/*", "../../types/mp4box.d.ts"],
   "exclude": ["src/**/__tests__/*", "demo"]
 }
