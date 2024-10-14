@@ -170,9 +170,6 @@ importers:
       '@webav/internal-utils':
         specifier: link:../internal-utils
         version: link:../internal-utils
-      fix-webm-duration:
-        specifier: ^1.0.5
-        version: 1.0.5
     devDependencies:
       '@typescript/lib-dom':
         specifier: npm:@types/web
@@ -4423,9 +4420,6 @@ packages:
 
   find-yarn-workspace-root2@1.2.16:
     resolution: {integrity: sha512-hr6hb1w8ePMpPVUK39S4RlwJzi+xPLuVuG8XlwXU3KD5Yn3qgBWVfy3AzNlDhWvE1EORCE65/Qm26rFQt3VLVA==}
-
-  fix-webm-duration@1.0.5:
-    resolution: {integrity: sha512-b6oula3OfSknx0aWoLsxvp4DVIYbwsf+UAkr6EDAK3iuMYk/OSNKzmeSI61GXK0MmFTEuzle19BPvTxMIKjkZg==}
 
   flat-cache@3.2.0:
     resolution: {integrity: sha512-CYcENa+FtcUKLmhhqyctpclsq7QF38pKjZHsGNiSQF5r4FtoKDWabFDl3hzaEQMvT1LHEysw5twgLvpYYb4vbw==}
@@ -15126,8 +15120,6 @@ snapshots:
     dependencies:
       micromatch: 4.0.7
       pkg-dir: 4.2.0
-
-  fix-webm-duration@1.0.5: {}
 
   flat-cache@3.2.0:
     dependencies:
