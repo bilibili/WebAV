@@ -1,5 +1,5 @@
-import { resolve } from 'path';
-import { defineConfig } from 'vitest/config';
+import { defineConfig } from 'vite';
+
 export default defineConfig({
   test: {
     browser: {
@@ -8,5 +8,4 @@ export default defineConfig({
       headless: true,
     },
   },
-  publicDir: resolve(__dirname, '../../doc-site/public'),
 });

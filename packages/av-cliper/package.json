@@ -16,13 +16,12 @@
   ],
   "type": "module",
   "types": "dist/index.d.ts",
-  "module": "dist/av-cliper.js",
-  "main": "dist/av-cliper.umd.cjs",
+  "module": "dist/index.js",
+  "main": "dist/index.js",
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
-      "import": "./dist/av-cliper.js",
-      "require": "./dist/av-cliper.umd.cjs"
+      "import": "./dist/index.js"
     }
   },
   "scripts": {
@@ -30,8 +29,8 @@
     "test": "vitest",
     "ci:test": "vitest run",
     "test:coverage": "vitest run --coverage",
-    "build": "vite build && tsc -p build.tsconfig.json --outDir dist",
-    "build:dev": "vite build --watch --emptyOutDir false & tsc -p build.tsconfig.json --outDir dist --watch",
+    "build": "tsc -p build.tsconfig.json --outDir dist",
+    "build:dev": "tsc -p build.tsconfig.json --outDir dist --watch",
     "build:api": "typedoc src/index.ts --tsconfig build.tsconfig.json --out ../../doc-site/public/_api/av-cliper",
     "build:api:watch": "typedoc src/index.ts --tsconfig build.tsconfig.json --out ../../doc-site/public/_api/av-cliper --watch",
     "prepublishOnly": "pnpm build"
@@ -40,7 +39,7 @@
     "dist"
   ],
   "dependencies": {
-    "@webav/internal-utils": "link:../internal-utils",
+    "@webav/internal-utils": "workspace:*",
     "@webav/mp4box.js": "0.5.4-fenghen",
     "opfs-tools": "^0.6.1",
     "wave-resampler": "^1.0.0"

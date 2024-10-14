@@ -1,14 +1,26 @@
 {
   "name": "@webav/internal-utils",
   "version": "0.16.2",
-  "private": true,
+  "private": false,
   "repository": "https://github.com/bilibili/WebAV",
   "type": "module",
-  "types": "src/index.ts",
-  "module": "src/index.js",
+  "types": "dist/index.d.ts",
+  "module": "dist/index.js",
+  "main": "dist/index.js",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
   "scripts": {
-    "test": "vitest --config test-vite.config.ts",
-    "ci:test": "vitest --config test-vite.config.ts run"
+    "test": "vitest --config vite.config.ts",
+    "ci:test": "vitest --config vite.config.ts run",
+    "build": "tsc -p build.tsconfig.json --outDir dist",
+    "build:dev": "tsc -p build.tsconfig.json --outDir dist --watch",
+    "build:api": "typedoc src/index.ts --tsconfig build.tsconfig.json --out ../../doc-site/public/_api/av-cliper",
+    "build:api:watch": "typedoc src/index.ts --tsconfig build.tsconfig.json --out ../../doc-site/public/_api/av-cliper --watch",
+    "prepublishOnly": "pnpm build"
   },
   "dependencies": {
     "@webav/mp4box.js": "0.5.4-fenghen"

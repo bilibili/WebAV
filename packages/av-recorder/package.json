@@ -17,20 +17,19 @@
   "type": "module",
   "types": "dist/av-recorder.d.ts",
   "module": "dist/av-recorder.js",
-  "main": "dist/av-recorder.umd.cjs",
+  "main": "dist/av-recorder.js",
   "exports": {
     ".": {
-      "types": "./dist/index.d.ts",
-      "import": "./dist/av-recorder.js",
-      "require": "./dist/av-recorder.umd.cjs"
+      "types": "./dist/av-recorder.d.ts",
+      "import": "./dist/av-recorder.js"
     }
   },
   "scripts": {
     "dev": "vite demo --port 6067 --host 0.0.0.0",
     "test": "vitest",
     "test:coverage": "vitest run --coverage",
-    "build": "vite build && tsc -p build.tsconfig.json --outDir dist",
-    "build:dev": "vite build --watch --emptyOutDir false & tsc -p build.tsconfig.json --outDir dist --watch",
+    "build": "tsc -p build.tsconfig.json --outDir dist",
+    "build:dev": "tsc -p build.tsconfig.json --outDir dist --watch",
     "build:api": "typedoc src/av-recorder.ts --tsconfig build.tsconfig.json --out ../../doc-site/public/_api/av-recorder",
     "build:api:watch": "typedoc src/av-recorder.ts --tsconfig build.tsconfig.json --out ../../doc-site/public/_api/av-recorder --watch",
     "prepublishOnly": "pnpm build"
@@ -44,6 +43,6 @@
   "dependencies": {
     "@types/wicg-file-system-access": "^2020.9.6",
     "@webav/av-cliper": "workspace:*",
-    "@webav/internal-utils": "link:../internal-utils"
+    "@webav/internal-utils": "workspace:*"
   }
 }

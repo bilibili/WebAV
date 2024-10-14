@@ -103,7 +103,7 @@ importers:
         specifier: workspace:*
         version: link:../av-cliper
       '@webav/internal-utils':
-        specifier: link:../internal-utils
+        specifier: workspace:*
         version: link:../internal-utils
     devDependencies:
       '@types/react':
@@ -143,7 +143,7 @@ importers:
   packages/av-cliper:
     dependencies:
       '@webav/internal-utils':
-        specifier: link:../internal-utils
+        specifier: workspace:*
         version: link:../internal-utils
       '@webav/mp4box.js':
         specifier: 0.5.4-fenghen
@@ -164,7 +164,7 @@ importers:
         specifier: workspace:*
         version: link:../av-cliper
       '@webav/internal-utils':
-        specifier: link:../internal-utils
+        specifier: workspace:*
         version: link:../internal-utils
     devDependencies:
       '@typescript/lib-dom':

@@ -15,7 +15,6 @@
     "noImplicitReturns": true,
     "jsx": "react-jsx",
     "declaration": true,
-    "emitDeclarationOnly": true,
     "skipLibCheck": true
   }
 }

@@ -3,16 +3,6 @@ import { defineConfig } from 'vite';
 import fixReactVirtualized from 'esbuild-plugin-react-virtualized';
 
 export default defineConfig({
-  build: {
-    sourcemap: true,
-    lib: {
-      entry: resolve(__dirname, 'src/index.ts'),
-      name: 'av-canvas',
-    },
-    rollupOptions: {
-      external: ['@webav/av-cliper'],
-    },
-  },
   test: {
     browser: {
       enabled: true,

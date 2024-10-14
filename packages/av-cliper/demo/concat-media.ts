@@ -1,11 +1,10 @@
 import { AudioClip, ImgClip, MP4Clip, concatAudioClip } from '../src/clips';
 import { Combinator } from '../src/combinator';
-import { Log } from '../src/log';
 import { OffscreenSprite } from '../src/sprite/offscreen-sprite';
 import { renderTxt2ImgBitmap } from '../src/dom-utils';
 import { EmbedSubtitlesClip } from '../src/clips/embed-subtitles-clip';
 import { playOutputStream } from './play-video';
-import { createChromakey, fastConcatMP4 } from '../src';
+import { Log, createChromakey, fastConcatMP4 } from '../src';
 
 // const cvs = document.querySelector('canvas') as HTMLCanvasElement
 // const ctx = cvs.getContext('2d')!

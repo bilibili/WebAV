@@ -16,13 +16,12 @@
   ],
   "type": "module",
   "types": "dist/index.d.ts",
-  "module": "dist/av-canvas.js",
-  "main": "dist/av-canvas.umd.cjs",
+  "module": "dist/index.js",
+  "main": "dist/index.js",
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
-      "import": "./dist/av-canvas.js",
-      "require": "./dist/av-canvas.umd.cjs"
+      "import": "./dist/index.js"
     }
   },
   "scripts": {
@@ -30,7 +29,7 @@
     "test": "vitest",
     "ci:test": "vitest run",
     "test:coverage": "vitest run --coverage",
-    "build": "vite build && tsc -p build.tsconfig.json --outDir dist",
+    "build": "tsc -p build.tsconfig.json --outDir dist",
     "build:api": "typedoc src/index.ts --tsconfig build.tsconfig.json --out ../../doc-site/public/_api/av-canvas",
     "build:api:watch": "typedoc src/index.ts --tsconfig build.tsconfig.json --out ../../doc-site/public/_api/av-canvas --watch",
     "prepublishOnly": "pnpm build",
@@ -54,6 +53,6 @@
   },
   "dependencies": {
     "@webav/av-cliper": "workspace:*",
-    "@webav/internal-utils": "link:../internal-utils"
+    "@webav/internal-utils": "workspace:*"
   }
 }
