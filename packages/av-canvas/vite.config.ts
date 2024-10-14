@@ -1,8 +1,18 @@
 import { resolve } from 'path';
 import { defineConfig } from 'vite';
+import dts from 'vite-plugin-dts';
+import { externalizeDeps } from 'vite-plugin-externalize-deps';
 import fixReactVirtualized from 'esbuild-plugin-react-virtualized';
 
 export default defineConfig({
+  plugins: [dts({ rollupTypes: true }), externalizeDeps()],
+  build: {
+    sourcemap: true,
+    lib: {
+      entry: resolve(__dirname, 'src/index.ts'),
+      name: 'av-canvas',
+    },
+  },
   test: {
     browser: {
       enabled: true,

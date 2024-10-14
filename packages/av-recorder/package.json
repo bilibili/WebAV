@@ -17,21 +17,22 @@
   "type": "module",
   "types": "dist/av-recorder.d.ts",
   "module": "dist/av-recorder.js",
-  "main": "dist/av-recorder.js",
+  "main": "dist/av-recorder.umd.cjs",
   "exports": {
     ".": {
       "types": "./dist/av-recorder.d.ts",
-      "import": "./dist/av-recorder.js"
+      "import": "./dist/av-recorder.js",
+      "require": "dist/av-recorder.umd.cjs"
     }
   },
   "scripts": {
     "dev": "vite demo --port 6067 --host 0.0.0.0",
     "test": "vitest",
     "test:coverage": "vitest run --coverage",
-    "build": "tsc -p build.tsconfig.json --outDir dist",
-    "build:dev": "tsc -p build.tsconfig.json --outDir dist --watch",
-    "build:api": "typedoc src/av-recorder.ts --tsconfig build.tsconfig.json --out ../../doc-site/public/_api/av-recorder",
-    "build:api:watch": "typedoc src/av-recorder.ts --tsconfig build.tsconfig.json --out ../../doc-site/public/_api/av-recorder --watch",
+    "build": "vite build",
+    "build:dev": "vite build --watch",
+    "build:api": "typedoc src/av-recorder.ts --out ../../doc-site/public/_api/av-recorder",
+    "build:api:watch": "typedoc src/av-recorder.ts --out ../../doc-site/public/_api/av-recorder --watch",
     "prepublishOnly": "pnpm build"
   },
   "files": [

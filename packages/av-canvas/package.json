@@ -15,13 +15,14 @@
     "recorder"
   ],
   "type": "module",
-  "types": "dist/index.d.ts",
-  "module": "dist/index.js",
-  "main": "dist/index.js",
+  "types": "dist/av-canvas.d.ts",
+  "module": "dist/av-canvas.js",
+  "main": "dist/av-canvas.umd.cjs",
   "exports": {
     ".": {
-      "types": "./dist/index.d.ts",
-      "import": "./dist/index.js"
+      "types": "./dist/av-canvas.d.ts",
+      "import": "./dist/av-canvas.js",
+      "require": "dist/av-canvas.umd.cjs"
     }
   },
   "scripts": {
@@ -29,9 +30,9 @@
     "test": "vitest",
     "ci:test": "vitest run",
     "test:coverage": "vitest run --coverage",
-    "build": "tsc -p build.tsconfig.json --outDir dist",
-    "build:api": "typedoc src/index.ts --tsconfig build.tsconfig.json --out ../../doc-site/public/_api/av-canvas",
-    "build:api:watch": "typedoc src/index.ts --tsconfig build.tsconfig.json --out ../../doc-site/public/_api/av-canvas --watch",
+    "build": "vite build",
+    "build:api": "typedoc src/index.ts --out ../../doc-site/public/_api/av-canvas",
+    "build:api:watch": "typedoc src/index.ts --out ../../doc-site/public/_api/av-canvas --watch",
     "prepublishOnly": "pnpm build",
     "preview": "vite preview"
   },

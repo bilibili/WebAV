@@ -15,13 +15,14 @@
     "recorder"
   ],
   "type": "module",
-  "types": "dist/index.d.ts",
-  "module": "dist/index.js",
-  "main": "dist/index.js",
+  "types": "dist/av-cliper.d.ts",
+  "module": "dist/av-cliper.js",
+  "main": "dist/av-cliper.umd.cjs",
   "exports": {
     ".": {
-      "types": "./dist/index.d.ts",
-      "import": "./dist/index.js"
+      "types": "./dist/av-cliper.d.ts",
+      "import": "./dist/av-cliper.js",
+      "require": "./dist/av-cliper.umd.cjs"
     }
   },
   "scripts": {
@@ -29,10 +30,10 @@
     "test": "vitest",
     "ci:test": "vitest run",
     "test:coverage": "vitest run --coverage",
-    "build": "tsc -p build.tsconfig.json --outDir dist",
-    "build:dev": "tsc -p build.tsconfig.json --outDir dist --watch",
-    "build:api": "typedoc src/index.ts --tsconfig build.tsconfig.json --out ../../doc-site/public/_api/av-cliper",
-    "build:api:watch": "typedoc src/index.ts --tsconfig build.tsconfig.json --out ../../doc-site/public/_api/av-cliper --watch",
+    "build": "vite build",
+    "build:dev": "vite build --watch",
+    "build:api": "typedoc src/index.ts --out ../../doc-site/public/_api/av-cliper",
+    "build:api:watch": "typedoc src/index.ts --out ../../doc-site/public/_api/av-cliper --watch",
     "prepublishOnly": "pnpm build"
   },
   "files": [
