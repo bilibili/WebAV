@@ -90,8 +90,11 @@ map.set(Log.info, 1);
 map.set(Log.warn, 2);
 map.set(Log.error, 3);
 
+declare const PKG_VERSION: string;
+
 (function init() {
   if (globalThis.navigator == null) return;
+  Log.info(`@webav version: ${PKG_VERSION}`);
   Log.info(globalThis.navigator.userAgent);
   Log.info('date: ' + new Date().toLocaleDateString());
 })();

@@ -60,7 +60,6 @@ recodemux
 
 ## todo
 
-- Log 打印当前版本号
 - 重构 Rect 全局状态
 - 重构 AudioClip 默认设置
 - 中英文 demo 页面复用代码
