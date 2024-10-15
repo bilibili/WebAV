@@ -1,0 +1,87 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`ctrls 1`] = `
+{
+  "b": Me {
+    "fixedAspectRatio": false,
+    "master": Me {
+      "fixedAspectRatio": false,
+      "master": null,
+      "on": [Function],
+    },
+    "on": [Function],
+  },
+  "l": Me {
+    "fixedAspectRatio": false,
+    "master": Me {
+      "fixedAspectRatio": false,
+      "master": null,
+      "on": [Function],
+    },
+    "on": [Function],
+  },
+  "lb": Me {
+    "fixedAspectRatio": false,
+    "master": Me {
+      "fixedAspectRatio": false,
+      "master": null,
+      "on": [Function],
+    },
+    "on": [Function],
+  },
+  "lt": Me {
+    "fixedAspectRatio": false,
+    "master": Me {
+      "fixedAspectRatio": false,
+      "master": null,
+      "on": [Function],
+    },
+    "on": [Function],
+  },
+  "r": Me {
+    "fixedAspectRatio": false,
+    "master": Me {
+      "fixedAspectRatio": false,
+      "master": null,
+      "on": [Function],
+    },
+    "on": [Function],
+  },
+  "rb": Me {
+    "fixedAspectRatio": false,
+    "master": Me {
+      "fixedAspectRatio": false,
+      "master": null,
+      "on": [Function],
+    },
+    "on": [Function],
+  },
+  "rotate": Me {
+    "fixedAspectRatio": false,
+    "master": Me {
+      "fixedAspectRatio": false,
+      "master": null,
+      "on": [Function],
+    },
+    "on": [Function],
+  },
+  "rt": Me {
+    "fixedAspectRatio": false,
+    "master": Me {
+      "fixedAspectRatio": false,
+      "master": null,
+      "on": [Function],
+    },
+    "on": [Function],
+  },
+  "t": Me {
+    "fixedAspectRatio": false,
+    "master": Me {
+      "fixedAspectRatio": false,
+      "master": null,
+      "on": [Function],
+    },
+    "on": [Function],
+  },
+}
+`;

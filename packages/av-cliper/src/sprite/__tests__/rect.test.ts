@@ -6,11 +6,6 @@ test('center', () => {
   expect(rect.center).toEqual({ x: 50, y: 50 });
 });
 
-test('ctrls', () => {
-  const rect = new Rect(0, 0, 100, 100);
-  expect(rect.ctrls).toMatchSnapshot();
-});
-
 test('clone', () => {
   const { x, y, w, h } = new Rect(0, 0, 100, 100).clone();
   expect([x, y, w, h]).toEqual([0, 0, 100, 100]);
@@ -35,22 +30,4 @@ test('checkHit', () => {
   expect(rect.checkHit(100, 100)).toBe(false);
   // 旋转后正上方外移一点点的位置被覆盖进来了
   expect(rect.checkHit(150, 90)).toBe(true);
-});
-
-// 固定比例后，ctrls 将移除 t,b,l,r 控制点
-test('fixedAspectRatio', () => {
-  const rect = new Rect(0, 0, 100, 100);
-  expect(Object.keys(rect.ctrls)).toEqual([
-    't',
-    'b',
-    'l',
-    'r',
-    'lt',
-    'lb',
-    'rt',
-    'rb',
-    'rotate',
-  ]);
-  rect.fixedAspectRatio = true;
-  expect(Object.keys(rect.ctrls)).toEqual(['lt', 'lb', 'rt', 'rb', 'rotate']);
 });

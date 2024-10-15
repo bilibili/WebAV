@@ -58,8 +58,21 @@ recodemux
 
 如果能的项目依赖了其中部分 API，可以考虑从 WebAV 源码中 copy 一份到自己的项目中。
 
+### 重构 Rect.ctrls
+
+移除 `Rect` 下的 `CTRL_SIZE, CTRL_KEYS, get ctrls()`。
+
+因为如果页面中包含多个 AVCanvas，全局控制 `Rect.CTRL_SIZE` (Rect 控制点的大小)会导致冲突。
+
+为了保持控制点大小这视觉上一致，应根据当前画布（Canvas）的分辨率与画布的显示尺寸动态变化；  
+v1 版本不支持动态调整控制点大小，在 AVCanvas 内部动态调整控制点大小，保持视觉大小一致。
+
+v0.x 版本中 AVCanvas 就强行动态调整了 `Rect.CTRL_SIZE`，所以此项变更应该不用影响实际用户。
+
 ## todo
 
+- types 指向源码
+- 分析 Rect.master 存在的必要性
 - 重构 Rect 全局状态
 - 重构 AudioClip 默认设置
 - 中英文 demo 页面复用代码

@@ -5,11 +5,6 @@ interface IPoint {
   y: number;
 }
 
-/**
- * @see {@link Rect.CTRL_KEYS}
- */
-export type TCtrlKey = (typeof Rect.CTRL_KEYS)[number];
-
 export interface IRectBaseProps {
   x: number;
   y: number;
@@ -31,28 +26,6 @@ export interface IRectBaseProps {
  * @see [视频剪辑](https://bilibili.github.io/WebAV/demo/6_4-video-editor)
  */
 export class Rect implements IRectBaseProps {
-  /**
-   * 统一设置所有 {@link Rect.ctrls} 的边长
-   *
-   * ⚠️ 交给 [AVCanvas](../../av-canvas/classes/AVCanvas.html) 设置，不要随意改变它的值
-   */
-  static CTRL_SIZE = 16;
-
-  /**
-   * 控制点：上、下、左、右，左上、左下、右上、右下、旋转
-   */
-  static readonly CTRL_KEYS = [
-    't',
-    'b',
-    'l',
-    'r',
-    'lt',
-    'lb',
-    'rt',
-    'rb',
-    'rotate',
-  ] as const;
-
   #evtTool = new EventTool<{
     propsChange: (props: Partial<IRectBaseProps>) => void;
   }>();
@@ -148,9 +121,9 @@ export class Rect implements IRectBaseProps {
   }
 
   /**
-   * 如果当前实例是 Rect 控制点（{@link Rect.ctrls}）之一，`master` 将指向该 Rect
+   * 如果当前实例是 Rect 控制点之一，`master` 将指向该 Rect
    *
-   * 控制点的坐标是相对于它的 `master` 定位到
+   * 控制点的坐标是相对于它的 `master` 定位
    */
   master: Rect | null = null;
 
@@ -179,44 +152,9 @@ export class Rect implements IRectBaseProps {
   /**
    * 是否保持固定宽高比例，禁止变形缩放
    *
-   * 值为 true 时，{@link Rect.ctrls} 将缺少上下左右四个控制点
+   * 值为 true 时，将缺少上下左右四个控制点
    */
   fixedAspectRatio = false;
-
-  /**
-   * 根据坐标、宽高计算出来的矩形控制点
-   *
-   * {@link Rect.fixedAspectRatio} = `true` 时，将缺少上下左右(`t,b,l,r`)四个控制点
-   */
-  get ctrls() {
-    const { w, h } = this;
-    // 控制点元素大小, 以 分辨率 为基准
-    const sz = Rect.CTRL_SIZE;
-    // half size
-    const hfSz = sz / 2;
-    const hfW = w / 2;
-    const hfH = h / 2;
-    // rotate size
-    const rtSz = sz * 1.5;
-    const hfRtSz = rtSz / 2;
-    // ctrl 坐标是相对于 sprite 中心点
-    const tblr = this.fixedAspectRatio
-      ? {}
-      : {
-          t: new Rect(-hfSz, -hfH - hfSz, sz, sz, this),
-          b: new Rect(-hfSz, hfH - hfSz, sz, sz, this),
-          l: new Rect(-hfW - hfSz, -hfSz, sz, sz, this),
-          r: new Rect(hfW - hfSz, -hfSz, sz, sz, this),
-        };
-    return {
-      ...tblr,
-      lt: new Rect(-hfW - hfSz, -hfH - hfSz, sz, sz, this),
-      lb: new Rect(-hfW - hfSz, hfH - hfSz, sz, sz, this),
-      rt: new Rect(hfW - hfSz, -hfH - hfSz, sz, sz, this),
-      rb: new Rect(hfW - hfSz, hfH - hfSz, sz, sz, this),
-      rotate: new Rect(-hfRtSz, -hfH - sz * 2 - hfRtSz, rtSz, rtSz, this),
-    };
-  }
 
   clone(): Rect {
     const { x, y, w, h, master } = this;
@@ -233,7 +171,7 @@ export class Rect implements IRectBaseProps {
    */
   checkHit(tx: number, ty: number): boolean {
     let { angle, center, x, y, w, h, master } = this;
-    // ctrls 的中心点、旋转角度都去自于 master （sprite）
+    // ctrls 的中心点、旋转角度都取自于 master （sprite）
     const cnt = master?.center ?? center;
     const agl = master?.angle ?? angle;
     // ctrl 初始化时其坐标就是相对于 master 的，参见 get ctrls()
