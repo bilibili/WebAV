@@ -473,7 +473,7 @@ export function createAudioTrackBuf(adFrames: number) {
     chanBuf.set(chanBuf.subarray(readOffset, putOffset), 0);
     putOffset -= readOffset;
 
-    if (ts - audioTs > adDuration) {
+    while (ts - audioTs > adDuration) {
       rs.push(
         new AudioData({
           timestamp: audioTs,
