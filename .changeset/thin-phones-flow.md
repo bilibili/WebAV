@@ -2,4 +2,4 @@
 '@webav/av-cliper': patch
 ---
 
-fix: fix wrong audio data when combination
+fix: wrong audio data when combination #299
