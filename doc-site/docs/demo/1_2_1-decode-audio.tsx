@@ -1,6 +1,6 @@
 import { AudioClip } from '@webav/av-cliper';
 import { Button, Radio } from 'antd';
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { assetsPrefix } from './utils';
 
 const audios = assetsPrefix({

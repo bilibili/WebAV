@@ -7,7 +7,7 @@ import {
 } from '@webav/av-cliper';
 import { AVRecorder } from '@webav/av-recorder';
 import { Button } from 'antd';
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 
 function createEl(tagName: string): HTMLElement {
   return document.createElement(tagName);

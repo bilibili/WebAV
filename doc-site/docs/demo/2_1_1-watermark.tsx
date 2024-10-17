@@ -5,7 +5,7 @@ import {
   OffscreenSprite,
   renderTxt2ImgBitmap,
 } from '@webav/av-cliper';
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { CombinatorPlay } from './combinator-player';
 import { assetsPrefix } from './utils';
 

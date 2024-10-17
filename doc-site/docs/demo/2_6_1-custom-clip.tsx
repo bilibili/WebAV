@@ -1,6 +1,6 @@
 import { Combinator, OffscreenSprite, IClip } from '@webav/av-cliper';
 import { CombinatorPlay } from './combinator-player';
-import React, { useState } from 'react';
+import { useState } from 'react';
 
 const WIDTH = 1280;
 const HEIGHT = 720;

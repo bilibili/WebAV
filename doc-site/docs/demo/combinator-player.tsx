@@ -1,6 +1,6 @@
 import { Combinator } from '@webav/av-cliper';
 import { Button } from 'antd';
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 
 export function CombinatorPlay({
   list,

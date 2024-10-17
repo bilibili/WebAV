@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { createChromakey } from '@webav/av-cliper';
 import { assetsPrefix } from './utils';
 

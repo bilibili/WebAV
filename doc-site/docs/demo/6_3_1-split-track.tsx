@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Slider, Button } from 'antd';
 import { MP4Clip } from '@webav/av-cliper';
 import { assetsPrefix } from './utils';

@@ -1,6 +1,6 @@
 import { ImgClip } from '@webav/av-cliper';
 import { Button, Radio } from 'antd';
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { assetsPrefix } from './utils';
 
 const imgs = assetsPrefix({

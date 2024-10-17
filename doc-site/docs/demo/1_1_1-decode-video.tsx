@@ -1,6 +1,6 @@
 import { MP4Clip } from '@webav/av-cliper';
 import { Button, Divider, Radio } from 'antd';
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { assetsPrefix } from './utils';
 
 const videos = assetsPrefix({

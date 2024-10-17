@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Button, Divider } from 'antd';
 import { AVRecorder } from '@webav/av-recorder';
 import { fixFMP4Duration } from '@webav/av-cliper';

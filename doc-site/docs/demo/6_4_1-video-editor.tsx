@@ -12,7 +12,7 @@ import {
   TimelineRow,
   TimelineState,
 } from '@xzdarcy/react-timeline-editor';
-import React, { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { assetsPrefix, createFileWriter } from './utils';
 
 type TLActionWithName = TimelineAction & { name: string };
