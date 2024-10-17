@@ -71,4 +71,4 @@ v0.x 版本中 AVCanvas 就强行动态调整了 `Rect.CTRL_SIZE`，所以此项
 
 ## todo
 
-- 中英文 demo 页面复用代码
+- demo 代码类型检测异常

@@ -15,7 +15,7 @@ order: 1
 原理是在视频上方绘制一张图片（水印），然后给图片设置动画。  
 `renderTxt2ImgBitmap` 将水印文字转换成图片，是因为 css 能轻松实现复杂的文字样式效果。
 
-<code src="./watermark.tsx"></code>
+<code src="./2_1_1-watermark.tsx"></code>
 
 :::warning
 `renderTxt2ImgBitmap` 依赖 DOM，所以不能在 WebWorker 中使用。

@@ -1,4 +1,4 @@
-import { AudioClip, DEFAULT_AUDIO_CONF } from '@webav/av-cliper';
+import { AudioClip } from '@webav/av-cliper';
 import { Button, Radio } from 'antd';
 import React, { useState, useEffect } from 'react';
 import { assetsPrefix } from './utils';
@@ -30,7 +30,7 @@ async function start(audioType: keyof typeof audios) {
       return;
     }
 
-    const buf = ctx.createBuffer(2, len, DEFAULT_AUDIO_CONF.sampleRate);
+    const buf = ctx.createBuffer(2, len, 48000);
     buf.copyToChannel(audio[0], 0);
     buf.copyToChannel(audio[1], 1);
     const source = ctx.createBufferSource();

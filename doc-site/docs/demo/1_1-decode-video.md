@@ -14,4 +14,4 @@ order: 1
 测试用的视频资源托管在 github pages，启动 DEMO 可能需要一些网络加载时间
 :::
 
-<code src="./decode-video.tsx"></code>
+<code src="./1_1_1-decode-video.tsx"></code>

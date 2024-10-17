@@ -8,7 +8,7 @@ const videoSrc = assetsPrefix(['video/bunny_0.mp4']);
 let clip;
 let mp4Dur;
 async function start() {
-  clip = new MP4Clip((await fetch(videoSrc)).body!);
+  clip = new MP4Clip((await fetch(videoSrc[0])).body!);
   const { duration, width, height } = await clip.ready;
   mp4Dur = Math.round(duration / 1e6);
 }
