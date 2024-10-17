@@ -4,7 +4,6 @@ import {
   OffscreenSprite,
   VisibleSprite,
   MediaStreamClip,
-  DEFAULT_AUDIO_CONF,
 } from '@webav/av-cliper';
 import { renderCtrls } from './sprites/render-ctrl';
 import { ESpriteManagerEvt, SpriteManager } from './sprites/sprite-manager';
@@ -16,6 +15,15 @@ import {
 import { IResolution } from './types';
 import { createCtrlsGetter, createEl } from './utils';
 import { workerTimer, EventTool } from '@webav/internal-utils';
+
+/**
+ * 默认的音频设置，⚠️ 不要变更它的值 ⚠️
+ */
+const DEFAULT_AUDIO_CONF = {
+  sampleRate: 48000,
+  channelCount: 2,
+  codec: 'mp4a.40.2',
+} as const;
 
 function createInitCvsEl(resolution: IResolution): HTMLCanvasElement {
   const cvsEl = createEl('canvas') as HTMLCanvasElement;

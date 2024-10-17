@@ -6,7 +6,6 @@ export {
   MP4Clip,
   ImgClip,
   AudioClip,
-  DEFAULT_AUDIO_CONF,
   MediaStreamClip,
   EmbedSubtitlesClip,
 } from './clips';

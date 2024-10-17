@@ -394,7 +394,7 @@ export function mixinMP4AndAudio(
   let aTrackId = 0;
   let audioOffset = 0;
   let mp4HasAudio = true;
-  let sampleRate = 48000;
+  let sampleRate = DEFAULT_AUDIO_CONF.sampleRate as number;
   autoReadStream(mp4Stream.pipeThrough(new SampleTransform()), {
     onDone: async () => {
       await audioSampleEncoder?.stop();
