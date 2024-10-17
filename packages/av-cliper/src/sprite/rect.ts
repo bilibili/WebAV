@@ -108,16 +108,6 @@ export class Rect implements IRectBaseProps {
         break;
     }
     if (changed) this.#evtTool.emit('propsChange', { [prop]: v });
-
-    // concat emit
-    // if (changed) this.#nextTickEmitData[prop] = v;
-    // Promise.resolve().then(() => {
-    //   if (Object.keys(this.#nextTickEmitData).length > 0) {
-    //     const data = this.#nextTickEmitData;
-    //     this.#nextTickEmitData = {};
-    //     this.#evtTool.emit('propsChange', { ...data });
-    //   }
-    // });
   }
 
   /**
@@ -125,7 +115,7 @@ export class Rect implements IRectBaseProps {
    *
    * 控制点的坐标是相对于它的 `master` 定位
    */
-  master: Rect | null = null;
+  #master: Rect | null = null;
 
   constructor(
     x?: number,
@@ -138,7 +128,7 @@ export class Rect implements IRectBaseProps {
     this.y = y ?? 0;
     this.w = w ?? 0;
     this.h = h ?? 0;
-    this.master = master ?? null;
+    this.#master = master ?? null;
   }
 
   /**
@@ -157,8 +147,8 @@ export class Rect implements IRectBaseProps {
   fixedAspectRatio = false;
 
   clone(): Rect {
-    const { x, y, w, h, master } = this;
-    const rect = new Rect(x, y, w, h, master);
+    const { x, y, w, h } = this;
+    const rect = new Rect(x, y, w, h, this.#master);
     rect.angle = this.angle;
     rect.fixedAspectRatio = this.fixedAspectRatio;
     return rect;
@@ -170,13 +160,13 @@ export class Rect implements IRectBaseProps {
    * @param ty 目标点 y 坐标
    */
   checkHit(tx: number, ty: number): boolean {
-    let { angle, center, x, y, w, h, master } = this;
+    let { angle, center, x, y, w, h } = this;
     // ctrls 的中心点、旋转角度都取自于 master （sprite）
-    const cnt = master?.center ?? center;
-    const agl = master?.angle ?? angle;
+    const cnt = this.#master?.center ?? center;
+    const agl = this.#master?.angle ?? angle;
     // ctrl 初始化时其坐标就是相对于 master 的，参见 get ctrls()
     // 所以此处不用转换
-    if (master == null) {
+    if (this.#master == null) {
       x = x - cnt.x;
       y = y - cnt.y;
     }

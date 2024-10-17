@@ -2,85 +2,40 @@
 
 exports[`ctrls 1`] = `
 {
-  "b": Me {
+  "b": Oe {
     "fixedAspectRatio": false,
-    "master": Me {
-      "fixedAspectRatio": false,
-      "master": null,
-      "on": [Function],
-    },
     "on": [Function],
   },
-  "l": Me {
+  "l": Oe {
     "fixedAspectRatio": false,
-    "master": Me {
-      "fixedAspectRatio": false,
-      "master": null,
-      "on": [Function],
-    },
     "on": [Function],
   },
-  "lb": Me {
+  "lb": Oe {
     "fixedAspectRatio": false,
-    "master": Me {
-      "fixedAspectRatio": false,
-      "master": null,
-      "on": [Function],
-    },
     "on": [Function],
   },
-  "lt": Me {
+  "lt": Oe {
     "fixedAspectRatio": false,
-    "master": Me {
-      "fixedAspectRatio": false,
-      "master": null,
-      "on": [Function],
-    },
     "on": [Function],
   },
-  "r": Me {
+  "r": Oe {
     "fixedAspectRatio": false,
-    "master": Me {
-      "fixedAspectRatio": false,
-      "master": null,
-      "on": [Function],
-    },
     "on": [Function],
   },
-  "rb": Me {
+  "rb": Oe {
     "fixedAspectRatio": false,
-    "master": Me {
-      "fixedAspectRatio": false,
-      "master": null,
-      "on": [Function],
-    },
     "on": [Function],
   },
-  "rotate": Me {
+  "rotate": Oe {
     "fixedAspectRatio": false,
-    "master": Me {
-      "fixedAspectRatio": false,
-      "master": null,
-      "on": [Function],
-    },
     "on": [Function],
   },
-  "rt": Me {
+  "rt": Oe {
     "fixedAspectRatio": false,
-    "master": Me {
-      "fixedAspectRatio": false,
-      "master": null,
-      "on": [Function],
-    },
     "on": [Function],
   },
-  "t": Me {
+  "t": Oe {
     "fixedAspectRatio": false,
-    "master": Me {
-      "fixedAspectRatio": false,
-      "master": null,
-      "on": [Function],
-    },
     "on": [Function],
   },
 }

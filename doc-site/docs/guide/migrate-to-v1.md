@@ -71,8 +71,5 @@ v0.x 版本中 AVCanvas 就强行动态调整了 `Rect.CTRL_SIZE`，所以此项
 
 ## todo
 
-- types 指向源码
-- 分析 Rect.master 存在的必要性
-- 重构 Rect 全局状态
 - 重构 AudioClip 默认设置
 - 中英文 demo 页面复用代码
