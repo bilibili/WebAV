@@ -1,5 +1,11 @@
 # @webav/av-cliper
 
+## 0.16.4
+
+### Patch Changes
+
+- ed3c8ee: fix: wrong audio data when combination #299
+
 ## 0.16.3
 
 ### Patch Changes
