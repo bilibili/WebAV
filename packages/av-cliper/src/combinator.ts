@@ -443,6 +443,7 @@ function createAVEncoder(opts: {
  */
 export function createAudioTrackBuf(adFrames: number) {
   const adDataSize = adFrames * DEFAULT_AUDIO_CONF.channelCount;
+  // pcm 数据缓存区
   const chanBuf = new Float32Array(adDataSize * 3);
   let putOffset = 0;
 
@@ -456,6 +457,7 @@ export function createAudioTrackBuf(adFrames: number) {
     let readOffset = 0;
     const adCnt = Math.floor(putOffset / adDataSize);
     const rs: AudioData[] = [];
+    // 从缓存区按指定帧数获取数据构造 AudioData
     for (let i = 0; i < adCnt; i++) {
       rs.push(
         new AudioData({
@@ -473,7 +475,8 @@ export function createAudioTrackBuf(adFrames: number) {
     chanBuf.set(chanBuf.subarray(readOffset, putOffset), 0);
     putOffset -= readOffset;
 
-    if (ts - audioTs > adDuration) {
+    // 已有音频数据不足，使用占位数据填充
+    while (ts - audioTs > adDuration) {
       rs.push(
         new AudioData({
           timestamp: audioTs,
@@ -501,11 +504,12 @@ export function createAudioTrackBuf(adFrames: number) {
         chan0 += _c0;
         chan1 += _c1;
       }
+      // 合成多个素材的音频数据写入缓存区
       chanBuf[putOffset] = chan0;
       chanBuf[putOffset + 1] = chan1;
       putOffset += 2;
     }
-    // console.log(1111, { putOffset });
+    // 消费缓存区数据，生成 AudioData
     return getAudioData(ts);
   };
 }
