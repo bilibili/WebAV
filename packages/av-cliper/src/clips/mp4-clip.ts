@@ -1208,7 +1208,7 @@ function removeSEIForIDR(u8buf: Uint8Array) {
 }
 
 function isIDRFrame(u8Arr: Uint8Array, type: MP4Sample['description']['type']) {
-  if (type !== 'avc1' && type !== 'hvc1') return false;
+  if (type !== 'avc1' && type !== 'hvc1' && type !== 'vp09') return false;
 
   const dv = new DataView(u8Arr.buffer);
   let i = 0;
@@ -1217,6 +1217,8 @@ function isIDRFrame(u8Arr: Uint8Array, type: MP4Sample['description']['type']) {
       if ((dv.getUint8(i + 4) & 0x1f) === 5) return true;
     } else if (type === 'hvc1') {
       if (((dv.getUint8(i + 4) >> 1) & 0x3f) === 20) return true;
+    } else if (type === 'vp09') {
+      if ((dv.getUint8(i + 4) & 0x01) === 0) return true;
     }
     // 跳至下一个 NALU 继续检查
     i += dv.getUint32(i) + 4;
