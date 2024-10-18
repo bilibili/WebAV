@@ -95,12 +95,12 @@ declare module '@webav/mp4box.js' {
     cts: number;
     sample_description_index?: number;
     is_sync: boolean;
-    description?: MP4ABoxParser | AVC1BoxParser | HVCBoxParser;
+    description?: MP4ABoxParser | AVC1BoxParser | HVCBoxParser | VP9BoxParser;
   }
 
   export interface MP4Sample {
     track_id: number;
-    description: MP4ABoxParser | AVC1BoxParser | HVCBoxParser;
+    description: MP4ABoxParser | AVC1BoxParser | HVCBoxParser | VP9BoxParser;
     is_rap: boolean;
     is_sync: boolean;
     timescale: number;
@@ -231,6 +231,18 @@ declare module '@webav/mp4box.js' {
     width: number;
   }
 
+  export interface VP9BoxParser extends BoxParser {
+    type: 'vp09';
+    boxes: VP9CBox[];
+    hvcC: VP9CBox;
+    compressorname: string;
+    frame_count: number;
+    height: number;
+    size: number;
+    start: number;
+    width: number;
+  }
+
   interface AVCCBox extends BoxParser {
     PPS: Array<{ length: number; nalu: Uint8Array }>;
     SPS: Array<{ length: number; nalu: Uint8Array }>;
@@ -241,6 +253,12 @@ declare module '@webav/mp4box.js' {
     PPS: Array<{ length: number; nalu: Uint8Array }>;
     SPS: Array<{ length: number; nalu: Uint8Array }>;
     type: 'hvcC';
+  }
+
+  interface VP9CBox extends BoxParser {
+    PPS: Array<{ length: number; nalu: Uint8Array }>;
+    SPS: Array<{ length: number; nalu: Uint8Array }>;
+    type: 'vp9C';
   }
 
   export interface MP4ABoxParser extends BoxParser {
