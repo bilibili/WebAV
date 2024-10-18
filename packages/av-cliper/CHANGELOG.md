@@ -1,5 +1,11 @@
 # @webav/av-cliper
 
+## 0.16.3
+
+### Patch Changes
+
+- a67e569: Feature: add fixedScaleCenter mode in rect
+
 ## 0.16.2
 
 ## 0.16.1

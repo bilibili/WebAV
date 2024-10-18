@@ -182,7 +182,9 @@ function scaleRect({
     const minSize = 10;
     let newW = w;
     let newH = h;
-
+    // 中心点缩放时，宽高增量是原来的两倍
+    let newIncW = startRect.fixedScaleCenter ? incW * 2 : incW;
+    let newIncH = startRect.fixedScaleCenter ? incH * 2 : incH;
     // 最小长度缩放限定
     let newIncS = incS;
     // 起始对角线长度
@@ -193,40 +195,47 @@ function scaleRect({
       // 非等比例缩放时，变化的增量范围 由原宽高跟 minSize 的差值决定
       // 非等比例缩放时，根据ctrlKey的不同，固定宽高中的一个，另一个根据增量计算，并考虑最小值限定
       case 'l':
-        newW = Math.max(w + incW, minSize);
+        newW = Math.max(w + newIncW, minSize);
         newIncS = Math.min(incS, w - minSize);
         break;
       case 'r':
-        newW = Math.max(w + incW, minSize);
+        newW = Math.max(w + newIncW, minSize);
         newIncS = Math.max(incS, minSize - w);
         break;
       case 'b':
-        newH = Math.max(h + incH, minSize);
+        newH = Math.max(h + newIncH, minSize);
         newIncS = Math.min(incS, h - minSize);
         break;
       case 't':
-        newH = Math.max(h + incH, minSize);
+        newH = Math.max(h + newIncH, minSize);
         newIncS = Math.max(incS, minSize - h);
         break;
       // 等比例缩放时，变化（对角线长度）的增量范围由原对角线长度跟 minSize 对角线的差值决定
       // 等比例缩放时，某一边达到最小值时保持宽高比例不变
       case 'lt':
       case 'lb':
-        newW = Math.max(w + incW, minSize);
-        newH = newW === minSize ? (h / w) * newW : h + incH;
+        newW = Math.max(w + newIncW, minSize);
+        newH = newW === minSize ? (h / w) * newW : h + newIncH;
         newIncS = Math.min(incS, startS - minS);
         break;
       case 'rt':
       case 'rb':
-        newW = Math.max(w + incW, minSize);
-        newH = newW === minSize ? (h / w) * newW : h + incH;
+        newW = Math.max(w + newIncW, minSize);
+        newH = newW === minSize ? (h / w) * newW : h + newIncH;
         newIncS = Math.max(incS, minS - startS);
         break;
     }
-    const newCenterX = (newIncS / 2) * Math.cos(rotateAngle) + x + w / 2;
-    const newCenterY = (newIncS / 2) * Math.sin(rotateAngle) + y + h / 2;
-    const newX = newCenterX - newW / 2;
-    const newY = newCenterY - newH / 2;
+    let newX = x;
+    let newY = y;
+    if (startRect.fixedScaleCenter) {
+      newX = x + w / 2 - newW / 2;
+      newY = y + h / 2 - newH / 2;
+    } else {
+      const newCenterX = (newIncS / 2) * Math.cos(rotateAngle) + x + w / 2;
+      const newCenterY = (newIncS / 2) * Math.sin(rotateAngle) + y + h / 2;
+      newX = newCenterX - newW / 2;
+      newY = newCenterY - newH / 2;
+    }
 
     updateRectWithSafeMargin(sprRect, cvsEl, {
       x: newX,

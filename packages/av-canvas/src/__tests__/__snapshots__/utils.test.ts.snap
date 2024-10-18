@@ -4,38 +4,47 @@ exports[`ctrls 1`] = `
 {
   "b": Oe {
     "fixedAspectRatio": false,
+    "fixedScaleCenter": false,
     "on": [Function],
   },
   "l": Oe {
     "fixedAspectRatio": false,
+    "fixedScaleCenter": false,
     "on": [Function],
   },
   "lb": Oe {
     "fixedAspectRatio": false,
+    "fixedScaleCenter": false,
     "on": [Function],
   },
   "lt": Oe {
     "fixedAspectRatio": false,
+    "fixedScaleCenter": false,
     "on": [Function],
   },
   "r": Oe {
     "fixedAspectRatio": false,
+    "fixedScaleCenter": false,
     "on": [Function],
   },
   "rb": Oe {
     "fixedAspectRatio": false,
+    "fixedScaleCenter": false,
     "on": [Function],
   },
   "rotate": Oe {
     "fixedAspectRatio": false,
+    "fixedScaleCenter": false,
     "on": [Function],
   },
   "rt": Oe {
     "fixedAspectRatio": false,
+    "fixedScaleCenter": false,
     "on": [Function],
   },
   "t": Oe {
     "fixedAspectRatio": false,
+    "fixedScaleCenter": false,
     "on": [Function],
   },
 }
