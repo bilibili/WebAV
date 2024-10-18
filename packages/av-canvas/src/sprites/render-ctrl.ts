@@ -1,12 +1,13 @@
-import { ICvsRatio } from '../types';
+import { CTRL_KEYS, ICvsRatio, RectCtrls, TCtrlKey } from '../types';
 import { createEl } from '../utils';
-import { VisibleSprite, Rect, TCtrlKey } from '@webav/av-cliper';
+import { VisibleSprite, Rect } from '@webav/av-cliper';
 import { ESpriteManagerEvt, SpriteManager } from './sprite-manager';
 
 export function renderCtrls(
   container: HTMLElement,
   cvsEl: HTMLCanvasElement,
   sprMng: SpriteManager,
+  rectCtrlsGetter: (rect: Rect) => RectCtrls,
 ): () => void {
   const cvsRatio = {
     w: cvsEl.clientWidth / cvsEl.width,
@@ -18,7 +19,13 @@ export function renderCtrls(
     cvsRatio.h = cvsEl.clientHeight / cvsEl.height;
 
     if (sprMng.activeSprite == null) return;
-    syncCtrlElPos(sprMng.activeSprite, rectEl, ctrlsEl, cvsRatio);
+    syncCtrlElPos(
+      sprMng.activeSprite,
+      rectEl,
+      ctrlsEl,
+      cvsRatio,
+      rectCtrlsGetter,
+    );
   });
 
   observer.observe(cvsEl);
@@ -29,7 +36,7 @@ export function renderCtrls(
       rectEl.style.display = 'none';
       return;
     }
-    syncCtrlElPos(s, rectEl, ctrlsEl, cvsRatio);
+    syncCtrlElPos(s, rectEl, ctrlsEl, cvsRatio, rectCtrlsGetter);
     rectEl.style.display = '';
   });
 
@@ -44,7 +51,13 @@ export function renderCtrls(
 
   const onMove = (): void => {
     if (!isDown || sprMng.activeSprite == null) return;
-    syncCtrlElPos(sprMng.activeSprite, rectEl, ctrlsEl, cvsRatio);
+    syncCtrlElPos(
+      sprMng.activeSprite,
+      rectEl,
+      ctrlsEl,
+      cvsRatio,
+      rectCtrlsGetter,
+    );
   };
 
   cvsEl.addEventListener('mousedown', onDown);
@@ -74,7 +87,7 @@ function createRectAndCtrlEl(container: HTMLElement): {
     display: none;
   `;
   const ctrlsEl = Object.fromEntries(
-    Rect.CTRL_KEYS.map((k) => {
+    CTRL_KEYS.map((k) => {
       const d = createEl('div');
       d.style.cssText = `
         display: none;
@@ -100,8 +113,9 @@ function syncCtrlElPos(
   rectEl: HTMLElement,
   ctrlsEl: Record<TCtrlKey, HTMLElement>,
   cvsRatio: ICvsRatio,
+  rectCtrlsGetter: (rect: Rect) => RectCtrls,
 ): void {
-  const { x, y, w, h, angle, ctrls } = s.rect;
+  const { x, y, w, h, angle } = s.rect;
   Object.assign(rectEl.style, {
     left: `${x * cvsRatio.w}px`,
     top: `${y * cvsRatio.h}px`,
@@ -109,7 +123,7 @@ function syncCtrlElPos(
     height: `${h * cvsRatio.h}px`,
     rotate: `${angle}rad`,
   });
-  Object.entries(ctrls).forEach(([k, { x, y, w, h }]) => {
+  Object.entries(rectCtrlsGetter(s.rect)).forEach(([k, { x, y, w, h }]) => {
     // ctrl 是相对中心点定位的
     Object.assign(ctrlsEl[k as TCtrlKey].style, {
       display: 'block',

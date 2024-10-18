@@ -1,4 +1,5 @@
 import { vi } from 'vitest';
+import { DEFAULT_AUDIO_CONF } from '../clips';
 
 export const MediaStreamMock = {
   getTracks: vi.fn().mockReturnValue([]),
@@ -15,7 +16,7 @@ Object.assign(global, {
 
 export const AudioBufferMock = {
   duration: 0,
-  sampleRate: 48000,
+  sampleRate: DEFAULT_AUDIO_CONF.sampleRate,
   getChannelData: vi.fn().mockReturnValue(new Float32Array(0)),
 };
 

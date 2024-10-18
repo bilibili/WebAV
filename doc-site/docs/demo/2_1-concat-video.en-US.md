@@ -17,7 +17,7 @@ The idea is to draw an image (watermark) on top of the video and animate it.
 
 `renderTxt2ImgBitmap` converts the watermarked text to an image because css makes it easy to implement complex text styling effects.
 
-<code src="./watermark.tsx"></code>
+<code src="./2_1_1-watermark.tsx"></code>
 
 :::warning
 `renderTxt2ImgBitmap` depends on the DOM, so it cannot be used in WebWorkers.

@@ -20,4 +20,4 @@ The DEMO demonstrates the basic capabilities of the video editing software.
 - Live preview playback.
 - Pure browser environment for video generation.
 
-<code src="./video-editor.tsx"></code>
+<code src="./6_4_1-video-editor.tsx"></code>

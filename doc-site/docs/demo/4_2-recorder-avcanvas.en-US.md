@@ -17,7 +17,7 @@ v0.10 adds support for `MediaStreamClip` to enhance live streaming scenarios, su
 
 `AVRecorder` can be used to record a `MediaStream` and the resulting MP4 file stream (`ReadableStream`) can be saved locally, uploaded to a server, or used for WebSocket streaming.
 
-<code src="./recorder-avcanvas.tsx"></code>
+<code src="./4_2_1-recorder-avcanvas.tsx"></code>
 
 :::info
 DEMO does not implement UI such as deleting assets, changing asset level, etc. The API provides such basic capabilities.

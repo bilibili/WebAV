@@ -12,7 +12,7 @@ A GIF is composed of multiple still image frames, which can be decoded using the
 
 Or use `ImgClip.tick(time)` to get an image frame at a specified time;
 
-<code src="./decode-image.tsx"></code>
+<code src="./1_3_1-decode-image.tsx"></code>
 
 :::info
 Note: `ImgClip.meta.duration = Infinity`, GIFs will loop over frames based on the time parameter by default.

@@ -1,4 +1,4 @@
-import { EventTool } from '../event-tool';
+import { EventTool } from '@webav/internal-utils';
 import { IRectBaseProps, Rect } from './rect';
 
 interface IAnimationOpts {
@@ -140,7 +140,7 @@ export abstract class BaseSprite {
    *     '75%': { x: 0, y: 680 },
    *     '100%': { x: 0, y: 0 },
    *   },
-   *   { duration: 4, iterCount: 1 },
+   *   { duration: 4e6, iterCount: 1 },
    * );
    *
    * @see [视频水印动画](https://bilibili.github.io/WebAV/demo/2_1-concat-video)
@@ -154,8 +154,8 @@ export abstract class BaseSprite {
       return [numK / 100, val];
     }) as TAnimationKeyFrame;
     this.#animatOpts = Object.assign({}, this.#animatOpts, {
-      duration: opts.duration * 1e6,
-      delay: (opts.delay ?? 0) * 1e6,
+      duration: opts.duration,
+      delay: opts.delay ?? 0,
       iterCount: opts.iterCount ?? Infinity,
     });
   }
@@ -217,11 +217,12 @@ export function linearTimeFn(
   kf: TAnimationKeyFrame,
   opts: Required<IAnimationOpts>,
 ): Partial<TAnimateProps> {
-  if (time / opts.duration >= opts.iterCount) return {};
+  const offsetTime = time - opts.delay;
+  if (offsetTime / opts.duration >= opts.iterCount) return {};
 
-  const t = time % opts.duration;
+  const t = offsetTime % opts.duration;
 
-  const process = time === opts.duration ? 1 : t / opts.duration;
+  const process = offsetTime === opts.duration ? 1 : t / opts.duration;
   const idx = kf.findIndex((it) => it[0] >= process);
   if (idx === -1) return {};
 

@@ -17,7 +17,7 @@ v0.10 新增支持 `MediaStreamClip`，用于增强直播推流场景，如分�
 
 可使用 `AVRecorder` 录制 `MediaStream`，将生成的 MP4 文件流（`ReadableStream`）保存到本地、或上传到服务器、或用于 WebSocket 推流。
 
-<code src="./recorder-avcanvas.tsx"></code>
+<code src="./4_2_1-recorder-avcanvas.tsx"></code>
 
 :::info
 DEMO 未实现删除素材、修改素材层级等 UI，API 已提供此类基础能力。

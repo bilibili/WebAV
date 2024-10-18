@@ -64,4 +64,4 @@ export const DEFAULT_AUDIO_CONF = {
   sampleRate: 48000,
   channelCount: 2,
   codec: 'mp4a.40.2',
-};
+} as const;

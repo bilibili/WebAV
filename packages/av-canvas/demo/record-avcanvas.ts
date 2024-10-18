@@ -1,6 +1,7 @@
-import { VisibleSprite, MediaStreamClip, createEl } from '@webav/av-cliper';
+import { VisibleSprite, MediaStreamClip } from '@webav/av-cliper';
 import { AVCanvas } from '../src/index';
 import { AVRecorder } from '@webav/av-recorder';
+import { createEl } from '../src/utils';
 
 const avCvs = new AVCanvas(document.querySelector('#app') as HTMLElement, {
   bgColor: '#333',
@@ -45,7 +46,7 @@ document.querySelector('#display')?.addEventListener('click', () => {
 
 document.querySelector('#localImg')?.addEventListener('click', () => {
   // (async () => {
-  //   const [imgFH] = await (window as any).showOpenFilePicker({
+  //   const [imgFH] = await window.showOpenFilePicker({
   //     types: [
   //       {
   //         description: 'Images',
@@ -88,7 +89,7 @@ document.querySelector('#localVideo')?.addEventListener('click', () => {
 
 document.querySelector('#localAudio')?.addEventListener('click', () => {
   // (async () => {
-  //   const [imgFH] = await (window as any).showOpenFilePicker({
+  //   const [imgFH] = await window.showOpenFilePicker({
   //     types: [
   //       {
   //         description: 'Audio',

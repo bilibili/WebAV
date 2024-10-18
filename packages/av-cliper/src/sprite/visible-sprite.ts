@@ -1,6 +1,6 @@
 import { BaseSprite } from './base-sprite';
 import { IClip } from '../clips';
-import { Log } from '../log';
+import { Log } from '@webav/internal-utils';
 import { changePCMPlaybackRate } from '../av-utils';
 
 /**

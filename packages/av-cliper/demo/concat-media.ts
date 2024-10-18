@@ -1,11 +1,10 @@
 import { AudioClip, ImgClip, MP4Clip, concatAudioClip } from '../src/clips';
 import { Combinator } from '../src/combinator';
-import { Log } from '../src/log';
 import { OffscreenSprite } from '../src/sprite/offscreen-sprite';
 import { renderTxt2ImgBitmap } from '../src/dom-utils';
 import { EmbedSubtitlesClip } from '../src/clips/embed-subtitles-clip';
 import { playOutputStream } from './play-video';
-import { createChromakey, fastConcatMP4 } from '../src';
+import { Log, createChromakey, fastConcatMP4 } from '../src';
 
 // const cvs = document.querySelector('canvas') as HTMLCanvasElement
 // const ctx = cvs.getContext('2d')!
@@ -44,7 +43,7 @@ document.querySelector('#mp4-img')?.addEventListener('click', () => {
         '75%': { x: 0, y: 680 },
         '100%': { x: 0, y: 0 },
       },
-      { duration: 4, iterCount: 1 },
+      { duration: 4e6, iterCount: 1 },
     );
     spr2.zIndex = 10;
     spr2.opacity = 0.5;
@@ -61,7 +60,7 @@ document.querySelector('#mp4-img')?.addEventListener('click', () => {
         from: { angle: Math.PI, x: 0, y: 0, opacity: 1 },
         to: { angle: Math.PI * 2, x: 300, y: 300, opacity: 0 },
       },
-      { duration: 3 },
+      { duration: 3e6 },
     );
 
     const com = new Combinator({

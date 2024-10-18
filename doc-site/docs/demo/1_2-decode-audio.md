@@ -6,4 +6,4 @@ order: 2
 
 # 解码音频
 
-<code src="./decode-audio.tsx"></code>
+<code src="./1_2_1-decode-audio.tsx"></code>

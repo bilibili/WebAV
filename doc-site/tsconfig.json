@@ -1,13 +1,16 @@
 {
+  "extends": "../tsconfig.json",
   "compilerOptions": {
-    "jsx": "react",
-    "strict": true,
-    "skipLibCheck": true,
-    "esModuleInterop": true,
+    "types": [
+      "node",
+      "@types/dom-mediacapture-transform",
+      "@types/dom-webcodecs",
+      "@types/wicg-file-system-access"
+    ],
     "baseUrl": "./",
     "paths": {
       "@@/*": [".dumi/tmp/*"]
     }
   },
-  "include": [".dumirc.ts"]
+  "include": [".dumirc.ts", "docs/**/*"]
 }

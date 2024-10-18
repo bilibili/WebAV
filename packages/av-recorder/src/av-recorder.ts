@@ -1,10 +1,10 @@
 import {
   Log,
-  EventTool,
-  autoReadStream,
-  file2stream,
   recodemux,
-} from '@webav/av-cliper';
+  autoReadStream,
+  EventTool,
+  file2stream,
+} from '@webav/internal-utils';
 import {
   AVRecorderConf,
   IStream,

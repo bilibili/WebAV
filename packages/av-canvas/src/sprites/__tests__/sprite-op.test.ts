@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 import { SpriteManager } from '../sprite-manager';
-import { createEl } from '../../utils';
+import { createCtrlsGetter, createEl } from '../../utils';
 import { draggabelSprite } from '../sprite-op';
 import { MockVisibleSprite, crtMSEvt4Offset } from '../../__tests__/test-utils';
 
@@ -8,15 +8,19 @@ const cvsRatio = { w: 1, h: 1 };
 let sprMng = new SpriteManager();
 
 let cvsEl: HTMLCanvasElement;
+let rectCtrlsGetter: ReturnType<typeof createCtrlsGetter>['rectCtrlsGetter'];
+let ctrlGetterDestroy: () => void;
 beforeEach(() => {
   sprMng = new SpriteManager();
   cvsEl = createEl('canvas') as HTMLCanvasElement;
   cvsEl.style.cssText = 'width: 1280px; height: 720px';
   cvsEl.width = 1280;
   cvsEl.height = 720;
+  ({ rectCtrlsGetter, destroy: ctrlGetterDestroy } = createCtrlsGetter(cvsEl));
   document.body.appendChild(cvsEl);
 });
 afterEach(() => {
+  ctrlGetterDestroy();
   cvsEl.remove();
 });
 
@@ -25,7 +29,12 @@ describe('draggabelSprite', () => {
     const spyAEL = vi.spyOn(cvsEl, 'addEventListener');
     const spyREL = vi.spyOn(cvsEl, 'removeEventListener');
 
-    const clear = draggabelSprite(cvsEl, sprMng, document.body);
+    const clear = draggabelSprite(
+      cvsEl,
+      sprMng,
+      document.body,
+      rectCtrlsGetter,
+    );
     expect(spyAEL).toBeCalledWith('mousedown', expect.any(Function));
     expect(clear).toBeInstanceOf(Function);
 
@@ -40,7 +49,12 @@ describe('draggabelSprite', () => {
     vi.spyOn(vs.rect, 'checkHit').mockReturnValue(true);
     await sprMng.addSprite(vs);
     sprMng.activeSprite = vs;
-    const clear = draggabelSprite(cvsEl, sprMng, document.body);
+    const clear = draggabelSprite(
+      cvsEl,
+      sprMng,
+      document.body,
+      rectCtrlsGetter,
+    );
     cvsEl.dispatchEvent(new MouseEvent('mousedown'));
 
     expect(spyAEL).toBeCalledTimes(2);
@@ -70,7 +84,12 @@ describe('draggabelSprite', () => {
     await sprMng.addSprite(vs);
     sprMng.activeSprite = vs;
 
-    const clear = draggabelSprite(cvsEl, sprMng, document.body);
+    const clear = draggabelSprite(
+      cvsEl,
+      sprMng,
+      document.body,
+      rectCtrlsGetter,
+    );
     cvsEl.dispatchEvent(crtMSEvt4Offset('mousedown', 110, 110));
 
     window.dispatchEvent(
@@ -106,7 +125,12 @@ describe('scale sprite', () => {
     vs.rect.h = 100;
 
     // 激活 sprite
-    const clear = draggabelSprite(cvsEl, sprMng, document.body);
+    const clear = draggabelSprite(
+      cvsEl,
+      sprMng,
+      document.body,
+      rectCtrlsGetter,
+    );
     cvsEl.dispatchEvent(crtMSEvt4Offset('mousedown', 0, 0));
     expect(sprMng.activeSprite).toBe(vs);
 
@@ -135,7 +159,12 @@ describe('scale sprite', () => {
     vs.rect.h = 100;
 
     // 激活 sprite
-    const clear = draggabelSprite(cvsEl, sprMng, document.body);
+    const clear = draggabelSprite(
+      cvsEl,
+      sprMng,
+      document.body,
+      rectCtrlsGetter,
+    );
     cvsEl.dispatchEvent(crtMSEvt4Offset('mousedown', 0, 0));
     expect(sprMng.activeSprite).toBe(vs);
 
@@ -150,7 +179,13 @@ describe('scale sprite', () => {
         clientY: 100,
       }),
     );
-    expect(vs.rect).toMatchSnapshot();
+    const { x, y, w, h } = vs.rect;
+    expect({ x, y, w, h }).toEqual({
+      x: 0,
+      y: 0,
+      w: 200,
+      h: 200,
+    });
 
     clear();
   });
@@ -165,7 +200,12 @@ describe('scale sprite', () => {
     vs.rect.h = 100;
     vs.rect.angle = 30 * (Math.PI / 180);
     // 激活 sprite
-    const clear = draggabelSprite(cvsEl, sprMng, document.body);
+    const clear = draggabelSprite(
+      cvsEl,
+      sprMng,
+      document.body,
+      rectCtrlsGetter,
+    );
     cvsEl.dispatchEvent(crtMSEvt4Offset('mousedown', 150, 150));
     expect(sprMng.activeSprite).toBe(vs);
 
@@ -200,7 +240,12 @@ describe('scale sprite', () => {
     vs.rect.h = 100;
     vs.rect.angle = 90 * (Math.PI / 180);
     // 激活 sprite
-    const clear = draggabelSprite(cvsEl, sprMng, document.body);
+    const clear = draggabelSprite(
+      cvsEl,
+      sprMng,
+      document.body,
+      rectCtrlsGetter,
+    );
     cvsEl.dispatchEvent(crtMSEvt4Offset('mousedown', 50, 50));
     expect(sprMng.activeSprite).toBe(vs);
 
@@ -231,7 +276,12 @@ describe('scale sprite', () => {
     vs.rect.h = 100;
     vs.rect.angle = 90 * (Math.PI / 180);
     // 激活 sprite
-    const clear = draggabelSprite(cvsEl, sprMng, document.body);
+    const clear = draggabelSprite(
+      cvsEl,
+      sprMng,
+      document.body,
+      rectCtrlsGetter,
+    );
     cvsEl.dispatchEvent(crtMSEvt4Offset('mousedown', 150, 150));
     expect(sprMng.activeSprite).toBe(vs);
 
@@ -261,7 +311,12 @@ describe('scale sprite', () => {
     vs.rect.fixedScaleCenter = true;
 
     // 激活 sprite
-    const clear = draggabelSprite(cvsEl, sprMng, document.body);
+    const clear = draggabelSprite(
+      cvsEl,
+      sprMng,
+      document.body,
+      rectCtrlsGetter,
+    );
     cvsEl.dispatchEvent(crtMSEvt4Offset('mousedown', 0, 0));
     expect(sprMng.activeSprite).toBe(vs);
 
@@ -291,7 +346,12 @@ describe('scale sprite', () => {
     vs.rect.fixedScaleCenter = true;
 
     // 激活 sprite
-    const clear = draggabelSprite(cvsEl, sprMng, document.body);
+    const clear = draggabelSprite(
+      cvsEl,
+      sprMng,
+      document.body,
+      rectCtrlsGetter,
+    );
     cvsEl.dispatchEvent(crtMSEvt4Offset('mousedown', 0, 0));
     expect(sprMng.activeSprite).toBe(vs);
 
@@ -322,16 +382,19 @@ describe('rotate sprite', () => {
     vs.rect.h = 100;
 
     // 激活 sprite
-    const clear = draggabelSprite(cvsEl, sprMng, document.body);
+    const clear = draggabelSprite(
+      cvsEl,
+      sprMng,
+      document.body,
+      rectCtrlsGetter,
+    );
     cvsEl.dispatchEvent(crtMSEvt4Offset('mousedown', 0, 0));
     expect(sprMng.activeSprite).toBe(vs);
 
     window.dispatchEvent(new MouseEvent('mouseup'));
     // 命中 rotate ctrl
-    const {
-      center,
-      ctrls: { rotate },
-    } = vs.rect;
+    const { center } = vs.rect;
+    const { rotate } = rectCtrlsGetter(vs.rect);
     cvsEl.dispatchEvent(
       crtMSEvt4Offset(
         'mousedown',
@@ -345,7 +408,7 @@ describe('rotate sprite', () => {
         clientY: 100,
       }),
     );
-    expect(vs.rect.angle).toMatchSnapshot();
+    expect(vs.rect.angle.toFixed(2)).toBe('2.36');
 
     window.dispatchEvent(
       new MouseEvent('mousemove', {
@@ -353,7 +416,7 @@ describe('rotate sprite', () => {
         clientY: 200,
       }),
     );
-    expect(vs.rect.angle).toMatchSnapshot();
+    expect(vs.rect.angle.toFixed(2)).toBe('2.82');
 
     clear();
   });
