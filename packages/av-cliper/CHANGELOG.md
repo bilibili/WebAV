@@ -1,5 +1,12 @@
 # @webav/av-cliper
 
+## 0.16.4
+
+### Patch Changes
+
+- 759fecd: fix: other types of isIDRFrame judgments
+- ed3c8ee: fix: wrong audio data when combination #299
+
 ## 0.16.3
 
 ### Patch Changes
