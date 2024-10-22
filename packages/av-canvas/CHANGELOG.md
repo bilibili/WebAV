@@ -1,5 +1,17 @@
 # @webav/av-canvas
 
+## 1.0.0-beta.0
+
+### Major Changes
+
+- feat: v1
+
+### Patch Changes
+
+- Updated dependencies
+  - @webav/internal-utils@1.0.0-beta.0
+  - @webav/av-cliper@1.0.0-beta.0
+
 ## 0.16.4
 
 ### Patch Changes
