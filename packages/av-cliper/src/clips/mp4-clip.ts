@@ -1208,7 +1208,7 @@ function removeSEIForIDR(u8buf: Uint8Array) {
 }
 
 function isIDRFrame(u8Arr: Uint8Array, type: MP4Sample['description']['type']) {
-  if (type !== 'avc1' && type !== 'hvc1') return false;
+  if (type !== 'avc1' && type !== 'hvc1') return true;
 
   const dv = new DataView(u8Arr.buffer);
   let i = 0;

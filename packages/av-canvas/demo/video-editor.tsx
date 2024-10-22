@@ -270,9 +270,11 @@ function App() {
       <button
         className="mx-[10px]"
         onClick={async () => {
-          const spr = new VisibleSprite(
-            new AudioClip((await fetch('./audio/16kHz-1chan.mp3')).body!),
-          );
+          const stream =
+            clipSource === 'local'
+              ? (await loadFile({ 'audio/*': ['.mp3', '.m4a'] })).stream()
+              : (await fetch('./audio/16kHz-1chan.mp3')).body!;
+          const spr = new VisibleSprite(new AudioClip(stream));
           await avCvs?.addSprite(spr);
           addSprite2Track('2-audio', spr, '音频');
         }}
