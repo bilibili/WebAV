@@ -19,7 +19,7 @@ order: 1
 - 代码：Bugfix、新功能、单元测试
 - 资金赞助
 
-新增 API、改动 API 或有大量代码改动的 bugfix，开始前务必先与项目维护者在 issue 中讨论，浪费勇士们的时间是莫大的罪过。
+新增/改动 API 或有大量代码改动的 bugfix，开始前务必先与项目维护者在 issue 中讨论，浪费勇士们的时间是莫大的罪过。
 
 ---
 
@@ -56,6 +56,27 @@ Commit message 格式规范请了解 [Angular's commit convention](https://githu
 
 本项目使用 [changesets](https://github.com/changesets/changesets) 管理并自动发布版本；
 
-创建 PR 后需使用 `pnpm changeset add` 命令添加该 PR 的描述，以便自动生成 changelog、更新 package 的版本号；
+### 代码贡献
 
-否则 PR 下会有机器人提醒，详情请阅读 changesets 文档。
+在 commit 之后需执行以下步骤生成描述文件
+
+1. 在你的分支执行 `pnpm changeset add`
+2. 选择代码影响的 package 范围，以及版本变更规则（`major, minor, patch`）
+   按**空格**选中，按**回车**确认
+
+_PS: 文档更新，不涉及版本号变更可忽略此步骤_
+
+### 版本发布
+
+只有项目维护者有权限发布版本，贡献者按 changeset 规则创建描述文件后发起 PR；  
+维护者合并 PR 后 Github Actions 会自动发布版本。
+
+### 发布 beta 版本
+
+需项目维护者手动操作
+
+1. prerelease 模式 `pnpm changeset pre enter beta`
+2. 生成描述文件 `pnpm changeset add`
+3. 消费描述文件升级版本 `pnpm changeset version`
+4. 发布 npm next tag `pnpm publish:all:next`
+5. 退出 prerelease 模式 `pnpm changeset pre exit`
