@@ -4,8 +4,7 @@ nav:
   order: 2
 group:
   title: 开始
-  order: 3
-order: 1
+order: 3
 ---
 
 # 模块介绍

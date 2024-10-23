@@ -4,8 +4,7 @@ nav:
   order: 2
 group:
   title: Start
-  order: 3
-order: 1
+order: 3
 ---
 
 # Packages Introduction

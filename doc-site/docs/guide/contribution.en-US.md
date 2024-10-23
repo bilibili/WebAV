@@ -3,9 +3,8 @@ nav:
   title: Guide
   order: 2
 group:
-  title: other
-  order: 4
-order: 1
+  title: Start
+order: 5
 ---
 
 # Contribution Guide

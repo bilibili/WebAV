@@ -4,8 +4,7 @@ nav:
   order: 2
 group:
   title: Start
-  order: 1
-order: 1
+order: 2
 ---
 
 # Quick Start

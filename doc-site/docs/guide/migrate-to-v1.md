@@ -4,7 +4,6 @@ nav:
   order: 2
 group:
   title: 其他
-  order: 4
 order: 4
 ---
 
@@ -40,6 +39,9 @@ DEFAULT_AUDIO_CONF
 如果社区需要这些能力，可考虑在新 package 中开放出来，跟 av-cliper 保持隔离。
 
 如果能的项目依赖了其中部分 API，可以从 WebAV 源码中 copy 一份到自己的项目中。
+
+目前提供了[**自定义素材**](https://bilibili.github.io/WebAV/demo/2_6-custom-clip)用于能力扩展，特殊场景优先考虑是否可通过该方案实现。  
+比如需要将 canvas、pixi.js 或任意来源的图像、音频数据合成为视频。
 
 ### API: setAnimation
 
