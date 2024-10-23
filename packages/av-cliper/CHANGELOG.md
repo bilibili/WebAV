@@ -1,5 +1,11 @@
 # @webav/av-cliper
 
+## 0.16.5
+
+### Patch Changes
+
+- 3019a88: fix: IDR frame recognition for HEVC #306
+
 ## 0.16.4
 
 ### Patch Changes
