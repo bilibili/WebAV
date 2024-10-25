@@ -7,5 +7,5 @@
     "@webav/av-recorder": "0.16.4",
     "@webav/internal-utils": "0.16.2"
   },
-  "changesets": ["itchy-lies-press"]
+  "changesets": ["green-colts-impress", "itchy-lies-press"]
 }
