@@ -792,7 +792,7 @@ class AudioFrameFinder {
   #dec: ReturnType<typeof createAudioChunksDecoder> | null = null;
   #curAborter = { abort: false, st: performance.now() };
   find = async (time: number): Promise<Float32Array[]> => {
-    // 前后获取音频数据差异不能超过 100ms
+    // 前后获取音频数据差异不能超过 100ms(经验值)，否则视为 seek 操作，重置解码器
     if (this.#dec == null || time <= this.#ts || time - this.#ts > 0.1e6) {
       this.#reset();
       this.#ts = time;
@@ -834,14 +834,14 @@ class AudioFrameFinder {
     // 数据满足需要
     const ramainFrameCnt = this.#pcmData.frameCnt - emitFrameCnt;
     if (ramainFrameCnt > 0) {
-      // 剩余音频数据小于 100ms
+      // 剩余音频数据小于 100ms，预先解码
       if (ramainFrameCnt < DEFAULT_AUDIO_CONF.sampleRate / 10) {
         this.#startDecode(dec);
       }
       return emitAudioFrames(this.#pcmData, emitFrameCnt);
     }
 
-    if (dec.decodeQueueSize > 10) {
+    if (dec.decoding) {
       if (performance.now() - aborter.st > 3e3) {
         aborter.abort = true;
         throw Error(
@@ -860,7 +860,8 @@ class AudioFrameFinder {
   };
 
   #startDecode = (dec: ReturnType<typeof createAudioChunksDecoder>) => {
-    if (dec.decodeQueueSize > 100) return;
+    const onceDecodeCnt = 10;
+    if (dec.decodeQueueSize > onceDecodeCnt) return;
     // 启动解码任务
     const samples = [];
     let i = this.#decCusorIdx;
@@ -869,7 +870,7 @@ class AudioFrameFinder {
       i += 1;
       if (s.deleted) continue;
       samples.push(s);
-      if (samples.length >= 10) break;
+      if (samples.length >= onceDecodeCnt) break;
     }
     this.#decCusorIdx = i;
 
@@ -932,7 +933,10 @@ function createAudioChunksDecoder(
   opts: { resampleRate: number; volume: number },
   outputCb: (pcm: Float32Array[]) => void,
 ) {
+  let intputCnt = 0;
+  let outputCnt = 0;
   const outputHandler = (pcmArr: Float32Array[]) => {
+    outputCnt += 1;
     if (pcmArr.length === 0) return;
     // 音量调节
     if (opts.volume !== 1) {
@@ -971,10 +975,14 @@ function createAudioChunksDecoder(
 
   return {
     decode(chunks: EncodedAudioChunk[]) {
+      intputCnt += chunks.length;
       for (const chunk of chunks) adec.decode(chunk);
     },
     close() {
       if (adec.state !== 'closed') adec.close();
+    },
+    get decoding() {
+      return intputCnt > outputCnt;
     },
     get state() {
       return adec.state;
@@ -1160,7 +1168,7 @@ function splitAudioSampleByTime(audioSamples: ExtMP4Sample[], time: number) {
     break;
   }
   if (hitIdx === -1) throw Error('Not found audio sample by time');
-  const preSlice = audioSamples.slice(0, hitIdx);
+  const preSlice = audioSamples.slice(0, hitIdx).map((s) => ({ ...s }));
   const postSlice = audioSamples
     .slice(hitIdx)
     .map((s) => ({ ...s, cts: s.cts - time }));
