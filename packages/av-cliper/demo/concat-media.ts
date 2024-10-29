@@ -267,6 +267,30 @@ document.querySelector('#mp4-chromakey')?.addEventListener('click', () => {
   })().catch(Log.error);
 });
 
+document.querySelector('#split-then-concat')?.addEventListener('click', () => {
+  (async () => {
+    const resList = ['./video/bunny_0.mp4'];
+    const { loadStream } = playOutputStream(resList, playerContainer);
+
+    const com = new Combinator({
+      width: 1280,
+      height: 720,
+    });
+    const clip = new MP4Clip((await fetch(resList[0])).body!);
+    let offset = 0;
+    const step = 1.1e6; // 每隔 1.1s 裁切拼接视频
+    for (let start = 1e6; start < 5e6; start += step) {
+      const [_, newClip] = await clip.split(start);
+      const [newClip2] = await newClip.split(step);
+      const spr = new OffscreenSprite(newClip2);
+      spr.time.offset = offset;
+      await com.addSprite(spr);
+      offset += spr.time.duration;
+    }
+    await loadStream(com.output(), com);
+  })().catch(Log.error);
+});
+
 document.querySelector('#complex')?.addEventListener('click', () => {
   (async () => {
     const mp4List = ['./video/123.mp4', './video/223.mp4', './video/323.mp4'];

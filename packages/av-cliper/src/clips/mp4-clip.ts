@@ -545,11 +545,7 @@ async function mp4FileToSamples(otFile: OPFSToolFile, opts: MP4ClipOpts = {}) {
     throw Error('MP4Clip stream not contain any sample');
   }
   // 修复首帧黑帧
-  const firstSample = videoSamples[0];
-  if (firstSample != null && firstSample.cts < 200e3) {
-    firstSample.duration += firstSample.cts;
-    firstSample.cts = 0;
-  }
+  fixFirstBlackFrame(videoSamples);
   Log.info('mp4 stream parsed');
   return {
     videoSamples,
@@ -1137,17 +1133,19 @@ function splitVideoSampleByTime(videoSamples: ExtMP4Sample[], time: number) {
       s.cts = -1;
     }
   }
+  fixFirstBlackFrame(preSlice);
 
   const postSlice = videoSamples
     .slice(hitSample.is_idr ? gopEndIdx : gopStartIdx)
     .map((s) => ({ ...s, cts: s.cts - time }));
 
   for (const s of postSlice) {
-    if (s.cts >= 0) break;
-    // 将第一个 GoP 中前半部分标记为 deleted
-    s.deleted = true;
-    s.cts = -1;
+    if (s.cts < 0) {
+      s.deleted = true;
+      s.cts = -1;
+    }
   }
+  fixFirstBlackFrame(postSlice);
 
   return [preSlice, postSlice];
 }
@@ -1285,5 +1283,27 @@ async function thumbnailByKeyFrame(
       ...(downgrade ? { hardwareAcceleration: 'prefer-software' } : {}),
     });
     return dec;
+  }
+}
+
+// 如果第一帧出现的时间偏移较大，会导致第一帧为黑帧，这里尝试自动消除第一帧前的黑帧
+function fixFirstBlackFrame(samples: ExtMP4Sample[]) {
+  let iframeCnt = 0;
+  let minCtsSample: ExtMP4Sample | null = null;
+  // cts 最小表示视频的第一帧
+  for (const s of samples) {
+    if (s.deleted) continue;
+    // 最多检测两个 I 帧之间的帧
+    if (s.is_sync) iframeCnt += 1;
+    if (iframeCnt >= 2) break;
+
+    if (minCtsSample == null || s.cts < minCtsSample.cts) {
+      minCtsSample = s;
+    }
+  }
+  // 200ms 是经验值，自动消除 200ms 内的黑帧，超过则不处理
+  if (minCtsSample != null && minCtsSample.cts < 200e3) {
+    minCtsSample.duration += minCtsSample.cts;
+    minCtsSample.cts = 0;
   }
 }
