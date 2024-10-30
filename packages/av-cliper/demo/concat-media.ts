@@ -276,16 +276,18 @@ document.querySelector('#split-then-concat')?.addEventListener('click', () => {
       width: 1280,
       height: 720,
     });
-    const clip = new MP4Clip((await fetch(resList[0])).body!);
-    let offset = 0;
     const step = 1.1e6; // 每隔 1.1s 裁切拼接视频
-    for (let start = 1e6; start < 5e6; start += step) {
+    let clip = new MP4Clip((await fetch(resList[0])).body!);
+    await clip.ready;
+    let offset = 0e6;
+    // for (let start = 1e6; start < clip.meta.duration - step; start += step) {
+    for (let start = 1e6; start < 10e6; start += step) {
       const [_, newClip] = await clip.split(start);
       const [newClip2] = await newClip.split(step);
       const spr = new OffscreenSprite(newClip2);
       spr.time.offset = offset;
       await com.addSprite(spr);
-      offset += spr.time.duration;
+      offset += step;
     }
     await loadStream(com.output(), com);
   })().catch(Log.error);

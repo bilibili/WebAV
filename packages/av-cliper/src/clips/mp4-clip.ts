@@ -62,7 +62,9 @@ type ThumbnailOpts = {
  * @see [解码播放视频](https://bilibili.github.io/WebAV/demo/1_1-decode-video)
  */
 export class MP4Clip implements IClip {
-  #log = Log.create(`MP4Clip id:${CLIP_ID++},`);
+  #insId = CLIP_ID++;
+
+  #log = Log.create(`MP4Clip id:${this.#insId},`);
 
   ready: IClip['ready'];
 
@@ -192,7 +194,7 @@ export class MP4Clip implements IClip {
   }> {
     if (time >= this.#meta.duration) {
       return await this.tickInterceptor(time, {
-        audio: [],
+        audio: (await this.#audioFrameFinder?.find(time)) ?? [],
         state: 'done',
       });
     }
@@ -776,6 +778,17 @@ class VideoFrameFinder {
   };
 }
 
+function findIndexOfSamples(time: number, samples: ExtMP4Sample[]) {
+  for (let i = 0; i < samples.length; i++) {
+    const s = samples[i];
+    if (time >= s.cts && time < s.cts + s.duration) {
+      return i;
+    }
+    if (s.cts > time) break;
+  }
+  return 0;
+}
+
 class AudioFrameFinder {
   #volume = 1;
   #sampleRate;
@@ -792,16 +805,14 @@ class AudioFrameFinder {
   #dec: ReturnType<typeof createAudioChunksDecoder> | null = null;
   #curAborter = { abort: false, st: performance.now() };
   find = async (time: number): Promise<Float32Array[]> => {
-    // 前后获取音频数据差异不能超过 100ms(经验值)，否则视为 seek 操作，重置解码器
-    if (this.#dec == null || time <= this.#ts || time - this.#ts > 0.1e6) {
+    if (this.#dec == null) {
       this.#reset();
+    } else if (time <= this.#ts || time - this.#ts > 0.1e6) {
+      this.#reset();
+      // 前后获取音频数据差异不能超过 100ms(经验值)，否则视为 seek 操作，重置解码器
+      // seek 操作，重置时间
       this.#ts = time;
-      for (let i = 0; i < this.samples.length; i++) {
-        if (this.samples[i].cts < time) continue;
-        this.#decCusorIdx = i;
-        break;
-      }
-      return [];
+      this.#decCusorIdx = findIndexOfSamples(time, this.samples);
     }
 
     this.#curAborter.abort = true;
@@ -809,7 +820,12 @@ class AudioFrameFinder {
     this.#ts = time;
 
     this.#curAborter = { abort: false, st: performance.now() };
-    return await this.#parseFrame(deltaTime, this.#dec, this.#curAborter);
+
+    return await this.#parseFrame(
+      Math.ceil(deltaTime * (this.#sampleRate / 1e6)),
+      this.#dec,
+      this.#curAborter,
+    );
   };
 
   #ts = 0;
@@ -822,14 +838,18 @@ class AudioFrameFinder {
     data: [],
   };
   #parseFrame = async (
-    deltaTime: number,
+    emitFrameCnt: number,
     dec: ReturnType<typeof createAudioChunksDecoder> | null = null,
     aborter: { abort: boolean; st: number },
   ): Promise<Float32Array[]> => {
-    if (dec == null || aborter.abort || dec.state === 'closed') return [];
-
-    const emitFrameCnt = Math.ceil(deltaTime * (this.#sampleRate / 1e6));
-    if (emitFrameCnt === 0) return [];
+    if (
+      dec == null ||
+      aborter.abort ||
+      dec.state === 'closed' ||
+      emitFrameCnt === 0
+    ) {
+      return [];
+    }
 
     // 数据满足需要
     const ramainFrameCnt = this.#pcmData.frameCnt - emitFrameCnt;
@@ -851,12 +871,12 @@ class AudioFrameFinder {
       // 解码中，等待
       await sleep(15);
     } else if (this.#decCusorIdx >= this.samples.length - 1) {
-      // decode completed
-      return [];
+      // 最后片段，返回剩余数据
+      return emitAudioFrames(this.#pcmData, this.#pcmData.frameCnt);
     } else {
       this.#startDecode(dec);
     }
-    return this.#parseFrame(deltaTime, dec, aborter);
+    return this.#parseFrame(emitFrameCnt, dec, aborter);
   };
 
   #startDecode = (dec: ReturnType<typeof createAudioChunksDecoder>) => {
