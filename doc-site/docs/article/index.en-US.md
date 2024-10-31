@@ -12,7 +12,7 @@ sidebar: false
 - [WebCodecs opens a new chapter of Web audio and video](//hughfenghen.github.io/posts/2023/10/06/webcodecs-new-era-for-media-on-the-web/)
   - The LVS (Live Video Stack) shared topic is a summary of the upcoming articles in the series.
 - [【translate】WebCodecs explain](https://hughfenghen.github.io/posts/2023/10/02/webcodecs-explainer/)
-- WebAV series
+- [WebAV series](https://hughfenghen.github.io/tag/WebAV/)
   - [Overview of Web audio and video (zero)](//hughfenghen.github.io/posts/2023/07/16/webav-0-overview/)
   - [Basic knowledge of Web audio and video](//hughfenghen.github.io/posts/2023/07/19/webav-1-basic/)
     - WebCodecs common API introduction.

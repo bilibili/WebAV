@@ -12,7 +12,7 @@ sidebar: false
 - [WebCodecs 开启 Web 音视频新篇章](//hughfenghen.github.io/posts/2023/10/06/webcodecs-new-era-for-media-on-the-web/)
   - LVS (Live Video Stack) 分享主题，是后面系列文章的总结
 - [【译】WebCodecs 说明](https://hughfenghen.github.io/posts/2023/10/02/webcodecs-explainer/)
-- WebAV 系列
+- [WebAV 系列](https://hughfenghen.github.io/tag/WebAV/) 持续更新入门文章及应用案例
   - [Web 音视频（零）概览](//hughfenghen.github.io/posts/2023/07/16/webav-0-overview/)
   - [Web 音视频基础知识](//hughfenghen.github.io/posts/2023/07/19/webav-1-basic/)
     - WebCodecs 常用 API 介绍

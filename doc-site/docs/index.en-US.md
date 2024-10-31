@@ -2,12 +2,14 @@
 title: WebAV Doc Site
 hero:
   title: WebAV
-  description: 'WebAV is an SDK for creating/editing video files on the Web platform, built on WebCodecs.'
+  description: 'WebAV is an SDK for <strong>creating/editing</strong> video files on the Web platform, built on WebCodecs.'
   actions:
     - text: Quick start
       link: './en-US/guide/'
     - text: DEMO
       link: './en-US/demo/'
+    - text: Blog
+      link: 'https://hughfenghen.github.io/tag/WebAV/'
 features:
   - title: 'Cross-Platform'
     image: 💻
