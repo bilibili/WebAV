@@ -1,5 +1,17 @@
 # @webav/av-cliper
 
+## 1.0.0
+
+### Major Changes
+
+- 8212cb5: feat: v1
+
+### Patch Changes
+
+- 5631c29: fix: IDR frame recognition for HEVC #306
+- Updated dependencies [8212cb5]
+  - @webav/internal-utils@1.0.0
+
 ## 1.0.0-beta.1
 
 ### Patch Changes
