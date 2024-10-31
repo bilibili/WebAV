@@ -49,11 +49,6 @@ export abstract class BaseSprite {
     Object.assign(this.#time, v);
   }
 
-  /**
-   * 元素是否可见，用于不想删除，期望临时隐藏 Sprite 的场景
-   */
-  visible = true;
-
   #evtTool = new EventTool<{
     propsChange: (
       value: Partial<{ rect: Partial<Rect>; zIndex: number }>,
@@ -199,7 +194,6 @@ export abstract class BaseSprite {
   copyStateTo<T extends BaseSprite>(target: T) {
     target.#animatKeyFrame = this.#animatKeyFrame;
     target.#animatOpts = this.#animatOpts;
-    target.visible = this.visible;
     target.zIndex = this.zIndex;
     target.opacity = this.opacity;
     target.flip = this.flip;
