@@ -1,12 +1,20 @@
 import { test, expect, vi } from 'vitest';
 import { OffscreenSprite } from '../sprite/offscreen-sprite';
-import { AudioClip, IClip, ImgClip, MP4Clip } from '../clips';
+import {
+  AudioClip,
+  DEFAULT_AUDIO_CONF,
+  IClip,
+  ImgClip,
+  MP4Clip,
+} from '../clips';
 import { Combinator, createAudioTrackBuf } from '../combinator';
 import { extractPCM4AudioData } from '../av-utils';
 
 const m4a_44kHz_2chan = `//${location.host}/audio/44.1kHz-2chan.m4a`;
 const mp3_16kHz_1chan = `//${location.host}/audio/16kHz-1chan.mp3`;
 const png_bunny = `//${location.host}/img/bunny.png`;
+
+let defSampleRate = DEFAULT_AUDIO_CONF.sampleRate as number;
 
 test('Combinator ouput m4a', async () => {
   const resp1 = await fetch(m4a_44kHz_2chan);
@@ -26,7 +34,7 @@ test('Combinator ouput m4a', async () => {
     duration: 1045333,
     width: 0,
     height: 0,
-    audioSampleRate: 48000,
+    audioSampleRate: defSampleRate,
     audioChanCount: 2,
   });
 });
@@ -89,7 +97,7 @@ test('audio track buffer', () => {
   ];
 
   let ts = 0;
-  const duration = (data[0].length / 48000) * 1e6;
+  const duration = (data[0].length / defSampleRate) * 1e6;
   let ads = audioBuf(ts, [data, data]);
   ts += duration;
   expect(ads.length).toBe(0);
@@ -118,14 +126,14 @@ test('audio track buffer IO data', () => {
   const framsCnt = 1024;
   const audioBuf = createAudioTrackBuf(framsCnt);
   // 大概 17ms 音频帧数
-  const unitSize = ~~(0.017 * 48000);
+  const unitSize = ~~(0.017 * defSampleRate);
   const inputSize = unitSize * 20;
   const outputSize = inputSize - (inputSize % framsCnt);
   const inputData = new Float32Array(inputSize);
   const outputData = new Float32Array(outputSize);
   let outOffset = 0;
   let ts = 0;
-  const duration = (unitSize / 48000) * 1e6;
+  const duration = (unitSize / defSampleRate) * 1e6;
   for (let i = 0; i < 20; i++) {
     const data = [
       new Float32Array(Array(unitSize).fill(i)), // chan0
@@ -154,13 +162,13 @@ test('placeholder audiodata', () => {
   const framsCnt = 1024;
   const audioBuf = createAudioTrackBuf(framsCnt);
   // 大概 17ms 音频帧数
-  const unitSize = ~~(0.017 * 48000);
+  const unitSize = ~~(0.017 * defSampleRate);
   const inputSize = unitSize * 20;
   const outputSize = inputSize - (inputSize % framsCnt);
   const outputData = new Float32Array(outputSize);
   let outOffset = 0;
   let ts = 0;
-  const duration = (unitSize / 48000) * 1e6;
+  const duration = (unitSize / defSampleRate) * 1e6;
   for (let i = 0; i < 20; i++) {
     const ads = audioBuf(ts, []);
     ts += duration;

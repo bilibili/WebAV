@@ -1,6 +1,6 @@
 import { MP4Info, MP4Sample } from '@webav/mp4box.js';
 import { audioResample, extractPCM4AudioData, sleep } from '../av-utils';
-import { Log } from '../log';
+import { Log } from '@webav/internal-utils';
 import {
   extractFileConfig,
   quickParseMP4File,
@@ -62,7 +62,9 @@ type ThumbnailOpts = {
  * @see [解码播放视频](https://bilibili.github.io/WebAV/demo/1_1-decode-video)
  */
 export class MP4Clip implements IClip {
-  #log = Log.create(`MP4Clip id:${CLIP_ID++},`);
+  #insId = CLIP_ID++;
+
+  #log = Log.create(`MP4Clip id:${this.#insId},`);
 
   ready: IClip['ready'];
 
@@ -192,7 +194,7 @@ export class MP4Clip implements IClip {
   }> {
     if (time >= this.#meta.duration) {
       return await this.tickInterceptor(time, {
-        audio: [],
+        audio: (await this.#audioFrameFinder?.find(time)) ?? [],
         state: 'done',
       });
     }
@@ -545,11 +547,7 @@ async function mp4FileToSamples(otFile: OPFSToolFile, opts: MP4ClipOpts = {}) {
     throw Error('MP4Clip stream not contain any sample');
   }
   // 修复首帧黑帧
-  const firstSample = videoSamples[0];
-  if (firstSample != null && firstSample.cts < 200e3) {
-    firstSample.duration += firstSample.cts;
-    firstSample.cts = 0;
-  }
+  fixFirstBlackFrame(videoSamples);
   Log.info('mp4 stream parsed');
   return {
     videoSamples,
@@ -780,6 +778,17 @@ class VideoFrameFinder {
   };
 }
 
+function findIndexOfSamples(time: number, samples: ExtMP4Sample[]) {
+  for (let i = 0; i < samples.length; i++) {
+    const s = samples[i];
+    if (time >= s.cts && time < s.cts + s.duration) {
+      return i;
+    }
+    if (s.cts > time) break;
+  }
+  return 0;
+}
+
 class AudioFrameFinder {
   #volume = 1;
   #sampleRate;
@@ -796,16 +805,14 @@ class AudioFrameFinder {
   #dec: ReturnType<typeof createAudioChunksDecoder> | null = null;
   #curAborter = { abort: false, st: performance.now() };
   find = async (time: number): Promise<Float32Array[]> => {
-    // 前后获取音频数据差异不能超过 100ms
-    if (this.#dec == null || time <= this.#ts || time - this.#ts > 0.1e6) {
+    if (this.#dec == null) {
       this.#reset();
+    } else if (time <= this.#ts || time - this.#ts > 0.1e6) {
+      this.#reset();
+      // 前后获取音频数据差异不能超过 100ms(经验值)，否则视为 seek 操作，重置解码器
+      // seek 操作，重置时间
       this.#ts = time;
-      for (let i = 0; i < this.samples.length; i++) {
-        if (this.samples[i].cts < time) continue;
-        this.#decCusorIdx = i;
-        break;
-      }
-      return [];
+      this.#decCusorIdx = findIndexOfSamples(time, this.samples);
     }
 
     this.#curAborter.abort = true;
@@ -813,7 +820,12 @@ class AudioFrameFinder {
     this.#ts = time;
 
     this.#curAborter = { abort: false, st: performance.now() };
-    return await this.#parseFrame(deltaTime, this.#dec, this.#curAborter);
+
+    return await this.#parseFrame(
+      Math.ceil(deltaTime * (this.#sampleRate / 1e6)),
+      this.#dec,
+      this.#curAborter,
+    );
   };
 
   #ts = 0;
@@ -826,26 +838,30 @@ class AudioFrameFinder {
     data: [],
   };
   #parseFrame = async (
-    deltaTime: number,
+    emitFrameCnt: number,
     dec: ReturnType<typeof createAudioChunksDecoder> | null = null,
     aborter: { abort: boolean; st: number },
   ): Promise<Float32Array[]> => {
-    if (dec == null || aborter.abort || dec.state === 'closed') return [];
-
-    const emitFrameCnt = Math.ceil(deltaTime * (this.#sampleRate / 1e6));
-    if (emitFrameCnt === 0) return [];
+    if (
+      dec == null ||
+      aborter.abort ||
+      dec.state === 'closed' ||
+      emitFrameCnt === 0
+    ) {
+      return [];
+    }
 
     // 数据满足需要
     const ramainFrameCnt = this.#pcmData.frameCnt - emitFrameCnt;
     if (ramainFrameCnt > 0) {
-      // 剩余音频数据小于 100ms
+      // 剩余音频数据小于 100ms，预先解码
       if (ramainFrameCnt < DEFAULT_AUDIO_CONF.sampleRate / 10) {
         this.#startDecode(dec);
       }
       return emitAudioFrames(this.#pcmData, emitFrameCnt);
     }
 
-    if (dec.decodeQueueSize > 10) {
+    if (dec.decoding) {
       if (performance.now() - aborter.st > 3e3) {
         aborter.abort = true;
         throw Error(
@@ -855,16 +871,17 @@ class AudioFrameFinder {
       // 解码中，等待
       await sleep(15);
     } else if (this.#decCusorIdx >= this.samples.length - 1) {
-      // decode completed
-      return [];
+      // 最后片段，返回剩余数据
+      return emitAudioFrames(this.#pcmData, this.#pcmData.frameCnt);
     } else {
       this.#startDecode(dec);
     }
-    return this.#parseFrame(deltaTime, dec, aborter);
+    return this.#parseFrame(emitFrameCnt, dec, aborter);
   };
 
   #startDecode = (dec: ReturnType<typeof createAudioChunksDecoder>) => {
-    if (dec.decodeQueueSize > 100) return;
+    const onceDecodeCnt = 10;
+    if (dec.decodeQueueSize > onceDecodeCnt) return;
     // 启动解码任务
     const samples = [];
     let i = this.#decCusorIdx;
@@ -873,7 +890,7 @@ class AudioFrameFinder {
       i += 1;
       if (s.deleted) continue;
       samples.push(s);
-      if (samples.length >= 10) break;
+      if (samples.length >= onceDecodeCnt) break;
     }
     this.#decCusorIdx = i;
 
@@ -936,7 +953,10 @@ function createAudioChunksDecoder(
   opts: { resampleRate: number; volume: number },
   outputCb: (pcm: Float32Array[]) => void,
 ) {
+  let intputCnt = 0;
+  let outputCnt = 0;
   const outputHandler = (pcmArr: Float32Array[]) => {
+    outputCnt += 1;
     if (pcmArr.length === 0) return;
     // 音量调节
     if (opts.volume !== 1) {
@@ -975,10 +995,14 @@ function createAudioChunksDecoder(
 
   return {
     decode(chunks: EncodedAudioChunk[]) {
+      intputCnt += chunks.length;
       for (const chunk of chunks) adec.decode(chunk);
     },
     close() {
       if (adec.state !== 'closed') adec.close();
+    },
+    get decoding() {
+      return intputCnt > outputCnt;
     },
     get state() {
       return adec.state;
@@ -1137,17 +1161,19 @@ function splitVideoSampleByTime(videoSamples: ExtMP4Sample[], time: number) {
       s.cts = -1;
     }
   }
+  fixFirstBlackFrame(preSlice);
 
   const postSlice = videoSamples
     .slice(hitSample.is_idr ? gopEndIdx : gopStartIdx)
     .map((s) => ({ ...s, cts: s.cts - time }));
 
   for (const s of postSlice) {
-    if (s.cts >= 0) break;
-    // 将第一个 GoP 中前半部分标记为 deleted
-    s.deleted = true;
-    s.cts = -1;
+    if (s.cts < 0) {
+      s.deleted = true;
+      s.cts = -1;
+    }
   }
+  fixFirstBlackFrame(postSlice);
 
   return [preSlice, postSlice];
 }
@@ -1162,7 +1188,7 @@ function splitAudioSampleByTime(audioSamples: ExtMP4Sample[], time: number) {
     break;
   }
   if (hitIdx === -1) throw Error('Not found audio sample by time');
-  const preSlice = audioSamples.slice(0, hitIdx);
+  const preSlice = audioSamples.slice(0, hitIdx).map((s) => ({ ...s }));
   const postSlice = audioSamples
     .slice(hitIdx)
     .map((s) => ({ ...s, cts: s.cts - time }));
@@ -1285,5 +1311,27 @@ async function thumbnailByKeyFrame(
       ...(downgrade ? { hardwareAcceleration: 'prefer-software' } : {}),
     });
     return dec;
+  }
+}
+
+// 如果第一帧出现的时间偏移较大，会导致第一帧为黑帧，这里尝试自动消除第一帧前的黑帧
+function fixFirstBlackFrame(samples: ExtMP4Sample[]) {
+  let iframeCnt = 0;
+  let minCtsSample: ExtMP4Sample | null = null;
+  // cts 最小表示视频的第一帧
+  for (const s of samples) {
+    if (s.deleted) continue;
+    // 最多检测两个 I 帧之间的帧
+    if (s.is_sync) iframeCnt += 1;
+    if (iframeCnt >= 2) break;
+
+    if (minCtsSample == null || s.cts < minCtsSample.cts) {
+      minCtsSample = s;
+    }
+  }
+  // 200ms 是经验值，自动消除 200ms 内的黑帧，超过则不处理
+  if (minCtsSample != null && minCtsSample.cts < 200e3) {
+    minCtsSample.duration += minCtsSample.cts;
+    minCtsSample.cts = 0;
   }
 }

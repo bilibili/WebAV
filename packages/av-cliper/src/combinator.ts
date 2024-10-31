@@ -1,8 +1,6 @@
+import { Log, EventTool, file2stream, recodemux } from '@webav/internal-utils';
 import { OffscreenSprite } from './sprite/offscreen-sprite';
-import { file2stream, recodemux } from './mp4-utils';
-import { Log } from './log';
 import { sleep } from './av-utils';
-import { EventTool } from './event-tool';
 import { DEFAULT_AUDIO_CONF } from './clips';
 
 interface ICombinatorOpts {
@@ -68,28 +66,29 @@ export class Combinator {
     },
   ): Promise<boolean> {
     return (
-      self.OffscreenCanvas != null &&
-      self.VideoEncoder != null &&
-      self.VideoDecoder != null &&
-      self.VideoFrame != null &&
-      self.AudioEncoder != null &&
-      self.AudioDecoder != null &&
-      self.AudioData != null &&
-      ((
-        await self.VideoEncoder.isConfigSupported({
-          codec: args.videoCodec,
-          width: 1280,
-          height: 720,
-        })
-      ).supported ??
-        false) &&
-      (
-        await self.AudioEncoder.isConfigSupported({
-          codec: DEFAULT_AUDIO_CONF.codec,
-          sampleRate: DEFAULT_AUDIO_CONF.sampleRate,
-          numberOfChannels: DEFAULT_AUDIO_CONF.channelCount,
-        })
-      ).supported
+      (self.OffscreenCanvas != null &&
+        self.VideoEncoder != null &&
+        self.VideoDecoder != null &&
+        self.VideoFrame != null &&
+        self.AudioEncoder != null &&
+        self.AudioDecoder != null &&
+        self.AudioData != null &&
+        ((
+          await self.VideoEncoder.isConfigSupported({
+            codec: args.videoCodec,
+            width: 1280,
+            height: 720,
+          })
+        ).supported ??
+          false) &&
+        (
+          await self.AudioEncoder.isConfigSupported({
+            codec: DEFAULT_AUDIO_CONF.codec,
+            sampleRate: DEFAULT_AUDIO_CONF.sampleRate,
+            numberOfChannels: DEFAULT_AUDIO_CONF.channelCount,
+          })
+        ).supported) ??
+      false
     );
   }
 

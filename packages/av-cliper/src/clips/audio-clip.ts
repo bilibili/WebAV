@@ -3,7 +3,7 @@ import {
   extractPCM4AudioBuffer,
   ringSliceFloat32Array,
 } from '../av-utils';
-import { Log } from '../log';
+import { Log } from '@webav/internal-utils';
 import { DEFAULT_AUDIO_CONF, IClip } from './iclip';
 
 interface IAudioClipOpts {

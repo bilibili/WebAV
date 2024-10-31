@@ -11,7 +11,7 @@ The left side contains several demos to experience, which are based on the [WebA
 
 ```tsx
 import { Combinator } from '@webav/av-cliper';
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 
 export default function UI() {
   const [isSupported, setIsSupported] = useState<boolean | null>(null);

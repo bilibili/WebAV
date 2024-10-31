@@ -1,6 +1,6 @@
 import { BaseSprite } from './base-sprite';
 import { IClip } from '../clips';
-import { Log } from '../log';
+import { Log } from '@webav/internal-utils';
 import { changePCMPlaybackRate } from '../av-utils';
 
 /**
@@ -24,6 +24,11 @@ export class VisibleSprite extends BaseSprite {
   getClip() {
     return this.#clip;
   }
+
+  /**
+   * 元素是否可见，用于不想删除，期望临时隐藏 Sprite 的场景
+   */
+  visible = true;
 
   constructor(clip: IClip) {
     super();
@@ -90,6 +95,13 @@ export class VisibleSprite extends BaseSprite {
     if (video != null) ctx.drawImage(video, -w / 2, -h / 2, w, h);
 
     return { audio };
+  }
+
+  copyStateTo<T extends BaseSprite>(target: T): void {
+    super.copyStateTo(target);
+    if (target instanceof VisibleSprite) {
+      target.visible = this.visible;
+    }
   }
 
   #destroyed = false;

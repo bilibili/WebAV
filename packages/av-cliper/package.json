@@ -1,6 +1,6 @@
 {
   "name": "@webav/av-cliper",
-  "version": "0.16.5",
+  "version": "1.0.0",
   "private": false,
   "repository": "https://github.com/bilibili/WebAV",
   "keywords": [
@@ -15,38 +15,34 @@
     "recorder"
   ],
   "type": "module",
-  "types": "dist/index.d.ts",
+  "types": "dist/av-cliper.d.ts",
   "module": "dist/av-cliper.js",
   "main": "dist/av-cliper.umd.cjs",
   "exports": {
     ".": {
-      "types": "./dist/index.d.ts",
+      "types": "./dist/av-cliper.d.ts",
       "import": "./dist/av-cliper.js",
       "require": "./dist/av-cliper.umd.cjs"
     }
   },
   "scripts": {
-    "dev": "vite demo --config demo-vite.config.ts",
-    "test": "vitest --config test-vite.config.ts",
-    "ci:test": "vitest --config test-vite.config.ts run",
+    "dev": "vite demo --config vite.config.ts",
+    "test": "vitest",
+    "ci:test": "vitest run",
     "test:coverage": "vitest run --coverage",
-    "build": "vite build && tsc -p build.tsconfig.json --outDir dist",
-    "build:dev": "vite build --watch --emptyOutDir false & tsc -p build.tsconfig.json --outDir dist --watch",
-    "build:api": "typedoc src/index.ts --tsconfig build.tsconfig.json --out ../../doc-site/public/_api/av-cliper",
-    "build:api:watch": "typedoc src/index.ts --tsconfig build.tsconfig.json --out ../../doc-site/public/_api/av-cliper --watch",
+    "build": "vite build",
+    "build:dev": "vite build --watch",
+    "build:api": "typedoc src/index.ts --out ../../doc-site/public/_api/av-cliper",
+    "build:api:watch": "typedoc src/index.ts --out ../../doc-site/public/_api/av-cliper --watch",
     "prepublishOnly": "pnpm build"
   },
   "files": [
     "dist"
   ],
   "dependencies": {
+    "@webav/internal-utils": "workspace:*",
     "@webav/mp4box.js": "0.5.4-fenghen",
-    "m3u8-parser": "^7.1.0",
     "opfs-tools": "^0.6.1",
     "wave-resampler": "^1.0.0"
-  },
-  "devDependencies": {
-    "@types/dom-mediacapture-transform": "^0.1.5",
-    "@types/dom-webcodecs": "^0.1.11"
   }
 }

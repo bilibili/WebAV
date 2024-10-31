@@ -1,0 +1,24 @@
+{
+  "compilerOptions": {
+    "types": [
+      "@types/dom-mediacapture-transform",
+      "@types/dom-webcodecs",
+      "@types/wicg-file-system-access"
+    ],
+    "target": "ESNext",
+    "useDefineForClassFields": true,
+    "module": "ESNext",
+    "lib": ["ESNext", "DOM"],
+    "moduleResolution": "Node",
+    "strict": true,
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "esModuleInterop": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noImplicitReturns": true,
+    "jsx": "react-jsx",
+    "declaration": true,
+    "skipLibCheck": true
+  }
+}

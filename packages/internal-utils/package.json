@@ -1,0 +1,27 @@
+{
+  "name": "@webav/internal-utils",
+  "version": "1.0.0",
+  "private": false,
+  "repository": "https://github.com/bilibili/WebAV",
+  "type": "module",
+  "types": "dist/internal-utils.d.ts",
+  "module": "dist/internal-utils.js",
+  "main": "dist/internal-utils.umd.cjs",
+  "exports": {
+    ".": {
+      "types": "./dist/internal-utils.d.ts",
+      "import": "./dist/internal-utils.js",
+      "require": "dist/internal-utils.umd.cjs"
+    }
+  },
+  "scripts": {
+    "test": "vitest",
+    "ci:test": "vitest run",
+    "build": "vite build",
+    "build:dev": "vite build --watch",
+    "prepublishOnly": "pnpm build"
+  },
+  "dependencies": {
+    "@webav/mp4box.js": "0.5.4-fenghen"
+  }
+}

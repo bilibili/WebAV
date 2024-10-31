@@ -10,7 +10,7 @@ order: 3
 动图是由多个静态图片帧组成的，可使用浏览器 API `ImageDecoder` 解码；  
 或使用 `ImgClip.tick(time)` 获取指定时间的图像帧；
 
-<code src="./decode-image.tsx"></code>
+<code src="./1_3_1-decode-image.tsx"></code>
 
 :::info
 注意：`ImgClip.meta.duration = Infinity`，动图默认会根据时间参数循环取帧。

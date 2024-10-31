@@ -4,8 +4,8 @@ nav:
   order: 2
 group:
   title: other
-  order: 3
-order: 2
+  order: 2
+order: 1
 ---
 
 # Issue Helper

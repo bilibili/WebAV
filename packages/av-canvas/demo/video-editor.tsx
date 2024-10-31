@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import {
   Timeline,
@@ -467,7 +467,7 @@ async function createFileWriter(
 }
 
 async function loadFile(accept: Record<string, string[]>) {
-  const [fileHandle] = await (window as any).showOpenFilePicker({
+  const [fileHandle] = await window.showOpenFilePicker({
     types: [{ accept }],
   });
   return (await fileHandle.getFile()) as File;

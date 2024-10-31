@@ -1,9 +1,8 @@
-import { Combinator } from '../src';
+import { Log, Combinator } from '../src';
 import { decodeImg, sleep } from '../src/av-utils';
 import { createChromakey } from '../src/chromakey';
 import { AudioClip, DEFAULT_AUDIO_CONF, MP4Clip } from '../src/clips';
 import { EmbedSubtitlesClip } from '../src/clips/embed-subtitles-clip';
-import { Log } from '../src/log';
 
 // decode with webworker
 // import Worker from './decode-video-worker?worker&inline';
@@ -42,9 +41,12 @@ document.querySelector('#decode-img')?.addEventListener('click', () => {
       if (vf == null) return;
       ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
       ctx.drawImage(vf, 0, 0);
-      const timer = setTimeout(() => {
-        render(frames[++i]);
-      }, (vf.duration ?? 0) / 1000);
+      const timer = setTimeout(
+        () => {
+          render(frames[++i]);
+        },
+        (vf.duration ?? 0) / 1000,
+      );
       stopImg = () => {
         clearTimeout(timer);
       };
@@ -65,7 +67,7 @@ document.querySelector('#decode-audio')?.addEventListener('click', () => {
     stopAudio();
     const audioType = (
       document.querySelector(
-        'input[name=audio-type]:checked'
+        'input[name=audio-type]:checked',
       ) as HTMLInputElement
     ).value;
     // @ts-expect-error
@@ -118,11 +120,11 @@ document.querySelector('#decode-video')?.addEventListener('click', () => {
   (async () => {
     const videoType = (
       document.querySelector(
-        'input[name=video-type]:checked'
+        'input[name=video-type]:checked',
       ) as HTMLInputElement
     ).value;
     const speed = document.querySelector(
-      'input[name=playrate]:checked'
+      'input[name=playrate]:checked',
     ) as HTMLInputElement;
 
     // @ts-expect-error
@@ -156,7 +158,7 @@ document.querySelector('#decode-video')?.addEventListener('click', () => {
 
       const timer = setInterval(async () => {
         const { state, video } = await clip.tick(
-          Math.round((performance.now() - startTime) * 1000) * times
+          Math.round((performance.now() - startTime) * 1000) * times,
         );
         if (state === 'done') {
           clearInterval(timer);
@@ -181,7 +183,7 @@ document.querySelector('#decode-subtitles')?.addEventListener('click', () => {
     stopImg();
     const subtitlesType = (
       document.querySelector(
-        'input[name=subtitles-type]:checked'
+        'input[name=subtitles-type]:checked',
       ) as HTMLInputElement
     ).value;
 

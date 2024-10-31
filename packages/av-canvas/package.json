@@ -1,6 +1,6 @@
 {
   "name": "@webav/av-canvas",
-  "version": "0.16.5",
+  "version": "1.0.0",
   "private": false,
   "repository": "https://github.com/bilibili/WebAV",
   "keywords": [
@@ -15,24 +15,24 @@
     "recorder"
   ],
   "type": "module",
-  "types": "dist/index.d.ts",
+  "types": "dist/av-canvas.d.ts",
   "module": "dist/av-canvas.js",
   "main": "dist/av-canvas.umd.cjs",
   "exports": {
     ".": {
-      "types": "./dist/index.d.ts",
+      "types": "./dist/av-canvas.d.ts",
       "import": "./dist/av-canvas.js",
-      "require": "./dist/av-canvas.umd.cjs"
+      "require": "dist/av-canvas.umd.cjs"
     }
   },
   "scripts": {
-    "dev": "vite demo --config demo/demo-vite.config.ts",
-    "test": "vitest --config test-vite.config.ts",
-    "ci:test": "vitest --config test-vite.config.ts run",
+    "dev": "vite demo --config vite.config.ts",
+    "test": "vitest",
+    "ci:test": "vitest run",
     "test:coverage": "vitest run --coverage",
-    "build": "vite build && tsc -p build.tsconfig.json --outDir dist",
-    "build:api": "typedoc src/index.ts --tsconfig build.tsconfig.json --out ../../doc-site/public/_api/av-canvas",
-    "build:api:watch": "typedoc src/index.ts --tsconfig build.tsconfig.json --out ../../doc-site/public/_api/av-canvas --watch",
+    "build": "vite build",
+    "build:api": "typedoc src/index.ts --out ../../doc-site/public/_api/av-canvas",
+    "build:api:watch": "typedoc src/index.ts --out ../../doc-site/public/_api/av-canvas --watch",
     "prepublishOnly": "pnpm build",
     "preview": "vite preview"
   },
@@ -42,7 +42,6 @@
   "devDependencies": {
     "@types/react": "^18.3.1",
     "@types/react-dom": "^18.3.0",
-    "@types/wicg-file-system-access": "^2020.9.6",
     "@webav/av-recorder": "workspace:*",
     "@xzdarcy/react-timeline-editor": "^0.1.9",
     "autoprefixer": "^10.4.19",
@@ -53,6 +52,7 @@
     "tailwindcss": "^3.4.3"
   },
   "dependencies": {
-    "@webav/av-cliper": "workspace:*"
+    "@webav/av-cliper": "workspace:*",
+    "@webav/internal-utils": "workspace:*"
   }
 }

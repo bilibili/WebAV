@@ -1,0 +1,51 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`ctrls 1`] = `
+{
+  "b": Le {
+    "fixedAspectRatio": false,
+    "fixedScaleCenter": false,
+    "on": [Function],
+  },
+  "l": Le {
+    "fixedAspectRatio": false,
+    "fixedScaleCenter": false,
+    "on": [Function],
+  },
+  "lb": Le {
+    "fixedAspectRatio": false,
+    "fixedScaleCenter": false,
+    "on": [Function],
+  },
+  "lt": Le {
+    "fixedAspectRatio": false,
+    "fixedScaleCenter": false,
+    "on": [Function],
+  },
+  "r": Le {
+    "fixedAspectRatio": false,
+    "fixedScaleCenter": false,
+    "on": [Function],
+  },
+  "rb": Le {
+    "fixedAspectRatio": false,
+    "fixedScaleCenter": false,
+    "on": [Function],
+  },
+  "rotate": Le {
+    "fixedAspectRatio": false,
+    "fixedScaleCenter": false,
+    "on": [Function],
+  },
+  "rt": Le {
+    "fixedAspectRatio": false,
+    "fixedScaleCenter": false,
+    "on": [Function],
+  },
+  "t": Le {
+    "fixedAspectRatio": false,
+    "fixedScaleCenter": false,
+    "on": [Function],
+  },
+}
+`;

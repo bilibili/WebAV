@@ -4,8 +4,7 @@ nav:
   order: 2
 group:
   title: 其他
-  order: 4
-order: 3
+order: 2
 ---
 
 # FAQ

@@ -20,4 +20,4 @@ order: 4
 - 实时预览播放
 - 纯浏览器环境生成视频
 
-<code src="./video-editor.tsx"></code>
+<code src="./6_4_1-video-editor.tsx"></code>

@@ -1,6 +1,5 @@
 import { ImgClip, MP4Clip } from '../src/clips';
-import { Combinator } from '../src/combinator';
-import { Log } from '../src/log';
+import { Log, Combinator } from '../src';
 import { OffscreenSprite } from '../src/sprite/offscreen-sprite';
 import { renderTxt2ImgBitmap } from '../src/dom-utils';
 import { file, write } from 'opfs-tools';
