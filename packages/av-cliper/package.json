@@ -34,7 +34,7 @@
     "build:dev": "vite build --watch",
     "build:api": "typedoc src/index.ts --out ../../doc-site/public/_api/av-cliper",
     "build:api:watch": "typedoc src/index.ts --out ../../doc-site/public/_api/av-cliper --watch",
-    "prepublishOnly": "pnpm build"
+    "prepare": "pnpm build"
   },
   "files": [
     "dist"
