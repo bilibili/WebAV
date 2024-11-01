@@ -4,6 +4,7 @@ import {
   OffscreenSprite,
   VisibleSprite,
   MediaStreamClip,
+  ICombinatorOpts,
 } from '@webav/av-cliper';
 import { renderCtrls } from './sprites/render-ctrl';
 import { ESpriteManagerEvt, SpriteManager } from './sprites/sprite-manager';
@@ -406,12 +407,7 @@ export class AVCanvas {
    *
    * @see [视频剪辑](https://bilibili.github.io/WebAV/demo/6_4-video-editor)
    */
-  async createCombinator(
-    opts: {
-      bitrate?: number;
-      __unsafe_hardwareAcceleration__?: HardwareAcceleration;
-    } = {},
-  ) {
+  async createCombinator(opts: ICombinatorOpts = {}) {
     const com = new Combinator({ ...this.#opts, ...opts });
     const sprites = this.#spriteManager.getSprites({ time: false });
     if (sprites.length === 0) throw Error('No sprite added');
