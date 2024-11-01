@@ -1164,7 +1164,7 @@ function splitVideoSampleByTime(videoSamples: ExtMP4Sample[], time: number) {
   fixFirstBlackFrame(preSlice);
 
   const postSlice = videoSamples
-    .slice(hitSample.is_idr ? gopEndIdx : gopStartIdx)
+    .slice(hitSample.is_idr ? hitIdx : gopStartIdx)
     .map((s) => ({ ...s, cts: s.cts - time }));
 
   for (const s of postSlice) {

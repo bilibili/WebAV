@@ -281,7 +281,7 @@ document.querySelector('#split-then-concat')?.addEventListener('click', () => {
     await clip.ready;
     let offset = 0e6;
     // for (let start = 1e6; start < clip.meta.duration - step; start += step) {
-    for (let start = 1e6; start < 10e6; start += step) {
+    for (let start = 1e6; start < 20e6; start += step) {
       const [_, newClip] = await clip.split(start);
       const [newClip2] = await newClip.split(step);
       const spr = new OffscreenSprite(newClip2);
