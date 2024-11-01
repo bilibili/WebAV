@@ -1,5 +1,12 @@
 # @webav/av-cliper
 
+## 1.0.1
+
+### Patch Changes
+
+- 720f20b: fix: black frame #308
+  - @webav/internal-utils@1.0.1
+
 ## 1.0.0
 
 ### Major Changes
