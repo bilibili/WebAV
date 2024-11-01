@@ -1,5 +1,12 @@
 # @webav/av-cliper
 
+## 1.0.2
+
+### Patch Changes
+
+- 35aae3f: feat: createCombinator support more augs
+  - @webav/internal-utils@1.0.2
+
 ## 1.0.1
 
 ### Patch Changes
