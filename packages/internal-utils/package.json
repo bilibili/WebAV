@@ -19,7 +19,7 @@
     "ci:test": "vitest run",
     "build": "vite build",
     "build:dev": "vite build --watch",
-    "prepublishOnly": "pnpm build"
+    "prepare": "pnpm build"
   },
   "dependencies": {
     "@webav/mp4box.js": "0.5.4-fenghen"
