@@ -2,12 +2,14 @@
 title: WebAV Doc Site
 hero:
   title: WebAV
-  description: 'WebAV 是 Web 平台上创建/编辑视频文件的 SDK，基于 WebCodecs 构建。'
+  description: 'WebAV 是 Web 平台上<strong>创建/编辑</strong>视频文件的 SDK，基于 WebCodecs 构建。'
   actions:
     - text: 快速开始
       link: './guide'
-    - text: 体验
+    - text: 在线 DEMO
       link: './demo/'
+    - text: 博客
+      link: 'https://hughfenghen.github.io/tag/WebAV/'
 features:
   - title: '跨平台'
     image: 💻

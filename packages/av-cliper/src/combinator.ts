@@ -3,7 +3,7 @@ import { OffscreenSprite } from './sprite/offscreen-sprite';
 import { sleep } from './av-utils';
 import { DEFAULT_AUDIO_CONF } from './clips';
 
-interface ICombinatorOpts {
+export interface ICombinatorOpts {
   width?: number;
   height?: number;
   bitrate?: number;

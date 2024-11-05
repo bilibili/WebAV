@@ -19,7 +19,7 @@ export default function UI() {
     isSupported == null
       ? '检测中'
       : isSupported === true
-        ? '🎉 当前浏览器支持 WebCodecs，可继续体验 DEMO 🎉'
+        ? '🎉 当前浏览器支持 WebCodecs，可继续体验侧边栏中的 DEMO 🎉'
         : '💔 当前浏览器不支持 WebCodecs，请使用 Chrome、Edge（并升级到新版本）体验 ❤️‍🩹';
 
   useEffect(() => {

@@ -14,5 +14,6 @@ export { OffscreenSprite } from './sprite/offscreen-sprite';
 export { VisibleSprite } from './sprite/visible-sprite';
 export { Rect } from './sprite/rect';
 export { Combinator } from './combinator';
+export type { ICombinatorOpts } from './combinator';
 
 export { Log } from '@webav/internal-utils';

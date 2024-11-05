@@ -3,6 +3,7 @@
 exports[`clone 1`] = `
 Rect {
   "fixedAspectRatio": false,
+  "fixedScaleCenter": false,
   "on": [Function],
 }
 `;

@@ -2,47 +2,47 @@
 
 exports[`ctrls 1`] = `
 {
-  "b": Oe {
+  "b": Le {
     "fixedAspectRatio": false,
     "fixedScaleCenter": false,
     "on": [Function],
   },
-  "l": Oe {
+  "l": Le {
     "fixedAspectRatio": false,
     "fixedScaleCenter": false,
     "on": [Function],
   },
-  "lb": Oe {
+  "lb": Le {
     "fixedAspectRatio": false,
     "fixedScaleCenter": false,
     "on": [Function],
   },
-  "lt": Oe {
+  "lt": Le {
     "fixedAspectRatio": false,
     "fixedScaleCenter": false,
     "on": [Function],
   },
-  "r": Oe {
+  "r": Le {
     "fixedAspectRatio": false,
     "fixedScaleCenter": false,
     "on": [Function],
   },
-  "rb": Oe {
+  "rb": Le {
     "fixedAspectRatio": false,
     "fixedScaleCenter": false,
     "on": [Function],
   },
-  "rotate": Oe {
+  "rotate": Le {
     "fixedAspectRatio": false,
     "fixedScaleCenter": false,
     "on": [Function],
   },
-  "rt": Oe {
+  "rt": Le {
     "fixedAspectRatio": false,
     "fixedScaleCenter": false,
     "on": [Function],
   },
-  "t": Oe {
+  "t": Le {
     "fixedAspectRatio": false,
     "fixedScaleCenter": false,
     "on": [Function],

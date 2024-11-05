@@ -1,5 +1,39 @@
 # @webav/av-cliper
 
+## 1.0.3
+
+### Patch Changes
+
+- b178269: chore: replace prepublishOnly with prepare scripts to auto build @webav/av-cliper and @webav/internal-utils
+- Updated dependencies [b178269]
+  - @webav/internal-utils@1.0.3
+
+## 1.0.2
+
+### Patch Changes
+
+- 35aae3f: feat: createCombinator support more augs
+  - @webav/internal-utils@1.0.2
+
+## 1.0.1
+
+### Patch Changes
+
+- 720f20b: fix: black frame #308
+  - @webav/internal-utils@1.0.1
+
+## 1.0.0
+
+### Major Changes
+
+- 8212cb5: feat: v1
+
+### Patch Changes
+
+- 5631c29: fix: IDR frame recognition for HEVC #306
+- Updated dependencies [8212cb5]
+  - @webav/internal-utils@1.0.0
+
 ## 1.0.0-beta.1
 
 ### Patch Changes
@@ -17,6 +51,12 @@
 
 - Updated dependencies
   - @webav/internal-utils@1.0.0-beta.0
+
+## 0.16.5
+
+### Patch Changes
+
+- 3019a88: fix: IDR frame recognition for HEVC #306
 
 ## 0.16.4
 

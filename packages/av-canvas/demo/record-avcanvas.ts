@@ -10,7 +10,7 @@ const avCvs = new AVCanvas(document.querySelector('#app') as HTMLElement, {
 });
 avCvs.play({ start: 0, end: Infinity });
 avCvs.on('timeupdate', (t) => {
-  // console.log(1111, t);
+  console.log('timeupdate', t);
 });
 
 (async (): Promise<void> => {
