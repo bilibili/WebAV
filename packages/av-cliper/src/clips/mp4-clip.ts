@@ -561,12 +561,24 @@ async function mp4FileToSamples(otFile: OPFSToolFile, opts: MP4ClipOpts = {}) {
     sampleType: 'video' | 'audio',
   ) {
     // todo: perf 丢弃多余字段，小尺寸对象性能更好
+    const is_idr =
+      sampleType === 'video' &&
+      s.is_sync &&
+      isIDRFrame(s.data, s.description.type);
+    let offset = s.offset;
+    let size = s.size;
+    if (is_idr) {
+      // 当 IDR 帧前面携带 SEI 数据可能导致解码失败
+      // 所以此处通过控制 offset、size 字段 跳过 SEI 数据
+      const seiLen = seiLenOfStart(s.data, s.description.type);
+      offset += seiLen;
+      size -= seiLen;
+    }
     return {
       ...s,
-      is_idr:
-        sampleType === 'video' &&
-        s.is_sync &&
-        isIDRFrame(s.data, s.description.type),
+      is_idr,
+      offset,
+      size,
       cts: ((s.cts - delta) / s.timescale) * 1e6,
       dts: ((s.dts - delta) / s.timescale) * 1e6,
       duration: (s.duration / s.timescale) * 1e6,
@@ -1087,28 +1099,24 @@ async function videosamples2Chunks(
     );
     return samples.map((s) => {
       const offset = s.offset - first.offset;
-      let sData = data.subarray(offset, offset + s.size);
-      if (s.is_idr) sData = removeSEIForIDR(sData);
       return new EncodedVideoChunk({
         type: s.is_sync ? 'key' : 'delta',
         timestamp: s.cts,
         duration: s.duration,
-        data: sData,
+        data: data.subarray(offset, offset + s.size),
       });
     });
   }
 
   return await Promise.all(
     samples.map(async (s) => {
-      let sData = await reader.read(s.size, {
-        at: s.offset,
-      });
-      if (s.is_idr) sData = removeSEIForIDR(new Uint8Array(sData));
       return new EncodedVideoChunk({
         type: s.is_sync ? 'key' : 'delta',
         timestamp: s.cts,
         duration: s.duration,
-        data: sData,
+        data: await reader.read(s.size, {
+          at: s.offset,
+        }),
       });
     }),
   );
@@ -1224,13 +1232,24 @@ function decodeGoP(
   });
 }
 
-// 当 IDR 帧前面携带其它数据（如 SEI）可能导致解码失败
-function removeSEIForIDR(u8buf: Uint8Array) {
-  const dv = new DataView(u8buf.buffer, u8buf.byteOffset, u8buf.byteLength);
-  if ((dv.getUint8(4) & 0x1f) === 6) {
-    return u8buf.subarray(dv.getUint32(0) + 4);
+// 获取起始位置的 SEI 长度
+function seiLenOfStart(
+  u8Arr: Uint8Array,
+  type: MP4Sample['description']['type'],
+) {
+  if (type !== 'avc1' && type !== 'hvc1') return 0;
+
+  const dv = new DataView(u8Arr.buffer);
+  if (type === 'avc1' && (dv.getUint8(4) & 0x1f) === 6) {
+    return dv.getUint32(0) + 4;
   }
-  return u8buf;
+  if (type === 'hvc1') {
+    const nalUnitType = (dv.getUint8(4) >> 1) & 0x3f;
+    if (nalUnitType === 39 || nalUnitType === 40) {
+      return dv.getUint32(0) + 4;
+    }
+  }
+  return 0;
 }
 
 function isIDRFrame(u8Arr: Uint8Array, type: MP4Sample['description']['type']) {
@@ -1239,8 +1258,8 @@ function isIDRFrame(u8Arr: Uint8Array, type: MP4Sample['description']['type']) {
   const dv = new DataView(u8Arr.buffer);
   let i = 0;
   for (; i < u8Arr.byteLength - 4; ) {
-    if (type === 'avc1') {
-      if ((dv.getUint8(i + 4) & 0x1f) === 5) return true;
+    if (type === 'avc1' && (dv.getUint8(i + 4) & 0x1f) === 5) {
+      return true;
     } else if (type === 'hvc1') {
       const nalUnitType = (dv.getUint8(i + 4) >> 1) & 0x3f;
       if (nalUnitType === 19 || nalUnitType === 20) return true;
