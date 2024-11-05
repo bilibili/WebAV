@@ -1,5 +1,5 @@
 import { ImgClip, MP4Clip } from '../src/clips';
-import { Log, Combinator } from '../src';
+import { Log, Combinator, VisibleSprite } from '../src';
 import { OffscreenSprite } from '../src/sprite/offscreen-sprite';
 import { renderTxt2ImgBitmap } from '../src/dom-utils';
 import { file, write } from 'opfs-tools';
@@ -395,10 +395,88 @@ const textData = [
   },
 ];
 
+const resList = ['./audio/pri-caocao.m4a'];
+const segs: Segment[] = [];
+
+interface IWord {
+  start: number;
+  end: number;
+  label: string;
+}
+
+interface IParagraph {
+  start: number;
+  end: number;
+  text: string;
+  words: IWord[];
+}
+
+class Segment {
+  spr: VisibleSprite;
+
+  paragraphs: IParagraph[] = [];
+
+  constructor(spr: VisibleSprite, paragraphs: IParagraph[]) {
+    this.spr = spr;
+    this.paragraphs = paragraphs;
+  }
+
+  renderText() {}
+
+  async deleteRange(prghIdx: number, startIdx: number, endIdx: number) {
+    const startTime = this.paragraphs[prghIdx].words[startIdx].start;
+    const endTime = this.paragraphs[prghIdx].words[endIdx].end;
+    this.spr.getClip().split(startTime);
+    return [];
+  }
+}
+
+(async function init() {
+  segs.push(
+    new Segment(
+      new VisibleSprite(new MP4Clip((await fetch(resList[0])).body!)),
+      textData.map((p) => ({
+        start: p.start_time * 1000,
+        end: p.end_time * 1000,
+        text: p.transcript,
+        words: p.words.map((w) => ({
+          start: w.start_time * 1000,
+          end: w.end_time * 1000,
+          label: w.label,
+        })),
+      })),
+    ),
+  );
+
+  deleteWords(segs[0], 0, 4, 5);
+
+  function deleteWords(
+    s: Segment,
+    prghIdx: number,
+    startIdx: number,
+    endIdx: number,
+  ) {
+    // 删除 ‘官宦’
+    const [pre, post] = s.deleteRange(prghIdx, startIdx, endIdx);
+    segs.splice(segs.indexOf(s), 1, pre, post);
+  }
+
+  document.addEventListener('selectionchange', () => {
+    console.log(document.getSelection());
+  });
+})();
+
+function findWords(
+  spr: VisibleSprite,
+  charIdx: number,
+): Array<{ spr: VisibleSprite; range: [number, number] }> {
+  // 时间偏移
+  return [];
+}
+
 const playerContainer = document.querySelector('#player-container')!;
 document.querySelector('#play')?.addEventListener('click', () => {
   (async () => {
-    const resList = ['./audio/pri-caocao.m4a'];
     const { loadStream } = playOutputStream(resList, playerContainer);
     const com = new Combinator();
     const clip = new MP4Clip((await fetch(resList[0])).body!);
