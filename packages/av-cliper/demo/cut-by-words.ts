@@ -1,8 +1,6 @@
-import { ImgClip, MP4Clip } from '../src/clips';
+import { MP4Clip } from '../src/clips';
 import { Log, Combinator, VisibleSprite } from '../src';
 import { OffscreenSprite } from '../src/sprite/offscreen-sprite';
-import { renderTxt2ImgBitmap } from '../src/dom-utils';
-import { file, write } from 'opfs-tools';
 import { playOutputStream } from './play-video';
 
 const textData = [
@@ -396,7 +394,7 @@ const textData = [
 ];
 
 const resList = ['./audio/pri-caocao.m4a'];
-const segs: Segment[] = [];
+const globalSegs: Segment[] = [];
 
 interface IWord {
   start: number;
@@ -411,7 +409,14 @@ interface IParagraph {
   words: IWord[];
 }
 
+let segId = 0;
 class Segment {
+  #id = segId++;
+
+  get id() {
+    return this.#id;
+  }
+
   spr: VisibleSprite;
 
   paragraphs: IParagraph[] = [];
@@ -421,18 +426,84 @@ class Segment {
     this.paragraphs = paragraphs;
   }
 
-  renderText() {}
+  renderToHTML() {
+    return `<div class="segment" data-seg-id="${this.#id}">
+      ${this.paragraphs.map((p, idx) => `<p class="pargh" data-pargh-idx="${idx}">${p.words.map((w) => w.label).join('')}</p>`).join('')}
+    </div>`;
+  }
 
-  async deleteRange(prghIdx: number, startIdx: number, endIdx: number) {
-    const startTime = this.paragraphs[prghIdx].words[startIdx].start;
-    const endTime = this.paragraphs[prghIdx].words[endIdx].end;
-    this.spr.getClip().split(startTime);
-    return [];
+  async deleteRange(opts: {
+    startPrghIdx?: number;
+    startWordIdx?: number;
+    endPrghIdx?: number;
+    endWordIdx?: number;
+  }) {
+    if (this.paragraphs.length === 0) {
+      throw Error('paragraphs is empty');
+    }
+
+    const lastPrgh = this.paragraphs.at(-1)!;
+    const { startPrghIdx, startWordIdx, endPrghIdx, endWordIdx } =
+      Object.assign(
+        {
+          startPrghIdx: 0,
+          startWordIdx: 0,
+          endPrghIdx: this.paragraphs.length - 1,
+          endWordIdx: lastPrgh.words.length - 1,
+        },
+        opts,
+      );
+    const clip = this.spr.getClip();
+    // 1. split 文字； 2. split Sprite
+    let preSeg = null;
+    // 如果切割的起始点不在开头位置，则存在 preSeg
+    if (!(startPrghIdx === 0 && startWordIdx === 0)) {
+      const startPrgh = { ...this.paragraphs[startPrghIdx] };
+      const startTime = startPrgh.words[startWordIdx].start;
+      const prePrghs = this.paragraphs.slice(0, startPrghIdx).concat({
+        ...startPrgh,
+        words: startPrgh.words.slice(0, startWordIdx),
+      });
+
+      const [preClip] = await clip.split(startTime);
+      const preSpr = new VisibleSprite(preClip);
+      preSpr.time.offset = this.spr.time.offset;
+
+      preSeg = new Segment(preSpr, prePrghs);
+    }
+
+    let postSeg = null;
+    if (
+      !(endPrghIdx === this.paragraphs.length - 1 && lastPrgh.words.length - 1)
+    ) {
+      const endPrgh = { ...this.paragraphs[endPrghIdx] };
+      const endTime = endPrgh.words[endWordIdx].end;
+      const postPrghs = [
+        { ...endPrgh, words: endPrgh.words.slice(endWordIdx + 1) },
+      ].concat(this.paragraphs.slice(endPrghIdx + 1));
+
+      const [_, postClip] = await clip.split(endTime);
+      const postSpr = new VisibleSprite(postClip);
+      // todo: 自动填充空隙
+      postSpr.time.offset = endTime + this.spr.time.offset;
+
+      postPrghs.forEach((p) => {
+        p.start -= endTime;
+        p.end -= endTime;
+        p.words.forEach((w) => {
+          w.start -= endTime;
+          w.end -= endTime;
+        });
+      });
+      postSeg = new Segment(postSpr, postPrghs);
+    }
+
+    return [preSeg, postSeg].filter((s) => s != null);
   }
 }
 
 (async function init() {
-  segs.push(
+  globalSegs.push(
     new Segment(
       new VisibleSprite(new MP4Clip((await fetch(resList[0])).body!)),
       textData.map((p) => ({
@@ -448,64 +519,120 @@ class Segment {
     ),
   );
 
-  deleteWords(segs[0], 0, 4, 5);
-
-  function deleteWords(
-    s: Segment,
-    prghIdx: number,
-    startIdx: number,
-    endIdx: number,
-  ) {
-    // 删除 ‘官宦’
-    const [pre, post] = s.deleteRange(prghIdx, startIdx, endIdx);
-    segs.splice(segs.indexOf(s), 1, pre, post);
+  function findSegmentId(node?: Node | HTMLElement | null) {
+    if (node == null) return null;
+    if ('classList' in node && node.classList.contains('segment')) {
+      return Number(node.dataset.segId);
+    }
+    return findSegmentId(node.parentElement);
   }
 
-  document.addEventListener('selectionchange', () => {
-    console.log(document.getSelection());
+  function findParghIdx(node?: Node | HTMLElement | null) {
+    if (node == null) return null;
+    if ('classList' in node && node.classList.contains('pargh'))
+      return Number(node.dataset.parghIdx);
+    return findParghIdx(node.parentElement);
+  }
+
+  const delEl = document.querySelector('#delete') as HTMLButtonElement;
+  delEl.addEventListener('click', async () => {
+    const sel = document.getSelection();
+    if (sel == null || sel.type !== 'Range') return;
+    const startSegId = findSegmentId(sel.anchorNode);
+    const startSegIdx = globalSegs.findIndex((s) => s.id === startSegId);
+    const startSeg = globalSegs[startSegIdx];
+    const startPrghIdx = findParghIdx(sel.anchorNode);
+    const startWordIdx = sel.anchorOffset;
+
+    const endSegId = findSegmentId(sel.focusNode);
+    const endSegIdx = globalSegs.findIndex((s) => s.id === endSegId);
+    const endPrghIdx = findParghIdx(sel.focusNode);
+    const endWordIdx = sel.focusOffset;
+    const endSeg = globalSegs[endSegIdx];
+    if (startPrghIdx == null || endPrghIdx == null) {
+      throw new Error('parghIdx is null');
+    }
+
+    if (startSeg == endSeg) {
+      await deleteWords(startSeg, {
+        startPrghIdx,
+        startWordIdx,
+        endPrghIdx,
+        endWordIdx,
+      });
+    } else {
+      await deleteWords(startSeg, {
+        startPrghIdx,
+        startWordIdx,
+      });
+      await Promise.all(
+        globalSegs
+          .slice(startSegIdx + 1, endSegIdx)
+          .map(async (seg) => deleteWords(seg, {})),
+      );
+      await deleteWords(endSeg, {
+        endPrghIdx,
+        endWordIdx,
+      });
+    }
+    console.log(
+      222222,
+      {
+        startSegId,
+        startPrghIdx,
+        startWordIdx,
+        endSegId,
+        endPrghIdx,
+        endWordIdx,
+      },
+      globalSegs.map((s) => [
+        s.spr.time.offset / 1e6,
+        s.spr.time.duration / 1e6,
+      ]),
+      globalSegs,
+    );
+    render();
   });
+  render();
 })();
 
-function findWords(
-  spr: VisibleSprite,
-  charIdx: number,
-): Array<{ spr: VisibleSprite; range: [number, number] }> {
-  // 时间偏移
-  return [];
+const audioTxtContainer = document.querySelector('.audio-txt-container')!;
+function render() {
+  audioTxtContainer.innerHTML = globalSegs
+    .map((seg) => seg.renderToHTML())
+    .join('');
+}
+
+async function deleteWords(
+  s: Segment,
+  opts: {
+    startPrghIdx?: number;
+    startWordIdx?: number;
+    endPrghIdx?: number;
+    endWordIdx?: number;
+  },
+) {
+  // 1. 寻找选中文字片段对应的 Segment；2. 分别执行 deleteRange
+  // 删除 ‘官宦’
+  const newSegs = await s.deleteRange(opts);
+  globalSegs.splice(globalSegs.indexOf(s), 1, ...newSegs);
 }
 
 const playerContainer = document.querySelector('#player-container')!;
 document.querySelector('#play')?.addEventListener('click', () => {
   (async () => {
+    if (globalSegs.length === 0) return;
+
     const { loadStream } = playOutputStream(resList, playerContainer);
     const com = new Combinator();
-    const clip = new MP4Clip((await fetch(resList[0])).body!);
-    const [pre1, post1] = await splitRange(clip, com, 1500e3, 1860e3);
-    const [pre2, post2] = await splitRange(
-      post1,
-      com,
-      8370e3 - 1860e3,
-      8650e3 - 1860e3,
+    console.log(11111, globalSegs);
+    await Promise.all(
+      globalSegs.map(async (seg) => {
+        const offscreenSpr = new OffscreenSprite(seg.spr.getClip());
+        seg.spr.copyStateTo(offscreenSpr);
+        await com.addSprite(offscreenSpr);
+      }),
     );
-    const spr1 = new OffscreenSprite(pre1);
-    await com.addSprite(spr1);
-    const spr2 = new OffscreenSprite(pre2);
-    spr2.time.offset = spr1.time.offset + spr1.time.duration;
-    await com.addSprite(spr2);
-    const spr3 = new OffscreenSprite(post2);
-    spr3.time.offset = spr2.time.offset + spr2.time.duration;
-    await com.addSprite(spr3);
     await loadStream(com.output(), com);
   })().catch(Log.error);
-
-  async function splitRange(
-    clip: MP4Clip,
-    com: Combinator,
-    startTime: number,
-    endTime: number,
-  ) {
-    const [pre1, post1] = await clip.split(startTime);
-    const [_, post2] = await post1.split(endTime - startTime);
-    return [pre1, post2];
-  }
 });
