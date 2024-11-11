@@ -479,13 +479,16 @@ class Segment {
       const endPrgh = { ...this.paragraphs[endPrghIdx] };
       const endTime = endPrgh.words[endWordIdx].end;
       const postPrghs = [
-        { ...endPrgh, words: endPrgh.words.slice(endWordIdx + 1) },
+        { ...endPrgh, words: endPrgh.words.slice(endWordIdx) },
       ].concat(this.paragraphs.slice(endPrghIdx + 1));
 
       const [_, postClip] = await clip.split(endTime);
       const postSpr = new VisibleSprite(postClip);
-      // todo: 自动填充空隙
-      postSpr.time.offset = endTime + this.spr.time.offset;
+      if (preSeg == null) {
+        postSpr.time.offset = this.spr.time.offset;
+      } else {
+        postSpr.time.offset = preSeg.spr.time.offset + preSeg.spr.time.duration;
+      }
 
       postPrghs.forEach((p) => {
         p.start -= endTime;
