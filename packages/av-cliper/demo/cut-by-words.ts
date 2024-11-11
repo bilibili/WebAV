@@ -541,19 +541,57 @@ class Segment {
   delEl.addEventListener('click', async () => {
     const sel = document.getSelection();
     if (sel == null || sel.type !== 'Range') return;
-    const startSegId = findSegmentId(sel.anchorNode);
-    const startSegIdx = globalSegs.findIndex((s) => s.id === startSegId);
-    const startSeg = globalSegs[startSegIdx];
-    const startPrghIdx = findParghIdx(sel.anchorNode);
-    const startWordIdx = sel.anchorOffset;
+    const anchorSegId = findSegmentId(sel.anchorNode);
+    const anchorSegIdx = globalSegs.findIndex((s) => s.id === anchorSegId);
+    const anchorSeg = globalSegs[anchorSegIdx];
+    const anchorPrghIdx = findParghIdx(sel.anchorNode);
 
-    const endSegId = findSegmentId(sel.focusNode);
-    const endSegIdx = globalSegs.findIndex((s) => s.id === endSegId);
-    const endPrghIdx = findParghIdx(sel.focusNode);
-    const endWordIdx = sel.focusOffset;
-    const endSeg = globalSegs[endSegIdx];
-    if (startPrghIdx == null || endPrghIdx == null) {
+    const focusSegId = findSegmentId(sel.focusNode);
+    const focusSegIdx = globalSegs.findIndex((s) => s.id === focusSegId);
+    const focusPrghIdx = findParghIdx(sel.focusNode);
+    const focusSeg = globalSegs[focusSegIdx];
+
+    if (anchorPrghIdx == null || focusPrghIdx == null) {
       throw new Error('parghIdx is null');
+    }
+    // 光标落在最后一个文字后面，会导致超出 words 数组的边界
+    const anchorWordIdx = Math.min(
+      anchorSeg.paragraphs[anchorPrghIdx].words.length - 1,
+      sel.anchorOffset,
+    );
+    const focusWordIdx = Math.min(
+      focusSeg.paragraphs[focusPrghIdx].words.length - 1,
+      sel.focusOffset,
+    );
+
+    let startSeg = anchorSeg;
+    let startSegIdx = anchorSegIdx;
+    let startPrghIdx = anchorPrghIdx;
+    let startWordIdx = anchorWordIdx;
+    let endSeg = focusSeg;
+    let endSegIdx = focusSegIdx;
+    let endPrghIdx = focusPrghIdx;
+    let endWordIdx = focusWordIdx;
+    function swap<T>(a: T, b: T): [T, T] {
+      return [b, a];
+    }
+    // 反方向选中文字时，需要交换
+    if (startSegIdx > endSegIdx) {
+      [startSeg, endSeg] = swap(startSeg, endSeg);
+      [startSegIdx, endSegIdx] = swap(startSegIdx, endSegIdx);
+      [startPrghIdx, endPrghIdx] = swap(startPrghIdx, endPrghIdx);
+      [startWordIdx, endWordIdx] = swap(startWordIdx, endWordIdx);
+    }
+    if (startSegIdx === endSegIdx && startPrghIdx > endPrghIdx) {
+      [startPrghIdx, endPrghIdx] = swap(startPrghIdx, endPrghIdx);
+      [startWordIdx, endWordIdx] = swap(startWordIdx, endWordIdx);
+    }
+    if (
+      startSegIdx === endSegIdx &&
+      startPrghIdx === endPrghIdx &&
+      startWordIdx > endWordIdx
+    ) {
+      [startWordIdx, endWordIdx] = swap(startWordIdx, endWordIdx);
     }
 
     if (startSeg == endSeg) {
@@ -578,22 +616,6 @@ class Segment {
         endWordIdx,
       });
     }
-    console.log(
-      222222,
-      {
-        startSegId,
-        startPrghIdx,
-        startWordIdx,
-        endSegId,
-        endPrghIdx,
-        endWordIdx,
-      },
-      globalSegs.map((s) => [
-        s.spr.time.offset / 1e6,
-        s.spr.time.duration / 1e6,
-      ]),
-      globalSegs,
-    );
     render();
   });
   render();
@@ -616,7 +638,7 @@ async function deleteWords(
   },
 ) {
   // 1. 寻找选中文字片段对应的 Segment；2. 分别执行 deleteRange
-  // 删除 ‘官宦’
+  // todo: 删除片段，需要移除后续片段的空隙
   const newSegs = await s.deleteRange(opts);
   globalSegs.splice(globalSegs.indexOf(s), 1, ...newSegs);
 }
