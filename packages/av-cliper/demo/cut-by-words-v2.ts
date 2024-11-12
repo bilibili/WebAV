@@ -437,17 +437,13 @@ let article: IParagraph[] = [];
     const sel = document.getSelection();
     const words = findSelectedWords(sel);
     await deleteWords(words);
-    console.log(333333, article);
     render();
   });
 
   document.addEventListener('selectionchange', () => {
-    console.log(
-      22222,
-      findSelectedWords(document.getSelection())
-        .map((w) => w.label)
-        .join(''),
-    );
+    const sel = document.getSelection();
+    // console.log(22222, sel?.getRangeAt(0), );
+    findSelectedWords(sel);
   });
 
   render();
@@ -483,11 +479,14 @@ function render() {
 
 function findSelectedWords(sel: Selection | null) {
   if (sel == null || sel.type !== 'Range') return [];
-  const { startContainer, startOffset, endContainer, endOffset } =
-    sel.getRangeAt(0);
+  const range = sel.getRangeAt(0);
+  const { startContainer, endContainer } = range;
+
   const startPrghIdx = findParghIdx(startContainer);
   const endPrghIdx = findParghIdx(endContainer);
   if (startPrghIdx == null || endPrghIdx == null) return [];
+
+  const { startOffset, endOffset } = findOffsetRelativePrgh(range);
 
   let selectedWords: IWord[] = [];
   if (startPrghIdx === endPrghIdx) {
@@ -512,7 +511,43 @@ function findParghIdx(node?: Node | HTMLElement | null) {
   return findParghIdx(node.parentElement);
 }
 
+function findOffsetRelativePrgh(range: Range) {
+  const startPrgh = findPargh(range.startContainer);
+  const endPrgh = findPargh(range.endContainer);
+  if (startPrgh == null || endPrgh == null) throw Error('prgh not found');
+
+  return {
+    startOffset:
+      calculateOffset(range.startContainer, startPrgh) + range.startOffset,
+    endOffset: calculateOffset(range.endContainer, endPrgh) + range.endOffset,
+  };
+
+  function findPargh(node?: Node | HTMLElement | null) {
+    if (node == null) return null;
+    if ('classList' in node && node.classList.contains('pargh')) return node;
+    return findPargh(node.parentElement);
+  }
+
+  function calculateOffset(startNode: Node, container: Node) {
+    let current = startNode;
+    let totalOffset = 0;
+
+    while (current && current !== container) {
+      // 累计每个兄弟节点的文本长度
+      let sibling = current.previousSibling;
+      while (sibling) {
+        if (sibling.textContent == null) throw Error('text content not found');
+        totalOffset += sibling.textContent.length;
+        sibling = sibling.previousSibling;
+      }
+      current = current.parentNode as Node;
+    }
+    return totalOffset;
+  }
+}
+
 async function deleteWords(words: IWord[]) {
+  if (words.length === 0) return;
   const delWordsGroupBySpr = new Map<VisibleSprite, IWord[]>();
   for (const w of words) {
     w.deleted = true;
