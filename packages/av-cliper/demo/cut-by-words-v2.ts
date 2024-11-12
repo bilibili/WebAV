@@ -566,6 +566,7 @@ async function deleteWords(words: IWord[]) {
   for (const [spr] of delWordsGroupBySpr) {
     const words = allWordsGroupBySpr.get(spr);
     if (words == null) throw new Error('words not found');
+
     const { preWords, postWords } = cutWords(words);
     const clip = spr.getClip();
     if (preWords.length > 0) {
@@ -576,14 +577,25 @@ async function deleteWords(words: IWord[]) {
       preWords.forEach((w) => (w.spr = newSpr));
     }
     if (postWords.length > 0) {
-      const [_, postClip] = await clip.split(postWords[0].start);
+      const ts = postWords[0].start;
+      const [_, postClip] = await clip.split(ts);
       const newSpr = new VisibleSprite(postClip);
       spr.copyStateTo(newSpr);
       newSpr.time.duration = postClip.meta.duration;
-      if (preWords.length > 0) {
-        newSpr.time.offset = preWords[preWords.length - 1].end;
-      }
-      postWords.forEach((w) => (w.spr = newSpr));
+
+      // 找到上一个 sprite，设置 offset， 消除间隙
+      const allWords = article.flatMap((p) => p.words);
+      const preSpr = allWords
+        .slice(0, allWords.indexOf(postWords[0]))
+        .findLast((w) => !w.deleted)?.spr;
+      newSpr.time.offset =
+        preSpr == null ? 0 : preSpr.time.offset + preSpr.time.duration;
+
+      postWords.forEach((w) => {
+        w.spr = newSpr;
+        w.start -= ts;
+        w.end -= ts;
+      });
     }
   }
 }
@@ -608,10 +620,6 @@ document.querySelector('#play')?.addEventListener('click', () => {
         allSprs.push(w.spr);
       }
     }
-    console.log(
-      444444,
-      allSprs.map((s) => s.time),
-    );
     const com = new Combinator();
     await Promise.all(
       allSprs.map(async (spr) => {
