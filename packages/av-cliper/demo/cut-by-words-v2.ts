@@ -411,7 +411,24 @@ interface IParagraph {
 }
 
 const txtContainer = document.querySelector('.audio-txt-container')!;
+
 let article: IParagraph[] = [];
+let historySnap: IParagraph[][] = [];
+function storeSnap() {
+  const snap: IParagraph[] = article.map((p) => ({
+    ...p,
+    words: p.words.map((w) => ({ ...w })),
+  }));
+  historySnap.push(snap);
+  // 保留十条历史记录
+  historySnap = historySnap.slice(-10);
+}
+function undo() {
+  const snap = historySnap.pop();
+  if (snap == null) return false;
+  article = snap;
+  return true;
+}
 
 (async function init() {
   const vs = new VisibleSprite(new MP4Clip((await fetch(resList[0])).body!));
@@ -557,6 +574,7 @@ function findOffsetRelativePrgh(range: Range) {
 
 async function deleteWords(words: IWord[]) {
   if (words.length === 0) return;
+  storeSnap();
   const delWordsGroupBySpr = new Map<VisibleSprite, IWord[]>();
   for (const w of words) {
     w.deleted = true;
@@ -638,6 +656,10 @@ document.querySelector('#play')?.addEventListener('click', () => {
     );
     await loadStream(com.output(), com);
   })().catch(Log.error);
+});
+
+document.querySelector('#undo')?.addEventListener('click', () => {
+  if (undo()) render();
 });
 
 /**
