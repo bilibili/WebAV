@@ -519,6 +519,7 @@ function findParghIdx(node?: Node | HTMLElement | null) {
   return findParghIdx(node.parentElement);
 }
 
+// 选取相对于段落的偏移量
 function findOffsetRelativePrgh(range: Range) {
   const startPrgh = findPargh(range.startContainer);
   const endPrgh = findPargh(range.endContainer);
@@ -653,5 +654,21 @@ document.querySelector('#play')?.addEventListener('click', () => {
 裁剪片段：
 1. 按 sprite 起始结束时间裁剪片段，得到 pre、post clip
 1. 将 选取前的 文字，指向 pre，选取后的文字指向 post； 选取中的文字标记为 已删除
+
+高亮
+https://juejin.cn/post/7199438741533376573#heading-0
+
+
+  const parentNode = document.querySelector(
+    '.audio-txt-container p',
+  )!.firstChild;
+  console.log(33333, parentNode);
+  const range1 = new Range();
+  range1.setStart(parentNode, 0);
+  range1.setEnd(parentNode, 12);
+
+  const highlight1 = new Highlight(range1);
+
+  CSS.highlights.set('del', highlight1);
 
  */
