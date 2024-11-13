@@ -441,9 +441,14 @@ let article: IParagraph[] = [];
   });
 
   document.addEventListener('selectionchange', () => {
-    const sel = document.getSelection();
-    // console.log(22222, sel?.getRangeAt(0), );
-    findSelectedWords(sel);
+    // const sel = document.getSelection();
+    // console.log(
+    //   22222,
+    //   sel?.getRangeAt(0),
+    //   findSelectedWords(sel)
+    //     .map((w) => w.label)
+    //     .join(''),
+    // );
   });
 
   render();
@@ -453,28 +458,31 @@ function render() {
   let html = '';
   for (let idx = 0; idx < article.length; idx++) {
     const p = article[idx];
-    if (p.words.some((w) => w.deleted)) {
-      const startIdx = p.words.findIndex((w) => w.deleted);
-      const endIdx = p.words.findLastIndex((w) => w.deleted);
-      let text = '';
-      text += p.words
-        .slice(0, startIdx)
-        .map((w) => w.label)
-        .join('');
-      text += `<del>${p.words
-        .slice(startIdx, endIdx + 1)
-        .map((w) => w.label)
-        .join('')}</del>`;
-      text += p.words
-        .slice(endIdx + 1)
-        .map((w) => w.label)
-        .join('');
-      html += `<p class="pargh" data-pargh-idx="${idx}">${text}</p>`;
-    } else {
-      html += `<p class="pargh" data-pargh-idx="${idx}">${p.words.map((w) => w.label).join('')}</p>`;
+    let text = '';
+    for (const [deleted, words] of groupConsecutive(p.words)) {
+      const str = words.map((w) => w.label).join('');
+      text += deleted ? `<del>${str}</del>` : str;
     }
+    html += `<p class="pargh" data-pargh-idx="${idx}">${text}</p>`;
   }
   txtContainer.innerHTML = html;
+
+  // 将一个段落中的文字按是否删除状态分组
+  // [00011000] => [[000], [11], [000]] => [[false, [000]], [true, [11]], [false, [000]]]
+  function groupConsecutive(words: IWord[]) {
+    return words
+      .reduce((result: IWord[][], cur) => {
+        // 如果 result 数组为空或当前元素与上一个元素相同
+        const lastIt = result[result.length - 1];
+        if (result.length === 0 || lastIt[0].deleted !== cur.deleted) {
+          result.push([cur]); // 新开一个组
+        } else {
+          lastIt.push(cur); // 向最后一个组添加元素
+        }
+        return result;
+      }, [])
+      .map((ws) => [ws[0].deleted, ws] as [boolean, IWord[]]);
+  }
 }
 
 function findSelectedWords(sel: Selection | null) {
@@ -554,7 +562,6 @@ async function deleteWords(words: IWord[]) {
     if (delWordsGroupBySpr.has(w.spr)) delWordsGroupBySpr.get(w.spr)!.push(w);
     else delWordsGroupBySpr.set(w.spr, [w]);
   }
-
   const allWordsGroupBySpr = new Map<VisibleSprite, IWord[]>();
   for (const p of article) {
     for (const w of p.words) {
