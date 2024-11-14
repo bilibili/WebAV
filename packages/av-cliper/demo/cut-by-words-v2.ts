@@ -413,6 +413,13 @@ interface IParagraph {
 const txtContainer = document.querySelector('.audio-txt-container')!;
 
 let article: IParagraph[] = [];
+let seacher: ReturnType<typeof createSearcher> | null = null;
+
+function resetArticle(newArticle: IParagraph[]) {
+  article = newArticle;
+  seacher = createSearcher(newArticle);
+}
+
 let historySnap: IParagraph[][] = [];
 function storeSnap() {
   const snap: IParagraph[] = article.map((p) => ({
@@ -426,24 +433,26 @@ function storeSnap() {
 function undo() {
   const snap = historySnap.pop();
   if (snap == null) return false;
-  article = snap;
+  resetArticle(snap);
   return true;
 }
 
 (async function init() {
   const vs = new VisibleSprite(new MP4Clip((await fetch(resList[0])).body!));
-  article = textData.map((p) => ({
-    start: p.start_time * 1000,
-    end: p.end_time * 1000,
-    text: p.transcript,
-    words: p.words.map((w) => ({
-      start: w.start_time * 1000,
-      end: w.end_time * 1000,
-      label: w.label,
-      spr: vs,
-      deleted: false,
+  resetArticle(
+    textData.map((p) => ({
+      start: p.start_time * 1000,
+      end: p.end_time * 1000,
+      text: p.transcript,
+      words: p.words.map((w) => ({
+        start: w.start_time * 1000,
+        end: w.end_time * 1000,
+        label: w.label,
+        spr: vs,
+        deleted: false,
+      })),
     })),
-  }));
+  );
 
   for (const p of article) {
     for (const w of p.words) w.spr = vs;
@@ -661,6 +670,86 @@ document.querySelector('#play')?.addEventListener('click', () => {
 document.querySelector('#undo')?.addEventListener('click', () => {
   if (undo()) render();
 });
+
+document.querySelector('#search')?.addEventListener('input', (evt) => {
+  const el = evt.target as HTMLInputElement;
+  seacher?.search(el.value);
+});
+document.querySelector('#search-prev')?.addEventListener('click', () => {
+  seacher?.prev();
+});
+document.querySelector('#search-next')?.addEventListener('click', () => {
+  seacher?.next();
+});
+
+function createSearcher(article: IParagraph[]) {
+  let ranges: Range[] = [];
+  let rangeCursor = 0;
+  return {
+    search(kw: string) {
+      this.exit();
+      if (kw.length === 0) return;
+      const matchRecord: Record<
+        number,
+        Array<{
+          prghIdx: number;
+          offset: number;
+        }>
+      > = {};
+      for (let i = 0; i < article.length; i++) {
+        const p = article[i];
+        let match;
+        const regex = new RegExp(kw, 'g');
+        while ((match = regex.exec(p.text)) !== null) {
+          matchRecord[i] = matchRecord[i] ?? [];
+          matchRecord[i].push({
+            prghIdx: i,
+            offset: match.index,
+          });
+        }
+      }
+      for (const [prghIdx, matches] of Object.entries(matchRecord)) {
+        const pEl = document.querySelector(`[data-pargh-idx="${prghIdx}"]`);
+        for (const { offset } of matches) {
+          const range = new Range();
+          range.setStart(pEl!.firstChild!, offset);
+          range.setEnd(pEl!.firstChild!, offset + kw.length);
+          ranges.push(range);
+        }
+      }
+      if (ranges.length > 0) {
+        const highlight = new Highlight(...ranges);
+        CSS.highlights.set('search', highlight);
+        CSS.highlights.set('search-cursor', new Highlight(ranges[0]));
+      }
+    },
+    prev() {
+      if (ranges.length === 0) return;
+      rangeCursor = (rangeCursor - 1 + ranges.length) % ranges.length;
+      const range = ranges[rangeCursor];
+      CSS.highlights.set('search-cursor', new Highlight(range));
+    },
+    next() {
+      if (ranges.length === 0) return;
+      rangeCursor = (rangeCursor + 1) % ranges.length;
+      const range = ranges[rangeCursor];
+      CSS.highlights.set('search-cursor', new Highlight(range));
+    },
+    exit() {
+      ranges = [];
+      rangeCursor = 0;
+      CSS.highlights.delete('search');
+      CSS.highlights.delete('search-cursor');
+    },
+  };
+}
+
+declare namespace CSS {
+  var highlights: {
+    set: (name: string, highlight: Highlight) => void;
+    delete: (name: string) => void;
+  };
+}
 
 /**
 

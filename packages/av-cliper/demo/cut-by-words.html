@@ -31,6 +31,14 @@
       color: gray;
       text-decoration: line-through;
     }
+
+    ::highlight(search) {
+      background-color: yellow;
+    }
+
+    ::highlight(search-cursor) {
+      background-color: orange;
+    }
   </style>
 </head>
 
@@ -43,7 +51,10 @@
   </p> -->
   <button id="play">play</button> |
   <button id="delete">delete</button> |
-  <button id="undo">撤销</button>
+  <button id="undo">撤销</button> |
+  <input id="search" type="text">
+  <button id="search-prev">上一个</button>
+  <button id="search-next">下一个</button>
   <div id="player-container"></div>
   <hr>
   <!-- <script type="module" src="cut-by-words.ts"></script> -->
