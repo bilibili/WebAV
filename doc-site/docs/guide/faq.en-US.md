@@ -33,3 +33,12 @@ Supported on Chrome/Edge 102+, not supported on Safari or Firefox.
 
 - WebCodecs API will be detected as incompatible.
 - The console will report the error: `Cannot read properties of undefined (reading 'getDirectory')`.
+
+The translation for your text is:
+
+### Does it support Vue or other UI frameworks?
+
+Yes, it does.
+
+WebAV is an audio-video processing library and is independent of any UI framework.  
+The UI in the DEMO is developed using React, but if you're using another UI framework, just focus on the WebAV API.
