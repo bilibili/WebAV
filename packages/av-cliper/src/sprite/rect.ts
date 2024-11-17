@@ -148,8 +148,8 @@ export class Rect implements IRectBaseProps {
 
   /**
    * 是否固定中心点进行缩放
-   * 值为 true 时，{@link Rect.ctrls} 将固定中心点不变进行缩放
-   * 值为 false 时，{@link Rect.ctrls} 将固定对角点不变进行缩放
+   * 值为 true 时，固定中心点不变进行缩放
+   * 值为 false 时，固定对角点不变进行缩放
    */
   fixedScaleCenter = false;
 
