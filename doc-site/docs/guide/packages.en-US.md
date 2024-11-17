@@ -107,7 +107,7 @@ await avCvs.add(spr2);
 
 </details>
 
-### [av-recorder](https://bilibili.github.io/WebAV/_api/av-canvas/)
+### [av-recorder](https://bilibili.github.io/WebAV/_api/av-recorder/)
 
 `av-recorder` records `MediaStream` and outputs video file stream in MP4 format.
 
