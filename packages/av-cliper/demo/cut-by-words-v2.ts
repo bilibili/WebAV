@@ -682,6 +682,45 @@ document.querySelector('#search-next')?.addEventListener('click', () => {
   seacher?.next();
 });
 
+function findTextOffset(
+  container: Element,
+  offset: number,
+): { node: Text; offset: number } {
+  let currentOffset = 0;
+
+  // 遍历所有子节点
+  function traverse(node: Node): { node: Text; offset: number } | null {
+    if (node.nodeType === Node.TEXT_NODE) {
+      const textLength = node.textContent?.length ?? 0;
+
+      if (currentOffset + textLength >= offset) {
+        // 偏移量落在当前文本节点中，返回结果
+        return {
+          node: node as Text,
+          offset: offset - currentOffset,
+        };
+      }
+
+      currentOffset += textLength;
+    } else if (node.nodeType === Node.ELEMENT_NODE) {
+      // 遍历元素节点的子节点
+      for (const child of Array.from(node.childNodes)) {
+        const result = traverse(child);
+        if (result) return result;
+      }
+    }
+
+    return null;
+  }
+
+  const result = traverse(container);
+  if (!result) {
+    throw new Error('Offset exceeds the total length of the container.');
+  }
+
+  return result;
+}
+
 function createSearcher(article: IParagraph[]) {
   let ranges: Range[] = [];
   let rangeCursor = 0;
@@ -708,12 +747,22 @@ function createSearcher(article: IParagraph[]) {
           });
         }
       }
+
       for (const [prghIdx, matches] of Object.entries(matchRecord)) {
         const pEl = document.querySelector(`[data-pargh-idx="${prghIdx}"]`);
+        if (pEl == null) throw Error('pargh element not found');
         for (const { offset } of matches) {
           const range = new Range();
-          range.setStart(pEl!.firstChild!, offset);
-          range.setEnd(pEl!.firstChild!, offset + kw.length);
+          const { node: startNode, offset: startOffset } = findTextOffset(
+            pEl,
+            offset,
+          );
+          const { node: endNode, offset: endOffset } = findTextOffset(
+            pEl,
+            offset + kw.length,
+          );
+          range.setStart(startNode, startOffset);
+          range.setEnd(endNode, endOffset);
           ranges.push(range);
         }
       }
