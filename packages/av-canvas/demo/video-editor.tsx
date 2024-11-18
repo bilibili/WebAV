@@ -383,7 +383,8 @@ function App() {
           if (avCvs == null || spr == null || tlState.current == null) return;
           const newClips = await spr
             .getClip()
-            .split(tlState.current.getTime() * 1e6 - spr.time.offset);
+            .split?.(tlState.current.getTime() * 1e6 - spr.time.offset);
+          if (newClips == null) throw Error('split failed');
           // 移除原有对象
           avCvs.removeSprite(spr);
           actionSpriteMap.delete(action);
