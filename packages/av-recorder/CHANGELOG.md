@@ -1,5 +1,15 @@
 # @webav/av-recorder
 
+## 1.0.5
+
+### Patch Changes
+
+- ce5ebc8: fix: corrected the link to av-recorder
+- Updated dependencies [ce5ebc8]
+- Updated dependencies [27e74c1]
+  - @webav/av-cliper@1.0.5
+  - @webav/internal-utils@1.0.5
+
 ## 1.0.4
 
 ### Patch Changes
