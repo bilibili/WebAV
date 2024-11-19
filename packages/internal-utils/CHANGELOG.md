@@ -1,5 +1,17 @@
 # @webav/internal-utils
 
+## 1.0.5
+
+### Patch Changes
+
+- ce5ebc8: fix: corrected the link to av-recorder
+
+## 1.0.4
+
+### Patch Changes
+
+- edda979: workflow: add ci workflow to run ci:test
+
 ## 1.0.3
 
 ### Patch Changes

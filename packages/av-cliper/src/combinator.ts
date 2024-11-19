@@ -37,7 +37,7 @@ async function letEncoderCalmDown(getQSize: () => number) {
 }
 
 /**
- * 视频合成器；能添加多个 {@link VisibleSprite}，根据它们位置、层级、时间偏移等信息，合成输出为视频文件
+ * 视频合成器；能添加多个 {@link OffscreenSprite}，根据它们位置、层级、时间偏移等信息，合成输出为视频文件
  * @see [视频合成](https://bilibili.github.io/WebAV/demo/2_1-concat-video)
  * @see [视频配音](https://bilibili.github.io/WebAV/demo/2_2-video-add-audio)
  * @example

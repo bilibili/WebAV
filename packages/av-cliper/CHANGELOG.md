@@ -1,5 +1,23 @@
 # @webav/av-cliper
 
+## 1.0.5
+
+### Patch Changes
+
+- ce5ebc8: fix: corrected the link to av-recorder
+- 27e74c1: refactor: change the split method of the IClip interface to be optional #324
+- Updated dependencies [ce5ebc8]
+  - @webav/internal-utils@1.0.5
+
+## 1.0.4
+
+### Patch Changes
+
+- f934fe6: fix: decode HEVC error when start with SEI
+- edda979: workflow: add ci workflow to run ci:test
+- Updated dependencies [edda979]
+  - @webav/internal-utils@1.0.4
+
 ## 1.0.3
 
 ### Patch Changes

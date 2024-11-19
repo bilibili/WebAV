@@ -12,6 +12,14 @@ class CountdownClip implements IClip {
 
   ready;
 
+  get meta() {
+    return {
+      width: this.#cvsEl.width,
+      height: this.#cvsEl.height,
+      duration: this.#duration * 1e6,
+    };
+  }
+
   constructor(duration: number) {
     this.#duration = duration;
     this.#cvsEl = document.createElement('canvas');
@@ -55,8 +63,8 @@ class CountdownClip implements IClip {
     };
   }
 
-  clone() {
-    return new CountdownClip(this.#duration);
+  async clone() {
+    return new CountdownClip(this.#duration) as this;
   }
 
   destroy() {

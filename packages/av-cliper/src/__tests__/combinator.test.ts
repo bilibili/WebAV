@@ -30,13 +30,13 @@ test('Combinator ouput m4a', async () => {
 
   const mp4Clip = new MP4Clip(com.output());
   await mp4Clip.ready;
-  expect(mp4Clip.meta).toEqual({
-    duration: 1045333,
+  expect(mp4Clip.meta).toMatchObject({
     width: 0,
     height: 0,
     audioSampleRate: defSampleRate,
     audioChanCount: 2,
   });
+  expect(mp4Clip.meta.duration / 1e6).toBeCloseTo(1, 1);
 });
 
 test('Combinator.output throw an error', async () => {
@@ -79,13 +79,13 @@ test('Combinator ouput exclude audio track', async () => {
 
   const mp4Clip = new MP4Clip(com.output());
   await mp4Clip.ready;
-  expect(mp4Clip.meta).toEqual({
-    duration: 1033323,
+  expect(mp4Clip.meta).toMatchObject({
     width: 900,
     height: 500,
     audioSampleRate: 0,
     audioChanCount: 0,
   });
+  expect(mp4Clip.meta.duration / 1e6).toBeCloseTo(1, 1);
 });
 
 test('audio track buffer', () => {

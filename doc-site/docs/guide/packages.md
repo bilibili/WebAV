@@ -108,7 +108,7 @@ await avCvs.add(spr2);
 
 </details>
 
-### [av-recorder](https://bilibili.github.io/WebAV/_api/av-canvas/)
+### [av-recorder](https://bilibili.github.io/WebAV/_api/av-recorder/)
 
 `av-recorder` 录制 `MediaStream` 输出 MP4 格式的视频文件流。
 

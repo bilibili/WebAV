@@ -18,9 +18,13 @@ export default defineConfig({
   },
   test: {
     browser: {
+      provider: 'webdriverio',
       enabled: true,
       name: 'chrome', // browser name is required
       headless: true,
+      providerOptions: {
+        browserVersion: 'stable',
+      },
     },
   },
 });

@@ -252,7 +252,7 @@ export class EmbedSubtitlesClip implements IClip {
   }
 
   /**
-   * @see {@link IClip.destroy}
+   * @see {@link IClip.split}
    */
   async split(time: number) {
     await this.ready;
