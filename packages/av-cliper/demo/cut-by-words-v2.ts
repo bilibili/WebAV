@@ -410,8 +410,6 @@ interface IParagraph {
   words: IWord[];
 }
 
-const txtContainer = document.querySelector('.audio-txt-container')!;
-
 let article: IParagraph[] = [];
 let seacher: ReturnType<typeof createSearcher> | null = null;
 
@@ -480,6 +478,7 @@ function undo() {
   render();
 })();
 
+const txtContainer = document.querySelector('.audio-txt-container')!;
 function render() {
   let html = '';
   for (let idx = 0; idx < article.length; idx++) {
@@ -603,7 +602,7 @@ async function deleteWords(words: IWord[]) {
     if (words == null) throw new Error('words not found');
 
     const { preWords, postWords } = cutWords(words);
-    const clip = spr.getClip();
+    const clip = spr.getClip() as MP4Clip;
     if (preWords.length > 0) {
       const [preClip] = await clip.split(preWords[preWords.length - 1].end);
       const newSpr = new VisibleSprite(preClip);
@@ -681,6 +680,46 @@ document.querySelector('#search-prev')?.addEventListener('click', () => {
 document.querySelector('#search-next')?.addEventListener('click', () => {
   seacher?.next();
 });
+
+txtContainer.addEventListener('click', (evt) => {
+  const range = click2Range(evt as PointerEvent);
+  if (range == null) return;
+  const sel = document.getSelection();
+  if (sel == null) return;
+  sel.removeAllRanges();
+  sel.addRange(range);
+});
+
+function click2Range(evt: PointerEvent) {
+  const sel = document.getSelection();
+  // 用户多选文本时，使用浏览器默认选区
+  if (sel != null) {
+    const defRange = sel.getRangeAt(0);
+    if (
+      defRange.startContainer !== defRange.endContainer ||
+      defRange.startOffset + 1 < defRange.endOffset
+    ) {
+      return null;
+    }
+  }
+  // 单次点击选中单个文字
+  const ckRange = document.caretRangeFromPoint(evt.clientX, evt.clientY);
+  if (ckRange == null) return null;
+  // 如果选区长度为 0，则将 endOffset 设置为下一个文字
+  const endOffset =
+    ckRange.endContainer === ckRange.startContainer &&
+    ckRange.endOffset === ckRange.startOffset
+      ? ckRange.endOffset + 1
+      : ckRange.endOffset;
+
+  // 如果选区超出文字范围，则返回 null
+  if (endOffset > ckRange.startContainer.textContent!.length) return null;
+
+  const rs = new Range();
+  rs.setStart(ckRange.startContainer, ckRange.startOffset);
+  rs.setEnd(ckRange.endContainer, endOffset);
+  return rs;
+}
 
 function findTextOffset(
   container: Element,
