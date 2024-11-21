@@ -11,6 +11,9 @@ toggleCanvasBtnA.addEventListener('click', function () {
     canvasContainerA.style.display === 'none' ? 'block' : 'none';
 });
 
+const playBtn = document.querySelector('#play') as HTMLButtonElement;
+const pauseBtn = document.querySelector('#pause') as HTMLButtonElement;
+
 (async () => {
   const clipA = new MP4Clip((await fetch('./video/pri-video-A.mp4')).body!);
   await clipA.ready;
@@ -34,6 +37,15 @@ toggleCanvasBtnA.addEventListener('click', function () {
   ) as HTMLButtonElement;
   nextFrameBtnB.addEventListener('click', function () {
     playerB.nextFrame();
+  });
+
+  playBtn.addEventListener('click', function () {
+    playerA.play();
+    playerB.play();
+  });
+  pauseBtn.addEventListener('click', function () {
+    playerA.pause();
+    playerB.pause();
   });
 })();
 
