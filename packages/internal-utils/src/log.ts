@@ -92,11 +92,13 @@ map.set(Log.error, 3);
 
 declare const PKG_VERSION: string;
 
-(function init() {
+(async function init() {
+  await Promise.resolve();
   if (globalThis.navigator == null) return;
-  Log.info(`@webav version: ${PKG_VERSION}`);
+  Log.info(
+    `@webav version: ${PKG_VERSION}, date: ${new Date().toLocaleDateString()}`,
+  );
   Log.info(globalThis.navigator.userAgent);
-  Log.info('date: ' + new Date().toLocaleDateString());
 })();
 
 if (import.meta.env?.DEV) {
