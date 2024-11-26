@@ -1,7 +1,7 @@
 ---
 name: 问题咨询
 about: 提出与项目相关的问题或请求帮助
-title: '[问题] 简短描述问题'
+title: '[Question] 简短描述问题'
 labels: question
 assignees: ''
 ---
