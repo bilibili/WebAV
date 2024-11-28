@@ -242,13 +242,20 @@ function startRecord(
   let stopEncodeVideo: TClearFn | null = null;
   let stopEncodeAudio: TClearFn | null = null;
 
+  const [enableVideo, enableAudio] = [
+    opts.streams.video != null,
+    opts.streams.audio != null,
+  ];
+
   const recoder = recodemux({
-    video: { ...opts.video, bitrate: opts.bitrate ?? 3_000_000 },
-    audio: opts.audio,
+    video: enableVideo
+      ? { ...opts.video, bitrate: opts.bitrate ?? 3_000_000 }
+      : null,
+    audio: enableAudio ? opts.audio : null,
   });
 
   let stoped = false;
-  if (opts.streams.video != null) {
+  if (enableVideo) {
     let lastVf: VideoFrame | null = null;
     let autoInsertVFTimer = 0;
     const emitVf = (vf: VideoFrame) => {
@@ -290,7 +297,7 @@ function startRecord(
     };
   }
 
-  if (opts.audio != null && opts.streams.audio != null) {
+  if (opts.audio != null && enableAudio) {
     stopEncodeAudio = autoReadStream(opts.streams.audio, {
       onChunk: async (ad: AudioData) => {
         if (stoped) {
