@@ -1,5 +1,5 @@
 ---
-'@webav/av-recorder': major
+'@webav/av-recorder': patch
 ---
 
-fix bug #335
+fix: av-recorder closing video/audio track export error #335
