@@ -59,9 +59,12 @@ Commit message 格式规范请了解 [Angular's commit convention](https://githu
 
 在 commit 之后需执行以下步骤生成描述文件
 
-1. 在你的分支执行 `pnpm changeset add`
-2. 选择代码影响的 package 范围，以及版本变更规则（`major, minor, patch`）
-   按**空格**选中，按**回车**确认
+1. 在你的分支根目录执行 `pnpm changeset add`
+2. 确认版本变更规则 `major -> minor -> patch`  
+   一般变更是 `patch`，所以需要按**两次回车** (默认 `major`)
+3. 按**空格**选择代码影响的 package 范围
+4. 输入本次变更内容的总结，示例 `fix: <变更总结描述> #issue_id`
+5. 完成上述步骤，会在 `.changeset` 目录下生成一个文件，将改文件提交到 git
 
 _PS: 文档更新，不涉及版本号变更可忽略此步骤_
 
