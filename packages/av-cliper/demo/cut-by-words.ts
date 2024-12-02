@@ -417,11 +417,14 @@ class WordsScissor {
     this.#articleEl = document.createElement('section');
     this.#attchEl.appendChild(this.#articleEl);
 
-    this.#bindEvent();
+    const searchEl = document.createElement('words-search');
+    this.#attchEl.appendChild(searchEl);
+
+    this.#bindEvent({ searchEl });
     this.#render();
   }
 
-  #bindEvent() {
+  #bindEvent(opts: { searchEl: HTMLElement }) {
     this.#articleEl.addEventListener('click', (evt) => {
       const range = click2Range(evt as PointerEvent);
       if (range == null) return;
@@ -444,6 +447,18 @@ class WordsScissor {
     document.addEventListener('selectionchange', onSelChange);
     this.#clears.push(() => {
       document.removeEventListener('selectionchange', onSelChange);
+    });
+
+    const seacher = createSearcher(this.#article);
+
+    opts.searchEl.addEventListener('search', (evt) => {
+      seacher.search((evt as CustomEvent).detail as string);
+    });
+    opts.searchEl.addEventListener('prev-result', (evt) => {
+      seacher.prev();
+    });
+    opts.searchEl.addEventListener('next-result', (evt) => {
+      seacher.next();
     });
   }
 
@@ -740,4 +755,169 @@ function wordsGroupBySpr(words: IWord[]) {
     else sprMap.set(w.spr, [w]);
   }
   return sprMap;
+}
+
+class WordsSearch extends HTMLElement {
+  // #inputEl: HTMLInputElement | undefined;
+
+  constructor() {
+    super();
+  }
+
+  connectedCallback() {
+    const shadow = this.attachShadow({ mode: 'open' });
+    const container = document.createElement('div');
+
+    const searchEl = document.createElement('span');
+    searchEl.textContent = '🔍';
+    container.appendChild(searchEl);
+
+    const inputEl = document.createElement('input');
+    container.appendChild(inputEl);
+    inputEl.placeholder = '搜索关键词';
+    inputEl.addEventListener('keypress', (evt) => {
+      if (evt.key !== 'Enter' || inputEl.value.trim() === '') return;
+      this.dispatchEvent(new CustomEvent('search', { detail: inputEl.value }));
+    });
+
+    const prevEl = document.createElement('span');
+    prevEl.textContent = '^';
+    container.appendChild(prevEl);
+    prevEl.addEventListener('click', () => {
+      this.dispatchEvent(new CustomEvent('prev-result'));
+    });
+
+    const nextEl = document.createElement('span');
+    nextEl.textContent = 'v';
+    container.appendChild(nextEl);
+    nextEl.addEventListener('click', () => {
+      this.dispatchEvent(new CustomEvent('next-result'));
+    });
+
+    const closeEl = document.createElement('span');
+    closeEl.textContent = 'x';
+    container.appendChild(closeEl);
+
+    shadow.appendChild(container);
+  }
+}
+
+customElements.define('words-search', WordsSearch);
+
+function createSearcher(article: IParagraph[]) {
+  let ranges: Range[] = [];
+  let rangeCursor = 0;
+  return {
+    search(kw: string) {
+      this.exit();
+      if (kw.length === 0) return;
+      const matchRecord: Record<
+        number,
+        Array<{
+          prghIdx: number;
+          offset: number;
+        }>
+      > = {};
+      for (let i = 0; i < article.length; i++) {
+        const p = article[i];
+        let match;
+        const regex = new RegExp(kw, 'g');
+        while ((match = regex.exec(p.text)) !== null) {
+          matchRecord[i] = matchRecord[i] ?? [];
+          matchRecord[i].push({
+            prghIdx: i,
+            offset: match.index,
+          });
+        }
+      }
+
+      for (const [prghIdx, matches] of Object.entries(matchRecord)) {
+        const pEl = document.querySelector(`[data-pargh-idx="${prghIdx}"]`);
+        if (pEl == null) throw Error('pargh element not found');
+        for (const { offset } of matches) {
+          const range = new Range();
+          const { node: startNode, offset: startOffset } = findTextOffset(
+            pEl,
+            offset,
+          );
+          const { node: endNode, offset: endOffset } = findTextOffset(
+            pEl,
+            offset + kw.length,
+          );
+          range.setStart(startNode, startOffset);
+          range.setEnd(endNode, endOffset);
+          ranges.push(range);
+        }
+      }
+      if (ranges.length > 0) {
+        const highlight = new Highlight(...ranges);
+        CSS.highlights.set('search', highlight);
+        CSS.highlights.set('search-cursor', new Highlight(ranges[0]));
+      }
+    },
+    prev() {
+      if (ranges.length === 0) return;
+      rangeCursor = (rangeCursor - 1 + ranges.length) % ranges.length;
+      const range = ranges[rangeCursor];
+      CSS.highlights.set('search-cursor', new Highlight(range));
+    },
+    next() {
+      if (ranges.length === 0) return;
+      rangeCursor = (rangeCursor + 1) % ranges.length;
+      const range = ranges[rangeCursor];
+      CSS.highlights.set('search-cursor', new Highlight(range));
+    },
+    exit() {
+      ranges = [];
+      rangeCursor = 0;
+      CSS.highlights.delete('search');
+      CSS.highlights.delete('search-cursor');
+    },
+  };
+}
+
+declare namespace CSS {
+  var highlights: {
+    set: (name: string, highlight: Highlight) => void;
+    delete: (name: string) => void;
+  };
+}
+
+function findTextOffset(
+  container: Element,
+  offset: number,
+): { node: Text; offset: number } {
+  let currentOffset = 0;
+
+  // 遍历所有子节点
+  function traverse(node: Node): { node: Text; offset: number } | null {
+    if (node.nodeType === Node.TEXT_NODE) {
+      const textLength = node.textContent?.length ?? 0;
+
+      if (currentOffset + textLength >= offset) {
+        // 偏移量落在当前文本节点中，返回结果
+        return {
+          node: node as Text,
+          offset: offset - currentOffset,
+        };
+      }
+
+      currentOffset += textLength;
+    } else if (node.nodeType === Node.ELEMENT_NODE) {
+      // 遍历元素节点的子节点
+      for (const child of Array.from(node.childNodes)) {
+        const result = traverse(child);
+        if (result) return result;
+      }
+    }
+
+    return null;
+  }
+
+  const result = traverse(container);
+  if (!result) {
+    throw new Error('Offset exceeds the total length of the container.');
+  }
+
+  return result;
 }
