@@ -1,9 +1,7 @@
+import { EventTool } from '@webav/internal-utils';
 import { Log } from '../src';
 import { MP4Clip } from '../src/clips/mp4-clip';
-import { Combinator } from '../src/combinator';
-import { OffscreenSprite } from '../src/sprite/offscreen-sprite';
 import { VisibleSprite } from '../src/sprite/visible-sprite';
-import { playOutputStream } from './play-video';
 
 const textData = [
   {
@@ -403,6 +401,8 @@ class WordsScissor {
   #article: IParagraph[];
   #articleEl: HTMLElement;
 
+  #clears: Array<() => void> = [];
+
   constructor(conf: {
     // UI 挂载节点
     attchEl: HTMLDivElement;
@@ -414,12 +414,37 @@ class WordsScissor {
     this.#sprite = conf.sprite;
     this.#article = conf.wordsData;
 
-    for (const p of this.#article) {
-      for (const w of p.words) w.spr = this.#sprite;
-    }
     this.#articleEl = document.createElement('section');
     this.#attchEl.appendChild(this.#articleEl);
+
+    this.#bindEvent();
     this.#render();
+  }
+
+  #bindEvent() {
+    this.#articleEl.addEventListener('click', (evt) => {
+      const range = click2Range(evt as PointerEvent);
+      if (range == null) return;
+      const sel = document.getSelection();
+      if (sel == null) return;
+      sel.removeAllRanges();
+      sel.addRange(range);
+      const evtData = sel2SprGroup(sel, this.#article);
+      if (evtData.length === 0) return;
+      this.#evtTool.emit('selection', evtData);
+    });
+
+    const onSelChange = () => {
+      const sel = document.getSelection();
+      if (sel == null) return;
+      const evtData = sel2SprGroup(sel, this.#article);
+      if (evtData.length === 0) return;
+      this.#evtTool.emit('selection', evtData);
+    };
+    document.addEventListener('selectionchange', onSelChange);
+    this.#clears.push(() => {
+      document.removeEventListener('selectionchange', onSelChange);
+    });
   }
 
   #render() {
@@ -456,6 +481,15 @@ class WordsScissor {
   //  在时间轴上选中的区间，可以包含doge sprite
   setSelection(selected: ISelection[]) {}
 
+  #evtTool = new EventTool<{
+    selection: (evtData: ISelection[]) => void;
+    deleteSegment: (
+      deletedSprite: VisibleSprite,
+      replacement: VisibleSprite[],
+    ) => void;
+  }>();
+  on = this.#evtTool.on;
+
   //  // 监听用户的选中事件
   //  on (evtType: 'selection', (evtData: ISelection[]) => void)
   // //  删除片段，需要在时间轴上移除一个源 sprite，使用 多个 sprite 替代；
@@ -466,6 +500,7 @@ class WordsScissor {
 
   destroy() {
     this.#articleEl.remove();
+    this.#clears.forEach((fn) => fn());
   }
 }
 
@@ -496,10 +531,39 @@ interface IParagraph {
 Log.setLogLevel(Log.warn);
 const resList = ['/audio/pri-caocao.m4a'];
 
+(async () => {
+  const container = document.createElement('div');
+  document.body.appendChild(container);
+
+  const vs = new VisibleSprite(new MP4Clip((await fetch(resList[0])).body!));
+  const scissor = new WordsScissor({
+    attchEl: container,
+    wordsData: textData.map((p) => ({
+      start: p.start_time * 1000,
+      end: p.end_time * 1000,
+      text: p.transcript,
+      words: p.words.map((w) => ({
+        start: w.start_time * 1000,
+        end: w.end_time * 1000,
+        label: w.label,
+        spr: vs,
+        deleted: false,
+      })),
+    })),
+    sprite: vs,
+  });
+
+  scissor.on('selection', (evtData) => {
+    console.log('selection evt:', evtData);
+  });
+})();
+
 if (import.meta.vitest) {
   const { test, expect } = import.meta.vitest;
 
   const container = document.createElement('div');
+  document.body.appendChild(container);
+
   const vs = new VisibleSprite(new MP4Clip((await fetch(resList[0])).body!));
   const scissor = new WordsScissor({
     attchEl: container,
@@ -522,6 +586,17 @@ if (import.meta.vitest) {
       textData.length,
     );
   });
+
+  // const txtEl = container.querySelector('section')!;
+  // test('selection event', () => {
+  //   scissor.on('selection', (selections) => {
+  //     console.log(4444444);
+  //     expect(selections.length).toBe(1);
+  //     expect(selections[0].sprite).toBe(vs);
+  //   });
+  //   txtEl.dispatchEvent(new PointerEvent('click'));
+  //   console.log(555555);
+  // });
 }
 
 // const playerContainer = document.querySelector('#player-container')!;
@@ -546,3 +621,123 @@ if (import.meta.vitest) {
 //     await loadStream(com.output(), com);
 //   })().catch(Log.error);
 // });
+
+function sel2SprGroup(sel: Selection, article: IParagraph[]) {
+  return [...wordsGroupBySpr(findSelectedWords(sel, article)).entries()]
+    .filter(([, words]) => words.length > 0)
+    .map(([spr, words]) => ({
+      sprite: spr,
+      startTime: words[0].start,
+      endTime: words.at(-1)!.end,
+    }));
+}
+
+function click2Range(evt: PointerEvent) {
+  const sel = document.getSelection();
+  // 用户多选文本时，使用浏览器默认选区
+  if (sel != null && sel.rangeCount > 0) {
+    const defRange = sel.getRangeAt(0);
+    if (
+      defRange.startContainer !== defRange.endContainer ||
+      defRange.startOffset + 1 < defRange.endOffset
+    ) {
+      return null;
+    }
+  }
+  // 单次点击选中单个文字
+  const ckRange = document.caretRangeFromPoint(evt.clientX, evt.clientY);
+  if (ckRange == null) return null;
+  // 如果选区长度为 0，则将 endOffset 设置为下一个文字
+  const endOffset =
+    ckRange.endContainer === ckRange.startContainer &&
+    ckRange.endOffset === ckRange.startOffset
+      ? ckRange.endOffset + 1
+      : ckRange.endOffset;
+
+  // 如果选区超出文字范围，则返回 null
+  if (endOffset > ckRange.startContainer.textContent!.length) return null;
+
+  const rs = new Range();
+  rs.setStart(ckRange.startContainer, ckRange.startOffset);
+  rs.setEnd(ckRange.endContainer, endOffset);
+  return rs;
+}
+
+function findSelectedWords(sel: Selection | null, article: IParagraph[]) {
+  if (sel == null || sel.type !== 'Range') return [];
+  const range = sel.getRangeAt(0);
+  const { startContainer, endContainer } = range;
+
+  const startPrghIdx = findParghIdx(startContainer);
+  const endPrghIdx = findParghIdx(endContainer);
+  if (startPrghIdx == null || endPrghIdx == null) return [];
+
+  const { startOffset, endOffset } = findOffsetRelativePrgh(range);
+
+  let selectedWords: IWord[] = [];
+  if (startPrghIdx === endPrghIdx) {
+    const prgh = article[startPrghIdx];
+    selectedWords = prgh.words.slice(startOffset, endOffset);
+  } else {
+    const startPrgh = article[startPrghIdx];
+    const endPrgh = article[endPrghIdx];
+    selectedWords = [
+      ...startPrgh.words.slice(startOffset),
+      ...article.slice(startPrghIdx + 1, endPrghIdx).flatMap((p) => p.words),
+      ...endPrgh.words.slice(0, endOffset),
+    ];
+  }
+  return selectedWords;
+}
+
+function findParghIdx(node?: Node | HTMLElement | null) {
+  if (node == null) return null;
+  if ('classList' in node && node.classList.contains('pargh'))
+    return Number(node.dataset.parghIdx);
+  return findParghIdx(node.parentElement);
+}
+
+// 选取相对于段落的偏移量
+function findOffsetRelativePrgh(range: Range) {
+  const startPrgh = findPargh(range.startContainer);
+  const endPrgh = findPargh(range.endContainer);
+  if (startPrgh == null || endPrgh == null) throw Error('prgh not found');
+
+  return {
+    startOffset:
+      calculateOffset(range.startContainer, startPrgh) + range.startOffset,
+    endOffset: calculateOffset(range.endContainer, endPrgh) + range.endOffset,
+  };
+
+  function findPargh(node?: Node | HTMLElement | null) {
+    if (node == null) return null;
+    if ('classList' in node && node.classList.contains('pargh')) return node;
+    return findPargh(node.parentElement);
+  }
+
+  function calculateOffset(startNode: Node, container: Node) {
+    let current = startNode;
+    let totalOffset = 0;
+
+    while (current && current !== container) {
+      // 累计每个兄弟节点的文本长度
+      let sibling = current.previousSibling;
+      while (sibling) {
+        if (sibling.textContent == null) throw Error('text content not found');
+        totalOffset += sibling.textContent.length;
+        sibling = sibling.previousSibling;
+      }
+      current = current.parentNode as Node;
+    }
+    return totalOffset;
+  }
+}
+
+function wordsGroupBySpr(words: IWord[]) {
+  const sprMap = new Map<VisibleSprite, IWord[]>();
+  for (const w of words) {
+    if (sprMap.has(w.spr)) sprMap.get(w.spr)!.push(w);
+    else sprMap.set(w.spr, [w]);
+  }
+  return sprMap;
+}
