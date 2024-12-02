@@ -8,7 +8,7 @@
     "@types/dom-mediacapture-transform": "^0.1.5",
     "@types/dom-webcodecs": "^0.1.13",
     "@types/wicg-file-system-access": "^2020.9.6",
-    "@vitest/browser": "^1.6.0",
+    "@vitest/browser": "^2.1.6",
     "@vitest/coverage-istanbul": "^1.6.0",
     "conventional-changelog-cli": "^4.1.0",
     "jsdom": "^24.0.0",
@@ -22,8 +22,8 @@
     "vite": "^5.2.11",
     "vite-plugin-dts": "^4.2.4",
     "vite-plugin-externalize-deps": "^0.8.0",
-    "vitest": "^1.6.0",
-    "webdriverio": "^8.39.0"
+    "vitest": "^2.1.6",
+    "webdriverio": "^8.40.6"
   },
   "overrides": {
     "prettier": "^3.2.5"
