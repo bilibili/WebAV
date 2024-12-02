@@ -12,7 +12,11 @@ export default defineConfig({
       name: 'av-cliper',
     },
   },
+  define: {
+    'import.meta.vitest': 'undefined',
+  },
   test: {
+    includeSource: ['src/**/*.ts', 'demo/**/*.ts'],
     browser: {
       provider: 'webdriverio',
       enabled: true,

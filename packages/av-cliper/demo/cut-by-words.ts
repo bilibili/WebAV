@@ -1,6 +1,8 @@
-import { MP4Clip } from '../src/clips';
-import { Log, Combinator, VisibleSprite } from '../src';
+import { Log } from '../src';
+import { MP4Clip } from '../src/clips/mp4-clip';
+import { Combinator } from '../src/combinator';
 import { OffscreenSprite } from '../src/sprite/offscreen-sprite';
+import { VisibleSprite } from '../src/sprite/visible-sprite';
 import { playOutputStream } from './play-video';
 
 const textData = [
@@ -393,15 +395,97 @@ const textData = [
   },
 ];
 
-const resList = ['./audio/pri-caocao.m4a'];
-const globalSegs: Segment[] = [];
+class WordsScissor {
+  // 若移动了 sprite，当前文字剪辑失效，弹出提示语
+  expired = false;
+  #attchEl: HTMLDivElement;
+  #sprite: VisibleSprite;
+  #article: IParagraph[];
+  #articleEl: HTMLElement;
+
+  constructor(conf: {
+    // UI 挂载节点
+    attchEl: HTMLDivElement;
+    //  初始 sprite 以及 ASR 识别的数据
+    sprite: VisibleSprite;
+    wordsData: IParagraph[];
+  }) {
+    this.#attchEl = conf.attchEl;
+    this.#sprite = conf.sprite;
+    this.#article = conf.wordsData;
+
+    for (const p of this.#article) {
+      for (const w of p.words) w.spr = this.#sprite;
+    }
+    this.#articleEl = document.createElement('section');
+    this.#attchEl.appendChild(this.#articleEl);
+    this.#render();
+  }
+
+  #render() {
+    let html = '';
+    for (let idx = 0; idx < this.#article.length; idx++) {
+      const p = this.#article[idx];
+      let text = '';
+      for (const [deleted, words] of groupConsecutive(p.words)) {
+        const str = words.map((w) => w.label).join('');
+        text += deleted ? `<del>${str}</del>` : str;
+      }
+      html += `<p class="pargh" data-pargh-idx="${idx}">${text}</p>`;
+    }
+    this.#articleEl.innerHTML = html;
+
+    // 将一个段落中的文字按是否删除状态分组
+    // [00011000] => [[000], [11], [000]] => [[false, [000]], [true, [11]], [false, [000]]]
+    function groupConsecutive(words: IWord[]) {
+      return words
+        .reduce((result: IWord[][], cur) => {
+          // 如果 result 数组为空或当前元素与上一个元素相同
+          const lastIt = result[result.length - 1];
+          if (result.length === 0 || lastIt[0].deleted !== cur.deleted) {
+            result.push([cur]); // 新开一个组
+          } else {
+            lastIt.push(cur); // 向最后一个组添加元素
+          }
+          return result;
+        }, [])
+        .map((ws) => [ws[0].deleted, ws] as [boolean, IWord[]]);
+    }
+  }
+
+  //  在时间轴上选中的区间，可以包含doge sprite
+  setSelection(selected: ISelection[]) {}
+
+  //  // 监听用户的选中事件
+  //  on (evtType: 'selection', (evtData: ISelection[]) => void)
+  // //  删除片段，需要在时间轴上移除一个源 sprite，使用 多个 sprite 替代；
+  // // 注意不能销毁源 sprite
+  //  on (evtType: 'deleteSegment', (deletedSprite: VisibleSprite, replacement: VisibleSprite[]) => void)
+  // //  恢复事件的参数跟删除片段相反，移除多个 sprite，使用一个 sprite 替代
+  //  on (evtType: 'reset', (deletedSprites: VisibleSprite[], replacement: VisibleSprite) => void)
+
+  destroy() {
+    this.#articleEl.remove();
+  }
+}
+
+// sprite 被选中的区间
+interface ISelection {
+  sprite: VisibleSprite;
+  // 相对于 sprite.time.offset 的时间
+  startTime: number;
+  endTime: number;
+}
 
 interface IWord {
   start: number;
   end: number;
   label: string;
+  spr: VisibleSprite;
+  deleted: boolean;
 }
 
+// AI  接口返回的可用于口播剪辑的数据结构
 interface IParagraph {
   start: number;
   end: number;
@@ -409,255 +493,56 @@ interface IParagraph {
   words: IWord[];
 }
 
-let segId = 0;
-class Segment {
-  #id = segId++;
+Log.setLogLevel(Log.warn);
+const resList = ['/audio/pri-caocao.m4a'];
 
-  get id() {
-    return this.#id;
-  }
+if (import.meta.vitest) {
+  const { test, expect } = import.meta.vitest;
 
-  spr: VisibleSprite;
-
-  paragraphs: IParagraph[] = [];
-
-  constructor(spr: VisibleSprite, paragraphs: IParagraph[]) {
-    this.spr = spr;
-    this.paragraphs = paragraphs;
-  }
-
-  renderToHTML() {
-    return `<div class="segment" data-seg-id="${this.#id}">
-      ${this.paragraphs.map((p, idx) => `<p class="pargh" data-pargh-idx="${idx}">${p.words.map((w) => w.label).join('')}</p>`).join('')}
-    </div>`;
-  }
-
-  async deleteRange(opts: {
-    startPrghIdx?: number;
-    startWordIdx?: number;
-    endPrghIdx?: number;
-    endWordIdx?: number;
-  }) {
-    if (this.paragraphs.length === 0) {
-      throw Error('paragraphs is empty');
-    }
-
-    const lastPrgh = this.paragraphs.at(-1)!;
-    const { startPrghIdx, startWordIdx, endPrghIdx, endWordIdx } =
-      Object.assign(
-        {
-          startPrghIdx: 0,
-          startWordIdx: 0,
-          endPrghIdx: this.paragraphs.length - 1,
-          endWordIdx: lastPrgh.words.length - 1,
-        },
-        opts,
-      );
-    const clip = this.spr.getClip();
-    // 1. split 文字； 2. split Sprite
-    let preSeg = null;
-    // 如果切割的起始点不在开头位置，则存在 preSeg
-    if (!(startPrghIdx === 0 && startWordIdx === 0)) {
-      const startPrgh = { ...this.paragraphs[startPrghIdx] };
-      const startTime = startPrgh.words[startWordIdx].start;
-      const prePrghs = this.paragraphs.slice(0, startPrghIdx).concat({
-        ...startPrgh,
-        words: startPrgh.words.slice(0, startWordIdx),
-      });
-
-      const [preClip] = await clip.split(startTime);
-      const preSpr = new VisibleSprite(preClip);
-      preSpr.time.offset = this.spr.time.offset;
-
-      preSeg = new Segment(preSpr, prePrghs);
-    }
-
-    let postSeg = null;
-    if (
-      !(endPrghIdx === this.paragraphs.length - 1 && lastPrgh.words.length - 1)
-    ) {
-      const endPrgh = { ...this.paragraphs[endPrghIdx] };
-      const endTime = endPrgh.words[endWordIdx].end;
-      const postPrghs = [
-        { ...endPrgh, words: endPrgh.words.slice(endWordIdx) },
-      ].concat(this.paragraphs.slice(endPrghIdx + 1));
-
-      const [_, postClip] = await clip.split(endTime);
-      const postSpr = new VisibleSprite(postClip);
-      if (preSeg == null) {
-        postSpr.time.offset = this.spr.time.offset;
-      } else {
-        postSpr.time.offset = preSeg.spr.time.offset + preSeg.spr.time.duration;
-      }
-
-      postPrghs.forEach((p) => {
-        p.start -= endTime;
-        p.end -= endTime;
-        p.words.forEach((w) => {
-          w.start -= endTime;
-          w.end -= endTime;
-        });
-      });
-      postSeg = new Segment(postSpr, postPrghs);
-    }
-
-    return [preSeg, postSeg].filter((s) => s != null);
-  }
-}
-
-(async function init() {
-  globalSegs.push(
-    new Segment(
-      new VisibleSprite(new MP4Clip((await fetch(resList[0])).body!)),
-      textData.map((p) => ({
-        start: p.start_time * 1000,
-        end: p.end_time * 1000,
-        text: p.transcript,
-        words: p.words.map((w) => ({
-          start: w.start_time * 1000,
-          end: w.end_time * 1000,
-          label: w.label,
-        })),
+  const container = document.createElement('div');
+  const vs = new VisibleSprite(new MP4Clip((await fetch(resList[0])).body!));
+  const scissor = new WordsScissor({
+    attchEl: container,
+    wordsData: textData.map((p) => ({
+      start: p.start_time * 1000,
+      end: p.end_time * 1000,
+      text: p.transcript,
+      words: p.words.map((w) => ({
+        start: w.start_time * 1000,
+        end: w.end_time * 1000,
+        label: w.label,
+        spr: vs,
+        deleted: false,
       })),
-    ),
-  );
-
-  function findSegmentId(node?: Node | HTMLElement | null) {
-    if (node == null) return null;
-    if ('classList' in node && node.classList.contains('segment')) {
-      return Number(node.dataset.segId);
-    }
-    return findSegmentId(node.parentElement);
-  }
-
-  function findParghIdx(node?: Node | HTMLElement | null) {
-    if (node == null) return null;
-    if ('classList' in node && node.classList.contains('pargh'))
-      return Number(node.dataset.parghIdx);
-    return findParghIdx(node.parentElement);
-  }
-
-  const delEl = document.querySelector('#delete') as HTMLButtonElement;
-  delEl.addEventListener('click', async () => {
-    const sel = document.getSelection();
-    if (sel == null || sel.type !== 'Range') return;
-    const anchorSegId = findSegmentId(sel.anchorNode);
-    const anchorSegIdx = globalSegs.findIndex((s) => s.id === anchorSegId);
-    const anchorSeg = globalSegs[anchorSegIdx];
-    const anchorPrghIdx = findParghIdx(sel.anchorNode);
-
-    const focusSegId = findSegmentId(sel.focusNode);
-    const focusSegIdx = globalSegs.findIndex((s) => s.id === focusSegId);
-    const focusPrghIdx = findParghIdx(sel.focusNode);
-    const focusSeg = globalSegs[focusSegIdx];
-
-    if (anchorPrghIdx == null || focusPrghIdx == null) {
-      throw new Error('parghIdx is null');
-    }
-    // 光标落在最后一个文字后面，会导致超出 words 数组的边界
-    const anchorWordIdx = Math.min(
-      anchorSeg.paragraphs[anchorPrghIdx].words.length - 1,
-      sel.anchorOffset,
-    );
-    const focusWordIdx = Math.min(
-      focusSeg.paragraphs[focusPrghIdx].words.length - 1,
-      sel.focusOffset,
-    );
-
-    let startSeg = anchorSeg;
-    let startSegIdx = anchorSegIdx;
-    let startPrghIdx = anchorPrghIdx;
-    let startWordIdx = anchorWordIdx;
-    let endSeg = focusSeg;
-    let endSegIdx = focusSegIdx;
-    let endPrghIdx = focusPrghIdx;
-    let endWordIdx = focusWordIdx;
-    function swap<T>(a: T, b: T): [T, T] {
-      return [b, a];
-    }
-    // 反方向选中文字时，需要交换
-    if (startSegIdx > endSegIdx) {
-      [startSeg, endSeg] = swap(startSeg, endSeg);
-      [startSegIdx, endSegIdx] = swap(startSegIdx, endSegIdx);
-      [startPrghIdx, endPrghIdx] = swap(startPrghIdx, endPrghIdx);
-      [startWordIdx, endWordIdx] = swap(startWordIdx, endWordIdx);
-    }
-    if (startSegIdx === endSegIdx && startPrghIdx > endPrghIdx) {
-      [startPrghIdx, endPrghIdx] = swap(startPrghIdx, endPrghIdx);
-      [startWordIdx, endWordIdx] = swap(startWordIdx, endWordIdx);
-    }
-    if (
-      startSegIdx === endSegIdx &&
-      startPrghIdx === endPrghIdx &&
-      startWordIdx > endWordIdx
-    ) {
-      [startWordIdx, endWordIdx] = swap(startWordIdx, endWordIdx);
-    }
-
-    if (startSeg == endSeg) {
-      await deleteWords(startSeg, {
-        startPrghIdx,
-        startWordIdx,
-        endPrghIdx,
-        endWordIdx,
-      });
-    } else {
-      await deleteWords(startSeg, {
-        startPrghIdx,
-        startWordIdx,
-      });
-      await Promise.all(
-        globalSegs
-          .slice(startSegIdx + 1, endSegIdx)
-          .map(async (seg) => deleteWords(seg, {})),
-      );
-      await deleteWords(endSeg, {
-        endPrghIdx,
-        endWordIdx,
-      });
-    }
-    render();
+    })),
+    sprite: vs,
   });
-  render();
-})();
-
-const audioTxtContainer = document.querySelector('.audio-txt-container')!;
-function render() {
-  audioTxtContainer.innerHTML = globalSegs
-    .map((seg) => seg.renderToHTML())
-    .join('');
-}
-
-async function deleteWords(
-  s: Segment,
-  opts: {
-    startPrghIdx?: number;
-    startWordIdx?: number;
-    endPrghIdx?: number;
-    endWordIdx?: number;
-  },
-) {
-  // 1. 寻找选中文字片段对应的 Segment；2. 分别执行 deleteRange
-  // todo: 删除片段，需要移除后续片段的空隙
-  const newSegs = await s.deleteRange(opts);
-  globalSegs.splice(globalSegs.indexOf(s), 1, ...newSegs);
-}
-
-const playerContainer = document.querySelector('#player-container')!;
-document.querySelector('#play')?.addEventListener('click', () => {
-  (async () => {
-    if (globalSegs.length === 0) return;
-
-    const { loadStream } = playOutputStream(resList, playerContainer);
-    const com = new Combinator();
-    console.log(11111, globalSegs);
-    await Promise.all(
-      globalSegs.map(async (seg) => {
-        const offscreenSpr = new OffscreenSprite(seg.spr.getClip());
-        seg.spr.copyStateTo(offscreenSpr);
-        await com.addSprite(offscreenSpr);
-      }),
+  test('pargh count', () => {
+    expect(container.querySelectorAll('section > p').length).toBe(
+      textData.length,
     );
-    await loadStream(com.output(), com);
-  })().catch(Log.error);
-});
+  });
+}
+
+// const playerContainer = document.querySelector('#player-container')!;
+// document.querySelector('#play')?.addEventListener('click', () => {
+//   (async () => {
+//     const { loadStream } = playOutputStream(resList, playerContainer);
+//     const allSprs: VisibleSprite[] = [];
+//     for (const p of scissor.#article) {
+//       for (const w of p.words) {
+//         if (w.deleted || allSprs.includes(w.spr)) continue;
+//         allSprs.push(w.spr);
+//       }
+//     }
+//     const com = new Combinator();
+//     await Promise.all(
+//       allSprs.map(async (spr) => {
+//         const offscreenSpr = new OffscreenSprite(spr.getClip());
+//         spr.copyStateTo(offscreenSpr);
+//         await com.addSprite(offscreenSpr);
+//       }),
+//     );
+//     await loadStream(com.output(), com);
+//   })().catch(Log.error);
+// });

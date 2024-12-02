@@ -3,7 +3,8 @@
     "types": [
       "@types/dom-mediacapture-transform",
       "@types/dom-webcodecs",
-      "@types/wicg-file-system-access"
+      "@types/wicg-file-system-access",
+      "vitest/importMeta"
     ],
     "target": "ESNext",
     "useDefineForClassFields": true,
