@@ -400,6 +400,9 @@ class WordsScissor {
   #sprite: VisibleSprite;
   #article: IParagraph[];
   #articleEl: HTMLElement;
+  #popoverEl: HTMLElement;
+  #delEl: HTMLSpanElement;
+  #resetEl: HTMLSpanElement;
 
   #clears: Array<() => void> = [];
 
@@ -420,33 +423,97 @@ class WordsScissor {
     const searchEl = document.createElement('words-search');
     this.#attchEl.appendChild(searchEl);
 
+    const popoverEl = document.createElement('words-popover');
+    this.#popoverEl = popoverEl;
+    this.#attchEl.appendChild(popoverEl);
+
+    this.#delEl = document.createElement('span');
+    this.#delEl.textContent = '删除';
+
+    this.#resetEl = document.createElement('span');
+    this.#resetEl.textContent = '恢复';
+
     this.#bindEvent({ searchEl });
     this.#render();
   }
 
   #bindEvent(opts: { searchEl: HTMLElement }) {
+    const resetPopoverPos = (range: Range, el: HTMLElement) => {
+      const rect = range.getClientRects()[0];
+      this.#popoverEl.innerHTML = '';
+      this.#popoverEl.appendChild(el);
+      this.#popoverEl.setAttribute('top', rect.top - 40 + 'px');
+      this.#popoverEl.setAttribute('left', rect.left + 'px');
+    };
+
+    // 点击 选中单个文字
     this.#articleEl.addEventListener('click', (evt) => {
-      const range = click2Range(evt as PointerEvent);
-      if (range == null) return;
-      const sel = document.getSelection();
-      if (sel == null) return;
-      sel.removeAllRanges();
-      sel.addRange(range);
-      const evtData = sel2SprGroup(sel, this.#article);
-      if (evtData.length === 0) return;
-      this.#evtTool.emit('selection', evtData);
+      if (evt.target instanceof HTMLElement && evt.target.tagName === 'DEL') {
+        const range = document.createRange();
+        range.setStart(evt.target.firstChild!, 0);
+        range.setEnd(evt.target.firstChild!, evt.target.textContent!.length);
+
+        const selection = window.getSelection();
+        if (selection == null) return;
+        selection.removeAllRanges();
+        selection.addRange(range);
+      } else {
+        const range = click2Range(evt as PointerEvent);
+        if (range == null) return;
+        const sel = document.getSelection();
+        if (sel == null) return;
+        sel.removeAllRanges();
+        sel.addRange(range);
+        const evtData = sel2SprGroup(sel, this.#article);
+        if (evtData.length === 0) return;
+        this.#evtTool.emit('selection', evtData);
+      }
     });
 
+    let lastRange: Range | null = null;
     const onSelChange = () => {
       const sel = document.getSelection();
-      if (sel == null) return;
+      if (sel == null || sel.type != 'Range') return;
+
+      const range = sel.getRangeAt(0);
       const evtData = sel2SprGroup(sel, this.#article);
       if (evtData.length === 0) return;
+
+      lastRange = range;
+      console.log(44444, range, findRangeWords(range, this.#article));
+      resetPopoverPos(
+        range,
+        findRangeWords(range, this.#article).every((w) => w.deleted)
+          ? this.#resetEl
+          : this.#delEl,
+      );
+
       this.#evtTool.emit('selection', evtData);
     };
     document.addEventListener('selectionchange', onSelChange);
     this.#clears.push(() => {
       document.removeEventListener('selectionchange', onSelChange);
+    });
+
+    this.#delEl.addEventListener('click', async () => {
+      if (lastRange == null) return;
+      await deleteWords(
+        findRangeWords(lastRange, this.#article),
+        this.#article,
+      );
+      this.#render();
+    });
+
+    this.#resetEl.addEventListener('click', async () => {
+      if (lastRange == null) return;
+      // await resetWords(
+      //   findRangeWords(lastRange, this.#article),
+      //   this.#article,
+      // );
+      findRangeWords(lastRange, this.#article).forEach(
+        (w) => (w.deleted = false),
+      );
+      this.#render();
     });
 
     const seacher = createSearcher(this.#article);
@@ -638,7 +705,10 @@ if (import.meta.vitest) {
 // });
 
 function sel2SprGroup(sel: Selection, article: IParagraph[]) {
-  return [...wordsGroupBySpr(findSelectedWords(sel, article)).entries()]
+  if (sel == null || sel.type !== 'Range' || sel.rangeCount === 0) return [];
+  return [
+    ...wordsGroupBySpr(findRangeWords(sel.getRangeAt(0), article)).entries(),
+  ]
     .filter(([, words]) => words.length > 0)
     .map(([spr, words]) => ({
       sprite: spr,
@@ -678,9 +748,10 @@ function click2Range(evt: PointerEvent) {
   return rs;
 }
 
-function findSelectedWords(sel: Selection | null, article: IParagraph[]) {
-  if (sel == null || sel.type !== 'Range') return [];
-  const range = sel.getRangeAt(0);
+// 根据选区获取选中的文字
+function findRangeWords(range: Range, article: IParagraph[]) {
+  // if (sel == null || sel.type !== 'Range') return [];
+  // const range = sel.getRangeAt(0);
   const { startContainer, endContainer } = range;
 
   const startPrghIdx = findParghIdx(startContainer);
@@ -804,6 +875,49 @@ class WordsSearch extends HTMLElement {
 
 customElements.define('words-search', WordsSearch);
 
+class Popover extends HTMLElement {
+  #container: HTMLDivElement;
+  static get observedAttributes() {
+    return ['left', 'top'];
+  }
+
+  constructor() {
+    super();
+
+    const container = document.createElement('div');
+    container.innerHTML = `
+      <div><slot></slot></div>
+      <div class="tri"></div>
+    `;
+    container.style.position = 'fixed';
+    container.style.zIndex = '999';
+    container.style.backgroundColor = 'white';
+    container.style.border = '1px solid black';
+    container.style.padding = '5px';
+    container.style.boxShadow = '0 0 5px #000';
+
+    this.#container = container;
+  }
+
+  connectedCallback() {
+    const shadow = this.attachShadow({ mode: 'open' });
+    shadow.appendChild(this.#container);
+  }
+
+  attributeChangedCallback(name: string, oldValue: string, newValue: string) {
+    console.log('attributeChangedCallback', name, oldValue, newValue);
+    switch (name) {
+      case 'left':
+        this.#container.style.left = newValue;
+        break;
+      case 'top':
+        this.#container.style.top = newValue;
+        break;
+    }
+  }
+}
+customElements.define('words-popover', Popover);
+
 function createSearcher(article: IParagraph[]) {
   let ranges: Range[] = [];
   let rangeCursor = 0;
@@ -920,4 +1034,60 @@ function findTextOffset(
   }
 
   return result;
+}
+
+async function deleteWords(words: IWord[], article: IParagraph[]) {
+  if (words.length === 0) return;
+  // todo: undo
+  // storeSnap();
+  const delWordsGroup = wordsGroupBySpr(words);
+  [...delWordsGroup.values()].flat().forEach((w) => (w.deleted = true));
+
+  const allWordsGroup = wordsGroupBySpr(article.flatMap((p) => p.words));
+
+  // 根据需要删除片段的 spr 找到它对应的所有文字，然后根据文字的时间位置切割 sprite
+  // for (const [spr] of delWordsGroup) {
+  //   const groupWords = allWordsGroup.get(spr);
+  //   if (groupWords == null) throw new Error('words not found');
+
+  //   const { preWords, postWords } = cutWords(groupWords);
+  //   const clip = spr.getClip() as MP4Clip;
+  //   if (preWords.length > 0) {
+  //     const [preClip] = await clip.split(preWords[preWords.length - 1].end);
+  //     const newSpr = new VisibleSprite(preClip);
+  //     spr.copyStateTo(newSpr);
+  //     newSpr.time.duration = preClip.meta.duration;
+  //     preWords.forEach((w) => (w.spr = newSpr));
+  //   }
+  //   if (postWords.length > 0) {
+  //     const ts = postWords[0].start;
+  //     const [_, postClip] = await clip.split(ts);
+  //     const newSpr = new VisibleSprite(postClip);
+  //     spr.copyStateTo(newSpr);
+  //     newSpr.time.duration = postClip.meta.duration;
+
+  //     // 找到上一个 sprite，设置 offset， 消除间隙
+  //     const allWords = article.flatMap((p) => p.words);
+  //     const preSpr = allWords
+  //       .slice(0, allWords.indexOf(postWords[0]))
+  //       .findLast((w) => !w.deleted)?.spr;
+  //     newSpr.time.offset =
+  //       preSpr == null ? 0 : preSpr.time.offset + preSpr.time.duration;
+
+  //     postWords.forEach((w) => {
+  //       w.spr = newSpr;
+  //       w.start -= ts;
+  //       w.end -= ts;
+  //     });
+  //   }
+  // }
+}
+
+function cutWords(words: IWord[]) {
+  const startIdx = words.findIndex((w) => w.deleted);
+  const endIdx = words.findLastIndex((w) => w.deleted);
+  if (startIdx === -1 || endIdx === -1) return { preWords: [], postWords: [] };
+  const preWords = words.slice(0, startIdx);
+  const postWords = words.slice(endIdx + 1);
+  return { preWords, postWords };
 }
