@@ -464,9 +464,6 @@ class WordsScissor {
         if (sel == null) return;
         sel.removeAllRanges();
         sel.addRange(range);
-        const evtData = sel2SprGroup(sel, this.#article);
-        if (evtData.length === 0) return;
-        this.#evtTool.emit('selection', evtData);
       }
     });
 
@@ -476,19 +473,22 @@ class WordsScissor {
       if (sel == null || sel.type != 'Range') return;
 
       const range = sel.getRangeAt(0);
-      const evtData = sel2SprGroup(sel, this.#article);
-      if (evtData.length === 0) return;
+
+      const selectedWords = findRangeWords(range, this.#article);
+      if (selectedWords.length === 0) return;
 
       lastRange = range;
-      console.log(44444, range, findRangeWords(range, this.#article));
-      resetPopoverPos(
-        range,
-        findRangeWords(range, this.#article).every((w) => w.deleted)
-          ? this.#resetEl
-          : this.#delEl,
-      );
+      const actBtn = selectedWords.every((w) => w.deleted)
+        ? this.#resetEl
+        : this.#delEl;
+      resetPopoverPos(range, actBtn);
 
-      this.#evtTool.emit('selection', evtData);
+      if (actBtn === this.#delEl) {
+        this.#evtTool.emit('selection', {
+          start: selectedWords[0].start,
+          end: selectedWords.at(-1)!.end,
+        });
+      }
     };
     document.addEventListener('selectionchange', onSelChange);
     this.#clears.push(() => {
@@ -497,34 +497,46 @@ class WordsScissor {
 
     this.#delEl.addEventListener('click', async () => {
       if (lastRange == null) return;
-      await deleteWords(
-        findRangeWords(lastRange, this.#article),
-        this.#article,
+      findRangeWords(lastRange, this.#article).forEach(
+        (w) => (w.deleted = true),
       );
       this.#render();
+      this.#evtTool.emit(
+        'deleteSegment',
+        groupConsecutive(this.#article.flatMap((p) => p.words))
+          .filter(([state, words]) => state && words.length > 0)
+          .map(([, words]) => ({
+            start: words[0].start,
+            end: words.at(-1)!.end,
+          })),
+      );
     });
 
     this.#resetEl.addEventListener('click', async () => {
       if (lastRange == null) return;
-      // await resetWords(
-      //   findRangeWords(lastRange, this.#article),
-      //   this.#article,
-      // );
       findRangeWords(lastRange, this.#article).forEach(
         (w) => (w.deleted = false),
       );
       this.#render();
+      this.#evtTool.emit(
+        'resetSegment',
+        groupConsecutive(this.#article.flatMap((p) => p.words))
+          .filter(([state, words]) => state && words.length > 0)
+          .map(([, words]) => ({
+            start: words[0].start,
+            end: words.at(-1)!.end,
+          })),
+      );
     });
 
     const seacher = createSearcher(this.#article);
-
     opts.searchEl.addEventListener('search', (evt) => {
       seacher.search((evt as CustomEvent).detail as string);
     });
-    opts.searchEl.addEventListener('prev-result', (evt) => {
+    opts.searchEl.addEventListener('prev-result', () => {
       seacher.prev();
     });
-    opts.searchEl.addEventListener('next-result', (evt) => {
+    opts.searchEl.addEventListener('next-result', () => {
       seacher.next();
     });
   }
@@ -541,44 +553,14 @@ class WordsScissor {
       html += `<p class="pargh" data-pargh-idx="${idx}">${text}</p>`;
     }
     this.#articleEl.innerHTML = html;
-
-    // 将一个段落中的文字按是否删除状态分组
-    // [00011000] => [[000], [11], [000]] => [[false, [000]], [true, [11]], [false, [000]]]
-    function groupConsecutive(words: IWord[]) {
-      return words
-        .reduce((result: IWord[][], cur) => {
-          // 如果 result 数组为空或当前元素与上一个元素相同
-          const lastIt = result[result.length - 1];
-          if (result.length === 0 || lastIt[0].deleted !== cur.deleted) {
-            result.push([cur]); // 新开一个组
-          } else {
-            lastIt.push(cur); // 向最后一个组添加元素
-          }
-          return result;
-        }, [])
-        .map((ws) => [ws[0].deleted, ws] as [boolean, IWord[]]);
-    }
   }
 
-  //  在时间轴上选中的区间，可以包含doge sprite
-  setSelection(selected: ISelection[]) {}
-
   #evtTool = new EventTool<{
-    selection: (evtData: ISelection[]) => void;
-    deleteSegment: (
-      deletedSprite: VisibleSprite,
-      replacement: VisibleSprite[],
-    ) => void;
+    selection: (timeRange: { start: number; end: number }) => void;
+    deleteSegment: (state: Array<{ start: number; end: number }>) => void;
+    resetSegment: (state: Array<{ start: number; end: number }>) => void;
   }>();
   on = this.#evtTool.on;
-
-  //  // 监听用户的选中事件
-  //  on (evtType: 'selection', (evtData: ISelection[]) => void)
-  // //  删除片段，需要在时间轴上移除一个源 sprite，使用 多个 sprite 替代；
-  // // 注意不能销毁源 sprite
-  //  on (evtType: 'deleteSegment', (deletedSprite: VisibleSprite, replacement: VisibleSprite[]) => void)
-  // //  恢复事件的参数跟删除片段相反，移除多个 sprite，使用一个 sprite 替代
-  //  on (evtType: 'reset', (deletedSprites: VisibleSprite[], replacement: VisibleSprite) => void)
 
   destroy() {
     this.#articleEl.remove();
@@ -640,83 +622,6 @@ const resList = ['/audio/pri-caocao.m4a'];
   });
 })();
 
-if (import.meta.vitest) {
-  const { test, expect } = import.meta.vitest;
-
-  const container = document.createElement('div');
-  document.body.appendChild(container);
-
-  const vs = new VisibleSprite(new MP4Clip((await fetch(resList[0])).body!));
-  const scissor = new WordsScissor({
-    attchEl: container,
-    wordsData: textData.map((p) => ({
-      start: p.start_time * 1000,
-      end: p.end_time * 1000,
-      text: p.transcript,
-      words: p.words.map((w) => ({
-        start: w.start_time * 1000,
-        end: w.end_time * 1000,
-        label: w.label,
-        spr: vs,
-        deleted: false,
-      })),
-    })),
-    sprite: vs,
-  });
-  test('pargh count', () => {
-    expect(container.querySelectorAll('section > p').length).toBe(
-      textData.length,
-    );
-  });
-
-  // const txtEl = container.querySelector('section')!;
-  // test('selection event', () => {
-  //   scissor.on('selection', (selections) => {
-  //     console.log(4444444);
-  //     expect(selections.length).toBe(1);
-  //     expect(selections[0].sprite).toBe(vs);
-  //   });
-  //   txtEl.dispatchEvent(new PointerEvent('click'));
-  //   console.log(555555);
-  // });
-}
-
-// const playerContainer = document.querySelector('#player-container')!;
-// document.querySelector('#play')?.addEventListener('click', () => {
-//   (async () => {
-//     const { loadStream } = playOutputStream(resList, playerContainer);
-//     const allSprs: VisibleSprite[] = [];
-//     for (const p of scissor.#article) {
-//       for (const w of p.words) {
-//         if (w.deleted || allSprs.includes(w.spr)) continue;
-//         allSprs.push(w.spr);
-//       }
-//     }
-//     const com = new Combinator();
-//     await Promise.all(
-//       allSprs.map(async (spr) => {
-//         const offscreenSpr = new OffscreenSprite(spr.getClip());
-//         spr.copyStateTo(offscreenSpr);
-//         await com.addSprite(offscreenSpr);
-//       }),
-//     );
-//     await loadStream(com.output(), com);
-//   })().catch(Log.error);
-// });
-
-function sel2SprGroup(sel: Selection, article: IParagraph[]) {
-  if (sel == null || sel.type !== 'Range' || sel.rangeCount === 0) return [];
-  return [
-    ...wordsGroupBySpr(findRangeWords(sel.getRangeAt(0), article)).entries(),
-  ]
-    .filter(([, words]) => words.length > 0)
-    .map(([spr, words]) => ({
-      sprite: spr,
-      startTime: words[0].start,
-      endTime: words.at(-1)!.end,
-    }));
-}
-
 function click2Range(evt: PointerEvent) {
   const sel = document.getSelection();
   // 用户多选文本时，使用浏览器默认选区
@@ -750,8 +655,6 @@ function click2Range(evt: PointerEvent) {
 
 // 根据选区获取选中的文字
 function findRangeWords(range: Range, article: IParagraph[]) {
-  // if (sel == null || sel.type !== 'Range') return [];
-  // const range = sel.getRangeAt(0);
   const { startContainer, endContainer } = range;
 
   const startPrghIdx = findParghIdx(startContainer);
@@ -829,8 +732,6 @@ function wordsGroupBySpr(words: IWord[]) {
 }
 
 class WordsSearch extends HTMLElement {
-  // #inputEl: HTMLInputElement | undefined;
-
   constructor() {
     super();
   }
@@ -1036,58 +937,19 @@ function findTextOffset(
   return result;
 }
 
-async function deleteWords(words: IWord[], article: IParagraph[]) {
-  if (words.length === 0) return;
-  // todo: undo
-  // storeSnap();
-  const delWordsGroup = wordsGroupBySpr(words);
-  [...delWordsGroup.values()].flat().forEach((w) => (w.deleted = true));
-
-  const allWordsGroup = wordsGroupBySpr(article.flatMap((p) => p.words));
-
-  // 根据需要删除片段的 spr 找到它对应的所有文字，然后根据文字的时间位置切割 sprite
-  // for (const [spr] of delWordsGroup) {
-  //   const groupWords = allWordsGroup.get(spr);
-  //   if (groupWords == null) throw new Error('words not found');
-
-  //   const { preWords, postWords } = cutWords(groupWords);
-  //   const clip = spr.getClip() as MP4Clip;
-  //   if (preWords.length > 0) {
-  //     const [preClip] = await clip.split(preWords[preWords.length - 1].end);
-  //     const newSpr = new VisibleSprite(preClip);
-  //     spr.copyStateTo(newSpr);
-  //     newSpr.time.duration = preClip.meta.duration;
-  //     preWords.forEach((w) => (w.spr = newSpr));
-  //   }
-  //   if (postWords.length > 0) {
-  //     const ts = postWords[0].start;
-  //     const [_, postClip] = await clip.split(ts);
-  //     const newSpr = new VisibleSprite(postClip);
-  //     spr.copyStateTo(newSpr);
-  //     newSpr.time.duration = postClip.meta.duration;
-
-  //     // 找到上一个 sprite，设置 offset， 消除间隙
-  //     const allWords = article.flatMap((p) => p.words);
-  //     const preSpr = allWords
-  //       .slice(0, allWords.indexOf(postWords[0]))
-  //       .findLast((w) => !w.deleted)?.spr;
-  //     newSpr.time.offset =
-  //       preSpr == null ? 0 : preSpr.time.offset + preSpr.time.duration;
-
-  //     postWords.forEach((w) => {
-  //       w.spr = newSpr;
-  //       w.start -= ts;
-  //       w.end -= ts;
-  //     });
-  //   }
-  // }
-}
-
-function cutWords(words: IWord[]) {
-  const startIdx = words.findIndex((w) => w.deleted);
-  const endIdx = words.findLastIndex((w) => w.deleted);
-  if (startIdx === -1 || endIdx === -1) return { preWords: [], postWords: [] };
-  const preWords = words.slice(0, startIdx);
-  const postWords = words.slice(endIdx + 1);
-  return { preWords, postWords };
+// 将一个段落中的文字按是否删除状态分组
+// [00011000] => [[000], [11], [000]] => [[false, [000]], [true, [11]], [false, [000]]]
+function groupConsecutive(words: IWord[]) {
+  return words
+    .reduce((result: IWord[][], cur) => {
+      // 如果 result 数组为空或当前元素与上一个元素相同
+      const lastIt = result[result.length - 1];
+      if (result.length === 0 || lastIt[0].deleted !== cur.deleted) {
+        result.push([cur]); // 新开一个组
+      } else {
+        lastIt.push(cur); // 向最后一个组添加元素
+      }
+      return result;
+    }, [])
+    .map((ws) => [ws[0].deleted, ws] as [boolean, IWord[]]);
 }
