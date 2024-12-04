@@ -397,7 +397,6 @@ class WordsScissor {
   // 若移动了 sprite，当前文字剪辑失效，弹出提示语
   expired = false;
   #attchEl: HTMLDivElement;
-  #sprite: VisibleSprite;
   #article: IParagraph[];
   #articleEl: HTMLElement;
   #popoverEl: HTMLElement;
@@ -409,12 +408,9 @@ class WordsScissor {
   constructor(conf: {
     // UI 挂载节点
     attchEl: HTMLDivElement;
-    //  初始 sprite 以及 ASR 识别的数据
-    sprite: VisibleSprite;
     wordsData: IParagraph[];
   }) {
     this.#attchEl = conf.attchEl;
-    this.#sprite = conf.sprite;
     this.#article = conf.wordsData;
 
     this.#articleEl = document.createElement('section');
@@ -444,6 +440,7 @@ class WordsScissor {
       this.#popoverEl.appendChild(el);
       this.#popoverEl.setAttribute('top', rect.top - 40 + 'px');
       this.#popoverEl.setAttribute('left', rect.left + 'px');
+      this.#popoverEl.setAttribute('visible', 'true');
     };
 
     // 点击 选中单个文字
@@ -470,7 +467,15 @@ class WordsScissor {
     let lastRange: Range | null = null;
     const onSelChange = () => {
       const sel = document.getSelection();
-      if (sel == null || sel.type != 'Range') return;
+      if (
+        sel == null ||
+        sel.type != 'Range' ||
+        !this.#articleEl.contains(sel.anchorNode)
+      ) {
+        this.#popoverEl.setAttribute('visible', 'false');
+        lastRange = null;
+        return;
+      }
 
       const range = sel.getRangeAt(0);
 
@@ -495,38 +500,22 @@ class WordsScissor {
       document.removeEventListener('selectionchange', onSelChange);
     });
 
-    this.#delEl.addEventListener('click', async () => {
+    this.#delEl.addEventListener('mousedown', async () => {
       if (lastRange == null) return;
       findRangeWords(lastRange, this.#article).forEach(
         (w) => (w.deleted = true),
       );
       this.#render();
-      this.#evtTool.emit(
-        'deleteSegment',
-        groupConsecutive(this.#article.flatMap((p) => p.words))
-          .filter(([state, words]) => state && words.length > 0)
-          .map(([, words]) => ({
-            start: words[0].start,
-            end: words.at(-1)!.end,
-          })),
-      );
+      this.#evtTool.emit('deleteSegment');
     });
 
-    this.#resetEl.addEventListener('click', async () => {
+    this.#resetEl.addEventListener('mousedown', async () => {
       if (lastRange == null) return;
       findRangeWords(lastRange, this.#article).forEach(
         (w) => (w.deleted = false),
       );
       this.#render();
-      this.#evtTool.emit(
-        'resetSegment',
-        groupConsecutive(this.#article.flatMap((p) => p.words))
-          .filter(([state, words]) => state && words.length > 0)
-          .map(([, words]) => ({
-            start: words[0].start,
-            end: words.at(-1)!.end,
-          })),
-      );
+      this.#evtTool.emit('resetSegment');
     });
 
     const seacher = createSearcher(this.#article);
@@ -557,10 +546,22 @@ class WordsScissor {
 
   #evtTool = new EventTool<{
     selection: (timeRange: { start: number; end: number }) => void;
-    deleteSegment: (state: Array<{ start: number; end: number }>) => void;
-    resetSegment: (state: Array<{ start: number; end: number }>) => void;
+    deleteSegment: () => void;
+    resetSegment: () => void;
   }>();
   on = this.#evtTool.on;
+
+  getSegments() {
+    return (
+      groupConsecutive(this.#article.flatMap((p) => p.words))
+        // .filter(([state, words]) => state && words.length > 0)
+        .map(([deleted, words]) => ({
+          deleted,
+          start: words[0].start,
+          end: words.at(-1)!.end,
+        }))
+    );
+  }
 
   destroy() {
     this.#articleEl.remove();
@@ -568,19 +569,10 @@ class WordsScissor {
   }
 }
 
-// sprite 被选中的区间
-interface ISelection {
-  sprite: VisibleSprite;
-  // 相对于 sprite.time.offset 的时间
-  startTime: number;
-  endTime: number;
-}
-
 interface IWord {
   start: number;
   end: number;
   label: string;
-  spr: VisibleSprite;
   deleted: boolean;
 }
 
@@ -593,13 +585,13 @@ interface IParagraph {
 }
 
 Log.setLogLevel(Log.warn);
-const resList = ['/audio/pri-caocao.m4a'];
+// const resList = ['/audio/pri-caocao.m4a'];
 
 (async () => {
   const container = document.createElement('div');
   document.body.appendChild(container);
 
-  const vs = new VisibleSprite(new MP4Clip((await fetch(resList[0])).body!));
+  // const vs = new VisibleSprite(new MP4Clip((await fetch(resList[0])).body!));
   const scissor = new WordsScissor({
     attchEl: container,
     wordsData: textData.map((p) => ({
@@ -610,15 +602,20 @@ const resList = ['/audio/pri-caocao.m4a'];
         start: w.start_time * 1000,
         end: w.end_time * 1000,
         label: w.label,
-        spr: vs,
         deleted: false,
       })),
     })),
-    sprite: vs,
+    // sprite: vs,
   });
 
   scissor.on('selection', (evtData) => {
     console.log('selection evt:', evtData);
+  });
+  scissor.on('deleteSegment', () => {
+    console.log('deleteSegment evt:', scissor.getSegments());
+  });
+  scissor.on('resetSegment', () => {
+    console.log('resetSegment evt:', scissor.getSegments());
   });
 })();
 
@@ -722,15 +719,6 @@ function findOffsetRelativePrgh(range: Range) {
   }
 }
 
-function wordsGroupBySpr(words: IWord[]) {
-  const sprMap = new Map<VisibleSprite, IWord[]>();
-  for (const w of words) {
-    if (sprMap.has(w.spr)) sprMap.get(w.spr)!.push(w);
-    else sprMap.set(w.spr, [w]);
-  }
-  return sprMap;
-}
-
 class WordsSearch extends HTMLElement {
   constructor() {
     super();
@@ -779,13 +767,14 @@ customElements.define('words-search', WordsSearch);
 class Popover extends HTMLElement {
   #container: HTMLDivElement;
   static get observedAttributes() {
-    return ['left', 'top'];
+    return ['left', 'top', 'visible'];
   }
 
   constructor() {
     super();
 
     const container = document.createElement('div');
+    container.style.display = 'none';
     container.innerHTML = `
       <div><slot></slot></div>
       <div class="tri"></div>
@@ -805,14 +794,16 @@ class Popover extends HTMLElement {
     shadow.appendChild(this.#container);
   }
 
-  attributeChangedCallback(name: string, oldValue: string, newValue: string) {
-    console.log('attributeChangedCallback', name, oldValue, newValue);
+  attributeChangedCallback(name: string, _: string, newValue: string) {
     switch (name) {
       case 'left':
         this.#container.style.left = newValue;
         break;
       case 'top':
         this.#container.style.top = newValue;
+        break;
+      case 'visible':
+        this.#container.style.display = newValue === 'true' ? 'block' : 'none';
         break;
     }
   }
