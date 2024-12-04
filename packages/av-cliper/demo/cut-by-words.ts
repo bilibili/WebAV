@@ -404,6 +404,7 @@ class WordsScissor {
   #resetEl: HTMLSpanElement;
 
   #clears: Array<() => void> = [];
+  #lastValidRange: Range | null = null;
 
   constructor(conf: {
     // UI 挂载节点
@@ -434,26 +435,19 @@ class WordsScissor {
   }
 
   #bindEvent(opts: { searchEl: HTMLElement }) {
-    const resetPopoverPos = (range: Range, el: HTMLElement) => {
-      const rect = range.getClientRects()[0];
-      this.#popoverEl.innerHTML = '';
-      this.#popoverEl.appendChild(el);
-      this.#popoverEl.setAttribute('top', rect.top - 40 + 'px');
-      this.#popoverEl.setAttribute('left', rect.left + 'px');
-      this.#popoverEl.setAttribute('visible', 'true');
-    };
-
-    // 点击 选中单个文字
+    // 点击 选中单个文字，或已被删除的一段文字
     this.#articleEl.addEventListener('click', (evt) => {
       if (evt.target instanceof HTMLElement && evt.target.tagName === 'DEL') {
         const range = document.createRange();
         range.setStart(evt.target.firstChild!, 0);
         range.setEnd(evt.target.firstChild!, evt.target.textContent!.length);
 
-        const selection = window.getSelection();
-        if (selection == null) return;
-        selection.removeAllRanges();
-        selection.addRange(range);
+        const sel = document.getSelection();
+        if (sel == null) return;
+        sel.removeAllRanges();
+        sel.addRange(range);
+
+        this.#selectionUpdated(sel);
       } else {
         const range = click2Range(evt as PointerEvent);
         if (range == null) return;
@@ -461,61 +455,41 @@ class WordsScissor {
         if (sel == null) return;
         sel.removeAllRanges();
         sel.addRange(range);
+
+        this.#selectionUpdated(sel);
       }
     });
 
-    let lastRange: Range | null = null;
-    const onSelChange = () => {
+    // 根据选区重置 popover 位置，触发 selection 事件
+    const onDocMouseUp = () => {
       const sel = document.getSelection();
       if (
         sel == null ||
         sel.type != 'Range' ||
-        !this.#articleEl.contains(sel.anchorNode)
+        !this.#articleEl.contains(sel.anchorNode) ||
+        !this.#articleEl.contains(sel.focusNode)
       ) {
-        this.#popoverEl.setAttribute('visible', 'false');
-        lastRange = null;
+        if (this.#lastValidRange != null) this.#evtTool.emit('selection', null);
+        this.#lastValidRange = null;
         return;
       }
+      this.#selectionUpdated(sel);
+    };
+    document.addEventListener('mouseup', onDocMouseUp);
 
-      const range = sel.getRangeAt(0);
-
-      const selectedWords = findRangeWords(range, this.#article);
-      if (selectedWords.length === 0) return;
-
-      lastRange = range;
-      const actBtn = selectedWords.every((w) => w.deleted)
-        ? this.#resetEl
-        : this.#delEl;
-      resetPopoverPos(range, actBtn);
-
-      if (actBtn === this.#delEl) {
-        this.#evtTool.emit('selection', {
-          start: selectedWords[0].start,
-          end: selectedWords.at(-1)!.end,
-        });
+    const onDocMouseDown = (evt: Event) => {
+      if (
+        this.#articleEl.contains(evt.target as HTMLElement) ||
+        !this.#attchEl.contains(evt.target as HTMLElement)
+      ) {
+        this.#popoverEl.setAttribute('visible', 'false');
       }
     };
-    document.addEventListener('selectionchange', onSelChange);
+    document.addEventListener('mousedown', onDocMouseDown);
+
     this.#clears.push(() => {
-      document.removeEventListener('selectionchange', onSelChange);
-    });
-
-    this.#delEl.addEventListener('mousedown', async () => {
-      if (lastRange == null) return;
-      findRangeWords(lastRange, this.#article).forEach(
-        (w) => (w.deleted = true),
-      );
-      this.#render();
-      this.#evtTool.emit('deleteSegment');
-    });
-
-    this.#resetEl.addEventListener('mousedown', async () => {
-      if (lastRange == null) return;
-      findRangeWords(lastRange, this.#article).forEach(
-        (w) => (w.deleted = false),
-      );
-      this.#render();
-      this.#evtTool.emit('resetSegment');
+      document.removeEventListener('mouseup', onDocMouseUp);
+      document.removeEventListener('mousedown', onDocMouseDown);
     });
 
     const seacher = createSearcher(this.#article);
@@ -530,6 +504,50 @@ class WordsScissor {
     });
   }
 
+  #selectionUpdated(sel: Selection) {
+    const range = sel.getRangeAt(0);
+    const selectedWords = findRangeWords(range, this.#article);
+    if (selectedWords.length === 0) return;
+
+    const isAlldeletedWords = selectedWords.every((w) => w.deleted);
+    const actBtn = isAlldeletedWords ? this.#resetEl : this.#delEl;
+
+    actBtn.onclick = () => {
+      selectedWords.forEach((w) => (w.deleted = !isAlldeletedWords));
+      this.#popoverEl.setAttribute('visible', 'false');
+      this.#render();
+
+      this.#evtTool.emit(isAlldeletedWords ? 'resetSegment' : 'deleteSegment');
+    };
+    this.#resetPopoverPos(sel, actBtn);
+
+    if (!isAlldeletedWords) {
+      // 有效（包含未被删除的文字）选区
+      this.#lastValidRange = range;
+      this.#evtTool.emit('selection', {
+        start: selectedWords[0].start,
+        end: selectedWords.at(-1)!.end,
+      });
+    }
+  }
+
+  #resetPopoverPos(sel: Selection, el: HTMLElement) {
+    this.#popoverEl.innerHTML = '';
+    this.#popoverEl.appendChild(el);
+    this.#popoverEl.setAttribute('visible', 'true');
+
+    if (sel.focusNode == null) return;
+    // 创建一个新的 range 仅包含结束位置
+    const caretRange = document.createRange();
+    caretRange.setStart(sel.focusNode, sel.focusOffset);
+    caretRange.setEnd(sel.focusNode, sel.focusOffset);
+
+    // 获取结束位置的坐标
+    const rect = caretRange.getBoundingClientRect();
+    this.#popoverEl.setAttribute('top', rect.top - 40 + 'px');
+    this.#popoverEl.setAttribute('left', rect.left - 21 + 'px');
+  }
+
   #render() {
     let html = '';
     for (let idx = 0; idx < this.#article.length; idx++) {
@@ -539,13 +557,13 @@ class WordsScissor {
         const str = words.map((w) => w.label).join('');
         text += deleted ? `<del>${str}</del>` : str;
       }
-      html += `<p class="pargh" data-pargh-idx="${idx}">${text}</p>`;
+      html += `<span class="pargh" data-pargh-idx="${idx}">${text}</span>`;
     }
     this.#articleEl.innerHTML = html;
   }
 
   #evtTool = new EventTool<{
-    selection: (timeRange: { start: number; end: number }) => void;
+    selection: (timeRange: { start: number; end: number } | null) => void;
     deleteSegment: () => void;
     resetSegment: () => void;
   }>();
