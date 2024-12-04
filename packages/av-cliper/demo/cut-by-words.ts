@@ -1,7 +1,5 @@
 import { EventTool } from '@webav/internal-utils';
 import { Log } from '../src';
-import { MP4Clip } from '../src/clips/mp4-clip';
-import { VisibleSprite } from '../src/sprite/visible-sprite';
 import { sleep } from '../src/av-utils';
 
 const textData = [
@@ -505,6 +503,9 @@ class WordsScissor {
     opts.searchEl.addEventListener('next-result', () => {
       seacher.next();
     });
+    opts.searchEl.addEventListener('clear-search', () => {
+      seacher.clear();
+    });
   }
 
   #selectionUpdated(sel: Selection) {
@@ -748,38 +749,80 @@ class WordsSearch extends HTMLElement {
   connectedCallback() {
     const shadow = this.attachShadow({ mode: 'open' });
     const container = document.createElement('div');
+    this.#initHtml(container);
 
-    const searchEl = document.createElement('span');
-    searchEl.textContent = '🔍';
-    container.appendChild(searchEl);
-
-    const inputEl = document.createElement('input');
-    container.appendChild(inputEl);
-    inputEl.placeholder = '搜索关键词';
+    const inputEl = container.querySelector('input')!;
+    let searching = false;
+    let lastVal = '';
     inputEl.addEventListener('keypress', (evt) => {
-      if (evt.key !== 'Enter' || inputEl.value.trim() === '') return;
-      this.dispatchEvent(new CustomEvent('search', { detail: inputEl.value }));
+      if (evt.key !== 'Enter') return;
+      if (searching && lastVal === inputEl.value) {
+        if (evt.shiftKey) {
+          this.dispatchEvent(new CustomEvent('prev-result'));
+        } else {
+          this.dispatchEvent(new CustomEvent('next-result'));
+        }
+      } else {
+        searching = true;
+        lastVal = inputEl.value;
+        this.dispatchEvent(
+          new CustomEvent('search', { detail: inputEl.value }),
+        );
+      }
     });
 
-    const prevEl = document.createElement('span');
-    prevEl.textContent = '^';
-    container.appendChild(prevEl);
+    const prevEl = container.querySelector('.prev')!;
     prevEl.addEventListener('click', () => {
       this.dispatchEvent(new CustomEvent('prev-result'));
     });
 
-    const nextEl = document.createElement('span');
-    nextEl.textContent = 'v';
-    container.appendChild(nextEl);
+    const nextEl = container.querySelector('.next')!;
     nextEl.addEventListener('click', () => {
       this.dispatchEvent(new CustomEvent('next-result'));
     });
 
-    const closeEl = document.createElement('span');
-    closeEl.textContent = 'x';
-    container.appendChild(closeEl);
+    const closeEl = container.querySelector('.close')!;
+    closeEl.addEventListener('click', () => {
+      searching = false;
+      inputEl.value = '';
+      this.dispatchEvent(new CustomEvent('clear-search'));
+    });
 
     shadow.appendChild(container);
+  }
+
+  #initHtml(container: HTMLDivElement) {
+    container.innerHTML = `
+      <span>🔍</span>
+      <input placeholder="搜索关键词" />
+      <span class="count"></span>
+      <span class="prev">^</span>
+      <span class="next">v</span>
+      <span class="close">x</span>
+    `;
+    const styleEl = document.createElement('style');
+    styleEl.textContent = `
+      div {
+        background: #383838;
+        border-radius: 16px;
+        padding: 6px 10px;
+        display: flex;
+      }
+      input {
+        outline: none;
+        background: transparent;
+        border: none;
+        margin: 0 4px;
+        flex: 1;
+        color: #E7E9EB;
+        caret-color: #58B1D4;
+      }
+      .prev, .next, .close {
+
+        width: 16px;
+      }
+    `;
+    container.appendChild(styleEl);
   }
 }
 
@@ -840,7 +883,8 @@ function createSearcher(article: IParagraph[]) {
   let rangeCursor = 0;
   return {
     search(kw: string) {
-      this.exit();
+      console.log(11111111, ranges, kw);
+      this.clear();
       if (kw.length === 0) return;
       const matchRecord: Record<
         number,
@@ -898,7 +942,7 @@ function createSearcher(article: IParagraph[]) {
       const range = ranges[rangeCursor];
       CSS.highlights.set('search-cursor', new Highlight(range));
     },
-    exit() {
+    clear() {
       ranges = [];
       rangeCursor = 0;
       CSS.highlights.delete('search');
