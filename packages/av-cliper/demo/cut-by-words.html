@@ -9,12 +9,11 @@
   <title>Cut by words</title>
 
   <style>
-    #app {
-      width: 900px;
-      height: 500px;
+    body {
       margin: 50px 50px;
       overflow: hidden;
-      position: relative;
+      background-color: #1E1E1E;
+      color: #E3E3E3;
     }
 
     canvas {
@@ -36,17 +35,25 @@
       margin-left: 0;
     }
 
+    del::selection {
+      background-color: #525252;
+    }
+
+    ::selection {
+      background-color: #22699D;
+    }
+
     ::highlight(del) {
       color: gray;
       text-decoration: line-through;
     }
 
     ::highlight(search) {
-      background-color: yellow;
+      color: #80DAF6;
     }
 
     ::highlight(search-cursor) {
-      background-color: orange;
+      background-color: #164B76;
     }
   </style>
 </head>

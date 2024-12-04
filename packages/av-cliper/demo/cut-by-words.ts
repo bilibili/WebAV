@@ -2,6 +2,7 @@ import { EventTool } from '@webav/internal-utils';
 import { Log } from '../src';
 import { MP4Clip } from '../src/clips/mp4-clip';
 import { VisibleSprite } from '../src/sprite/visible-sprite';
+import { sleep } from '../src/av-utils';
 
 const textData = [
   {
@@ -461,7 +462,9 @@ class WordsScissor {
     });
 
     // 根据选区重置 popover 位置，触发 selection 事件
-    const onDocMouseUp = () => {
+    const onDocMouseUp = async () => {
+      // 等待选区稳定，mouseup 时刻选区可能还未来得及取消
+      await sleep(100);
       const sel = document.getSelection();
       if (
         sel == null ||
@@ -797,12 +800,16 @@ class Popover extends HTMLElement {
       <div><slot></slot></div>
       <div class="tri"></div>
     `;
-    container.style.position = 'fixed';
-    container.style.zIndex = '999';
-    container.style.backgroundColor = 'white';
-    container.style.border = '1px solid black';
-    container.style.padding = '5px';
-    container.style.boxShadow = '0 0 5px #000';
+    container.style.cssText = `
+      display: none;
+      position: fixed;
+      z-index: 999;
+      background-color: #525252;
+      padding: 4px 12px;
+      box-shadow: 0 4px 10px #000;
+      border-radius: 4px;
+      cursor: pointer;
+    `;
 
     this.#container = container;
   }
