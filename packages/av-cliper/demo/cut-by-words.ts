@@ -479,10 +479,7 @@ class WordsScissor {
     document.addEventListener('mouseup', onDocMouseUp);
 
     const onDocMouseDown = (evt: Event) => {
-      if (
-        this.#articleEl.contains(evt.target as HTMLElement) ||
-        !this.#attchEl.contains(evt.target as HTMLElement)
-      ) {
+      if (!this.#popoverEl.contains(evt.target as HTMLElement)) {
         this.#popoverEl.setAttribute('visible', 'false');
       }
     };
@@ -536,19 +533,28 @@ class WordsScissor {
   }
 
   #resetPopoverPos(sel: Selection, el: HTMLElement) {
+    if (sel.focusNode == null || sel.type !== 'Range') return;
     this.#popoverEl.innerHTML = '';
     this.#popoverEl.appendChild(el);
     this.#popoverEl.setAttribute('visible', 'true');
 
-    if (sel.focusNode == null) return;
-    // 创建一个新的 range 仅包含结束位置
+    const selRange = sel.getRangeAt(0);
     const caretRange = document.createRange();
-    caretRange.setStart(sel.focusNode, sel.focusOffset);
-    caretRange.setEnd(sel.focusNode, sel.focusOffset);
+    // 是否从后往前拖拽的选区
+    const isReverseSel =
+      (sel.anchorNode === sel.focusNode &&
+        sel.focusOffset < sel.anchorOffset) ||
+      (sel.anchorNode !== sel.focusNode &&
+        selRange.startContainer === sel.focusNode);
+    const startOffset = isReverseSel ? sel.focusOffset : sel.focusOffset - 1;
+    const endOffset = isReverseSel ? sel.focusOffset + 1 : sel.focusOffset;
+    // 创建一个新的 range 仅包含结束位置
+    caretRange.setStart(sel.focusNode, startOffset);
+    caretRange.setEnd(sel.focusNode, endOffset);
 
     // 获取结束位置的坐标
     const rect = caretRange.getBoundingClientRect();
-    this.#popoverEl.setAttribute('top', rect.top - 40 + 'px');
+    this.#popoverEl.setAttribute('top', rect.top - 38 + 'px');
     this.#popoverEl.setAttribute('left', rect.left - 21 + 'px');
   }
 
