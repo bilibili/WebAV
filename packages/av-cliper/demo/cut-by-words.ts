@@ -401,6 +401,7 @@ class WordsScissor {
   #popoverEl: HTMLElement;
   #delEl: HTMLSpanElement;
   #resetEl: HTMLSpanElement;
+  #searchEl: HTMLElement;
 
   #clears: Array<() => void> = [];
   #lastValidRange: Range | null = null;
@@ -415,6 +416,7 @@ class WordsScissor {
 
     const searchEl = document.createElement('words-search');
     this.#attchEl.appendChild(searchEl);
+    this.#searchEl = searchEl;
 
     this.#articleEl = document.createElement('section');
     this.#attchEl.appendChild(this.#articleEl);
@@ -494,16 +496,21 @@ class WordsScissor {
 
     const seacher = createSearcher(this.#article);
     opts.searchEl.addEventListener('search', (evt) => {
-      seacher.search((evt as CustomEvent).detail as string);
+      const rsCnt = seacher.search((evt as CustomEvent).detail as string);
+      this.#searchEl.setAttribute('result-count', rsCnt.toString());
     });
     opts.searchEl.addEventListener('prev-result', () => {
-      seacher.prev();
+      const curIdx = seacher.prev();
+      this.#searchEl.setAttribute('result-cursor', curIdx.toString());
     });
     opts.searchEl.addEventListener('next-result', () => {
-      seacher.next();
+      const curIdx = seacher.next();
+      this.#searchEl.setAttribute('result-cursor', curIdx.toString());
     });
     opts.searchEl.addEventListener('clear-search', () => {
       seacher.clear();
+      this.#searchEl.setAttribute('result-count', '0');
+      this.#searchEl.setAttribute('result-cursor', '0');
     });
   }
 
@@ -750,6 +757,10 @@ function findOffsetRelativePrgh(range: Range) {
 }
 
 class WordsSearch extends HTMLElement {
+  static get observedAttributes() {
+    return ['result-count', 'result-cursor'];
+  }
+
   constructor() {
     super();
   }
@@ -796,14 +807,42 @@ class WordsSearch extends HTMLElement {
       this.dispatchEvent(new CustomEvent('clear-search'));
     });
 
+    this.#resultEl = container.querySelector('.result');
+
     shadow.appendChild(container);
+  }
+
+  #resultEl: HTMLElement | null = null;
+  #rsCnt = 0;
+  #curIdx = 0;
+  attributeChangedCallback(name: string, _: string, newValue: string) {
+    if (this.#resultEl == null) return;
+    if (name === 'result-count') {
+      this.#rsCnt = Number(newValue);
+      this.#curIdx = 0;
+      this.#updateSearchRs();
+    } else if (name === 'result-cursor') {
+      this.#curIdx = Number(newValue);
+      this.#updateSearchRs();
+    }
+  }
+
+  #updateSearchRs() {
+    if (this.#resultEl == null) return;
+    if (this.#rsCnt === 0) {
+      this.#resultEl.style.display = 'none';
+    } else {
+      const str = this.#curIdx + 1 + '/' + this.#rsCnt;
+      this.#resultEl.textContent = str;
+      this.#resultEl.style.display = 'block';
+    }
   }
 
   #initHtml(container: HTMLDivElement) {
     container.innerHTML = `
       <span>🔍</span>
       <input placeholder="搜索关键词" />
-      <span class="count"></span>
+      <span class="result"></span>
       <span class="prev">^</span>
       <span class="next">v</span>
       <span class="close">x</span>
@@ -826,7 +865,6 @@ class WordsSearch extends HTMLElement {
         caret-color: #58B1D4;
       }
       .prev, .next, .close {
-
         width: 16px;
       }
     `;
@@ -890,7 +928,7 @@ function createSearcher(article: IParagraph[]) {
   return {
     search(kw: string) {
       this.clear();
-      if (kw.length === 0) return;
+      if (kw.length === 0) return 0;
       const matchRecord: Record<
         number,
         Array<{
@@ -934,18 +972,21 @@ function createSearcher(article: IParagraph[]) {
         CSS.highlights.set('search', highlight);
         CSS.highlights.set('search-cursor', new Highlight(ranges[0]));
       }
+      return ranges.length;
     },
     prev() {
-      if (ranges.length === 0) return;
+      if (ranges.length === 0) return 0;
       rangeCursor = (rangeCursor - 1 + ranges.length) % ranges.length;
       const range = ranges[rangeCursor];
       CSS.highlights.set('search-cursor', new Highlight(range));
+      return rangeCursor;
     },
     next() {
-      if (ranges.length === 0) return;
+      if (ranges.length === 0) return 0;
       rangeCursor = (rangeCursor + 1) % ranges.length;
       const range = ranges[rangeCursor];
       CSS.highlights.set('search-cursor', new Highlight(range));
+      return rangeCursor;
     },
     clear() {
       ranges = [];
