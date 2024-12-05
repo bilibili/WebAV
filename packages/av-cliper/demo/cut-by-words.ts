@@ -413,21 +413,23 @@ class WordsScissor {
     this.#attchEl = conf.attchEl;
     this.#article = conf.wordsData;
 
-    this.#articleEl = document.createElement('section');
-    this.#attchEl.appendChild(this.#articleEl);
-
     const searchEl = document.createElement('words-search');
     this.#attchEl.appendChild(searchEl);
+
+    this.#articleEl = document.createElement('section');
+    this.#attchEl.appendChild(this.#articleEl);
 
     const popoverEl = document.createElement('words-popover');
     this.#popoverEl = popoverEl;
     this.#attchEl.appendChild(popoverEl);
 
-    this.#delEl = document.createElement('span');
+    this.#delEl = document.createElement('div');
     this.#delEl.textContent = '删除';
+    this.#delEl.style.padding = '4px 12px';
 
-    this.#resetEl = document.createElement('span');
+    this.#resetEl = document.createElement('div');
     this.#resetEl.textContent = '恢复';
+    this.#resetEl.style.padding = '4px 12px';
 
     this.#bindEvent({ searchEl });
     this.#render();
@@ -847,14 +849,12 @@ class Popover extends HTMLElement {
     container.style.display = 'none';
     container.innerHTML = `
       <div><slot></slot></div>
-      <div class="tri"></div>
     `;
     container.style.cssText = `
       display: none;
       position: fixed;
       z-index: 999;
       background-color: #525252;
-      padding: 4px 12px;
       box-shadow: 0 4px 10px #000;
       border-radius: 4px;
       cursor: pointer;
@@ -889,7 +889,6 @@ function createSearcher(article: IParagraph[]) {
   let rangeCursor = 0;
   return {
     search(kw: string) {
-      console.log(11111111, ranges, kw);
       this.clear();
       if (kw.length === 0) return;
       const matchRecord: Record<
