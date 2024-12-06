@@ -1,5 +1,11 @@
 # @webav/internal-utils
 
+## 1.0.6
+
+### Patch Changes
+
+- 3cc3cc7: fix: setLogLevel does not take effect on the log printed during init #329
+
 ## 1.0.5
 
 ### Patch Changes
