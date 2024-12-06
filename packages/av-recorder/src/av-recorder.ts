@@ -279,7 +279,7 @@ function startRecord(
     };
 
     ctrl.start();
-    const stopReadStream = autoReadStream(opts.streams.video, {
+    const stopReadStream = autoReadStream(opts.streams.video!, {
       onChunk: async (chunk: VideoFrame) => {
         if (stoped) {
           chunk.close();
@@ -298,7 +298,7 @@ function startRecord(
   }
 
   if (hasAudioTrack) {
-    stopEncodeAudio = autoReadStream(opts.streams.audio, {
+    stopEncodeAudio = autoReadStream(opts.streams.audio!, {
       onChunk: async (ad: AudioData) => {
         if (stoped) {
           ad.close();
