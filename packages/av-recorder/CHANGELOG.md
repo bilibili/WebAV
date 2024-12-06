@@ -1,5 +1,14 @@
 # @webav/av-recorder
 
+## 1.0.6
+
+### Patch Changes
+
+- 5780270: fix: av-recorder closing video/audio track export error #335
+- Updated dependencies [3cc3cc7]
+  - @webav/internal-utils@1.0.6
+  - @webav/av-cliper@1.0.6
+
 ## 1.0.5
 
 ### Patch Changes
