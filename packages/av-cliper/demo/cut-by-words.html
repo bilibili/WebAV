@@ -43,11 +43,6 @@
       background-color: #22699D;
     }
 
-    ::highlight(del) {
-      color: gray;
-      text-decoration: line-through;
-    }
-
     ::highlight(search) {
       color: #80DAF6;
     }
@@ -55,6 +50,25 @@
     ::highlight(search-cursor) {
       background-color: #164B76;
       line-height: 1.5;
+    }
+
+    .tone-word::before {
+      content: '语气词';
+      font-size: 12px;
+      background-color: #61666D;
+      border-radius: 2px;
+      padding: 2px;
+      margin-left: 4px;
+      vertical-align: text-top;
+      cursor: pointer;
+    }
+
+    .tone-word.selected {
+      background-color: #76304B;
+    }
+
+    .tone-word.selected::before {
+      background-color: #A73E65;
     }
   </style>
 </head>

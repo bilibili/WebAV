@@ -396,7 +396,7 @@ class WordsScissor {
   // 若移动了 sprite，当前文字剪辑失效，弹出提示语
   expired = false;
   #attchEl: HTMLDivElement;
-  #article: IParagraph[];
+  #article: IParagraph<IWordExt>[];
   #articleEl: HTMLElement;
   #popoverEl: HTMLElement;
   #delEl: HTMLSpanElement;
@@ -409,10 +409,17 @@ class WordsScissor {
   constructor(conf: {
     // UI 挂载节点
     attchEl: HTMLDivElement;
+    toneWords: string[];
     wordsData: IParagraph[];
   }) {
     this.#attchEl = conf.attchEl;
-    this.#article = conf.wordsData;
+    this.#article = conf.wordsData.map((p) => ({
+      ...p,
+      words: p.words.map((w) => ({
+        ...w,
+        isToneWord: conf.toneWords.includes(w.label),
+      })),
+    }));
 
     const searchEl = document.createElement('words-search');
     this.#attchEl.appendChild(searchEl);
@@ -440,10 +447,11 @@ class WordsScissor {
   #bindEvent(opts: { searchEl: HTMLElement }) {
     // 点击 选中单个文字，或已被删除的一段文字
     this.#articleEl.addEventListener('click', (evt) => {
-      if (evt.target instanceof HTMLElement && evt.target.tagName === 'DEL') {
+      const targetEl = evt.target as HTMLElement;
+      if (targetEl.tagName === 'DEL') {
         const range = document.createRange();
-        range.setStart(evt.target.firstChild!, 0);
-        range.setEnd(evt.target.firstChild!, evt.target.textContent!.length);
+        range.setStart(targetEl.firstChild!, 0);
+        range.setEnd(targetEl.firstChild!, targetEl.textContent!.length);
 
         const sel = document.getSelection();
         if (sel == null) return;
@@ -451,6 +459,8 @@ class WordsScissor {
         sel.addRange(range);
 
         this.#selectionUpdated(sel);
+      } else if (targetEl.classList.contains('tone-word')) {
+        targetEl.classList.toggle('selected');
       } else {
         const range = click2Range(evt as PointerEvent);
         if (range == null) return;
@@ -569,12 +579,27 @@ class WordsScissor {
 
   #render() {
     let html = '';
+    let showToneWordTag = true;
+    console.log(111, this.#article);
     for (let idx = 0; idx < this.#article.length; idx++) {
       const p = this.#article[idx];
       let text = '';
-      for (const [deleted, words] of groupConsecutive(p.words)) {
+      for (const [deleted, words] of groupConsecutiveByDeleted(p.words)) {
         const str = words.map((w) => w.label).join('');
-        text += deleted ? `<del>${str}</del>` : str;
+        if (deleted) {
+          text += `<del>${str}</del>`;
+        } else if (showToneWordTag) {
+          for (const [isTone, toneWords] of groupConsecutiveByTone(words)) {
+            const toneStr = toneWords.map((w) => w.label).join('');
+            if (isTone) {
+              text += `<span class="tone-word selected">${toneStr}</span>`;
+            } else {
+              text += toneStr;
+            }
+          }
+        } else {
+          text += str;
+        }
       }
       html += `<span class="pargh" data-pargh-idx="${idx}">${text}</span>`;
     }
@@ -589,14 +614,12 @@ class WordsScissor {
   on = this.#evtTool.on;
 
   getSegments() {
-    return (
-      groupConsecutive(this.#article.flatMap((p) => p.words))
-        // .filter(([state, words]) => state && words.length > 0)
-        .map(([deleted, words]) => ({
-          deleted,
-          start: words[0].start,
-          end: words.at(-1)!.end,
-        }))
+    return groupConsecutiveByDeleted(this.#article.flatMap((p) => p.words)).map(
+      ([deleted, words]) => ({
+        deleted,
+        start: words[0].start,
+        end: words.at(-1)!.end,
+      }),
     );
   }
 
@@ -613,12 +636,16 @@ interface IWord {
   deleted: boolean;
 }
 
+interface IWordExt extends IWord {
+  isToneWord: boolean;
+}
+
 // AI  接口返回的可用于口播剪辑的数据结构
-interface IParagraph {
+interface IParagraph<T extends IWord = IWord> {
   start: number;
   end: number;
   text: string;
-  words: IWord[];
+  words: T[];
 }
 
 Log.setLogLevel(Log.warn);
@@ -631,6 +658,7 @@ Log.setLogLevel(Log.warn);
   // const vs = new VisibleSprite(new MP4Clip((await fetch(resList[0])).body!));
   const scissor = new WordsScissor({
     attchEl: container,
+    toneWords: ['曹', '三'],
     wordsData: textData.map((p) => ({
       start: p.start_time * 1000,
       end: p.end_time * 1000,
@@ -1045,17 +1073,40 @@ function findTextOffset(
 
 // 将一个段落中的文字按是否删除状态分组
 // [00011000] => [[000], [11], [000]] => [[false, [000]], [true, [11]], [false, [000]]]
-function groupConsecutive(words: IWord[]) {
+function groupConsecutive(
+  words: IWordExt[],
+  {
+    predicate,
+    tagger,
+  }: {
+    predicate: (lastW: IWordExt, curW: IWordExt) => boolean;
+    tagger: (w: IWordExt) => unknown;
+  },
+) {
   return words
-    .reduce((result: IWord[][], cur) => {
+    .reduce((result: IWordExt[][], cur) => {
       // 如果 result 数组为空或当前元素与上一个元素相同
       const lastIt = result[result.length - 1];
-      if (result.length === 0 || lastIt[0].deleted !== cur.deleted) {
+      if (result.length === 0 || predicate(lastIt[0], cur)) {
         result.push([cur]); // 新开一个组
       } else {
         lastIt.push(cur); // 向最后一个组添加元素
       }
       return result;
     }, [])
-    .map((ws) => [ws[0].deleted, ws] as [boolean, IWord[]]);
+    .map((ws) => [tagger(ws[0]), ws] as [unknown, IWordExt[]]);
+}
+
+function groupConsecutiveByDeleted(words: IWordExt[]) {
+  return groupConsecutive(words, {
+    predicate: (lastW, curW) => lastW.deleted !== curW.deleted,
+    tagger: (w) => w.deleted,
+  });
+}
+
+function groupConsecutiveByTone(words: IWordExt[]) {
+  return groupConsecutive(words, {
+    predicate: (lastW, curW) => lastW.isToneWord !== curW.isToneWord,
+    tagger: (w) => w.isToneWord,
+  });
 }
