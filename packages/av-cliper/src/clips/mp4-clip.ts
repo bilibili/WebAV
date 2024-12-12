@@ -817,10 +817,10 @@ class AudioFrameFinder {
   #dec: ReturnType<typeof createAudioChunksDecoder> | null = null;
   #curAborter = { abort: false, st: performance.now() };
   find = async (time: number): Promise<Float32Array[]> => {
-    if (this.#dec == null) {
-      this.#reset();
-    } else if (time <= this.#ts || time - this.#ts > 0.1e6) {
-      this.#reset();
+    const needResetTime = time <= this.#ts || time - this.#ts > 0.1e6;
+    if (this.#dec == null || needResetTime) this.#reset();
+
+    if (needResetTime) {
       // 前后获取音频数据差异不能超过 100ms(经验值)，否则视为 seek 操作，重置解码器
       // seek 操作，重置时间
       this.#ts = time;
