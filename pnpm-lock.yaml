@@ -54,7 +54,7 @@ importers:
         specifier: ^5.4.5
         version: 5.5.2
       vite:
-        specifier: ^5.2.11
+        specifier: ^5.3.1
         version: 5.3.1(@types/node@22.7.6)(less@4.2.0)(lightningcss@1.22.1)(sass@1.77.6)(terser@5.31.1)
       vite-plugin-dts:
         specifier: ^4.2.4
