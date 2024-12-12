@@ -1,5 +1,12 @@
 # @webav/av-cliper
 
+## 1.0.7
+
+### Patch Changes
+
+- 443516f: fix: maybe timeout for decode audio when tick a too large time
+  - @webav/internal-utils@1.0.7
+
 ## 1.0.6
 
 ### Patch Changes
