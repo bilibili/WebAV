@@ -425,6 +425,11 @@ class WordsScissor {
     this.#attchEl.appendChild(searchEl);
     this.#searchEl = searchEl;
 
+    const delSelectedEl = document.createElement('button');
+    delSelectedEl.textContent = '删除选中文字';
+    delSelectedEl.style.padding = '4px 12px';
+    this.#attchEl.appendChild(delSelectedEl);
+
     this.#articleEl = document.createElement('section');
     this.#attchEl.appendChild(this.#articleEl);
 
@@ -440,11 +445,11 @@ class WordsScissor {
     this.#resetEl.textContent = '恢复';
     this.#resetEl.style.padding = '4px 12px';
 
-    this.#bindEvent({ searchEl });
+    this.#bindEvent({ searchEl, delSelectedEl });
     this.#render();
   }
 
-  #bindEvent(opts: { searchEl: HTMLElement }) {
+  #bindEvent(opts: { searchEl: HTMLElement; delSelectedEl: HTMLElement }) {
     // 点击 选中单个文字，或已被删除的一段文字
     this.#articleEl.addEventListener('click', (evt) => {
       const targetEl = evt.target as HTMLElement;
@@ -522,6 +527,22 @@ class WordsScissor {
       this.#searchEl.setAttribute('result-count', '0');
       this.#searchEl.setAttribute('result-cursor', '0');
     });
+
+    opts.delSelectedEl.addEventListener('click', () => {
+      Array.from(document.querySelectorAll('.tone-word.selected'))
+        .map((el) => {
+          const range = new Range();
+          range.setStart(el, 0);
+          range.setEnd(el, el.textContent!.length);
+          return range;
+        })
+        .flatMap((r) => findRangeWords(r, this.#article))
+        .forEach((w) => {
+          w.deleted = true;
+        });
+      this.#render();
+      this.#evtTool.emit('deleteSegment');
+    });
   }
 
   #selectionUpdated(sel: Selection) {
@@ -580,7 +601,6 @@ class WordsScissor {
   #render() {
     let html = '';
     let showToneWordTag = true;
-    console.log(111, this.#article);
     for (let idx = 0; idx < this.#article.length; idx++) {
       const p = this.#article[idx];
       let text = '';
@@ -638,6 +658,7 @@ interface IWord {
 
 interface IWordExt extends IWord {
   isToneWord: boolean;
+  isToneWordSelected: boolean;
 }
 
 // AI  接口返回的可用于口播剪辑的数据结构

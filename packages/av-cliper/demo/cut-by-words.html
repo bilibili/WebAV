@@ -49,7 +49,12 @@
 
     ::highlight(search-cursor) {
       background-color: #164B76;
-      line-height: 1.5;
+      /* line-height: 1.5; */
+    }
+
+    .tone-word {
+      position: relative;
+      margin-left: 44px;
     }
 
     .tone-word::before {
@@ -57,10 +62,13 @@
       font-size: 12px;
       background-color: #61666D;
       border-radius: 2px;
-      padding: 2px;
-      margin-left: 4px;
-      vertical-align: text-top;
       cursor: pointer;
+      position: absolute;
+      top: 2px;
+      left: -42px;
+      line-height: 1.5;
+      padding: 0 2px;
+      ;
     }
 
     .tone-word.selected {
