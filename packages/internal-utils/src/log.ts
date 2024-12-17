@@ -17,7 +17,7 @@ function getTimeStr() {
 let THRESHOLD = 1;
 
 type LvName = 'debug' | 'info' | 'warn' | 'error';
-const history: Array<{ lvName: string; args: any[] }> = [];
+const history: Array<{ lvName: string; timeStr: string; args: any[] }> = [];
 const lvHandler = ['debug', 'info', 'warn', 'error'].reduce(
   (acc, lvName, lvThres) =>
     Object.assign(acc, {
@@ -26,6 +26,7 @@ const lvHandler = ['debug', 'info', 'warn', 'error'].reduce(
           console[lvName as LvName](...args);
           history.push({
             lvName,
+            timeStr: getTimeStr(),
             args,
           });
         }
@@ -75,11 +76,9 @@ export const Log = {
    */
   async dump() {
     return history.reduce(
-      (acc, { lvName, args }) =>
+      (acc, { lvName, timeStr, args }) =>
         acc +
-        `[${lvName}][${getTimeStr()}]  ${args
-          .map((a) => any2Str(a))
-          .join(' ')}\n`,
+        `[${lvName}][${timeStr}]  ${args.map((a) => any2Str(a)).join(' ')}\n`,
       '',
     );
   },
