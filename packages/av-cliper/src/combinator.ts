@@ -59,11 +59,17 @@ export class Combinator {
   /**
    * 检测当前环境的兼容性
    * @param args.videoCodec 指定视频编码格式，默认 avc1.42E032
+   * @param args.width 指定视频宽度，默认 1920
+   * @param args.height 指定视频高度，默认 1080
+   * @param args.bitrate 指定视频比特率，默认 5e6
    */
   static async isSupported(
-    args = {
-      videoCodec: 'avc1.42E032',
-    },
+    args: {
+      videoCodec?: string;
+      width?: number;
+      height?: number;
+      bitrate?: number;
+    } = {},
   ): Promise<boolean> {
     return (
       (self.OffscreenCanvas != null &&
@@ -75,9 +81,10 @@ export class Combinator {
         self.AudioData != null &&
         ((
           await self.VideoEncoder.isConfigSupported({
-            codec: args.videoCodec,
-            width: 1280,
-            height: 720,
+            codec: args.videoCodec ?? 'avc1.42E032',
+            width: args.width ?? 1920,
+            height: args.height ?? 1080,
+            bitrate: args.bitrate ?? 7e6,
           })
         ).supported ??
           false) &&

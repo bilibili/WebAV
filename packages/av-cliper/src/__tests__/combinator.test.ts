@@ -180,3 +180,15 @@ test('placeholder audiodata', () => {
   // 没有输入任何数据，使用空数据（0）占位
   expect(outputData).toEqual(new Float32Array(outputSize));
 });
+
+test('Combinator.isSupported', async () => {
+  expect(await Combinator.isSupported()).toBe(true);
+  expect(
+    await Combinator.isSupported({
+      width: 3840,
+      height: 2160,
+      videoCodec: 'avc1.640034',
+      bitrate: 24e6,
+    }),
+  ).toBe(true);
+});
