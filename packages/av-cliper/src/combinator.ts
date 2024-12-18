@@ -159,9 +159,14 @@ export class Combinator {
     os: OffscreenSprite,
     opts: { main?: boolean } = {},
   ): Promise<void> {
-    this.#log.info('Combinator add sprite', os);
+    const logAttrs = {
+      rect: pick(['x', 'y', 'w', 'h'], os.rect),
+      time: { ...os.time },
+      zIndex: os.zIndex,
+    };
+    this.#log.info('Combinator add sprite', logAttrs);
     const newOS = await os.clone();
-    this.#log.info('Combinator add sprite ready', os);
+    this.#log.info('Combinator add sprite ready');
     this.#sprites.push(
       Object.assign(newOS, {
         main: opts.main ?? false,
@@ -518,4 +523,14 @@ export function createAudioTrackBuf(adFrames: number) {
     // 消费缓存区数据，生成 AudioData
     return getAudioData(ts);
   };
+}
+
+function pick<K extends keyof T, T extends object>(keys: K[], obj: T) {
+  return keys.reduce(
+    (acc, key) => {
+      acc[key] = obj[key];
+      return acc;
+    },
+    {} as Record<K, T[K]>,
+  );
 }
