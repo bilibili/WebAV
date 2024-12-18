@@ -1290,8 +1290,7 @@ async function thumbnailByKeyFrame(
   if (chunks.length === 0 || abortSingl.aborted) return;
 
   let outputCnt = 0;
-  const dec = createVideoDec();
-  decodeGoP(dec, chunks, {
+  decodeGoP(createVideoDec(), chunks, {
     onDecodingError: (err) => {
       Log.warn('thumbnailsByKeyFrame', err);
       // 尝试降级一次
@@ -1315,7 +1314,10 @@ async function thumbnailByKeyFrame(
         outputCnt += 1;
         const done = outputCnt === chunks.length;
         onOutput(vf, done);
-        if (done) fileReader.close();
+        if (done) {
+          fileReader.close();
+          if (dec.state !== 'closed') dec.close();
+        }
       },
       error: (err) => {
         Log.error(`thumbnails decoder error: ${err.message}`);
@@ -1323,7 +1325,7 @@ async function thumbnailByKeyFrame(
     });
     abortSingl.addEventListener('abort', () => {
       fileReader.close();
-      dec.close();
+      if (dec.state !== 'closed') dec.close();
     });
     dec.configure({
       ...decConf,
