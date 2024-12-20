@@ -1,5 +1,17 @@
 # @webav/av-canvas
 
+## 1.0.8
+
+### Patch Changes
+
+- 6a158b1: fix: time incorrect for dump log
+- Updated dependencies [6a158b1]
+- Updated dependencies [af99e6a]
+- Updated dependencies [6a92cbf]
+- Updated dependencies [96dadac]
+  - @webav/av-cliper@1.0.8
+  - @webav/internal-utils@1.0.8
+
 ## 1.0.7
 
 ### Patch Changes
