@@ -293,18 +293,22 @@ function createMP4AudioSampleEncoder(
   aeConf: Parameters<AudioEncoder['configure']>[0],
   onOutput: (s: ReturnType<typeof chunk2MP4SampleOpts>) => void,
 ) {
+  const encoderConf = {
+    codec: aeConf.codec,
+    sampleRate: aeConf.sampleRate,
+    numberOfChannels: aeConf.numberOfChannels,
+  } as const;
+
   const adEncoder = new AudioEncoder({
     output: (chunk) => {
       onOutput(chunk2MP4SampleOpts(chunk));
     },
-    error: Log.error,
+    error: (err) => {
+      Log.error('AudioEncoder error:', err, ', config:', encoderConf);
+    },
   });
 
-  adEncoder.configure({
-    codec: aeConf.codec,
-    sampleRate: aeConf.sampleRate,
-    numberOfChannels: aeConf.numberOfChannels,
-  });
+  adEncoder.configure(encoderConf);
 
   // 保留一个音频数据，用于最后做声音淡出
   let lastData: { data: Float32Array; ts: number } | null = null;

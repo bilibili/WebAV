@@ -740,6 +740,12 @@ class VideoFrameFinder {
     this.#inputChunkCnt = 0;
     this.#outputFrameCnt = 0;
     if (this.#dec?.state !== 'closed') this.#dec?.close();
+    const encoderConf = {
+      ...this.conf,
+      ...(this.#downgradeSoftDecode
+        ? { hardwareAcceleration: 'prefer-software' }
+        : {}),
+    } as VideoDecoderConfig;
     this.#dec = new VideoDecoder({
       output: (vf) => {
         this.#outputFrameCnt += 1;
@@ -757,15 +763,14 @@ class VideoFrameFinder {
         this.#videoFrames.push(rsVf);
       },
       error: (err) => {
-        Log.error(`MP4Clip VideoDecoder err: ${err.message}`);
+        Log.error(
+          `VideoFinder VideoDecoder err: ${err.message}`,
+          ', config:',
+          encoderConf,
+        );
       },
     });
-    this.#dec.configure({
-      ...this.conf,
-      ...(this.#downgradeSoftDecode
-        ? { hardwareAcceleration: 'prefer-software' }
-        : {}),
-    });
+    this.#dec.configure(encoderConf);
   };
 
   #getState = () => ({
@@ -1309,6 +1314,10 @@ async function thumbnailByKeyFrame(
   });
 
   function createVideoDec(downgrade = false) {
+    const encoderConf = {
+      ...decConf,
+      ...(downgrade ? { hardwareAcceleration: 'prefer-software' } : {}),
+    } as VideoDecoderConfig;
     const dec = new VideoDecoder({
       output: (vf) => {
         outputCnt += 1;
@@ -1320,17 +1329,18 @@ async function thumbnailByKeyFrame(
         }
       },
       error: (err) => {
-        Log.error(`thumbnails decoder error: ${err.message}`);
+        Log.error(
+          `thumbnails decoder error: ${err.message}`,
+          ', config:',
+          encoderConf,
+        );
       },
     });
     abortSingl.addEventListener('abort', () => {
       fileReader.close();
       if (dec.state !== 'closed') dec.close();
     });
-    dec.configure({
-      ...decConf,
-      ...(downgrade ? { hardwareAcceleration: 'prefer-software' } : {}),
-    });
+    dec.configure(encoderConf);
     return dec;
   }
 }

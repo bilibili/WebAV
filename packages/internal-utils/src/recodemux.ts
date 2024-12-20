@@ -301,12 +301,7 @@ function createVideoEncoder(
   videoOpts: NonNullable<IRecodeMuxOpts['video']>,
   outHandler: EncodedVideoChunkOutputCallback,
 ): VideoEncoder {
-  const encoder = new VideoEncoder({
-    error: Log.error,
-    output: outHandler,
-  });
-
-  encoder.configure({
+  const encoderConf = {
     codec: videoOpts.codec,
     framerate: videoOpts.expectFPS,
     hardwareAcceleration: videoOpts.__unsafe_hardwareAcceleration__,
@@ -320,7 +315,15 @@ function createVideoEncoder(
     avc: { format: 'avc' },
     // mp4box.js 无法解析 annexb 的 mimeCodec ，只会显示 avc1
     // avc: { format: 'annexb' }
+  } as const;
+  const encoder = new VideoEncoder({
+    error: (err) => {
+      Log.error('VideoEncoder error:', err, ', config:', encoderConf);
+    },
+    output: outHandler,
   });
+
+  encoder.configure(encoderConf);
   return encoder;
 }
 
@@ -350,8 +353,17 @@ function encodeAudioTrack(
     cache = [];
   });
 
+  const encoderConf = {
+    codec: audioOpts.codec === 'aac' ? 'mp4a.40.2' : 'opus',
+    sampleRate: audioOpts.sampleRate,
+    numberOfChannels: audioOpts.channelCount,
+    bitrate: 128_000,
+  } as const;
+
   const encoder = new AudioEncoder({
-    error: Log.error,
+    error: (err) => {
+      Log.error('AudioEncoder error:', err, ', config:', encoderConf);
+    },
     output: (chunk, meta) => {
       if (trackId === -1) {
         // 某些设备不会输出 description
@@ -372,12 +384,7 @@ function encodeAudioTrack(
       }
     },
   });
-  encoder.configure({
-    codec: audioOpts.codec === 'aac' ? 'mp4a.40.2' : 'opus',
-    sampleRate: audioOpts.sampleRate,
-    numberOfChannels: audioOpts.channelCount,
-    bitrate: 128_000,
-  });
+  encoder.configure(encoderConf);
 
   return encoder;
 }
