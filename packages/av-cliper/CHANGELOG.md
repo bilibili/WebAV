@@ -1,5 +1,17 @@
 # @webav/av-cliper
 
+## 1.0.8
+
+### Patch Changes
+
+- 6a158b1: fix: time incorrect for dump log
+- af99e6a: chore: release thumbnails decoder
+- 6a92cbf: chore: details log
+- 96dadac: feat: many args for Combinator.isSupported
+- Updated dependencies [6a158b1]
+- Updated dependencies [6a92cbf]
+  - @webav/internal-utils@1.0.8
+
 ## 1.0.7
 
 ### Patch Changes

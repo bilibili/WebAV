@@ -1,5 +1,12 @@
 # @webav/internal-utils
 
+## 1.0.8
+
+### Patch Changes
+
+- 6a158b1: fix: time incorrect for dump log
+- 6a92cbf: chore: details log
+
 ## 1.0.7
 
 ## 1.0.6
