@@ -1,6 +1,6 @@
 // 能同时在 worker 和主线程中运行的工具函数
 
-import { workerTimer, Log } from '@webav/internal-utils';
+import { workerTimer } from '@webav/internal-utils';
 import { resample } from 'wave-resampler';
 
 /**
@@ -330,54 +330,6 @@ export function throttle<F extends (...args: any[]) => any>(
       lastTime = performance.now();
       return func.apply(this, rest);
     }
-  };
-}
-
-// 封装 decoder，一次解析一个 GOP
-export function createGoPVideoDecoder(conf: VideoDecoderConfig) {
-  type OutputHandle = (vf: VideoFrame | null, done: boolean) => void;
-
-  let curCb: ((vf: VideoFrame) => void) | null = null;
-  const vdec = new VideoDecoder({
-    output: (vf) => {
-      curCb?.(vf);
-    },
-    error: Log.error,
-  });
-  vdec.configure(conf);
-
-  let tasks: Array<{ chunks: EncodedVideoChunk[]; cb: OutputHandle }> = [];
-
-  async function run() {
-    if (curCb != null) return;
-
-    const t = tasks.shift();
-    if (t == null) return;
-    if (t.chunks.length <= 0) {
-      t.cb(null, true);
-      run().catch(Log.error);
-      return;
-    }
-
-    let i = 0;
-    curCb = (vf) => {
-      i += 1;
-      t.cb(vf, false);
-      if (i >= t.chunks.length) {
-        t.cb(null, true);
-        curCb = null;
-        run().catch(Log.error);
-      }
-    };
-    for (const chunk of t.chunks) vdec.decode(chunk);
-    await vdec.flush();
-  }
-
-  return {
-    decode(chunks: EncodedVideoChunk[], cb: OutputHandle) {
-      tasks.push({ chunks, cb });
-      run().catch(Log.error);
-    },
   };
 }
 
