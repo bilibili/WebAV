@@ -763,11 +763,9 @@ class VideoFrameFinder {
         this.#videoFrames.push(rsVf);
       },
       error: (err) => {
-        Log.error(
-          `VideoFinder VideoDecoder err: ${err.message}`,
-          ', config:',
-          encoderConf,
-        );
+        const errMsg = `VideoFinder VideoDecoder err: ${err.message}, config: ${JSON.stringify(encoderConf)}, state: ${JSON.stringify(this.#getState())}`;
+        Log.error(errMsg);
+        throw Error(errMsg);
       },
     });
     this.#dec.configure(encoderConf);
@@ -970,7 +968,7 @@ function createAudioChunksDecoder(
   opts: { resampleRate: number; volume: number },
   outputCb: (pcm: Float32Array[]) => void,
 ) {
-  let intputCnt = 0;
+  let inputCnt = 0;
   let outputCnt = 0;
   const outputHandler = (pcmArr: Float32Array[]) => {
     outputCnt += 1;
@@ -1005,21 +1003,38 @@ function createAudioChunksDecoder(
       ad.close();
     },
     error: (err) => {
-      Log.error(`MP4Clip AudioDecoder err: ${err.message}`);
+      handleDecodeError('MP4Clip AudioDecoder err', err as Error);
     },
   });
   adec.configure(decoderConf);
 
+  function handleDecodeError(prefixStr: string, err: Error) {
+    const errMsg = `${prefixStr}: ${(err as Error).message}, state: ${JSON.stringify(
+      {
+        qSize: adec.decodeQueueSize,
+        state: adec.state,
+        inputCnt,
+        outputCnt,
+      },
+    )}`;
+    Log.error(errMsg);
+    throw Error(errMsg);
+  }
+
   return {
     decode(chunks: EncodedAudioChunk[]) {
-      intputCnt += chunks.length;
-      for (const chunk of chunks) adec.decode(chunk);
+      inputCnt += chunks.length;
+      try {
+        for (const chunk of chunks) adec.decode(chunk);
+      } catch (err) {
+        handleDecodeError('decode audio chunk error', err as Error);
+      }
     },
     close() {
       if (adec.state !== 'closed') adec.close();
     },
     get decoding() {
-      return intputCnt > outputCnt;
+      return inputCnt > outputCnt;
     },
     get state() {
       return adec.state;
@@ -1329,11 +1344,16 @@ async function thumbnailByKeyFrame(
         }
       },
       error: (err) => {
-        Log.error(
-          `thumbnails decoder error: ${err.message}`,
-          ', config:',
-          encoderConf,
-        );
+        const errMsg = `thumbnails decoder error: ${err.message}, config: ${JSON.stringify(encoderConf)}, state: ${JSON.stringify(
+          {
+            qSize: dec.decodeQueueSize,
+            state: dec.state,
+            outputCnt,
+            inputCnt: chunks.length,
+          },
+        )}`;
+        Log.error(errMsg);
+        throw Error(errMsg);
       },
     });
     abortSingl.addEventListener('abort', () => {

@@ -123,8 +123,19 @@ export function recodemux(opts: IRecodeMuxOpts): {
     },
     encodeAudio: (ad) => {
       if (aEncoder == null) return;
-      aEncoder.encode(ad);
-      ad.close();
+      try {
+        aEncoder.encode(ad);
+        ad.close();
+      } catch (err) {
+        const errMsg = `encode audio chunk error: ${(err as Error).message}, state: ${JSON.stringify(
+          {
+            qSize: aEncoder.encodeQueueSize,
+            state: aEncoder.state,
+          },
+        )}`;
+        Log.error(errMsg);
+        throw Error(errMsg);
+      }
     },
     getEncodeQueueSize: () =>
       vEncoder?.encodeQueueSize ?? aEncoder?.encodeQueueSize ?? 0,
@@ -267,9 +278,22 @@ function encodeVideoTrack(
       return encoder0.encodeQueueSize + encoder1.encodeQueueSize;
     },
     encode: (vf: VideoFrame, opts: VideoEncoderEncodeOptions) => {
-      if (opts.keyFrame) gopId += 1;
-      const encoder = gopId % 2 === 0 ? encoder0 : encoder1;
-      encoder.encode(vf, opts);
+      try {
+        if (opts.keyFrame) gopId += 1;
+        const encoder = gopId % 2 === 0 ? encoder0 : encoder1;
+        encoder.encode(vf, opts);
+      } catch (err) {
+        const errMsg = `encode video frame error: ${(err as Error).message}, state: ${JSON.stringify(
+          {
+            ts: vf.timestamp,
+            keyFrame: opts.keyFrame,
+            duration: vf.duration,
+            gopId,
+          },
+        )}`;
+        Log.error(errMsg);
+        throw Error(errMsg);
+      }
     },
     flush: async () => {
       await Promise.all([
@@ -318,7 +342,14 @@ function createVideoEncoder(
   } as const;
   const encoder = new VideoEncoder({
     error: (err) => {
-      Log.error('VideoEncoder error:', err, ', config:', encoderConf);
+      const errMsg = `VideoEncoder error: ${err.message}, config: ${JSON.stringify(encoderConf)}, state: ${JSON.stringify(
+        {
+          qSize: encoder.encodeQueueSize,
+          state: encoder.state,
+        },
+      )}`;
+      Log.error(errMsg);
+      throw Error(errMsg);
     },
     output: outHandler,
   });
@@ -362,7 +393,14 @@ function encodeAudioTrack(
 
   const encoder = new AudioEncoder({
     error: (err) => {
-      Log.error('AudioEncoder error:', err, ', config:', encoderConf);
+      const errMsg = `AudioEncoder error: ${err.message}, config: ${JSON.stringify(
+        encoderConf,
+      )}, state: ${JSON.stringify({
+        qSize: encoder.encodeQueueSize,
+        state: encoder.state,
+      })}`;
+      Log.error(errMsg);
+      throw Error(errMsg);
     },
     output: (chunk, meta) => {
       if (trackId === -1) {
