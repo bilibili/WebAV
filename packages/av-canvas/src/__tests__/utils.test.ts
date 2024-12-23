@@ -16,7 +16,12 @@ afterAll(() => {
 test('ctrls', () => {
   const rect = new Rect(0, 0, 100, 100);
 
-  expect(rectCtrlsGetter(rect)).toMatchSnapshot();
+  const ctrls = rectCtrlsGetter(rect);
+  expect(
+    Object.fromEntries(
+      Object.entries(ctrls).map(([key, ctrl]) => [key, stringifyRect(ctrl)]),
+    ),
+  ).toMatchSnapshot();
 });
 
 // 固定比例后，ctrls 将移除 t,b,l,r 控制点
@@ -42,3 +47,7 @@ test('fixedAspectRatio', () => {
     'rotate',
   ]);
 });
+
+function stringifyRect(rect: Rect) {
+  return `{x: ${rect.x}, y: ${rect.y}, w: ${rect.w}, h: ${rect.h}}`;
+}

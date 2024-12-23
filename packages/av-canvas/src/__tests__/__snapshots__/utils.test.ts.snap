@@ -2,50 +2,14 @@
 
 exports[`ctrls 1`] = `
 {
-  "b": Le {
-    "fixedAspectRatio": false,
-    "fixedScaleCenter": false,
-    "on": [Function],
-  },
-  "l": Le {
-    "fixedAspectRatio": false,
-    "fixedScaleCenter": false,
-    "on": [Function],
-  },
-  "lb": Le {
-    "fixedAspectRatio": false,
-    "fixedScaleCenter": false,
-    "on": [Function],
-  },
-  "lt": Le {
-    "fixedAspectRatio": false,
-    "fixedScaleCenter": false,
-    "on": [Function],
-  },
-  "r": Le {
-    "fixedAspectRatio": false,
-    "fixedScaleCenter": false,
-    "on": [Function],
-  },
-  "rb": Le {
-    "fixedAspectRatio": false,
-    "fixedScaleCenter": false,
-    "on": [Function],
-  },
-  "rotate": Le {
-    "fixedAspectRatio": false,
-    "fixedScaleCenter": false,
-    "on": [Function],
-  },
-  "rt": Le {
-    "fixedAspectRatio": false,
-    "fixedScaleCenter": false,
-    "on": [Function],
-  },
-  "t": Le {
-    "fixedAspectRatio": false,
-    "fixedScaleCenter": false,
-    "on": [Function],
-  },
+  "b": "{x: -8, y: 42, w: 16, h: 16}",
+  "l": "{x: -58, y: -8, w: 16, h: 16}",
+  "lb": "{x: -58, y: 42, w: 16, h: 16}",
+  "lt": "{x: -58, y: -58, w: 16, h: 16}",
+  "r": "{x: 42, y: -8, w: 16, h: 16}",
+  "rb": "{x: 42, y: 42, w: 16, h: 16}",
+  "rotate": "{x: -12, y: -94, w: 24, h: 24}",
+  "rt": "{x: 42, y: -58, w: 16, h: 16}",
+  "t": "{x: -8, y: -58, w: 16, h: 16}",
 }
 `;
