@@ -1048,7 +1048,7 @@ function createAudioChunksDecoder(
       if (adec.state !== 'closed') adec.close();
     },
     get decoding() {
-      return inputCnt > outputCnt;
+      return inputCnt > outputCnt && adec.decodeQueueSize > 0;
     },
     get state() {
       return adec.state;
