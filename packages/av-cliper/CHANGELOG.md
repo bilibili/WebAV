@@ -1,5 +1,12 @@
 # @webav/av-cliper
 
+## 1.0.10
+
+### Patch Changes
+
+- c6e4ebb: fix: parse audio timeout
+  - @webav/internal-utils@1.0.10
+
 ## 1.0.9
 
 ### Patch Changes
