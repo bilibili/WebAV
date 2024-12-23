@@ -1,5 +1,12 @@
 # @webav/av-cliper
 
+## 1.0.9
+
+### Patch Changes
+
+- ef1cc97: chore: more log info
+  - @webav/internal-utils@1.0.9
+
 ## 1.0.8
 
 ### Patch Changes
