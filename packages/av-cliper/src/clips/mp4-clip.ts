@@ -608,7 +608,9 @@ class VideoFrameFinder {
     this.#ts = time;
 
     this.#curAborter = { abort: false, st: performance.now() };
-    return await this.#parseFrame(time, this.#dec, this.#curAborter);
+    const vf = await this.#parseFrame(time, this.#dec, this.#curAborter);
+    this.#sleepCnt = 0;
+    return vf;
   };
 
   // fix VideoFrame duration is null
@@ -619,6 +621,7 @@ class VideoFrameFinder {
   #videoFrames: VideoFrame[] = [];
   #outputFrameCnt = 0;
   #inputChunkCnt = 0;
+  #sleepCnt = 0;
   #parseFrame = async (
     time: number,
     dec: VideoDecoder | null,
@@ -659,6 +662,7 @@ class VideoFrameFinder {
         );
       }
       // 解码中，等待，然后重试
+      this.#sleepCnt += 1;
       await sleep(15);
     } else if (this.#videoDecCusorIdx >= this.samples.length) {
       // decode completed
@@ -781,6 +785,9 @@ class VideoFrameFinder {
     outputCnt: this.#outputFrameCnt,
     cacheFrameLen: this.#videoFrames.length,
     softDeocde: this.#downgradeSoftDecode,
+    clipIdCnt: CLIP_ID,
+    sleepCnt: this.#sleepCnt,
+    memInfo: memoryUsageInfo(),
   });
 
   destroy = () => {
@@ -836,11 +843,13 @@ class AudioFrameFinder {
 
     this.#curAborter = { abort: false, st: performance.now() };
 
-    return await this.#parseFrame(
+    const pcmData = await this.#parseFrame(
       Math.ceil(deltaTime * (this.#sampleRate / 1e6)),
       this.#dec,
       this.#curAborter,
     );
+    this.#sleepCnt = 0;
+    return pcmData;
   };
 
   #ts = 0;
@@ -852,6 +861,7 @@ class AudioFrameFinder {
     frameCnt: 0,
     data: [],
   };
+  #sleepCnt = 0;
   #parseFrame = async (
     emitFrameCnt: number,
     dec: ReturnType<typeof createAudioChunksDecoder> | null = null,
@@ -884,6 +894,7 @@ class AudioFrameFinder {
         );
       }
       // 解码中，等待
+      this.#sleepCnt += 1;
       await sleep(15);
     } else if (this.#decCusorIdx >= this.samples.length - 1) {
       // 最后片段，返回剩余数据
@@ -950,6 +961,9 @@ class AudioFrameFinder {
     decCusorIdx: this.#decCusorIdx,
     sampleLen: this.samples.length,
     pcmLen: this.#pcmData.frameCnt,
+    clipIdCnt: CLIP_ID,
+    sleepCnt: this.#sleepCnt,
+    memInfo: memoryUsageInfo(),
   });
 
   destroy = () => {
@@ -1384,5 +1398,21 @@ function fixFirstBlackFrame(samples: ExtMP4Sample[]) {
   if (minCtsSample != null && minCtsSample.cts < 200e3) {
     minCtsSample.duration += minCtsSample.cts;
     minCtsSample.cts = 0;
+  }
+}
+
+function memoryUsageInfo() {
+  try {
+    // @ts-ignore
+    const mem = performance.memory;
+    return {
+      jsHeapSizeLimit: mem.jsHeapSizeLimit,
+      totalJSHeapSize: mem.totalJSHeapSize,
+      usedJSHeapSize: mem.usedJSHeapSize,
+      percentUsed: (mem.usedJSHeapSize / mem.jsHeapSizeLimit).toFixed(3),
+      percentTotal: (mem.totalJSHeapSize / mem.jsHeapSizeLimit).toFixed(3),
+    };
+  } catch (err) {
+    return {};
   }
 }
