@@ -91,13 +91,41 @@ map.set(Log.error, 3);
 
 declare const PKG_VERSION: string;
 
+declare class PressureObserver {
+  constructor(
+    callback: (changes: PressureRecord[], observer: PressureObserver) => void,
+  );
+  observe(
+    resource: string,
+    options?: { sampleInterval?: number },
+  ): Promise<void>;
+  unobserve(): void;
+  takeRecords(): PressureRecord[];
+}
+
+interface PressureRecord {
+  state: 'critical' | 'serious' | 'normal';
+}
+
 (async function init() {
   await Promise.resolve();
-  if (globalThis.navigator == null) return;
+  if (globalThis.navigator == null || globalThis.document == null) return;
   Log.info(
     `@webav version: ${PKG_VERSION}, date: ${new Date().toLocaleDateString()}`,
   );
   Log.info(globalThis.navigator.userAgent);
+  document.addEventListener('visibilitychange', () => {
+    Log.info(`visibilitychange: ${document.visibilityState}`);
+  });
+
+  if ('PressureObserver' in globalThis) {
+    const observer = new PressureObserver((records) => {
+      Log.info(
+        `cpu state change: ${JSON.stringify(records.map((r) => r.state))}`,
+      );
+    });
+    observer.observe('cpu');
+  }
 })();
 
 if (import.meta.env?.DEV) {
