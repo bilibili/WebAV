@@ -600,7 +600,12 @@ class VideoFrameFinder {
   #ts = 0;
   #curAborter = { abort: false, st: performance.now() };
   find = async (time: number): Promise<VideoFrame | null> => {
-    if (this.#dec == null || time <= this.#ts || time - this.#ts > 3e6) {
+    if (
+      this.#dec == null ||
+      this.#dec.state === 'closed' ||
+      time <= this.#ts ||
+      time - this.#ts > 3e6
+    ) {
       this.#reset(time);
     }
 
@@ -767,6 +772,11 @@ class VideoFrameFinder {
         this.#videoFrames.push(rsVf);
       },
       error: (err) => {
+        if (err.message.includes('Codec reclaimed due to inactivity')) {
+          this.#dec = null;
+          return;
+        }
+
         const errMsg = `VideoFinder VideoDecoder err: ${err.message}, config: ${JSON.stringify(encoderConf)}, state: ${JSON.stringify(this.#getState())}`;
         Log.error(errMsg);
         throw Error(errMsg);
@@ -828,7 +838,9 @@ class AudioFrameFinder {
   #curAborter = { abort: false, st: performance.now() };
   find = async (time: number): Promise<Float32Array[]> => {
     const needResetTime = time <= this.#ts || time - this.#ts > 0.1e6;
-    if (this.#dec == null || needResetTime) this.#reset();
+    if (this.#dec == null || this.#dec.state === 'closed' || needResetTime) {
+      this.#reset();
+    }
 
     if (needResetTime) {
       // 前后获取音频数据差异不能超过 100ms(经验值)，否则视为 seek 操作，重置解码器
@@ -1001,7 +1013,7 @@ function createAudioChunksDecoder(
   const resampleQ = createPromiseQueue<Float32Array[]>(outputHandler);
 
   const needResample = opts.resampleRate !== decoderConf.sampleRate;
-  const adec = new AudioDecoder({
+  let adec = new AudioDecoder({
     output: (ad) => {
       const pcm = extractPCM4AudioData(ad);
       if (needResample) {
@@ -1017,6 +1029,9 @@ function createAudioChunksDecoder(
       ad.close();
     },
     error: (err) => {
+      if (err.message.includes('Codec reclaimed due to inactivity')) {
+        return;
+      }
       handleDecodeError('MP4Clip AudioDecoder err', err as Error);
     },
   });
