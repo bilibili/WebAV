@@ -1,5 +1,13 @@
 # @webav/av-cliper
 
+## 1.0.11
+
+### Patch Changes
+
+- 57b08dc: fix: decoder queue size maybe too large
+- Updated dependencies [edee0df]
+  - @webav/internal-utils@1.0.11
+
 ## 1.0.10
 
 ### Patch Changes
