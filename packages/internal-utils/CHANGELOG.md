@@ -1,5 +1,11 @@
 # @webav/internal-utils
 
+## 1.0.11
+
+### Patch Changes
+
+- edee0df: chore: add more performance log
+
 ## 1.0.10
 
 ## 1.0.9
