@@ -685,11 +685,13 @@ class VideoFrameFinder {
 
   #decoding = false;
   #startDecode = async (dec: VideoDecoder) => {
-    if (this.#decoding) return;
-    this.#decoding = true;
+    if (this.#decoding || dec.decodeQueueSize > 600) return;
 
     // 启动解码任务，然后重试
     let endIdx = this.#videoDecCusorIdx + 1;
+    if (endIdx > this.samples.length) return;
+
+    this.#decoding = true;
     // 该 GoP 时间区间有时间匹配，且未被删除的帧
     let hasValidFrame = false;
     for (; endIdx < this.samples.length; endIdx++) {
