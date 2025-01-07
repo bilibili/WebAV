@@ -408,6 +408,8 @@ export class AVCanvas {
    * @see [视频剪辑](https://bilibili.github.io/WebAV/demo/6_4-video-editor)
    */
   async createCombinator(opts: ICombinatorOpts = {}) {
+    Log.info('AVCanvas.createCombinator, opts:', opts);
+
     const com = new Combinator({ ...this.#opts, ...opts });
     const sprites = this.#spriteManager.getSprites({ time: false });
     if (sprites.length === 0) throw Error('No sprite added');
