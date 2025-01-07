@@ -706,7 +706,18 @@ class VideoFrameFinder {
       if (samples[0]?.is_idr !== true) {
         Log.warn('First sample not idr frame');
       } else {
+        const readStarTime = performance.now();
         const chunks = await videosamples2Chunks(samples, this.localFileReader);
+
+        const readCost = performance.now() - readStarTime;
+        if (readCost > 1000) {
+          const first = samples[0];
+          const last = samples.at(-1)!;
+          const rangSize = last.offset + last.size - first.offset;
+          Log.warn(
+            `Read video samples time cost: ${Math.round(readCost)}ms, file chunk size: ${rangSize}`,
+          );
+        }
         // Wait for the previous asynchronous operation to complete, at which point the task may have already been terminated
         if (dec.state === 'closed') return;
 
