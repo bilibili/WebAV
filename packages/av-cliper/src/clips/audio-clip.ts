@@ -143,7 +143,7 @@ export class AudioClip implements IClip {
   }> {
     if (!this.#opts.loop && time >= this.#meta.duration) {
       // 待观察：如果time跨度较大，返回done，理论上会丢失一些音频帧
-      return { audio: [], state: 'done' };
+      return await this.tickInterceptor(time, { audio: [], state: 'done' });
     }
 
     const deltaTime = time - this.#ts;
@@ -154,10 +154,10 @@ export class AudioClip implements IClip {
       this.#frameOffset = Math.ceil(
         (this.#ts / 1e6) * DEFAULT_AUDIO_CONF.sampleRate,
       );
-      return {
+      return await this.tickInterceptor(time, {
         audio: [new Float32Array(0), new Float32Array(0)],
         state: 'success',
-      };
+      });
     }
 
     this.#ts = time;

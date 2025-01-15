@@ -37,8 +37,10 @@ test('AudioClip tickInterceptor', async () => {
   };
   await clip.ready;
   await clip.tick(1000 * 30 * 2);
+  await clip.tick(-1);
+  await clip.tick(180 * 1e6);
 
-  expect(frameCnt).toBe(1);
+  expect(frameCnt).toBe(3);
 });
 
 test('AudioClip volume', async () => {
