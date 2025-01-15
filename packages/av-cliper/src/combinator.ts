@@ -117,6 +117,7 @@ export class Combinator {
   #hasVideoTrack: boolean;
 
   #evtTool = new EventTool<{
+    renderTime: (time: number) => void;
     OutputProgress: (progress: number) => void;
     error: (err: Error) => void;
   }>();
@@ -329,6 +330,9 @@ export class Combinator {
           await onEnded();
           return;
         }
+
+        this.#evtTool.emit('renderTime', ts);
+
         progress = ts / maxTime;
 
         const { audios, mainSprDone } = await sprRender(ts);
