@@ -113,6 +113,18 @@ export class AudioClip implements IClip {
     );
   }
 
+  /**
+   * 拦截 {@link AudioClip.tick} 方法返回的数据，用于对音频数据二次处理
+   * @param time 调用 tick 的时间
+   * @param tickRet tick 返回的数据
+   *
+   * @see [移除视频绿幕背景](https://bilibili.github.io/WebAV/demo/3_2-chromakey-video)
+   */
+  tickInterceptor: <T extends Awaited<ReturnType<AudioClip['tick']>>>(
+    time: number,
+    tickRet: T,
+  ) => Promise<T> = async (_, tickRet) => tickRet;
+
   // 微秒
   #ts = 0;
   #frameOffset = 0;
@@ -131,7 +143,7 @@ export class AudioClip implements IClip {
   }> {
     if (!this.#opts.loop && time >= this.#meta.duration) {
       // 待观察：如果time跨度较大，返回done，理论上会丢失一些音频帧
-      return { audio: [], state: 'done' };
+      return await this.tickInterceptor(time, { audio: [], state: 'done' });
     }
 
     const deltaTime = time - this.#ts;
@@ -142,10 +154,10 @@ export class AudioClip implements IClip {
       this.#frameOffset = Math.ceil(
         (this.#ts / 1e6) * DEFAULT_AUDIO_CONF.sampleRate,
       );
-      return {
+      return await this.tickInterceptor(time, {
         audio: [new Float32Array(0), new Float32Array(0)],
         state: 'success',
-      };
+      });
     }
 
     this.#ts = time;
@@ -164,7 +176,7 @@ export class AudioClip implements IClip {
         ];
     this.#frameOffset = endIdx;
 
-    return { audio, state: 'success' };
+    return await this.tickInterceptor(time, { audio, state: 'success' });
   }
 
   /**

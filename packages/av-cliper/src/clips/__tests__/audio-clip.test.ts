@@ -28,6 +28,21 @@ test('AudioClip tick', async () => {
   expect(s2).toBe('done');
 });
 
+test('AudioClip tickInterceptor', async () => {
+  const clip = new AudioClip((await fetch(m4a_44kHz_2chan)).body!);
+  let frameCnt = 0;
+  clip.tickInterceptor = async (_, tickRet) => {
+    if (tickRet.audio != null) frameCnt += 1;
+    return tickRet;
+  };
+  await clip.ready;
+  await clip.tick(1000 * 30 * 2);
+  await clip.tick(-1);
+  await clip.tick(180 * 1e6);
+
+  expect(frameCnt).toBe(3);
+});
+
 test('AudioClip volume', async () => {
   const clip1 = new AudioClip((await fetch(m4a_44kHz_2chan)).body!);
   const clip2 = new AudioClip((await fetch(m4a_44kHz_2chan)).body!, {
