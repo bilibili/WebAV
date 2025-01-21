@@ -1,5 +1,5 @@
 import { autoReadStream } from '@webav/internal-utils';
-import { IClip } from './iclip';
+import { IClip, IClipMeta } from './iclip';
 
 /**
  * 包装实时音视频流，仅用于 [AVCanvas](../../av-canvas/classes/AVCanvas.html)
@@ -44,24 +44,40 @@ export class MediaStreamClip implements IClip {
   #ms: MediaStream;
   constructor(ms: MediaStream) {
     this.#ms = ms;
+    this.audioTrack = ms.getAudioTracks()[0] ?? null;
+    this.#meta.duration = Infinity;
     const videoTrack = ms.getVideoTracks()[0];
     if (videoTrack != null) {
-      const { width, height } = videoTrack.getSettings();
       videoTrack.contentHint = 'motion';
-      this.#meta.width = width ?? 0;
-      this.#meta.height = height ?? 0;
-
-      this.#cvs = new OffscreenCanvas(width ?? 0, height ?? 0);
-      this.#stopRenderCvs = renderVideoTrackToCvs(
-        this.#cvs.getContext('2d')!,
-        videoTrack,
+      // The videoTrack.getSettings() is unstable in some cases if the videoTrack is not attached to a video element
+      // The width and height will change after the first call of getSettings() (e.g. 3452x2240 -> 3452x1940)
+      // This is something to do with the stream initialization, there is a default size for the videoTrack which may not match the real size
+      // Create a video element to initialize the videoTrack to ensure the correct size
+      const video_for_initialization = document.createElement('video');
+      video_for_initialization.style.display = 'none';
+      document.body.appendChild(video_for_initialization);
+      const loadedPromise: Promise<IClipMeta> = new Promise(
+        (resolve, reject) => {
+          video_for_initialization.onerror = reject;
+          video_for_initialization.onloadedmetadata = () => {
+            const { width, height } = videoTrack.getSettings();
+            this.#cvs = new OffscreenCanvas(width ?? 0, height ?? 0);
+            this.#stopRenderCvs = renderVideoTrackToCvs(
+              this.#cvs.getContext('2d')!,
+              videoTrack,
+            );
+            this.#meta.width = width ?? 0;
+            this.#meta.height = height ?? 0;
+            video_for_initialization.remove();
+            resolve(this.meta);
+          };
+        },
       );
+      this.ready = loadedPromise;
+      video_for_initialization.srcObject = ms;
+    } else {
+      this.ready = Promise.resolve(this.meta);
     }
-
-    this.audioTrack = ms.getAudioTracks()[0] ?? null;
-
-    this.#meta.duration = Infinity;
-    this.ready = Promise.resolve(this.meta);
   }
 
   async tick(): Promise<{
