@@ -22,6 +22,6 @@
     "prepare": "pnpm build"
   },
   "dependencies": {
-    "@webav/mp4box.js": "0.5.4-fenghen"
+    "@webav/mp4box.js": "0.5.6"
   }
 }
