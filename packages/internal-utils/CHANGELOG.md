@@ -1,5 +1,11 @@
 # @webav/internal-utils
 
+## 1.0.12
+
+### Patch Changes
+
+- 146881f: chore: upgrade mp4box.js version
+
 ## 1.0.11
 
 ### Patch Changes
