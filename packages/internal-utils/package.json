@@ -1,6 +1,6 @@
 {
   "name": "@webav/internal-utils",
-  "version": "1.0.11",
+  "version": "1.0.12",
   "private": false,
   "repository": "https://github.com/bilibili/WebAV",
   "type": "module",

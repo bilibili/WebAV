@@ -1,5 +1,14 @@
 # @webav/av-cliper
 
+## 1.0.12
+
+### Patch Changes
+
+- 146881f: chore: upgrade mp4box.js version
+- 0dab489: add tickInterceptor to audio-clip
+- Updated dependencies [146881f]
+  - @webav/internal-utils@1.0.12
+
 ## 1.0.11
 
 ### Patch Changes
