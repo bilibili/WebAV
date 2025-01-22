@@ -1,4 +1,4 @@
-export interface IClipMeta {
+interface IClipMeta {
   width: number;
   height: number;
   duration: number;

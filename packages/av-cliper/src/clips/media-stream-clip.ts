@@ -1,5 +1,5 @@
 import { autoReadStream } from '@webav/internal-utils';
-import { IClip, IClipMeta } from './iclip';
+import { IClip } from './iclip';
 
 /**
  * 包装实时音视频流，仅用于 [AVCanvas](../../av-canvas/classes/AVCanvas.html)
