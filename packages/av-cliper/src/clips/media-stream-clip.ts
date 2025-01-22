@@ -49,32 +49,14 @@ export class MediaStreamClip implements IClip {
     const videoTrack = ms.getVideoTracks()[0];
     if (videoTrack != null) {
       videoTrack.contentHint = 'motion';
-      // The videoTrack.getSettings() is unstable in some cases if the videoTrack is not attached to a video element
-      // The width and height will change after the first call of getSettings() (e.g. 3452x2240 -> 3452x1940)
-      // This is something to do with the stream initialization, there is a default size for the videoTrack which may not match the real size
-      // Create a video element to initialize the videoTrack to ensure the correct size
-      const video_for_initialization = document.createElement('video');
-      video_for_initialization.style.display = 'none';
-      document.body.appendChild(video_for_initialization);
-      const loadedPromise: Promise<IClipMeta> = new Promise(
-        (resolve, reject) => {
-          video_for_initialization.onerror = reject;
-          video_for_initialization.onloadedmetadata = () => {
-            const { width, height } = videoTrack.getSettings();
-            this.#cvs = new OffscreenCanvas(width ?? 0, height ?? 0);
-            this.#stopRenderCvs = renderVideoTrackToCvs(
-              this.#cvs.getContext('2d')!,
-              videoTrack,
-            );
-            this.#meta.width = width ?? 0;
-            this.#meta.height = height ?? 0;
-            video_for_initialization.remove();
-            resolve(this.meta);
-          };
-        },
-      );
-      this.ready = loadedPromise;
-      video_for_initialization.srcObject = ms;
+      this.ready = new Promise((resolve) => {
+        this.#stopRenderCvs = renderVideoTrackToCvs(videoTrack, (cvs) => {
+          this.#meta.width = cvs.width;
+          this.#meta.height = cvs.height;
+          this.#cvs = cvs;
+          resolve(this.meta);
+        });
+      });
     } else {
       this.ready = Promise.resolve(this.meta);
     }
@@ -107,15 +89,26 @@ export class MediaStreamClip implements IClip {
 }
 
 function renderVideoTrackToCvs(
-  cvsCtx: OffscreenCanvasRenderingContext2D,
   track: MediaStreamVideoTrack,
+  onOffscreenCanvasReady: (cvs: OffscreenCanvas) => void,
 ) {
+  let emitFF = false;
+  let cvsCtx: OffscreenCanvasRenderingContext2D;
   return autoReadStream(
     new MediaStreamTrackProcessor({
       track,
     }).readable,
     {
       onChunk: async (frame) => {
+        if (!emitFF) {
+          const { displayHeight, displayWidth } = frame;
+          const width = displayWidth ?? 0;
+          const height = displayHeight ?? 0;
+          const cvs = new OffscreenCanvas(width, height);
+          cvsCtx = cvs.getContext('2d')!;
+          onOffscreenCanvasReady(cvs);
+          emitFF = true;
+        }
         cvsCtx.drawImage(frame, 0, 0);
         frame.close();
       },
