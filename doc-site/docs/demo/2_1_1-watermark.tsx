@@ -63,6 +63,15 @@ export default function UI() {
             min={0}
             max={3}
             step={0.1}
+            marks={{
+              0: '0',
+              '0.5': 0.5,
+              1: '1',
+              '1.5': 1.5,
+              2: '2',
+              '2.5': 2.5,
+              3: '3',
+            }}
             value={playbackRate}
             onChange={setPlaybackRate}
           ></Slider>
