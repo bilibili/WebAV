@@ -6,15 +6,17 @@ import {
   renderTxt2ImgBitmap,
 } from '@webav/av-cliper';
 import { useState } from 'react';
+import { Slider } from 'antd';
 import { CombinatorPlay } from './combinator-player';
 import { assetsPrefix } from './utils';
 
 const resList = assetsPrefix(['video/webav1.mp4']);
 
-async function start() {
+async function start(playbackRate: number) {
   const spr1 = new OffscreenSprite(
     new MP4Clip((await fetch(resList[0])).body!),
   );
+  spr1.time.playbackRate = playbackRate;
 
   const spr2 = new OffscreenSprite(
     new ImgClip(
@@ -51,11 +53,26 @@ async function start() {
 
 export default function UI() {
   const [com, setCom] = useState<null | Combinator>(null);
+  const [playbackRate, setPlaybackRate] = useState(1);
   return (
-    <CombinatorPlay
-      list={resList}
-      onStart={async () => setCom(await start())}
-      com={com}
-    ></CombinatorPlay>
+    <>
+      <div className="flex gap-4 items-center">
+        <div>Playback rate:</div>
+        <div className="flex-1">
+          <Slider
+            min={0}
+            max={3}
+            step={0.1}
+            value={playbackRate}
+            onChange={setPlaybackRate}
+          ></Slider>
+        </div>
+      </div>
+      <CombinatorPlay
+        list={resList}
+        onStart={async () => setCom(await start(playbackRate))}
+        com={com}
+      ></CombinatorPlay>
+    </>
   );
 }
