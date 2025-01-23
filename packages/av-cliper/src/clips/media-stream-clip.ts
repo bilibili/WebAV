@@ -44,24 +44,22 @@ export class MediaStreamClip implements IClip {
   #ms: MediaStream;
   constructor(ms: MediaStream) {
     this.#ms = ms;
+    this.audioTrack = ms.getAudioTracks()[0] ?? null;
+    this.#meta.duration = Infinity;
     const videoTrack = ms.getVideoTracks()[0];
     if (videoTrack != null) {
-      const { width, height } = videoTrack.getSettings();
       videoTrack.contentHint = 'motion';
-      this.#meta.width = width ?? 0;
-      this.#meta.height = height ?? 0;
-
-      this.#cvs = new OffscreenCanvas(width ?? 0, height ?? 0);
-      this.#stopRenderCvs = renderVideoTrackToCvs(
-        this.#cvs.getContext('2d')!,
-        videoTrack,
-      );
+      this.ready = new Promise((resolve) => {
+        this.#stopRenderCvs = renderVideoTrackToCvs(videoTrack, (cvs) => {
+          this.#meta.width = cvs.width;
+          this.#meta.height = cvs.height;
+          this.#cvs = cvs;
+          resolve(this.meta);
+        });
+      });
+    } else {
+      this.ready = Promise.resolve(this.meta);
     }
-
-    this.audioTrack = ms.getAudioTracks()[0] ?? null;
-
-    this.#meta.duration = Infinity;
-    this.ready = Promise.resolve(this.meta);
   }
 
   async tick(): Promise<{
@@ -91,15 +89,26 @@ export class MediaStreamClip implements IClip {
 }
 
 function renderVideoTrackToCvs(
-  cvsCtx: OffscreenCanvasRenderingContext2D,
   track: MediaStreamVideoTrack,
+  onOffscreenCanvasReady: (cvs: OffscreenCanvas) => void,
 ) {
+  let emitFF = false;
+  let cvsCtx: OffscreenCanvasRenderingContext2D;
   return autoReadStream(
     new MediaStreamTrackProcessor({
       track,
     }).readable,
     {
       onChunk: async (frame) => {
+        if (!emitFF) {
+          const { displayHeight, displayWidth } = frame;
+          const width = displayWidth ?? 0;
+          const height = displayHeight ?? 0;
+          const cvs = new OffscreenCanvas(width, height);
+          cvsCtx = cvs.getContext('2d')!;
+          onOffscreenCanvasReady(cvs);
+          emitFF = true;
+        }
         cvsCtx.drawImage(frame, 0, 0);
         frame.close();
       },
