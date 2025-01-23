@@ -1,5 +1,13 @@
 # @webav/av-cliper
 
+## 1.0.13
+
+### Patch Changes
+
+- aa6e3fe: fix: Initialize MediaStreamClip's width, height and cvs in the first call of onChunk with the firstFrame information #343
+- 1055cac: resolve size mismatch issue in MediaStreamClip during tab recording #343
+  - @webav/internal-utils@1.0.13
+
 ## 1.0.12
 
 ### Patch Changes
