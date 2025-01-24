@@ -1,5 +1,12 @@
 # @webav/av-cliper
 
+## 1.0.14
+
+### Patch Changes
+
+- a55d12e: feat: Provide the binary data for the video header (box: ftyp, moov). #235 #348
+  - @webav/internal-utils@1.0.14
+
 ## 1.0.13
 
 ### Patch Changes
