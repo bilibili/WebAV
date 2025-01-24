@@ -85,6 +85,24 @@ export class MP4Clip implements IClip {
 
   #localFile: OPFSToolFile;
 
+  #headerBoxPos: Array<{ start: number; size: number }> = [];
+  /**
+   * 提供视频头（box: ftyp, moov）的二进制数据
+   * 使用任意 mp4 demxer 解析即可获得详细的视频信息
+   * 单元测试包含使用 mp4box.js 解析示例代码
+   */
+  async getFileHeaderBinData() {
+    await this.ready;
+    const oFile = await this.#localFile.getOriginFile();
+    if (oFile == null) throw Error('MP4Clip localFile is not origin file');
+
+    return await new Blob(
+      this.#headerBoxPos.map(({ start, size }) =>
+        oFile.slice(start, start + size),
+      ),
+    ).arrayBuffer();
+  }
+
   #volume = 1;
 
   #videoSamples: ExtMP4Sample[] = [];
@@ -141,34 +159,38 @@ export class MP4Clip implements IClip {
         : isOTFile(source)
           ? mp4FileToSamples(source, this.#opts)
           : Promise.resolve(source)
-    ).then(async ({ videoSamples, audioSamples, decoderConf }) => {
-      this.#videoSamples = videoSamples;
-      this.#audioSamples = audioSamples;
-      this.#decoderConf = decoderConf;
-      const { videoFrameFinder, audioFrameFinder } = genDecoder(
-        {
-          video:
-            decoderConf.video == null
-              ? null
-              : {
-                  ...decoderConf.video,
-                  hardwareAcceleration:
-                    this.#opts.__unsafe_hardwareAcceleration__,
-                },
-          audio: decoderConf.audio,
-        },
-        await this.#localFile.createReader(),
-        videoSamples,
-        audioSamples,
-        this.#opts.audio !== false ? this.#volume : 0,
-      );
-      this.#videoFrameFinder = videoFrameFinder;
-      this.#audioFrameFinder = audioFrameFinder;
+    ).then(
+      async ({ videoSamples, audioSamples, decoderConf, headerBoxPos }) => {
+        this.#videoSamples = videoSamples;
+        this.#audioSamples = audioSamples;
+        this.#decoderConf = decoderConf;
+        this.#headerBoxPos = headerBoxPos;
 
-      this.#meta = genMeta(decoderConf, videoSamples, audioSamples);
-      this.#log.info('MP4Clip meta:', this.#meta);
-      return { ...this.#meta };
-    });
+        const { videoFrameFinder, audioFrameFinder } = genDecoder(
+          {
+            video:
+              decoderConf.video == null
+                ? null
+                : {
+                    ...decoderConf.video,
+                    hardwareAcceleration:
+                      this.#opts.__unsafe_hardwareAcceleration__,
+                  },
+            audio: decoderConf.audio,
+          },
+          await this.#localFile.createReader(),
+          videoSamples,
+          audioSamples,
+          this.#opts.audio !== false ? this.#volume : 0,
+        );
+        this.#videoFrameFinder = videoFrameFinder;
+        this.#audioFrameFinder = audioFrameFinder;
+
+        this.#meta = genMeta(decoderConf, videoSamples, audioSamples);
+        this.#log.info('MP4Clip meta:', this.#meta);
+        return { ...this.#meta };
+      },
+    );
   }
 
   /**
@@ -332,6 +354,7 @@ export class MP4Clip implements IClip {
         videoSamples: preVideoSlice ?? [],
         audioSamples: preAudioSlice ?? [],
         decoderConf: this.#decoderConf,
+        headerBoxPos: this.#headerBoxPos,
       },
       this.#opts,
     );
@@ -341,6 +364,7 @@ export class MP4Clip implements IClip {
         videoSamples: postVideoSlice ?? [],
         audioSamples: postAudioSlice ?? [],
         decoderConf: this.#decoderConf,
+        headerBoxPos: this.#headerBoxPos,
       },
       this.#opts,
     );
@@ -357,6 +381,7 @@ export class MP4Clip implements IClip {
         videoSamples: [...this.#videoSamples],
         audioSamples: [...this.#audioSamples],
         decoderConf: this.#decoderConf,
+        headerBoxPos: this.#headerBoxPos,
       },
       this.#opts,
     );
@@ -382,6 +407,7 @@ export class MP4Clip implements IClip {
             video: this.#decoderConf.video,
             audio: null,
           },
+          headerBoxPos: this.#headerBoxPos,
         },
         this.#opts,
       );
@@ -399,6 +425,7 @@ export class MP4Clip implements IClip {
             audio: this.#decoderConf.audio,
             video: null,
           },
+          headerBoxPos: this.#headerBoxPos,
         },
         this.#opts,
       );
@@ -496,6 +523,7 @@ async function mp4FileToSamples(otFile: OPFSToolFile, opts: MP4ClipOpts = {}) {
   const decoderConf: MP4DecoderConf = { video: null, audio: null };
   let videoSamples: ExtMP4Sample[] = [];
   let audioSamples: ExtMP4Sample[] = [];
+  let headerBoxPos: Array<{ start: number; size: number }> = [];
 
   let videoDeltaTS = -1;
   let audioDeltaTS = -1;
@@ -504,6 +532,11 @@ async function mp4FileToSamples(otFile: OPFSToolFile, opts: MP4ClipOpts = {}) {
     reader,
     (data) => {
       mp4Info = data.info;
+      const ftyp = data.mp4boxFile.ftyp!;
+      headerBoxPos.push({ start: ftyp.start, size: ftyp.size });
+      const moov = data.mp4boxFile.moov!;
+      headerBoxPos.push({ start: moov.start, size: moov.size });
+
       let { videoDecoderConf: vc, audioDecoderConf: ac } = extractFileConfig(
         data.mp4boxFile,
         data.info,
@@ -553,6 +586,7 @@ async function mp4FileToSamples(otFile: OPFSToolFile, opts: MP4ClipOpts = {}) {
     videoSamples,
     audioSamples,
     decoderConf,
+    headerBoxPos,
   };
 
   function normalizeTimescale(

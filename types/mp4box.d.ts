@@ -188,10 +188,15 @@ declare module '@webav/mp4box.js' {
     mvhd: MVHDBoxParser;
   }
 
+  interface FTYPBoxParser extends BoxParser {
+    type: 'ftyp';
+  }
+
   interface MVHDBoxParser extends BoxParser {
     type: 'mvhd';
     duration: number;
     timescale: number;
+    matrix: Uint32Array;
   }
 
   interface TKHDBoxParser extends BoxParser {
@@ -259,6 +264,7 @@ declare module '@webav/mp4box.js' {
     boxes: BoxParser[];
     mdats: MDATBoxParser[];
     moofs: MOOFBoxParser[];
+    ftyp?: MOOVBoxParser;
     moov?: MOOVBoxParser;
 
     add: (name: string) => BoxParser;

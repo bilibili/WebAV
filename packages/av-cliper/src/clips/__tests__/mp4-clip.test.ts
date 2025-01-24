@@ -1,6 +1,7 @@
-import { expect, test } from 'vitest';
+import { expect, test, vi } from 'vitest';
 import { MP4Clip } from '../mp4-clip';
 import { file, write } from 'opfs-tools';
+import mp4box, { MP4ArrayBuffer } from '@webav/mp4box.js';
 
 const mp4_123 = `//${location.host}/video/123.mp4`;
 
@@ -152,4 +153,19 @@ test('create instance by opfs file', async () => {
   } finally {
     f.remove();
   }
+});
+
+test('get file header data', async () => {
+  const clip = new MP4Clip((await fetch(mp4_123)).body!);
+  const boxfile = mp4box.createFile();
+  boxfile.onReady = vi.fn();
+  const buf = (await clip.getFileHeaderBinData()) as MP4ArrayBuffer;
+  buf.fileStart = 0;
+  boxfile.appendBuffer(buf);
+  expect(boxfile.onReady).toBeCalledWith(
+    expect.objectContaining({
+      hasMoov: true,
+    }),
+  );
+  expect(boxfile.moov?.mvhd.matrix.length).toBe(9);
 });
