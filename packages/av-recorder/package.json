@@ -1,6 +1,6 @@
 {
   "name": "@webav/av-recorder",
-  "version": "1.0.14",
+  "version": "1.0.15",
   "private": false,
   "repository": "https://github.com/bilibili/WebAV",
   "keywords": [
