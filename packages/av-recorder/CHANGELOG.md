@@ -1,5 +1,14 @@
 # @webav/av-recorder
 
+## 1.0.15
+
+### Patch Changes
+
+- bd86a2d: refactor: generate a keyframe every 3 seconds.
+- Updated dependencies [bd86a2d]
+  - @webav/av-cliper@1.0.15
+  - @webav/internal-utils@1.0.15
+
 ## 1.0.14
 
 ### Patch Changes
