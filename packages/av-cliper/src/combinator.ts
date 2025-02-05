@@ -315,6 +315,7 @@ export class Combinator {
         outputAudio,
         hasVideoTrack: this.#hasVideoTrack,
         timeSlice,
+        fps,
       });
 
       let ts = 0;
@@ -418,10 +419,13 @@ function createAVEncoder(opts: {
   outputAudio?: boolean;
   hasVideoTrack: boolean;
   timeSlice: number;
+  fps: number;
 }) {
   const { ctx, cvs, outputAudio, remux, hasVideoTrack, timeSlice } = opts;
   const { width, height } = cvs;
   let frameCnt = 0;
+  // 3s 一个 GOP
+  const gopSize = Math.floor(3 * opts.fps);
 
   const audioTrackBuf = createAudioTrackBuf(1024);
 
@@ -437,8 +441,7 @@ function createAVEncoder(opts: {
       });
 
       remux.encodeVideo(vf, {
-        // todo: 3s 1 GoP
-        keyFrame: frameCnt % 150 === 0,
+        keyFrame: frameCnt % gopSize === 0,
       });
       ctx.resetTransform();
       ctx.clearRect(0, 0, width, height);

@@ -177,7 +177,12 @@ class RecoderPauseCtrl {
   // 触发暂停的时间，用于计算暂停持续了多久
   #pauseTime = 0;
 
-  constructor(readonly expectFPS: number) {}
+  // 间隔多少帧生成一个关键帧
+  #gopSize = 30;
+
+  constructor(readonly expectFPS: number) {
+    this.#gopSize = Math.floor(expectFPS * 3);
+  }
 
   start() {
     this.#offsetTime = performance.now();
@@ -221,7 +226,7 @@ class RecoderPauseCtrl {
     frame.close();
     return {
       vf,
-      opts: { keyFrame: this.#frameCnt % 30 === 0 },
+      opts: { keyFrame: this.#frameCnt % this.#gopSize === 0 },
     };
   }
 
