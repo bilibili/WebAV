@@ -820,7 +820,9 @@ class VideoFrameFinder {
       },
       error: (err) => {
         if (err.message.includes('Codec reclaimed due to inactivity')) {
+          // todo:  因无活动被自动关闭的解码器，是否需要自动重启？
           this.#dec = null;
+          Log.warn(err.message);
           return;
         }
 
@@ -1311,6 +1313,7 @@ function decodeGoP(
   if (dec.state !== 'configured') return;
   for (; i < chunks.length; i++) dec.decode(chunks[i]);
 
+  // todo：flush 之后下一帧必须是 IDR 帧，是否可以根据情况再决定调用 flush？
   // windows 某些设备 flush 可能不会被 resolved，所以不能 await flush
   dec.flush().catch((err) => {
     if (!(err instanceof Error)) throw err;
