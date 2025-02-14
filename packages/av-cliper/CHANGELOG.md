@@ -1,5 +1,12 @@
 # @webav/av-cliper
 
+## 1.0.16
+
+### Patch Changes
+
+- 0f58eae: fix: some files failed to decode. #364
+  - @webav/internal-utils@1.0.16
+
 ## 1.0.15
 
 ### Patch Changes
