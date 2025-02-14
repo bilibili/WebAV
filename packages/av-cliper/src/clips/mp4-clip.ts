@@ -595,22 +595,21 @@ async function mp4FileToSamples(otFile: OPFSToolFile, opts: MP4ClipOpts = {}) {
     sampleType: 'video' | 'audio',
   ) {
     // todo: perf 丢弃多余字段，小尺寸对象性能更好
-    const is_idr =
-      sampleType === 'video' &&
-      s.is_sync &&
-      isIDRFrame(s.data, s.description.type);
+    const idrOffset =
+      sampleType === 'video' && s.is_sync
+        ? idrNALUOffset(s.data, s.description.type)
+        : -1;
     let offset = s.offset;
     let size = s.size;
-    if (is_idr) {
+    if (idrOffset >= 0) {
       // 当 IDR 帧前面携带 SEI 数据可能导致解码失败
       // 所以此处通过控制 offset、size 字段 跳过 SEI 数据
-      const seiLen = seiLenOfStart(s.data, s.description.type);
-      offset += seiLen;
-      size -= seiLen;
+      offset += idrOffset;
+      size -= idrOffset;
     }
     return {
       ...s,
-      is_idr,
+      is_idr: idrOffset >= 0,
       offset,
       size,
       cts: ((s.cts - delta) / s.timescale) * 1e6,
@@ -661,6 +660,7 @@ class VideoFrameFinder {
   #outputFrameCnt = 0;
   #inputChunkCnt = 0;
   #sleepCnt = 0;
+  #predecodeErr = false;
   #parseFrame = async (
     time: number,
     dec: VideoDecoder | null,
@@ -679,9 +679,10 @@ class VideoFrameFinder {
         return await this.#parseFrame(time, dec, aborter);
       }
 
-      if (this.#videoFrames.length < 10) {
+      if (!this.#predecodeErr && this.#videoFrames.length < 10) {
         // 预解码 避免等待
         this.#startDecode(dec).catch((err) => {
+          this.#predecodeErr = true;
           this.#reset(time);
           throw err;
         });
@@ -1351,22 +1352,25 @@ function seiLenOfStart(
   return 0;
 }
 
-function isIDRFrame(u8Arr: Uint8Array, type: MP4Sample['description']['type']) {
-  if (type !== 'avc1' && type !== 'hvc1') return true;
+function idrNALUOffset(
+  u8Arr: Uint8Array,
+  type: MP4Sample['description']['type'],
+) {
+  if (type !== 'avc1' && type !== 'hvc1') return 0;
 
   const dv = new DataView(u8Arr.buffer);
   let i = 0;
   for (; i < u8Arr.byteLength - 4; ) {
     if (type === 'avc1' && (dv.getUint8(i + 4) & 0x1f) === 5) {
-      return true;
+      return i;
     } else if (type === 'hvc1') {
       const nalUnitType = (dv.getUint8(i + 4) >> 1) & 0x3f;
-      if (nalUnitType === 19 || nalUnitType === 20) return true;
+      if (nalUnitType === 19 || nalUnitType === 20) return i;
     }
     // 跳至下一个 NALU 继续检查
     i += dv.getUint32(i) + 4;
   }
-  return false;
+  return -1;
 }
 
 async function thumbnailByKeyFrame(
