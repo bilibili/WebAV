@@ -1,5 +1,13 @@
 # @webav/av-recorder
 
+## 1.0.16
+
+### Patch Changes
+
+- Updated dependencies [0f58eae]
+  - @webav/av-cliper@1.0.16
+  - @webav/internal-utils@1.0.16
+
 ## 1.0.15
 
 ### Patch Changes
