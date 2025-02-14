@@ -1332,26 +1332,6 @@ function decodeGoP(
   });
 }
 
-// 获取起始位置的 SEI 长度
-function seiLenOfStart(
-  u8Arr: Uint8Array,
-  type: MP4Sample['description']['type'],
-) {
-  if (type !== 'avc1' && type !== 'hvc1') return 0;
-
-  const dv = new DataView(u8Arr.buffer);
-  if (type === 'avc1' && (dv.getUint8(4) & 0x1f) === 6) {
-    return dv.getUint32(0) + 4;
-  }
-  if (type === 'hvc1') {
-    const nalUnitType = (dv.getUint8(4) >> 1) & 0x3f;
-    if (nalUnitType === 39 || nalUnitType === 40) {
-      return dv.getUint32(0) + 4;
-    }
-  }
-  return 0;
-}
-
 function idrNALUOffset(
   u8Arr: Uint8Array,
   type: MP4Sample['description']['type'],
