@@ -1,7 +1,7 @@
 // 能同时在 worker 和主线程中运行的工具函数
 
 import { workerTimer } from '@webav/internal-utils';
-import { resample } from 'wave-resampler';
+import * as waveResampler from 'wave-resampler';
 
 /**
  * 合并（串联）多个 Float32Array，通常用于合并 PCM 数据
@@ -252,7 +252,10 @@ export async function audioResample(
     return pcmData.map(
       (p) =>
         new Float32Array(
-          resample(p, curRate, target.rate, { method: 'sinc', LPF: false }),
+          waveResampler.resample(p, curRate, target.rate, {
+            method: 'sinc',
+            LPF: false,
+          }),
         ),
     );
   }
