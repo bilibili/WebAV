@@ -1,5 +1,5 @@
 ---
-name: Bug Report
+name: Bug Report (CN)
 about: 提交一个准确详细的错误报告，以帮助改进项目
 title: '[Bug] 简短描述问题'
 labels: bug
