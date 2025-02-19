@@ -1,5 +1,12 @@
 # @webav/av-cliper
 
+## 1.0.17
+
+### Patch Changes
+
+- ece970a: fix: named export 'resample' not found #368
+  - @webav/internal-utils@1.0.17
+
 ## 1.0.16
 
 ### Patch Changes
