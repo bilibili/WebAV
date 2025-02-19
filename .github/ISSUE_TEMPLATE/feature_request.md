@@ -1,5 +1,5 @@
 ---
-name: Feature Request
+name: 新功能建议 (CN)
 about: 提出一个新功能建议
 title: '[Feature] 简短描述功能'
 labels: enhancement

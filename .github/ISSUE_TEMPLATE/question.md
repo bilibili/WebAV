@@ -1,5 +1,5 @@
 ---
-name: 问题咨询
+name: 问题咨询 (CN)
 about: 提出与项目相关的问题或请求帮助
 title: '[Question] 简短描述问题'
 labels: question
