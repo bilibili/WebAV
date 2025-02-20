@@ -42,11 +42,11 @@ export function activeSprite(
         .find((s) => s.visible && s.rect.checkHit(ofx, ofy)) ?? null;
   };
 
-  cvsEl.addEventListener('mousedown', onCvsMouseDown);
+  cvsEl.addEventListener('pointerdown', onCvsMouseDown);
 
   return () => {
     observer.disconnect();
-    cvsEl.removeEventListener('mousedown', onCvsMouseDown);
+    cvsEl.removeEventListener('pointerdown', onCvsMouseDown);
   };
 }
 
@@ -106,8 +106,8 @@ export function draggabelSprite(
 
     startX = clientX;
     startY = clientY;
-    window.addEventListener('mousemove', onMouseMove);
-    window.addEventListener('mouseup', clearWindowEvt);
+    window.addEventListener('pointermove', onMouseMove);
+    window.addEventListener('pointerup', clearWindowEvt);
   };
 
   const onMouseMove = (evt: MouseEvent): void => {
@@ -124,19 +124,19 @@ export function draggabelSprite(
     );
   };
 
-  cvsEl.addEventListener('mousedown', onCvsMouseDown);
+  cvsEl.addEventListener('pointerdown', onCvsMouseDown);
 
   const clearWindowEvt = (): void => {
     refline.hide();
-    window.removeEventListener('mousemove', onMouseMove);
-    window.removeEventListener('mouseup', clearWindowEvt);
+    window.removeEventListener('pointermove', onMouseMove);
+    window.removeEventListener('pointerup', clearWindowEvt);
   };
 
   return () => {
     observer.disconnect();
     refline.destroy();
     clearWindowEvt();
-    cvsEl.removeEventListener('mousedown', onCvsMouseDown);
+    cvsEl.removeEventListener('pointerdown', onCvsMouseDown);
   };
 }
 
@@ -246,11 +246,11 @@ function scaleRect({
   };
 
   const clearWindowEvt = (): void => {
-    window.removeEventListener('mousemove', onMouseMove);
-    window.removeEventListener('mouseup', clearWindowEvt);
+    window.removeEventListener('pointermove', onMouseMove);
+    window.removeEventListener('pointerup', clearWindowEvt);
   };
-  window.addEventListener('mousemove', onMouseMove);
-  window.addEventListener('mouseup', clearWindowEvt);
+  window.addEventListener('pointermove', onMouseMove);
+  window.addEventListener('pointerup', clearWindowEvt);
 }
 
 /**
@@ -385,11 +385,11 @@ function rotateRect(rect: Rect, outCnt: IPoint): void {
     rect.angle = angle;
   };
   const clear = (): void => {
-    window.removeEventListener('mousemove', onMove);
-    window.removeEventListener('mouseup', clear);
+    window.removeEventListener('pointermove', onMove);
+    window.removeEventListener('pointerup', clear);
   };
-  window.addEventListener('mousemove', onMove);
-  window.addEventListener('mouseup', clear);
+  window.addEventListener('pointermove', onMove);
+  window.addEventListener('pointerup', clear);
 }
 
 /**
@@ -639,14 +639,14 @@ export function dynamicCusor(
     cvsStyle.cursor = '';
   };
 
-  cvsEl.addEventListener('mousemove', onMove);
-  cvsEl.addEventListener('mousedown', onDown);
-  window.addEventListener('mouseup', onWindowUp);
+  cvsEl.addEventListener('pointermove', onMove);
+  cvsEl.addEventListener('pointerdown', onDown);
+  window.addEventListener('pointerup', onWindowUp);
 
   return () => {
     observer.disconnect();
-    cvsEl.removeEventListener('mousemove', onMove);
-    cvsEl.removeEventListener('mousedown', onDown);
-    window.removeEventListener('mouseup', onWindowUp);
+    cvsEl.removeEventListener('pointermove', onMove);
+    cvsEl.removeEventListener('pointerdown', onDown);
+    window.removeEventListener('pointerup', onWindowUp);
   };
 }

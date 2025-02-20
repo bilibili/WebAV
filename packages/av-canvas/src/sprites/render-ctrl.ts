@@ -60,17 +60,17 @@ export function renderCtrls(
     );
   };
 
-  cvsEl.addEventListener('mousedown', onDown);
-  window.addEventListener('mouseup', onWinowUp);
-  window.addEventListener('mousemove', onMove);
+  cvsEl.addEventListener('pointerdown', onDown);
+  window.addEventListener('pointerup', onWinowUp);
+  window.addEventListener('pointermove', onMove);
 
   return () => {
     observer.disconnect();
     offSprChange();
     rectEl.remove();
-    cvsEl.removeEventListener('mousedown', onDown);
-    window.removeEventListener('mouseup', onWinowUp);
-    window.removeEventListener('mousemove', onMove);
+    cvsEl.removeEventListener('pointerdown', onDown);
+    window.removeEventListener('pointerup', onWinowUp);
+    window.removeEventListener('pointermove', onMove);
   };
 }
 
