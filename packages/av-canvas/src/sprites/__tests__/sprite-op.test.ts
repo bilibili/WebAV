@@ -25,7 +25,7 @@ afterEach(() => {
 });
 
 describe('draggabelSprite', () => {
-  test('canvas on mousedown', () => {
+  test('canvas on pointerdown', () => {
     const spyAEL = vi.spyOn(cvsEl, 'addEventListener');
     const spyREL = vi.spyOn(cvsEl, 'removeEventListener');
 
@@ -35,11 +35,11 @@ describe('draggabelSprite', () => {
       document.body,
       rectCtrlsGetter,
     );
-    expect(spyAEL).toBeCalledWith('mousedown', expect.any(Function));
+    expect(spyAEL).toBeCalledWith('pointerdown', expect.any(Function));
     expect(clear).toBeInstanceOf(Function);
 
     clear();
-    expect(spyREL).toBeCalledWith('mousedown', expect.any(Function));
+    expect(spyREL).toBeCalledWith('pointerdown', expect.any(Function));
   });
 
   test('window on mouse event', async () => {
@@ -55,23 +55,31 @@ describe('draggabelSprite', () => {
       document.body,
       rectCtrlsGetter,
     );
-    cvsEl.dispatchEvent(new MouseEvent('mousedown'));
+    cvsEl.dispatchEvent(new MouseEvent('pointerdown'));
 
     expect(spyAEL).toBeCalledTimes(2);
     expect(spyAEL).toHaveBeenNthCalledWith(
       1,
-      'mousemove',
+      'pointermove',
       expect.any(Function),
     );
-    expect(spyAEL).toHaveBeenNthCalledWith(2, 'mouseup', expect.any(Function));
+    expect(spyAEL).toHaveBeenNthCalledWith(
+      2,
+      'pointerup',
+      expect.any(Function),
+    );
 
     clear();
     expect(spyREL).toHaveBeenNthCalledWith(
       1,
-      'mousemove',
+      'pointermove',
       expect.any(Function),
     );
-    expect(spyREL).toHaveBeenNthCalledWith(2, 'mouseup', expect.any(Function));
+    expect(spyREL).toHaveBeenNthCalledWith(
+      2,
+      'pointerup',
+      expect.any(Function),
+    );
   });
 
   test('move sprite', async () => {
@@ -90,10 +98,10 @@ describe('draggabelSprite', () => {
       document.body,
       rectCtrlsGetter,
     );
-    cvsEl.dispatchEvent(crtMSEvt4Offset('mousedown', 110, 110));
+    cvsEl.dispatchEvent(crtMSEvt4Offset('pointerdown', 110, 110));
 
     window.dispatchEvent(
-      new MouseEvent('mousemove', {
+      new MouseEvent('pointermove', {
         clientX: 100,
         clientY: 100,
       }),
@@ -103,7 +111,7 @@ describe('draggabelSprite', () => {
 
     // 鼠标移动超出边界
     window.dispatchEvent(
-      new MouseEvent('mousemove', {
+      new MouseEvent('pointermove', {
         clientX: 10000,
         clientY: 10000,
       }),
@@ -131,16 +139,16 @@ describe('scale sprite', () => {
       document.body,
       rectCtrlsGetter,
     );
-    cvsEl.dispatchEvent(crtMSEvt4Offset('mousedown', 0, 0));
+    cvsEl.dispatchEvent(crtMSEvt4Offset('pointerdown', 0, 0));
     expect(sprMng.activeSprite).toBe(vs);
 
-    window.dispatchEvent(new MouseEvent('mouseup'));
+    window.dispatchEvent(new MouseEvent('pointerup'));
     // 命中 right ctrl
     cvsEl.dispatchEvent(
-      crtMSEvt4Offset('mousedown', 100 * cvsRatio.w, 50 * cvsRatio.h),
+      crtMSEvt4Offset('pointerdown', 100 * cvsRatio.w, 50 * cvsRatio.h),
     );
     window.dispatchEvent(
-      new MouseEvent('mousemove', {
+      new MouseEvent('pointermove', {
         clientX: 100,
         clientY: 100,
       }),
@@ -165,16 +173,16 @@ describe('scale sprite', () => {
       document.body,
       rectCtrlsGetter,
     );
-    cvsEl.dispatchEvent(crtMSEvt4Offset('mousedown', 0, 0));
+    cvsEl.dispatchEvent(crtMSEvt4Offset('pointerdown', 0, 0));
     expect(sprMng.activeSprite).toBe(vs);
 
-    window.dispatchEvent(new MouseEvent('mouseup'));
+    window.dispatchEvent(new MouseEvent('pointerup'));
     // 命中 bottom right ctrl
     cvsEl.dispatchEvent(
-      crtMSEvt4Offset('mousedown', 100 * cvsRatio.w, 100 * cvsRatio.h),
+      crtMSEvt4Offset('pointerdown', 100 * cvsRatio.w, 100 * cvsRatio.h),
     );
     window.dispatchEvent(
-      new MouseEvent('mousemove', {
+      new MouseEvent('pointermove', {
         clientX: 100,
         clientY: 100,
       }),
@@ -206,20 +214,20 @@ describe('scale sprite', () => {
       document.body,
       rectCtrlsGetter,
     );
-    cvsEl.dispatchEvent(crtMSEvt4Offset('mousedown', 150, 150));
+    cvsEl.dispatchEvent(crtMSEvt4Offset('pointerdown', 150, 150));
     expect(sprMng.activeSprite).toBe(vs);
 
-    window.dispatchEvent(new MouseEvent('mouseup'));
+    window.dispatchEvent(new MouseEvent('pointerup'));
     // 命中 right ctrl
     cvsEl.dispatchEvent(
       crtMSEvt4Offset(
-        'mousedown',
+        'pointerdown',
         100 + 50 * cvsRatio.w + Math.cos(30 * (Math.PI / 180)) * 50,
         100 + 50 * cvsRatio.h + 25,
       ),
     );
     window.dispatchEvent(
-      new MouseEvent('mousemove', {
+      new MouseEvent('pointermove', {
         clientX: -100,
         clientY: -100,
       }),
@@ -246,14 +254,14 @@ describe('scale sprite', () => {
       document.body,
       rectCtrlsGetter,
     );
-    cvsEl.dispatchEvent(crtMSEvt4Offset('mousedown', 50, 50));
+    cvsEl.dispatchEvent(crtMSEvt4Offset('pointerdown', 50, 50));
     expect(sprMng.activeSprite).toBe(vs);
 
-    window.dispatchEvent(new MouseEvent('mouseup'));
+    window.dispatchEvent(new MouseEvent('pointerup'));
     // 命中 top ctrl
-    cvsEl.dispatchEvent(crtMSEvt4Offset('mousedown', 0, 50));
+    cvsEl.dispatchEvent(crtMSEvt4Offset('pointerdown', 0, 50));
     window.dispatchEvent(
-      new MouseEvent('mousemove', {
+      new MouseEvent('pointermove', {
         clientX: 300,
         clientY: 0,
       }),
@@ -282,14 +290,14 @@ describe('scale sprite', () => {
       document.body,
       rectCtrlsGetter,
     );
-    cvsEl.dispatchEvent(crtMSEvt4Offset('mousedown', 150, 150));
+    cvsEl.dispatchEvent(crtMSEvt4Offset('pointerdown', 150, 150));
     expect(sprMng.activeSprite).toBe(vs);
 
-    window.dispatchEvent(new MouseEvent('mouseup'));
+    window.dispatchEvent(new MouseEvent('pointerup'));
     // 命中 bottom right ctrl
-    cvsEl.dispatchEvent(crtMSEvt4Offset('mousedown', 100, 200));
+    cvsEl.dispatchEvent(crtMSEvt4Offset('pointerdown', 100, 200));
     window.dispatchEvent(
-      new MouseEvent('mousemove', {
+      new MouseEvent('pointermove', {
         clientX: 100,
         clientY: -100,
       }),
@@ -317,14 +325,14 @@ describe('scale sprite', () => {
       document.body,
       rectCtrlsGetter,
     );
-    cvsEl.dispatchEvent(crtMSEvt4Offset('mousedown', 0, 0));
+    cvsEl.dispatchEvent(crtMSEvt4Offset('pointerdown', 0, 0));
     expect(sprMng.activeSprite).toBe(vs);
 
-    window.dispatchEvent(new MouseEvent('mouseup'));
+    window.dispatchEvent(new MouseEvent('pointerup'));
     // 命中 left ctrl
-    cvsEl.dispatchEvent(crtMSEvt4Offset('mousedown', 0, 50));
+    cvsEl.dispatchEvent(crtMSEvt4Offset('pointerdown', 0, 50));
     window.dispatchEvent(
-      new MouseEvent('mousemove', {
+      new MouseEvent('pointermove', {
         clientX: 10,
         clientY: 0,
       }),
@@ -352,14 +360,14 @@ describe('scale sprite', () => {
       document.body,
       rectCtrlsGetter,
     );
-    cvsEl.dispatchEvent(crtMSEvt4Offset('mousedown', 0, 0));
+    cvsEl.dispatchEvent(crtMSEvt4Offset('pointerdown', 0, 0));
     expect(sprMng.activeSprite).toBe(vs);
 
-    window.dispatchEvent(new MouseEvent('mouseup'));
+    window.dispatchEvent(new MouseEvent('pointerup'));
     // 命中 bottom ctrl
-    cvsEl.dispatchEvent(crtMSEvt4Offset('mousedown', 50, 100));
+    cvsEl.dispatchEvent(crtMSEvt4Offset('pointerdown', 50, 100));
     window.dispatchEvent(
-      new MouseEvent('mousemove', {
+      new MouseEvent('pointermove', {
         clientX: 0,
         clientY: -10,
       }),
@@ -388,22 +396,22 @@ describe('rotate sprite', () => {
       document.body,
       rectCtrlsGetter,
     );
-    cvsEl.dispatchEvent(crtMSEvt4Offset('mousedown', 0, 0));
+    cvsEl.dispatchEvent(crtMSEvt4Offset('pointerdown', 0, 0));
     expect(sprMng.activeSprite).toBe(vs);
 
-    window.dispatchEvent(new MouseEvent('mouseup'));
+    window.dispatchEvent(new MouseEvent('pointerup'));
     // 命中 rotate ctrl
     const { center } = vs.rect;
     const { rotate } = rectCtrlsGetter(vs.rect);
     cvsEl.dispatchEvent(
       crtMSEvt4Offset(
-        'mousedown',
+        'pointerdown',
         (rotate.x + center.x) * cvsRatio.w,
         (rotate.y + center.y) * cvsRatio.h,
       ),
     );
     window.dispatchEvent(
-      new MouseEvent('mousemove', {
+      new MouseEvent('pointermove', {
         clientX: 100,
         clientY: 100,
       }),
@@ -411,7 +419,7 @@ describe('rotate sprite', () => {
     expect(vs.rect.angle.toFixed(2)).toBe('2.36');
 
     window.dispatchEvent(
-      new MouseEvent('mousemove', {
+      new MouseEvent('pointermove', {
         clientX: 100,
         clientY: 200,
       }),

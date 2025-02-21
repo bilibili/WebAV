@@ -56,31 +56,31 @@ test('dynamicCusor', async () => {
   vs.rect.h = 100;
   await avCvs.addSprite(vs);
   const cvsEl = container.querySelector('canvas') as HTMLCanvasElement;
-  cvsEl.dispatchEvent(crtMSEvt4Offset('mousedown', 110, 110));
-  window.dispatchEvent(crtMSEvt4Offset('mouseup', 110, 110));
+  cvsEl.dispatchEvent(crtMSEvt4Offset('pointerdown', 110, 110));
+  window.dispatchEvent(crtMSEvt4Offset('pointerup', 110, 110));
 
   expect(cvsEl.style.cursor).toBe('move');
 
   const { center } = vs.rect;
   const { lt, rotate } = rectCtrlsGetter(vs.rect);
   cvsEl.dispatchEvent(
-    crtMSEvt4Offset('mousemove', lt.x + center.x, lt.y + center.y),
+    crtMSEvt4Offset('pointermove', lt.x + center.x, lt.y + center.y),
   );
   expect(cvsEl.style.cursor).toBe('nwse-resize');
 
   cvsEl.dispatchEvent(
     crtMSEvt4Offset(
-      'mousemove',
+      'pointermove',
       rotate.x + center.x + 1,
       rotate.y + center.y + 1,
     ),
   );
   expect(cvsEl.style.cursor).toBe('crosshair');
 
-  cvsEl.dispatchEvent(crtMSEvt4Offset('mousemove', 0, 0));
+  cvsEl.dispatchEvent(crtMSEvt4Offset('pointermove', 0, 0));
   expect(cvsEl.style.cursor).toBe('');
 
-  cvsEl.dispatchEvent(crtMSEvt4Offset('mousemove', 110, 110));
+  cvsEl.dispatchEvent(crtMSEvt4Offset('pointermove', 110, 110));
   expect(cvsEl.style.cursor).toBe('move');
 });
 
