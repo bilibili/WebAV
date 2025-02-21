@@ -32,6 +32,7 @@ function createInitCvsEl(resolution: IResolution): HTMLCanvasElement {
     width: 100%;
     height: 100%;
     display: block;
+    touch-action: none;
   `;
   cvsEl.width = resolution.width;
   cvsEl.height = resolution.height;
