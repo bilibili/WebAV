@@ -18,7 +18,9 @@ export default defineConfig({
       '../packages/av-canvas/src/index.ts',
     ),
   },
-
+  sitemap: {
+    hostname: 'https://bilibili.github.io/WebAV/',
+  },
   analytics: { ga_v2: 'G-MC335K4KV6' },
   themeConfig: {
     name: 'WebAV',
