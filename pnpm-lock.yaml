@@ -170,8 +170,8 @@ importers:
         specifier: 0.5.6
         version: 0.5.6
       opfs-tools:
-        specifier: ^0.6.1
-        version: 0.6.1
+        specifier: ^0.7.0
+        version: 0.7.0
       wave-resampler:
         specifier: ^1.0.0
         version: 1.0.0
@@ -6811,8 +6811,8 @@ packages:
     resolution: {integrity: sha512-OS+QTnw1/4vrf+9hh1jc1jnYjzSG4ttTBB8UxOwAnInG3Uo4ssetzC1ihqaIHjLJnA5GGlRl6QlZXOTQhRBUvg==}
     engines: {node: '>=14.16'}
 
-  opfs-tools@0.6.1:
-    resolution: {integrity: sha512-UAopBwr64jzyrNUr4LWWhLGZY2dAzNIKX/CTI48wR5V88dx3aqx0DN+NdosMY9vZ0heb12ZMTPQ0XpoC4cfSOA==}
+  opfs-tools@0.7.0:
+    resolution: {integrity: sha512-h2VN0j/eB2f+NITJf7xjRrvlgx2nkD3npP6+1CimWuQhOVTn5FeWEPwfiVLXMxtsK13+lsOhgk8neTUWrKsglw==}
 
   optionator@0.9.4:
     resolution: {integrity: sha512-6IpQ7mKUxRcZNLIObR0hz7lxsapSSIYNZJwXPGeF0mTVqGKFIXj1DQcMoT22S3ROcLyY/rz0PWaWZ9ayWmad9g==}
@@ -12037,7 +12037,7 @@ snapshots:
 
   '@types/history@5.0.0':
     dependencies:
-      history: 4.10.1
+      history: 5.3.0
 
   '@types/hoist-non-react-statics@3.3.5':
     dependencies:
@@ -12134,7 +12134,7 @@ snapshots:
       '@types/history': 4.7.11
       '@types/react': 18.3.18
       '@types/react-router': 5.1.20
-      redux: 3.7.2
+      redux: 4.2.1
 
   '@types/react-router@5.1.20':
     dependencies:
@@ -18329,7 +18329,7 @@ snapshots:
       is-inside-container: 1.0.0
       is-wsl: 2.2.0
 
-  opfs-tools@0.6.1: {}
+  opfs-tools@0.7.0: {}
 
   optionator@0.9.4:
     dependencies:

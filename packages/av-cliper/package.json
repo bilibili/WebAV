@@ -42,7 +42,7 @@
   "dependencies": {
     "@webav/internal-utils": "workspace:*",
     "@webav/mp4box.js": "0.5.6",
-    "opfs-tools": "^0.6.1",
+    "opfs-tools": "^0.7.0",
     "wave-resampler": "^1.0.0"
   }
 }
