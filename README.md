@@ -185,7 +185,7 @@ recorder.start(); // => ReadableStream
 If you are a beginner in the field of web audio and video, you can start by learning the basics:
 
 [Articles by the Author](https://bilibili.github.io/WebAV/article)  
-[Web Audio and Video Knowledge Graph](https://github.com/bilibili/WebAV-KnowledgeGraph)
+[Web Audio and Video Knowledge Graph](https://github.com/hughfenghen/WebAV-KnowledgeGraph)
 
 ## Sponsor Author
 

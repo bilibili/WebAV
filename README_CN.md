@@ -185,7 +185,7 @@ recorder.start(); // => ReadableStream
 如果你是 Web 音视频领域的初学者，可以先了解入门知识
 
 [作者写的相关文章](https://bilibili.github.io/WebAV/article)  
-[Web 音视频知识图谱](https://github.com/bilibili/WebAV-KnowledgeGraph)
+[Web 音视频知识图谱](https://github.com/hughfenghen/WebAV-KnowledgeGraph)
 
 ## 赞助
 
