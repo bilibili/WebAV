@@ -1,5 +1,12 @@
 # @webav/av-cliper
 
+## 1.0.19
+
+### Patch Changes
+
+- 9203763: chore: upgrade version for opfs-tools
+  - @webav/internal-utils@1.0.19
+
 ## 1.0.18
 
 ### Patch Changes
