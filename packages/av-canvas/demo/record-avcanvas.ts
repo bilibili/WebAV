@@ -13,10 +13,6 @@ avCvs.on('timeupdate', (t) => {
   console.log('timeupdate', t);
 });
 
-(async (): Promise<void> => {
-  // const is = new ImgSprite('img', 'https://neo-pages.bilibili.com/bbfe/neo/assets/img/neo-pages-overview.48f7bb81.png')
-  // await avCvs.spriteManager.addSprite(is)
-})().catch(console.error);
 document.querySelector('#userMedia')?.addEventListener('click', () => {
   (async () => {
     const spr = new VisibleSprite(

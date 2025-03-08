@@ -20,7 +20,7 @@ type AnimateImgType = 'avif' | 'webp' | 'png' | 'gif';
  *   )
  * )
  *
- * @see [视频合成](https://bilibili.github.io/WebAV/demo/2_1-concat-video)
+ * @see [视频合成](https://webav-tech.github.io/WebAV/demo/2_1-concat-video)
  */
 export class ImgClip implements IClip {
   ready: IClip['ready'];

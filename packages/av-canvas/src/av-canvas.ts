@@ -55,8 +55,8 @@ function createInitCvsEl(resolution: IResolution): HTMLCanvasElement {
   - 实时预览播放
   - 纯浏览器环境生成视频
 
- * @see [直播录制](https://bilibili.github.io/WebAV/demo/4_2-recorder-avcanvas)
- * @see [视频剪辑](https://bilibili.github.io/WebAV/demo/6_4-video-editor)
+ * @see [直播录制](https://webav-tech.github.io/WebAV/demo/4_2-recorder-avcanvas)
+ * @see [视频剪辑](https://webav-tech.github.io/WebAV/demo/6_4-video-editor)
  * @example
  * const avCvs = new AVCanvas(document.querySelector('#app'), {
  *   bgColor: '#333',
@@ -376,7 +376,7 @@ export class AVCanvas {
    *
    * 可用于 WebRTC 推流，或由 {@link [AVRecorder](../../av-recorder/classes/AVRecorder.html)} 录制生成视频文件
    *
-   * @see [直播录制](https://bilibili.github.io/WebAV/demo/4_2-recorder-avcanvas)
+   * @see [直播录制](https://webav-tech.github.io/WebAV/demo/4_2-recorder-avcanvas)
    *
    */
   captureStream(): MediaStream {
@@ -406,7 +406,7 @@ export class AVCanvas {
    * @example
    * avCvs.createCombinator().output() // => ReadableStream
    *
-   * @see [视频剪辑](https://bilibili.github.io/WebAV/demo/6_4-video-editor)
+   * @see [视频剪辑](https://webav-tech.github.io/WebAV/demo/6_4-video-editor)
    */
   async createCombinator(opts: ICombinatorOpts = {}) {
     Log.info('AVCanvas.createCombinator, opts:', opts);

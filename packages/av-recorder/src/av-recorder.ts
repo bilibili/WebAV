@@ -28,7 +28,7 @@ type TState = 'inactive' | 'recording' | 'paused' | 'stopped';
 );
 
 recorder.start() // => ReadableStream
- * @see [录制摄像头](https://bilibili.github.io/WebAV/demo/4_1-recorder-usermedia)
+ * @see [录制摄像头](https://webav-tech.github.io/WebAV/demo/4_1-recorder-usermedia)
  */
 export class AVRecorder {
   #state: TState = 'inactive';

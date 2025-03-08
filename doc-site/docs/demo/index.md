@@ -40,4 +40,4 @@ export default function UI() {
    3. 也可 clone [WebAV 项目][2]，在本地环境运行
 
 [1]: https://caniuse.com/?search=WebCodecs
-[2]: https://github.com/bilibili/WebAV
+[2]: https://github.com/WebAV-Tech/WebAV

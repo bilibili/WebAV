@@ -23,7 +23,7 @@ export interface IRectBaseProps {
  * @see {@link Combinator}, {@link OffscreenSprite}
  * @see [AVCanvas](../../av-canvas/classes/AVCanvas.html), {@link VisibleSprite}
  *
- * @see [视频剪辑](https://bilibili.github.io/WebAV/demo/6_4-video-editor)
+ * @see [视频剪辑](https://webav-tech.github.io/WebAV/demo/6_4-video-editor)
  */
 export class Rect implements IRectBaseProps {
   #evtTool = new EventTool<{

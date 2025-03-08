@@ -138,7 +138,7 @@ export abstract class BaseSprite {
    *   { duration: 4e6, iterCount: 1 },
    * );
    *
-   * @see [视频水印动画](https://bilibili.github.io/WebAV/demo/2_1-concat-video)
+   * @see [视频水印动画](https://webav-tech.github.io/WebAV/demo/2_1-concat-video)
    */
   setAnimation(keyFrame: TKeyFrameOpts, opts: IAnimationOpts): void {
     this.#animatKeyFrame = Object.entries(keyFrame).map(([k, val]) => {

@@ -9,7 +9,7 @@ order: 3
 
 # Packages Introduction
 
-### [av-cliper](https://bilibili.github.io/WebAV/_api/av-cliper/)
+### [av-cliper](https://webav-tech.github.io/WebAV/_api/av-cliper/)
 
 `av-cliper` is a basic SDK for audio and video data processing. It provides some basic classes or functions to help developers quickly achieve their goals.
 
@@ -68,7 +68,7 @@ com.output(); // => ReadableStream
 
 </details>
 
-### [av-canvas](https://bilibili.github.io/WebAV/_api/av-canvas/)
+### [av-canvas](https://webav-tech.github.io/WebAV/_api/av-canvas/)
 
 `av-canvas` relies on the basic capabilities of `av-cliper` to provide a canvas that responds to user actions on Sprite (drag, zoom, rotate), which is used to quickly implement products such as video clips, live streaming streaming workstations, etc.
 
@@ -107,7 +107,7 @@ await avCvs.add(spr2);
 
 </details>
 
-### [av-recorder](https://bilibili.github.io/WebAV/_api/av-recorder/)
+### [av-recorder](https://webav-tech.github.io/WebAV/_api/av-recorder/)
 
 `av-recorder` records `MediaStream` and outputs video file stream in MP4 format.
 

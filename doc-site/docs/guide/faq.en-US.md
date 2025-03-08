@@ -29,7 +29,7 @@ Summary: Performance on some devices is close to native solutions, but there is 
 
 Supported on Chrome/Edge 102+, not supported on Safari or Firefox.
 
-You can visit <https://bilibili.github.io/WebAV/demo> to check your current browser's compatibility.
+You can visit <https://webav-tech.github.io/WebAV/demo> to check your current browser's compatibility.
 
 For mobile devices and more detailed compatibility information, please check [Can i use WebCodecs](https://caniuse.com/?search=WebCodecs)
 

@@ -19,7 +19,7 @@ export default defineConfig({
     ),
   },
   sitemap: {
-    hostname: 'https://bilibili.github.io/WebAV/',
+    hostname: 'https://webav-tech.github.io/WebAV/',
   },
   analytics: { ga_v2: 'G-MC335K4KV6' },
   themeConfig: {
@@ -27,12 +27,12 @@ export default defineConfig({
     logo: false,
     hideHomeNav: true,
     socialLinks: {
-      github: 'https://github.com/bilibili/WebAV',
+      github: 'https://github.com/WebAV-Tech/WebAV',
     },
     footer: ' ',
     footerConfig: {
       bottom:
-        '<div>碰到问题请去 <a href="https://github.com/bilibili/WebAV/issues" >WebAV Issues</a> 中反馈</div><div class="flex" style="justify-content: center;"><a href="https://github.com/bilibili/WebAV"><img src="https://img.shields.io/github/stars/bilibili/WebAV"></a></div>',
+        '<div>碰到问题请去 <a href="https://github.com/WebAV-Tech/WebAV/issues" >WebAV Issues</a> 中反馈</div><div class="flex" style="justify-content: center;"><a href="https://github.com/WebAV-Tech/WebAV"><img src="https://img.shields.io/github/stars/WebAV-Tech/WebAV"></a></div>',
       copyright: ' ',
       columns: [],
     },

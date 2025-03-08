@@ -9,7 +9,7 @@ order: 3
 
 # 模块介绍
 
-### [av-cliper](https://bilibili.github.io/WebAV/_api/av-cliper/)
+### [av-cliper](https://webav-tech.github.io/WebAV/_api/av-cliper/)
 
 `av-cliper` 是音视频数据处理的基础 SDK，它提供了一些基础 class 或 function 帮助开发者快速实现目标功能。
 
@@ -69,7 +69,7 @@ com.output(); // => ReadableStream
 
 </details>
 
-### [av-canvas](https://bilibili.github.io/WebAV/_api/av-canvas/)
+### [av-canvas](https://webav-tech.github.io/WebAV/_api/av-canvas/)
 
 `av-canvas` 依赖 `av-cliper` 的基础能力，提供一个画布响应用户对 Sprite 的操作（拖拽、缩放、旋转），用于快速实现视频剪辑、直播推流工作台等产品。
 
@@ -108,7 +108,7 @@ await avCvs.add(spr2);
 
 </details>
 
-### [av-recorder](https://bilibili.github.io/WebAV/_api/av-recorder/)
+### [av-recorder](https://webav-tech.github.io/WebAV/_api/av-recorder/)
 
 `av-recorder` 录制 `MediaStream` 输出 MP4 格式的视频文件流。
 

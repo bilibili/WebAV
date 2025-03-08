@@ -1,4 +1,4 @@
-const BASE_URL = 'https://bilibili.github.io/WebAV';
+const BASE_URL = 'https://webav-tech.github.io/WebAV';
 export function assetsPrefix<T extends string[] | Record<string, string>>(
   assetsURL: T,
 ): T {

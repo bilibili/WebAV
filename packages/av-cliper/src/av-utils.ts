@@ -145,7 +145,7 @@ export function adjustAudioDataVolume(ad: AudioData, volume: number) {
  *
  * @returns 返回一个 Promise，该 Promise 在解码完成后解析为 {@link VideoFrame} 数组。
  *
- * @see [解码动图](https://bilibili.github.io/WebAV/demo/1_3-decode-image)
+ * @see [解码动图](https://webav-tech.github.io/WebAV/demo/1_3-decode-image)
  *
  * @example
  *

@@ -16,7 +16,7 @@ import { changePCMPlaybackRate } from '../av-utils';
  * spr.rect.x = 100 // x 坐标偏移 100 像素
  * spr.time.offset = 10e6 // 视频第 10s 开始绘制素材
  *
- * @see [视频剪辑](https://bilibili.github.io/WebAV/demo/6_4-video-editor)
+ * @see [视频剪辑](https://webav-tech.github.io/WebAV/demo/6_4-video-editor)
  *
  */
 export class VisibleSprite extends BaseSprite {

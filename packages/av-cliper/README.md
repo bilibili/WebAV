@@ -25,4 +25,4 @@ WebCodecs-based, combine video, audio, images, text, with animation support
 
 ## DEMO
 
-<https://bilibili.github.io/WebAV/demo/>
+<https://webav-tech.github.io/WebAV/demo/>

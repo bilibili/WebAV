@@ -12,7 +12,7 @@ interface IClipMeta {
  * WebAV 内置了 {@link MP4Clip}, {@link AudioClip}, {@link ImgClip}, {@link MediaStreamClip} 等常用素材，用于给 {@link Combinator} {@link AVCanvas} 提供数据
  *
  * 你只需实现该接口即可自定义素材，拥有最大的灵活度来生成视频内容，比如动画、转场效果等
- * @see [自定义素材](https://bilibili.github.io/WebAV/demo/2_6-custom-clip)
+ * @see [自定义素材](https://webav-tech.github.io/WebAV/demo/2_6-custom-clip)
  *
  */
 export interface IClip {

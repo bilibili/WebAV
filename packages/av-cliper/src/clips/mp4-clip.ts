@@ -59,7 +59,7 @@ type ThumbnailOpts = {
  * @see {@link Combinator}
  * @see [AVCanvas](../../av-canvas/classes/AVCanvas.html)
  *
- * @see [解码播放视频](https://bilibili.github.io/WebAV/demo/1_1-decode-video)
+ * @see [解码播放视频](https://webav-tech.github.io/WebAV/demo/1_1-decode-video)
  */
 export class MP4Clip implements IClip {
   #insId = CLIP_ID++;
@@ -198,7 +198,7 @@ export class MP4Clip implements IClip {
    * @param time 调用 tick 的时间
    * @param tickRet tick 返回的数据
    *
-   * @see [移除视频绿幕背景](https://bilibili.github.io/WebAV/demo/3_2-chromakey-video)
+   * @see [移除视频绿幕背景](https://webav-tech.github.io/WebAV/demo/3_2-chromakey-video)
    */
   tickInterceptor: <T extends Awaited<ReturnType<MP4Clip['tick']>>>(
     time: number,

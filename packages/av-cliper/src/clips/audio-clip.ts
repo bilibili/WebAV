@@ -118,7 +118,7 @@ export class AudioClip implements IClip {
    * @param time 调用 tick 的时间
    * @param tickRet tick 返回的数据
    *
-   * @see [移除视频绿幕背景](https://bilibili.github.io/WebAV/demo/3_2-chromakey-video)
+   * @see [移除视频绿幕背景](https://webav-tech.github.io/WebAV/demo/3_2-chromakey-video)
    */
   tickInterceptor: <T extends Awaited<ReturnType<AudioClip['tick']>>>(
     time: number,

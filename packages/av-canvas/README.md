@@ -11,4 +11,4 @@ With [AVRcorder](../av-recorder/README.md) you can output MP4 streams and save t
 Record a video tutorial, add camera, micphone and screen to the canvas, then export mp4 and save as mp4 file.  
 录制视频教程，在画布中添加 camera、micphone 和屏幕，然后导出 mp4 保存为 mp4 文件。
 
-<https://bilibili.github.io/WebAV/demo/4_2-recorder-avcanvas>
+<https://webav-tech.github.io/WebAV/demo/4_2-recorder-avcanvas>

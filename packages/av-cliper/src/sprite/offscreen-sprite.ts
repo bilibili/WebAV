@@ -16,7 +16,7 @@ import { changePCMPlaybackRate } from '../av-utils';
  * spr.rect.x = 100 // x 坐标偏移 100 像素
  * spr.time.offset = 10e6 // 视频第 10s 开始绘制该视频素材
  *
- * @see [视频合成](https://bilibili.github.io/WebAV/demo/2_1-concat-video)
+ * @see [视频合成](https://webav-tech.github.io/WebAV/demo/2_1-concat-video)
  */
 export class OffscreenSprite extends BaseSprite {
   #clip: IClip;

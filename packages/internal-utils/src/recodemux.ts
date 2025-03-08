@@ -310,7 +310,7 @@ function encodeVideoTrack(
   };
 }
 
-// https://github.com/bilibili/WebAV/issues/203
+// https://github.com/WebAV-Tech/WebAV/issues/203
 function fixChromeConstraintSetFlagsBug(desc: ArrayBuffer) {
   const u8 = new Uint8Array(desc);
   const constraintSetFlag = u8[2];

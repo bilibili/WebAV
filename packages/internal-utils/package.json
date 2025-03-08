@@ -2,7 +2,7 @@
   "name": "@webav/internal-utils",
   "version": "1.0.19",
   "private": false,
-  "repository": "https://github.com/bilibili/WebAV",
+  "repository": "https://github.com/WebAV-Tech/WebAV",
   "type": "module",
   "types": "dist/internal-utils.d.ts",
   "module": "dist/internal-utils.js",

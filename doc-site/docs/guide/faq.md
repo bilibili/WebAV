@@ -31,7 +31,7 @@ _有疑问可以先查询 issue、阅读 API 文档。_
 
 Chrome/Edge 102+，不支持 Safari，不支持 Firefox。
 
-你可以访问 <https://bilibili.github.io/WebAV/demo> 检测当前浏览器的兼容性。
+你可以访问 <https://webav-tech.github.io/WebAV/demo> 检测当前浏览器的兼容性。
 
 移动端以及更详细的兼容信息请查看 [Can i use WebCodecs](https://caniuse.com/?search=WebCodecs)
 

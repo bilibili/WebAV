@@ -1,8 +1,8 @@
 # WebAV
 
-![GitHub commit activity](https://img.shields.io/github/commit-activity/m/bilibili/WebAV)
+![GitHub commit activity](https://img.shields.io/github/commit-activity/m/WebAV-Tech/WebAV)
 ![NPM downloads](https://img.shields.io/npm/dm/@webav/av-cliper)
-[![Release](https://github.com/bilibili/WebAV/actions/workflows/release.yml/badge.svg)](https://github.com/bilibili/WebAV/actions/workflows/release.yml)
+[![Release](https://github.com/WebAV-Tech/WebAV/actions/workflows/release.yml/badge.svg)](https://github.com/WebAV-Tech/WebAV/actions/workflows/release.yml)
 
 [English](./README.md) | 中文
 
@@ -26,20 +26,20 @@ _兼容 chrome 102+_
 
 ## DEMO
 
-WebAV 项目有丰富的可快速体验的 DEMO，可以访问 [DEMO 首页](https://bilibili.github.io/WebAV/demo)检查当前设备的兼容性。
+WebAV 项目有丰富的可快速体验的 DEMO，可以访问 [DEMO 首页](https://webav-tech.github.io/WebAV/demo)检查当前设备的兼容性。
 
 _提示：测试用的视频资源托管在 github pages，启动 DEMO 可能需要一些网络加载时间_
 
 下面是你可能感兴趣的功能演示
 
-- [视频合成](https://bilibili.github.io/WebAV/demo/2_1-concat-video)
-- [视频剪辑](https://bilibili.github.io/WebAV/demo/6_4-video-editor)
-- [直播录制](https://bilibili.github.io/WebAV/demo/4_2-recorder-avcanvas)
-- WebAV + Canvas + WebAudio [解码播放视频](https://bilibili.github.io/WebAV/demo/1_1-decode-video)
+- [视频合成](https://webav-tech.github.io/WebAV/demo/2_1-concat-video)
+- [视频剪辑](https://webav-tech.github.io/WebAV/demo/6_4-video-editor)
+- [直播录制](https://webav-tech.github.io/WebAV/demo/4_2-recorder-avcanvas)
+- WebAV + Canvas + WebAudio [解码播放视频](https://webav-tech.github.io/WebAV/demo/1_1-decode-video)
 
 ## packages 介绍
 
-### [av-cliper](https://bilibili.github.io/WebAV/_api/av-cliper/)
+### [av-cliper](https://webav-tech.github.io/WebAV/_api/av-cliper/)
 
 `av-cliper` 是音视频数据处理的基础 SDK，它提供了一些基础 class 或 function 帮助开发者快速实现目标功能。
 
@@ -99,7 +99,7 @@ com.output(); // => ReadableStream
 
 </details>
 
-### [av-canvas](https://bilibili.github.io/WebAV/_api/av-canvas/)
+### [av-canvas](https://webav-tech.github.io/WebAV/_api/av-canvas/)
 
 `av-canvas` 依赖 `av-cliper` 的基础能力，提供一个画布响应用户对 Sprite 的操作（拖拽、缩放、旋转），用于快速实现视频剪辑、直播推流工作台等产品。
 
@@ -144,7 +144,7 @@ await avCvs.add(spr2);
 
 </details>
 
-### [av-recorder](https://bilibili.github.io/WebAV/_api/av-canvas/)
+### [av-recorder](https://webav-tech.github.io/WebAV/_api/av-canvas/)
 
 `av-recorder` 录制 `MediaStream` 输出 MP4 格式的视频文件流。
 
@@ -184,15 +184,15 @@ recorder.start(); // => ReadableStream
 
 如果你是 Web 音视频领域的初学者，可以先了解入门知识
 
-[作者写的相关文章](https://bilibili.github.io/WebAV/article)  
+[作者写的相关文章](https://webav-tech.github.io/WebAV/article)  
 [Web 音视频知识图谱](https://github.com/hughfenghen/WebAV-KnowledgeGraph)
 
 ## 赞助
 
 如果该项目对你有帮助，扫描二维码请作者喝奶茶 ：）
 
-<img src="https://github.com/bilibili/WebAV/assets/3307051/4b25836a-3f85-4160-b0bf-6c8360fad9a4" width=200 />
-<img src="https://github.com/bilibili/WebAV/assets/3307051/b0d8ff07-71c9-46c1-af33-019420d17c06" width=200 />
+<img src="https://github.com/WebAV-Tech/WebAV/assets/3307051/4b25836a-3f85-4160-b0bf-6c8360fad9a4" width=200 />
+<img src="https://github.com/WebAV-Tech/WebAV/assets/3307051/b0d8ff07-71c9-46c1-af33-019420d17c06" width=200 />
 
 ---
 

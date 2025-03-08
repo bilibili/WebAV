@@ -1,8 +1,8 @@
 # WebAV
 
-![GitHub commit activity](https://img.shields.io/github/commit-activity/m/bilibili/WebAV)
+![GitHub commit activity](https://img.shields.io/github/commit-activity/m/WebAV-Tech/WebAV)
 ![NPM downloads](https://img.shields.io/npm/dm/@webav/av-cliper)
-[![Release](https://github.com/bilibili/WebAV/actions/workflows/release.yml/badge.svg)](https://github.com/bilibili/WebAV/actions/workflows/release.yml)
+[![Release](https://github.com/WebAV-Tech/WebAV/actions/workflows/release.yml/badge.svg)](https://github.com/WebAV-Tech/WebAV/actions/workflows/release.yml)
 
 English | [中文](./README_CN.md)
 
@@ -26,20 +26,20 @@ _Compatible with Chrome 102+_
 
 ## DEMO
 
-The WebAV project offers a variety of quick DEMO experiences. Visit the [DEMO Homepage](https://bilibili.github.io/WebAV/demo) to check the compatibility of your current device.
+The WebAV project offers a variety of quick DEMO experiences. Visit the [DEMO Homepage](https://webav-tech.github.io/WebAV/demo) to check the compatibility of your current device.
 
 _Note: The test video resources are hosted on GitHub pages, so starting a DEMO may require some network loading time._
 
 Here are some feature demos you might be interested in:
 
-- [Video Concatenation](https://bilibili.github.io/WebAV/demo/2_1-concat-video)
-- [Video Editing](https://bilibili.github.io/WebAV/demo/6_4-video-editor)
-- [Live Recording](https://bilibili.github.io/WebAV/demo/4_2-recorder-avcanvas)
-- WebAV + Canvas + WebAudio [Decode and Play Video](https://bilibili.github.io/WebAV/demo/1_1-decode-video)
+- [Video Concatenation](https://webav-tech.github.io/WebAV/demo/2_1-concat-video)
+- [Video Editing](https://webav-tech.github.io/WebAV/demo/6_4-video-editor)
+- [Live Recording](https://webav-tech.github.io/WebAV/demo/4_2-recorder-avcanvas)
+- WebAV + Canvas + WebAudio [Decode and Play Video](https://webav-tech.github.io/WebAV/demo/1_1-decode-video)
 
 ## Packages Introduction
 
-### [av-cliper](https://bilibili.github.io/WebAV/_api/av-cliper/)
+### [av-cliper](https://webav-tech.github.io/WebAV/_api/av-cliper/)
 
 `av-cliper` is the foundational SDK for audio and video data processing. It provides basic classes and functions to help developers quickly achieve their target functionalities.
 
@@ -99,7 +99,7 @@ com.output(); // => ReadableStream
 
 </details>
 
-### [av-canvas](https://bilibili.github.io/WebAV/_api/av-canvas/)
+### [av-canvas](https://webav-tech.github.io/WebAV/_api/av-canvas/)
 
 `av-canvas` relies on the basic capabilities of `av-cliper` and provides a canvas that responds to user operations on Sprites (dragging, scaling, rotating), enabling quick implementation of products like video editing and live streaming workstations.
 
@@ -144,7 +144,7 @@ await avCvs.add(spr2);
 
 </details>
 
-### [av-recorder](https://bilibili.github.io/WebAV/_api/av-canvas/)
+### [av-recorder](https://webav-tech.github.io/WebAV/_api/av-canvas/)
 
 `av-recorder` records `MediaStream` and outputs the video file stream in MP4 format.
 
@@ -184,7 +184,7 @@ recorder.start(); // => ReadableStream
 
 If you are a beginner in the field of web audio and video, you can start by learning the basics:
 
-[Articles by the Author](https://bilibili.github.io/WebAV/article)  
+[Articles by the Author](https://webav-tech.github.io/WebAV/article)  
 [Web Audio and Video Knowledge Graph](https://github.com/hughfenghen/WebAV-KnowledgeGraph)
 
 ## Sponsor Author

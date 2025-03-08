@@ -41,4 +41,4 @@ export default function UI() {
     3. You can also clone [WebAV project][2] and run it locally
 
     [1]: https://caniuse.com/?search=WebCodecs
-    [2]: https://github.com/bilibili/WebAV
+    [2]: https://github.com/WebAV-Tech/WebAV

@@ -6,7 +6,7 @@ labels: bug
 assignees: ''
 ---
 
-<!-- 请至少阅读一遍 https://github.com/bilibili/WebAV/issues/60 -->
+<!-- 请至少阅读一遍 https://github.com/WebAV-Tech/WebAV/issues/60 -->
 
 **描述问题**
 
