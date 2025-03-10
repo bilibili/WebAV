@@ -33,7 +33,7 @@ export default function UI() {
 
 ## Before the DEMO
 
-1.  Make sure your browser supports the WebCodecs API (Chrome 94+), see details [1]
+1.  Make sure your browser supports the WebCodecs API (Chrome 102+), see details [1]
 2.  Audio and video resources are hosted on Github Pages, devices without a scientific connection may need to **wait patiently for resources to load**
 
     1. It is better to have scientific access to the Internet, otherwise the resources may fail to load
